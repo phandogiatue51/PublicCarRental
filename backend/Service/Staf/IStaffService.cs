@@ -1,14 +1,16 @@
-﻿using PublicCarRental.DTOs;
+﻿using PublicCarRental.DTOs.Staf;
 using PublicCarRental.Models;
 
 namespace PublicCarRental.Service.Staf
 {
     public interface IStaffService
     {
-        public Staff? GetStaffById(int id);
-        public IEnumerable<Staff> GetAllStaff();
-        public void CreateStaff(int accountId, StaffRegistrationDto dto);
-        public bool UpdateStaff(int id, StaffRegistrationDto updatedStaff);
+        public IEnumerable<StaffReadDto> GetAllStaff();
+
+        public Staff? GetEntityById(int id);
+        public StaffReadDto? GetById(int id);
+        public void CreateStaff(int accountId, StaffDto dto);
+        public bool UpdateStaff(int id, StaffDto updatedStaff);
         public bool DeleteStaff(int id);
     }
 }

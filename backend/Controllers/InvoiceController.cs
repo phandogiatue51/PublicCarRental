@@ -24,7 +24,7 @@ namespace PublicCarRental.Controllers
             return Ok(invoices);
         }
 
-        [HttpGet("invoice/{id}")]
+        [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
             var invoice = _service.GetInvoiceById(id);

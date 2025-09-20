@@ -49,6 +49,7 @@ namespace PublicCarRental.Service.Acc
                 PhoneNumber = phoneNumber,
                 IdentityCardNumber = identityCardNumber,
                 RegisteredAt = DateTime.UtcNow,
+                Status = AccountStatus.Active
             };
 
             _accountRepo.Create(account);

@@ -1,4 +1,5 @@
-﻿using PublicCarRental.Models;
+﻿using PublicCarRental.DTOs.Stat;
+using PublicCarRental.Models;
 using PublicCarRental.Repository.Stat;
 
 namespace PublicCarRental.Service.Stat
@@ -11,32 +12,66 @@ namespace PublicCarRental.Service.Stat
         {
             _repo = repo;
         }
-
-        public IEnumerable<Station> GetAllStations()
+        public IEnumerable<StationDto> GetAll()
         {
-            return _repo.GetAll();
+            return _repo.GetAll()
+                .Select(s => new StationDto
+                {
+                    StationId = s.StationId,
+                    Name = s.Name,
+                    Address = s.Address,
+                    Latitude = s.Latitude,
+                    Longitude = s.Longitude,
+
+                    VehicleCount = s.Vehicles?.Count ?? 0,
+                    StaffCount = s.StaffMembers?.Count ?? 0
+                });
         }
 
-        public Station GetStationById(int id)
+        public StationDto? GetById(int id)
+        {
+            var s = _repo.GetById(id);
+            if (s == null) return null;
+
+            return new StationDto
+            {
+                StationId = s.StationId,
+                Name = s.Name,
+                Address = s.Address,
+                Latitude = s.Latitude,
+                Longitude = s.Longitude,
+
+                VehicleCount = s.Vehicles?.Count ?? 0,
+                StaffCount = s.StaffMembers?.Count ?? 0
+            };
+        }
+
+        public Station GetEntityById(int id)
         {
             return _repo.GetById(id);
         }
 
-        public void CreateStation(Station station)
+        public int CreateStation(StationUpdateDto dto)
         {
+            var station = new Station
+            {
+                Name = dto.Name,
+                Address = dto.Address,
+                Latitude = dto.Latitude,
+                Longitude = dto.Longitude
+            };
             _repo.Create(station);
+            return station.StationId;
         }
 
-        public bool UpdateStation(int id, Station updatedStation)
+        public bool UpdateStation(int id, StationUpdateDto station)
         {
             var existing = _repo.GetById(id);
             if (existing == null) return false;
-
-            existing.Name = updatedStation.Name;
-            existing.Address = updatedStation.Address;
-            existing.Latitude = updatedStation.Latitude;
-            existing.Longitude = updatedStation.Longitude;
-
+            existing.Name = station.Name;
+            existing.Address = station.Address;
+            existing.Latitude = station.Latitude;
+            existing.Longitude = station.Longitude;
             _repo.Update(existing);
             return true;
         }

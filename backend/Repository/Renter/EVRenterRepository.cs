@@ -1,4 +1,5 @@
-﻿using PublicCarRental.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using PublicCarRental.Models;
 using System;
 
 namespace PublicCarRental.Repository.Renter
@@ -12,9 +13,19 @@ namespace PublicCarRental.Repository.Renter
             _context = context;
         }
 
-        public EVRenter GetById(int id) => _context.EVRenters.Find(id);
+        public IEnumerable<EVRenter> GetAll()
+        {
+            return _context.EVRenters
+                .Include(r => r.Account)
+                .ToList();
+        }
 
-        public IEnumerable<EVRenter> GetAll() => _context.EVRenters.ToList();
+        public EVRenter? GetById(int id)
+        {
+            return _context.EVRenters
+                .Include(r => r.Account)
+                .FirstOrDefault(r => r.RenterId == id);
+        }
 
         public void Create(EVRenter renter)
         {

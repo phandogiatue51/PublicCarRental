@@ -13,15 +13,66 @@ namespace PublicCarRental.Service.Renter
             _renterRepo = renterRepo;
         }
 
-        public EVRenter GetRenterById(int id) => _renterRepo.GetById(id);
+        public IEnumerable<EVRenterDto> GetAll()
+        {
+            return _renterRepo.GetAll()
+                .Where(r => r.Account != null)
+                .Select(r => new EVRenterDto
+                {
+                    RenterId = r.RenterId,
+                    FullName = r.Account.FullName,
+                    Email = r.Account.Email,
+                    PhoneNumber = r.Account.PhoneNumber,
+                    IdentityCardNumber = r.Account.IdentityCardNumber,
+                    LicenseNumber = r.LicenseNumber,
+                    Status = r.Account.Status
+                });
+        }
 
-        public IEnumerable<EVRenter> GetAllRenters() => _renterRepo.GetAll();
+        public EVRenterDto? GetById(int id)
+        {
+            var r = _renterRepo.GetById(id);
+            if (r == null || r.Account == null) return null;
 
-        public void UpdateRenter(EVRenter renter) => _renterRepo.Update(renter);
+            return new EVRenterDto
+            {
+                RenterId = r.RenterId,
+                FullName = r.Account.FullName,
+                Email = r.Account.Email,
+                PhoneNumber = r.Account.PhoneNumber,
+                IdentityCardNumber = r.Account.IdentityCardNumber,
+                LicenseNumber = r.LicenseNumber,
+                Status = r.Account.Status
+            };
+        }
 
-        public void DeleteRenter(int id) => _renterRepo.Delete(id);
+        public EVRenter? GetEntityById(int id) => _renterRepo.GetById(id);
 
-        public void CreateRenter (int accountId, AccountRegistrationDto dto)
+        public bool UpdateRenter(int id, AccountDto renter)
+        {
+            var existingRenter = _renterRepo.GetById(id);
+            if (existingRenter == null || existingRenter.Account == null) return false;
+            existingRenter.Account.FullName = renter.FullName;
+            existingRenter.Account.Email = renter.Email;
+            existingRenter.Account.PhoneNumber = renter.PhoneNumber;
+            existingRenter.Account.IdentityCardNumber = renter.IdentityCardNumber;
+            existingRenter.LicenseNumber = renter.LicenseNumber;
+            _renterRepo.Update(existingRenter);
+            return true;
+        }
+
+        public bool DeleteRenter(int id)
+        {
+        
+            var renter = _renterRepo.GetById(id);
+            if (renter == null) return false;
+
+            renter.Account.Status = AccountStatus.Inactive;
+            _renterRepo.Update(renter);
+            return true;
+        }
+
+        public void CreateRenter (int accountId, AccountDto dto)
         {
             var renter = new EVRenter
             {

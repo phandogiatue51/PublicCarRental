@@ -1,4 +1,5 @@
-﻿using PublicCarRental.Models;
+﻿using PublicCarRental.DTOs.Veh;
+using PublicCarRental.Models;
 using PublicCarRental.Repository.Vehi;
 
 namespace PublicCarRental.Service.Veh
@@ -12,32 +13,72 @@ namespace PublicCarRental.Service.Veh
             _repo = repo;
         }
 
-        public IEnumerable<Vehicle> GetAllVehicles()
+        public IEnumerable<VehicleDto> GetAllVehicles()
         {
-            return _repo.GetAll();
+            return _repo.GetAll()
+                .Select(v => new VehicleDto
+                {
+                    VehicleId = v.VehicleId,
+                    LicensePlate = v.LicensePlate,
+                    BatteryLevel = v.BatteryLevel,
+                    Status = v.Status,
+                    PricePerHour = v.PricePerHour,
+                    StationId = v.StationId,
+                    StationName = v.Station.Name,
+                    ModelId = v.ModelId,
+                    ModelName = v.Model.Name
+                });
         }
 
-        public Vehicle GetVehicleById(int id)
+        public VehicleDto GetById(int id)
+        {
+            var v = _repo.GetById(id);
+            if (v == null) return null;
+            return new VehicleDto
+            {
+                VehicleId = v.VehicleId,
+                LicensePlate = v.LicensePlate,
+                BatteryLevel = v.BatteryLevel,
+                Status = v.Status,
+                PricePerHour = v.PricePerHour,
+                StationId = v.StationId,
+                StationName = v.Station.Name,
+                ModelId = v.ModelId,
+                ModelName = v.Model.Name
+            };
+        }
+
+        public Vehicle GetEntityById(int id)
         {
             return _repo.GetById(id);
         }
 
-        public void CreateVehicle(Vehicle vehicle)
+        public int CreateVehicle(VehicleCreateDto dto)
         {
+            var vehicle = new Vehicle
+            {
+                LicensePlate = dto.LicensePlate,
+                BatteryLevel = (int)dto.BatteryLevel,
+                Status = VehicleStatus.Available,
+                PricePerHour = (decimal)dto.PricePerHour,
+                StationId = dto.StationId,
+                ModelId = (int)dto.ModelId
+            };
             _repo.Create(vehicle);
+            return vehicle.VehicleId;
         }
 
-        public bool UpdateVehicle(int id, Vehicle updatedVehicle)
+        public bool UpdateVehicle(int id, VehicleUpdateDto updatedVehicle)
         {
             var existing = _repo.GetById(id);
             if (existing == null) return false;
 
             existing.LicensePlate = updatedVehicle.LicensePlate;
-            existing.BatteryLevel = updatedVehicle.BatteryLevel;
-            existing.Status = updatedVehicle.Status;
-            existing.PricePerHour = updatedVehicle.PricePerHour;
+            existing.BatteryLevel = (int)updatedVehicle.BatteryLevel;
+            existing.Status = (VehicleStatus)updatedVehicle.Status;
+            existing.PricePerHour = (decimal)updatedVehicle.PricePerHour;
             existing.StationId = updatedVehicle.StationId;
-            existing.ModelId = updatedVehicle.ModelId;
+            existing.ModelId = (int)updatedVehicle.ModelId;
 
             _repo.Update(existing);
             return true;

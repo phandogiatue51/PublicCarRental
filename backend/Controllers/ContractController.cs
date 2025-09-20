@@ -24,6 +24,14 @@ namespace PublicCarRental.Controllers
             return Ok(contracts);
         }
 
+        [HttpGet("{id}")]
+        public IActionResult GetContractById(int id)
+        {
+            var contract = _contractService.GetContractById(id);
+            if (contract == null) return NotFound();
+            return Ok(contract);
+        }
+
         [HttpPost("create-contract")]
         public IActionResult CreateContract([FromBody] RentRequestDto dto)
         {

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PublicCarRental.DTOs;
+using PublicCarRental.DTOs.Veh;
 using PublicCarRental.Models;
 using PublicCarRental.Service.Veh;
 
@@ -28,20 +29,20 @@ namespace PublicCarRental.Controllers
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
-            var vehicle = _service.GetVehicleById(id);
+            var vehicle = _service.GetById(id);
             if (vehicle == null) return NotFound();
             return Ok(vehicle);
         }
 
         [HttpPost("create-vehicle")]
-        public IActionResult Create([FromBody] Vehicle vehicle)
+        public IActionResult Create([FromBody] VehicleCreateDto dto)
         {
-            _service.CreateVehicle(vehicle);
-            return Ok(new { message = "Vehicle created" });
+            var vehicle = _service.CreateVehicle(dto);
+            return Ok(new { message = "Vehicle created", vehicleId = vehicle});
         }
 
         [HttpPut("update-vehicle/{id}")]
-        public IActionResult Update(int id, [FromBody] Vehicle vehicle)
+        public IActionResult Update(int id, [FromBody] VehicleUpdateDto vehicle)
         {
             var success = _service.UpdateVehicle(id, vehicle);
             if (!success) return NotFound();

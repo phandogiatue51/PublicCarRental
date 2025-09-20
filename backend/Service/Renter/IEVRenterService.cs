@@ -5,10 +5,12 @@ namespace PublicCarRental.Service.Renter
 {
     public interface IEVRenterService
     {
-        EVRenter GetRenterById(int id);
-        IEnumerable<EVRenter> GetAllRenters();
-        public void CreateRenter(int accountId, AccountRegistrationDto dto);
-        void UpdateRenter(EVRenter renter);
-        void DeleteRenter(int id);
+        public IEnumerable<EVRenterDto> GetAll();
+        public EVRenterDto? GetById(int id);
+        public EVRenter? GetEntityById(int id);
+
+        public void CreateRenter(int accountId, AccountDto dto);
+        public bool UpdateRenter(int id, AccountDto renter);
+        public bool DeleteRenter(int id);
     }
 }

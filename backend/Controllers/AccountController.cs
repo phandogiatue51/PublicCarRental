@@ -27,7 +27,7 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpPost("register")]
-        public IActionResult RegisterRenter(AccountRegistrationDto dto)
+        public IActionResult RegisterRenter(AccountDto dto)
         {
             var accountId = _accountService.CreateAccount(dto.FullName, dto.Email, dto.Password, dto.PhoneNumber, dto.IdentityCardNumber, AccountRole.EVRenter);
             _renterService.CreateRenter(accountId, dto);

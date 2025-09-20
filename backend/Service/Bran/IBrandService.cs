@@ -1,13 +1,14 @@
-﻿using PublicCarRental.Models;
+﻿using PublicCarRental.DTOs.Bran;
+using PublicCarRental.Models;
 
 namespace PublicCarRental.Service.Bran
 {
     public interface IBrandService
     {
-        IEnumerable<VehicleBrand> GetAllBrands();
-        VehicleBrand GetBrandById(int id);
-        void CreateBrand(VehicleBrand brand);
-        bool UpdateBrand(int id, VehicleBrand updatedBrand);
+        public IEnumerable<BrandDto> GetAll();
+        public BrandDto? GetById(int id);
+        public int CreateBrand(BrandUpdateDto dto);
+        public bool UpdateBrand(int id, BrandUpdateDto updatedBrand);
         bool DeleteBrand(int id);
     }
 }

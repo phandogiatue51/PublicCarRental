@@ -1,13 +1,15 @@
-﻿using PublicCarRental.Models;
+﻿using PublicCarRental.DTOs.Stat;
+using PublicCarRental.Models;
 
 namespace PublicCarRental.Service.Stat
 {
     public interface IStationService
     {
-        IEnumerable<Station> GetAllStations();
-        Station GetStationById(int id);
-        void CreateStation(Station station);
-        bool UpdateStation(int id, Station updatedStation);
+        public IEnumerable<StationDto> GetAll();
+        public StationDto? GetById(int id);
+        Station GetEntityById(int id);
+        public int CreateStation(StationUpdateDto dto);
+        public bool UpdateStation(int id, StationUpdateDto station);
         bool DeleteStation(int id);
     }
 }

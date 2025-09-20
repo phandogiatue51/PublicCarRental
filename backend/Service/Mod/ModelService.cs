@@ -1,37 +1,65 @@
-﻿using PublicCarRental.Models;
+﻿using PublicCarRental.DTOs.Mod;
+using PublicCarRental.Models;
 using PublicCarRental.Repository.Model;
 
 namespace PublicCarRental.Service.Mod
 {
-    public class VehicleModelService : IModelService
+    public class ModelService : IModelService
     {
         private readonly IModelRepository _repo;
 
-        public VehicleModelService(IModelRepository repo)
+        public ModelService(IModelRepository repo)
         {
             _repo = repo;
         }
-
-        public IEnumerable<VehicleModel> GetAllModels()
+        public IEnumerable<ModelDto> GetAllModels()
         {
-            return _repo.GetAll();
+            return _repo.GetAll()
+                .Select(m => new ModelDto
+                {
+                    ModelId = m.ModelId,
+                    Name = m.Name,
+                    BrandId = m.BrandId,
+                    BrandName = m.Brand?.Name,
+                    TypeId = m.TypeId,
+                    TypeName = m.Type?.Name
+                });
         }
-
-        public VehicleModel GetModelById(int id)
+        public ModelDto GetById(int id)
+        {
+            var m = _repo.GetById(id);
+            if (m == null) return null;
+            return new ModelDto
+            {
+                ModelId = m.ModelId,
+                Name = m.Name,
+                BrandId = m.BrandId,
+                BrandName = m.Brand?.Name,
+                TypeId = m.TypeId,
+                TypeName = m.Type?.Name
+            };
+        }
+        public VehicleModel GetEntityById(int id)
         {
             return _repo.GetById(id);
         }
 
-        public void CreateModel(VehicleModel model)
+        public int CreateModel(ModelCreateDto dto)
         {
+            var model = new VehicleModel
+            {
+                Name = dto.Name,
+                BrandId = dto.BrandId,
+                TypeId = dto.TypeId
+            };
             _repo.Create(model);
+            return model.ModelId;
         }
 
-        public bool UpdateModel(int id, VehicleModel updatedModel)
+        public bool UpdateModel(int id, ModelCreateDto updatedModel)
         {
             var existing = _repo.GetById(id);
             if (existing == null) return false;
-
             existing.Name = updatedModel.Name;
             existing.BrandId = updatedModel.BrandId;
             existing.TypeId = updatedModel.TypeId;

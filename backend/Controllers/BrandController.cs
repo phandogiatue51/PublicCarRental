@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using PublicCarRental.DTOs.Bran;
 using PublicCarRental.Models;
 using PublicCarRental.Service.Bran;
 
@@ -19,30 +20,30 @@ namespace PublicCarRental.Controllers
         [HttpGet("get-all")]
         public IActionResult GetAll()
         {
-            var brands = _service.GetAllBrands();
+            var brands = _service.GetAll(); 
             return Ok(brands);
         }
 
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
-            var brand = _service.GetBrandById(id);
+            var brand = _service.GetById(id);
             if (brand == null) return NotFound();
             return Ok(brand);
         }
 
         [HttpPost("create-brand")]
-        public IActionResult Create([FromBody] VehicleBrand brand)
+        public IActionResult Create([FromBody] BrandUpdateDto dto)
         {
-            _service.CreateBrand(brand);
-            return Ok(new { message = "Brand created" });
+            var brand = _service.CreateBrand(dto);
+            return Ok(new { message = "Brand created", brandId = brand});
         }
 
         [HttpPut("update-brand/{id}")]
-        public IActionResult Update(int id, [FromBody] VehicleBrand brand)
+        public IActionResult Update(int id, [FromBody] BrandUpdateDto dto)
         {
-            var success = _service.UpdateBrand(id, brand);
-            if (!success) return NotFound();
+            var success = _service.UpdateBrand(id, dto);
+            if (!success) return NotFound(new { message = "Brand not found" });
             return Ok(new { message = "Brand updated" });
         }
 

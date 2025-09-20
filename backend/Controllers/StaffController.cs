@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using PublicCarRental.DTOs;
+using PublicCarRental.DTOs.Staf;
 using PublicCarRental.Models;
 using PublicCarRental.Service.Acc;
 using PublicCarRental.Service.Staf;
@@ -23,12 +23,20 @@ namespace PublicCarRental.Controllers
         [HttpGet("all-staff")]
         public IActionResult GetAllStaff()
         {
-            var staffList = _staffService.GetAllStaff();
+            var staffList = _staffService.GetAllStaff(); 
             return Ok(staffList);
         }
 
+        [HttpGet("{id}")]
+        public IActionResult GetById(int id)
+        {
+            var staff = _staffService.GetById(id); 
+            if (staff == null) return NotFound();
+            return Ok(staff);
+        }
+
         [HttpPost("register-staff")]
-        public IActionResult RegisterStaff([FromBody] StaffRegistrationDto dto)
+        public IActionResult RegisterStaff([FromBody] StaffDto dto)
         {
             var accountId = _accountService.CreateAccount(dto.FullName, dto.Email, dto.Password,dto.PhoneNumber, dto.IdentityCardNumber, AccountRole.Staff);
 
@@ -38,7 +46,7 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpPut("update-staff/{id}")]
-        public IActionResult UpdateStaff(int id, [FromBody] StaffRegistrationDto updatedStaff)
+        public IActionResult UpdateStaff(int id, [FromBody] StaffDto updatedStaff)
         {
             var success = _staffService.UpdateStaff(id, updatedStaff);
             if (!success) return NotFound("Staff not found");

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using PublicCarRental.DTOs.Mod;
 using PublicCarRental.Models;
 using PublicCarRental.Service;
 
@@ -26,20 +27,20 @@ namespace PublicCarRental.Controllers
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
-            var model = _service.GetModelById(id);
+            var model = _service.GetById(id);
             if (model == null) return NotFound();
             return Ok(model);
         }
 
         [HttpPost("create-model")]
-        public IActionResult Create([FromBody] VehicleModel model)
+        public IActionResult Create([FromBody] ModelCreateDto dto)
         {
-            _service.CreateModel(model);
-            return Ok(new { message = "Model created" });
+            var model = _service.CreateModel(dto);
+            return Ok(new { message = "Model created", modelId = model});
         }
 
         [HttpPut("update-model/{id}")]
-        public IActionResult Update(int id, [FromBody] VehicleModel model)
+        public IActionResult Update(int id, [FromBody] ModelCreateDto model)
         {
             var success = _service.UpdateModel(id, model);
             if (!success) return NotFound();

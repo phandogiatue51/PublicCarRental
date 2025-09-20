@@ -1,9 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PublicCarRental.DTOs;
+﻿using Microsoft.AspNetCore.Mvc;
+using PublicCarRental.DTOs.Stat;
 using PublicCarRental.Models;
+using PublicCarRental.Service.Stat;
 
 namespace PublicCarRental.Controllers
 {
@@ -11,69 +9,52 @@ namespace PublicCarRental.Controllers
     [Route("api/[controller]")]
     public class StationController : ControllerBase
     {
-        private readonly EVRentalDbContext _context;
+        private readonly IStationService _stationService;
 
-        public StationController(EVRentalDbContext context)
+        public StationController(IStationService stationService)
         {
-            _context = context;
+            _stationService = stationService;
         }
 
         [HttpGet("all-stations")]
-        public async Task<IActionResult> GetAllStations()
+        public IActionResult GetAll()
         {
-            var stations = await _context.Stations
-                .Include(s => s.Vehicles)
-                .Include(s => s.StaffMembers)
-                .ToListAsync();
-
+            var stations = _stationService.GetAll();
             return Ok(stations);
         }
 
-        [HttpPost("create-station")]
-        public async Task<IActionResult> CreateStation([FromBody] StationCreateDto dto)
+        [HttpGet("{id}")]
+        public IActionResult GetById(int id)
         {
-            var station = new Station
-            {
-                Name = dto.Name,
-                Address = dto.Address,
-                Latitude = dto.Latitude,
-                Longitude = dto.Longitude
-            };
+            var station = _stationService.GetById(id);
+            if (station == null)
+                return NotFound(new { message = "Station not found" });
 
-            _context.Stations.Add(station);
-            await _context.SaveChangesAsync();
+            return Ok(station);
+        }
 
-            return Ok(new { message = "Station created", stationId = station.StationId });
+        [HttpPost("create-station")]
+        public IActionResult CreateStation([FromBody] StationUpdateDto dto)
+        {
+            var station = _stationService.CreateStation(dto);
+            return Ok(new { message = "Station created", stationId = station });
+        }
+
+        [HttpPut("update-station/{id}")]
+        public IActionResult EditStation(int id, [FromBody] StationUpdateDto dto)
+        {
+            var success = _stationService.UpdateStation(id, dto);
+            return Ok(new { message = "Station updated", stationId = id });
         }
 
         [HttpDelete("delete-station/{id}")]
-        public async Task<IActionResult> DeleteStation(int id)
+        public IActionResult DeleteStation(int id)
         {
-            var station = await _context.Stations.FindAsync(id);
-            if (station == null)
+            var success = _stationService.DeleteStation(id);
+            if (!success)
                 return NotFound(new { message = "Station not found" });
-
-            _context.Stations.Remove(station);
-            await _context.SaveChangesAsync();
 
             return Ok(new { message = "Station deleted" });
-        }
-
-        [HttpPut("edit-station/{id}")]
-        public async Task<IActionResult> EditStation(int id, [FromBody] StationCreateDto dto)
-        {
-            var station = await _context.Stations.FindAsync(id);
-            if (station == null)
-                return NotFound(new { message = "Station not found" });
-
-            station.Name = dto.Name;
-            station.Address = dto.Address;
-            station.Latitude = dto.Latitude;
-            station.Longitude = dto.Longitude;
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Station updated", stationId = station.StationId });
         }
     }
 }

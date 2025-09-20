@@ -1,4 +1,5 @@
-﻿using PublicCarRental.Models;
+﻿using PublicCarRental.DTOs.Bran;
+using PublicCarRental.Models;
 using PublicCarRental.Repository.Bran;
 
 namespace PublicCarRental.Service.Bran
@@ -12,22 +13,39 @@ namespace PublicCarRental.Service.Bran
             _repo = repo;
         }
 
-        public IEnumerable<VehicleBrand> GetAllBrands()
+        public IEnumerable<BrandDto> GetAll()
         {
-            return _repo.GetAll();
+            return _repo.GetAll()
+                .Select(b => new BrandDto
+                {
+                    BrandId = b.BrandId,
+                    Name = b.Name
+                });
         }
 
-        public VehicleBrand GetBrandById(int id)
+        public BrandDto? GetById(int id)
         {
-            return _repo.GetById(id);
+            var brand = _repo.GetById(id);
+            if (brand == null) return null;
+
+            return new BrandDto
+            {
+                BrandId = brand.BrandId,
+                Name = brand.Name
+            };
         }
 
-        public void CreateBrand(VehicleBrand brand)
+        public int CreateBrand(BrandUpdateDto dto)
         {
+            var brand = new VehicleBrand
+            {
+                Name = dto.Name
+            };
             _repo.Create(brand);
+            return brand.BrandId;
         }
 
-        public bool UpdateBrand(int id, VehicleBrand updatedBrand)
+        public bool UpdateBrand(int id, BrandUpdateDto updatedBrand)
         {
             var existing = _repo.GetById(id);
             if (existing == null) return false;
