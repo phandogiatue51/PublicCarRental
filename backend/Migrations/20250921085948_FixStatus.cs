@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace PublicCarRental.Migrations
 {
     /// <inheritdoc />
-    public partial class MajorFix : Migration
+    public partial class FixStatus : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -23,9 +23,9 @@ namespace PublicCarRental.Migrations
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
                     PhoneNumber = table.Column<string>(type: "text", nullable: true),
                     IdentityCardNumber = table.Column<string>(type: "text", nullable: true),
-                    Status = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
                     RegisteredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Role = table.Column<string>(type: "text", nullable: false)
+                    Role = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -154,7 +154,7 @@ namespace PublicCarRental.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     LicensePlate = table.Column<string>(type: "text", nullable: false),
                     BatteryLevel = table.Column<int>(type: "integer", nullable: false),
-                    Status = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
                     PricePerHour = table.Column<decimal>(type: "numeric", nullable: false),
                     StationId = table.Column<int>(type: "integer", nullable: true),
                     ModelId = table.Column<int>(type: "integer", nullable: false)
@@ -188,9 +188,7 @@ namespace PublicCarRental.Migrations
                     StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     TotalCost = table.Column<decimal>(type: "numeric", nullable: true),
-                    Status = table.Column<string>(type: "text", nullable: false),
-                    VehicleConditionOnPickup = table.Column<string>(type: "text", nullable: true),
-                    VehicleConditionOnReturn = table.Column<string>(type: "text", nullable: true)
+                    Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -201,6 +199,11 @@ namespace PublicCarRental.Migrations
                         principalTable: "EVRenters",
                         principalColumn: "RenterId",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_RentalContracts_Staffs_StaffId",
+                        column: x => x.StaffId,
+                        principalTable: "Staffs",
+                        principalColumn: "StaffId");
                     table.ForeignKey(
                         name: "FK_RentalContracts_Stations_StationId",
                         column: x => x.StationId,
@@ -224,7 +227,7 @@ namespace PublicCarRental.Migrations
                     AmountDue = table.Column<decimal>(type: "numeric", nullable: false),
                     AmountPaid = table.Column<decimal>(type: "numeric", nullable: true),
                     PaidAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Status = table.Column<string>(type: "text", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
                     Notes = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
@@ -278,6 +281,11 @@ namespace PublicCarRental.Migrations
                 name: "IX_RentalContracts_EVRenterId",
                 table: "RentalContracts",
                 column: "EVRenterId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RentalContracts_StaffId",
+                table: "RentalContracts",
+                column: "StaffId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RentalContracts_StationId",
@@ -334,13 +342,13 @@ namespace PublicCarRental.Migrations
                 name: "Invoices");
 
             migrationBuilder.DropTable(
-                name: "Staffs");
-
-            migrationBuilder.DropTable(
                 name: "RentalContracts");
 
             migrationBuilder.DropTable(
                 name: "EVRenters");
+
+            migrationBuilder.DropTable(
+                name: "Staffs");
 
             migrationBuilder.DropTable(
                 name: "Vehicles");

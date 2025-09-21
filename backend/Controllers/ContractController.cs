@@ -1,7 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using PublicCarRental.DTOs;
+using PublicCarRental.DTOs.Cont;
+using PublicCarRental.DTOs.Inv;
 using PublicCarRental.Models;
 using PublicCarRental.Service.Cont;
 
@@ -18,22 +19,22 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpGet("all")]
-        public async Task<IActionResult> GetAllContracts()
+        public async Task<IActionResult> GetAll()
         {
-            var contracts = _contractService.GetAllContracts();
+            var contracts = _contractService.GetAll();
             return Ok(contracts);
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetContractById(int id)
+        public IActionResult GetById(int id)
         {
-            var contract = _contractService.GetContractById(id);
+            var contract = _contractService.GetById(id);
             if (contract == null) return NotFound();
             return Ok(contract);
         }
 
         [HttpPost("create-contract")]
-        public IActionResult CreateContract([FromBody] RentRequestDto dto)
+        public IActionResult CreateContract([FromBody] CreateContractDto dto)
         {
             try
             {
@@ -46,8 +47,23 @@ namespace PublicCarRental.Controllers
             }
         }
 
+        [HttpPost("update-contract/{id}")]
+        public IActionResult UpdateContract(int id, [FromBody] UpdateContractDto dto)
+        {
+            try
+            {
+                var success = _contractService.UpdateContract(id, dto);
+                if (!success) return NotFound("Contract not found");
+                return Ok(new { message = "Contract updated", contractId = id });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpPost("confirm-contract")]
-        public IActionResult ConfirmContract([FromBody] HandoverDto dto)
+        public IActionResult ConfirmContract([FromBody] ConfirmContractDto dto)
         {
             try
             {
@@ -61,8 +77,8 @@ namespace PublicCarRental.Controllers
             }
         }
 
-        [HttpPost("return-vehicle")]
-        public IActionResult ReturnVehicle([FromBody] ReturnDto dto)
+        [HttpPost("finish-contract")]
+        public IActionResult FinishContract([FromBody] InvoiceCreateDto dto)
         {
             try
             {
@@ -70,7 +86,7 @@ namespace PublicCarRental.Controllers
                 if (!success)
                     return NotFound(new { message = "Contract not found or vehicle missing" });
 
-                var contract = _contractService.GetContractById(dto.ContractId);
+                var contract = _contractService.GetEntityById(dto.ContractId);
                 return Ok(new
                 {
                     message = "Vehicle returned successfully",

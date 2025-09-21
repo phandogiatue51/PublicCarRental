@@ -31,6 +31,14 @@ namespace PublicCarRental.Repository.Vehi
                 .FirstOrDefault(v => v.VehicleId == id);
         }
 
+        public Vehicle GetFirstAvailableVehicleByModel(int modelId)
+        {
+            return _context.Vehicles
+                .Where(v => v.ModelId == modelId && v.Status == VehicleStatus.Available)
+                .OrderBy(v => v.VehicleId)
+                .FirstOrDefault();
+        }
+
         public void Create(Vehicle vehicle)
         {
             _context.Vehicles.Add(vehicle);

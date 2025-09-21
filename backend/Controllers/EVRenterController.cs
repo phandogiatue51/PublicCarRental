@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using PublicCarRental.DTOs;
+using PublicCarRental.DTOs.Acc;
 using PublicCarRental.Service.Renter;
 
 [ApiController]

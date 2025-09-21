@@ -1,6 +1,6 @@
 ﻿using PublicCarRental.Models;
 
-namespace PublicCarRental.DTOs
+namespace PublicCarRental.DTOs.Acc
 {
     public class EVRenterDto
     {

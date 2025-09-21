@@ -12,8 +12,8 @@ using PublicCarRental.Models;
 namespace PublicCarRental.Migrations
 {
     [DbContext(typeof(EVRentalDbContext))]
-    [Migration("20250920134844_MajorFix")]
-    partial class MajorFix
+    [Migration("20250921085948_FixStatus")]
+    partial class FixStatus
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -53,13 +53,11 @@ namespace PublicCarRental.Migrations
                     b.Property<DateTime>("RegisteredAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Role")
+                        .HasColumnType("integer");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.HasKey("AccountId");
 
@@ -127,9 +125,8 @@ namespace PublicCarRental.Migrations
                     b.Property<DateTime?>("PaidAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.HasKey("InvoiceId");
 
@@ -162,18 +159,11 @@ namespace PublicCarRental.Migrations
                     b.Property<int?>("StationId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<decimal?>("TotalCost")
                         .HasColumnType("numeric");
-
-                    b.Property<string>("VehicleConditionOnPickup")
-                        .HasColumnType("text");
-
-                    b.Property<string>("VehicleConditionOnReturn")
-                        .HasColumnType("text");
 
                     b.Property<int?>("VehicleId")
                         .HasColumnType("integer");
@@ -181,6 +171,8 @@ namespace PublicCarRental.Migrations
                     b.HasKey("ContractId");
 
                     b.HasIndex("EVRenterId");
+
+                    b.HasIndex("StaffId");
 
                     b.HasIndex("StationId");
 
@@ -264,9 +256,8 @@ namespace PublicCarRental.Migrations
                     b.Property<int?>("StationId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.HasKey("VehicleId");
 
@@ -371,6 +362,10 @@ namespace PublicCarRental.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("PublicCarRental.Models.Staff", "Staff")
+                        .WithMany()
+                        .HasForeignKey("StaffId");
+
                     b.HasOne("PublicCarRental.Models.Station", "Station")
                         .WithMany("RentalContracts")
                         .HasForeignKey("StationId");
@@ -380,6 +375,8 @@ namespace PublicCarRental.Migrations
                         .HasForeignKey("VehicleId");
 
                     b.Navigation("EVRenter");
+
+                    b.Navigation("Staff");
 
                     b.Navigation("Station");
 

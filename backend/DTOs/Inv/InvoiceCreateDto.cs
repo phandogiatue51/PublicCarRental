@@ -1,8 +1,7 @@
-﻿namespace PublicCarRental.DTOs
+﻿namespace PublicCarRental.DTOs.Inv
 {
     public class InvoiceCreateDto
     {
         public int ContractId { get; set; }
-        public decimal AmountDue { get; set; }
     }
 }

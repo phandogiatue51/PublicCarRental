@@ -2,7 +2,7 @@
 using PublicCarRental.Repository;
 using System.ComponentModel.DataAnnotations;
 
-namespace PublicCarRental.DTOs
+namespace PublicCarRental.DTOs.Acc
 {
     public class AccountDto
     {

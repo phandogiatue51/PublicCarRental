@@ -48,6 +48,8 @@ namespace PublicCarRental.Service.Veh
             };
         }
 
+        public Vehicle GetFirstAvailableVehicleByModel(int modelId) => _repo.GetFirstAvailableVehicleByModel(modelId);
+
         public Vehicle GetEntityById(int id)
         {
             return _repo.GetById(id);

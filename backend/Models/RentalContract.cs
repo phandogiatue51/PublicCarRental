@@ -16,8 +16,10 @@ namespace PublicCarRental.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ContractId { get; set; }
         public int EVRenterId { get; set; }
-        public int? StaffId { get; set; }
         public EVRenter EVRenter { get; set; }
+
+        public int? StaffId { get; set; }
+        public Staff Staff { get; set; }
 
         public int? VehicleId { get; set; }
         public Vehicle Vehicle { get; set; }
@@ -29,9 +31,8 @@ namespace PublicCarRental.Models
         public DateTime? EndTime { get; set; }
         public decimal? TotalCost { get; set; }
         public RentalStatus Status { get; set; } = RentalStatus.ToBeConfirmed;
-        public Invoice Invoice { get; set; }
 
-        public string? VehicleConditionOnPickup { get; set; }
-        public string? VehicleConditionOnReturn { get; set; }
+        [InverseProperty("Contract")]
+        public Invoice Invoice { get; set; }
     }
 }

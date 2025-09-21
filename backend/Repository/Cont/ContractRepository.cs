@@ -23,6 +23,9 @@ namespace PublicCarRental.Repository.Cont
         {
             return _context.RentalContracts
                 .Include(c => c.EVRenter)
+                            .ThenInclude(r => r.Account)
+                .Include(c => c.Staff)
+                            .ThenInclude(r => r.Account)
                 .Include(c => c.Vehicle)
                 .Include(c => c.Station)
                 .Include(c => c.Invoice)

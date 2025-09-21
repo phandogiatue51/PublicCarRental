@@ -1,4 +1,4 @@
-﻿using PublicCarRental.DTOs;
+﻿using PublicCarRental.DTOs.Acc;
 using PublicCarRental.Models;
 
 namespace PublicCarRental.Service.Renter

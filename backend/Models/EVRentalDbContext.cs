@@ -35,11 +35,11 @@ namespace PublicCarRental.Models
 
             modelBuilder.Entity<Account>()
                 .Property(a => a.Role)
-                .HasConversion<string>();
+                .HasConversion<int>();
 
             modelBuilder.Entity<Account>()
                 .Property(a => a.Status)
-                .HasConversion<string>();
+                .HasConversion<int>();
 
             modelBuilder.Entity<EVRenter>()
                 .HasIndex(r => r.LicenseNumber)
@@ -64,7 +64,7 @@ namespace PublicCarRental.Models
 
             modelBuilder.Entity<Vehicle>()
                   .Property(v => v.Status)
-                  .HasConversion<string>();
+                  .HasConversion<int>();
 
             modelBuilder.Entity<Vehicle>()
                 .HasIndex(s => s.LicensePlate)
@@ -92,7 +92,7 @@ namespace PublicCarRental.Models
 
             modelBuilder.Entity<RentalContract>()
                 .Property(r => r.Status)
-                .HasConversion<string>()
+                .HasConversion<int>()
                 ;
             modelBuilder.Entity<RentalContract>()
                 .HasOne(rc => rc.Vehicle)
@@ -112,7 +112,7 @@ namespace PublicCarRental.Models
 
             modelBuilder.Entity<Invoice>()
                 .Property(i => i.Status)
-                .HasConversion<string>();
+                .HasConversion<int>();
         }
     }
 }

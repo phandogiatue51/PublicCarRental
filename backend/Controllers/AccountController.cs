@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using PublicCarRental.DTOs;
+using PublicCarRental.DTOs.Acc;
 using PublicCarRental.Helpers;
 using PublicCarRental.Models;
 using PublicCarRental.Service.Acc;
