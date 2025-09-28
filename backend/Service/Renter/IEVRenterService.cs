@@ -12,5 +12,6 @@ namespace PublicCarRental.Service.Renter
         public void CreateRenter(int accountId, AccountDto dto);
         public bool UpdateRenter(int id, AccountDto renter);
         public bool DeleteRenter(int id);
+        public bool ChangeStatus(int renterId);
     }
 }

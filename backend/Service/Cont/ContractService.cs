@@ -78,7 +78,7 @@ namespace PublicCarRental.Service.Cont
 
         public int CreateContract(CreateContractDto dto)
         {
-            var vehicle = _vehicleRepo.GetFirstAvailableVehicleByModel(dto.ModelId);
+            var vehicle = _vehicleRepo.GetFirstAvailableVehicleByModel(dto.ModelId, dto.StationId, dto.StartTime, dto.EndTime);
             if (vehicle == null)
                 throw new InvalidOperationException("Vehicle not available");
 
@@ -87,17 +87,14 @@ namespace PublicCarRental.Service.Cont
                 EVRenterId = dto.EVRenterId,
                 VehicleId = vehicle.VehicleId,
                 StationId = dto.StationId,
-                StartTime = dto.StartTime ?? DateTime.UtcNow,
+                StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
                 Status = RentalStatus.ToBeConfirmed,
             };
             Console.WriteLine($"Contract created with VehicleId: {contract.VehicleId}");
 
-            var duration = (contract.EndTime.Value - contract.StartTime.Value).TotalHours;
+            var duration = (contract.EndTime - contract.StartTime).TotalHours;
             contract.TotalCost = (decimal)duration * vehicle.PricePerHour;
-
-            vehicle.Status = VehicleStatus.ToBeRented;
-            _vehicleRepo.Update(vehicle);
 
             _contractRepo.Create(contract);
 
@@ -109,25 +106,18 @@ namespace PublicCarRental.Service.Cont
             var existing = _contractRepo.GetById(id);
             if (existing == null) return false;
 
-            var existingvehicle = existing.Vehicle;
-            existingvehicle.Status = VehicleStatus.Available;
-            _vehicleRepo.Update(existingvehicle);
-
-            var vehicle = _vehicleRepo.GetFirstAvailableVehicleByModel(updatedContract.ModelId);
+            var vehicle = _vehicleRepo.GetFirstAvailableVehicleByModel(updatedContract.ModelId, updatedContract.StationId, updatedContract.StartTime, updatedContract.EndTime);
             if (vehicle == null)
                 throw new InvalidOperationException("Vehicle not available");
 
             existing.VehicleId = vehicle.VehicleId;
             existing.StaffId = updatedContract.StaffId;
             existing.StationId = updatedContract.StationId;
-            existing.StartTime = updatedContract.StartTime ?? existing.StartTime;
-            existing.EndTime = updatedContract.EndTime ?? existing.EndTime;
+            existing.StartTime = updatedContract.StartTime;
+            existing.EndTime = updatedContract.EndTime;
 
-            var duration = (existing.EndTime.Value - existing.StartTime.Value).TotalHours;
+            var duration = (existing.EndTime - existing.StartTime).TotalHours;
             existing.TotalCost = (decimal)duration * existing.Vehicle.PricePerHour;
-
-            vehicle.Status = VehicleStatus.ToBeRented;
-            _vehicleRepo.Update(vehicle);
 
             _contractRepo.Update(existing);
             return true;
@@ -144,14 +134,9 @@ namespace PublicCarRental.Service.Cont
             if (!_contInvHelperService.IsInvoicePaid(dto.ContractId))
                 throw new InvalidOperationException("Invoice must be paid before confirming contract");
 
-            var staff = _staffRepo.GetById(dto.StaffId);
-            if (staff == null) throw new InvalidOperationException("Invalid staff ID");
-
             contract.StartTime = DateTime.UtcNow;
-            contract.StaffId = dto.StaffId;
-            contract.Status = RentalStatus.Active;
+            contract.Status = RentalStatus.Confirmed;
 
-            contract.Vehicle.Status = VehicleStatus.Renting;
             _vehicleRepo.Update(contract.Vehicle);
             _contractRepo.Update(contract);
 
@@ -169,7 +154,7 @@ namespace PublicCarRental.Service.Cont
             contract.EndTime = DateTime.UtcNow;
             contract.Status = RentalStatus.Completed;
 
-            var duration = (contract.EndTime.Value - contract.StartTime.Value).TotalHours;
+            var duration = (contract.EndTime - contract.StartTime).TotalHours;
             contract.TotalCost = (decimal)duration * vehicle.PricePerHour;
 
             vehicle.Status = VehicleStatus.ToBeCheckup;
@@ -179,5 +164,26 @@ namespace PublicCarRental.Service.Cont
 
             return true;
         }
+        public bool StartRental(int contractId, int staffId)
+        {
+            var contract = _contractRepo.GetById(contractId);
+            if (contract == null || contract.Status != RentalStatus.ToBeConfirmed)
+                throw new InvalidOperationException("Contract is not ready to start");
+
+            var vehicle = contract.Vehicle;
+            if (vehicle == null)
+                throw new InvalidOperationException("Vehicle not found");
+
+            contract.Status = RentalStatus.Active;
+            contract.StartTime = DateTime.UtcNow;
+            contract.StaffId = staffId;
+
+            vehicle.Status = VehicleStatus.Renting;
+            _vehicleRepo.Update(vehicle);
+            _contractRepo.Update(contract);
+
+            return true;
+        }
+
     }
 }

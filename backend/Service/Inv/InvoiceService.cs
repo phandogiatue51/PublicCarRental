@@ -58,11 +58,8 @@ namespace PublicCarRental.Service.Inv
             {
                 ContractId = contract.ContractId,
                 IssuedAt = DateTime.UtcNow,
-                AmountDue = (decimal)contract.TotalCost,
-                Status = InvoiceStatus.Unpaid
-
+                AmountDue = (decimal)contract.TotalCost
             };
-
             _repo.Create(invoice);
         }
 
@@ -75,7 +72,6 @@ namespace PublicCarRental.Service.Inv
             existing.AmountPaid = updatedInvoice.AmountPaid;
             existing.PaidAt = updatedInvoice.PaidAt;
             existing.Status = updatedInvoice.Status;
-            existing.Notes = updatedInvoice.Notes;
 
             _repo.Update(existing);
             return true;

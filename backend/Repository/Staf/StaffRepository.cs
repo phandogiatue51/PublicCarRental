@@ -44,5 +44,13 @@ namespace PublicCarRental.Repository.Staf
 
         public IEnumerable<Staff> GetByStationId(int stationId) => _context.Staffs.Where(s => s.StationId == stationId).ToList();
 
+        public void ChangeStatus(int staffId)
+        {
+            var staff = _context.Staffs.Include(s => s.Account).FirstOrDefault(s => s.StaffId == staffId);
+            if (staff == null) throw new Exception("Staff not found");
+            if (staff.Account == null) throw new Exception("Account not found");
+            staff.Account.Status = staff.Account.Status == AccountStatus.Active ? AccountStatus.Inactive : AccountStatus.Active;
+            _context.SaveChanges();
+        }
     }
 }

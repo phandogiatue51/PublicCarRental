@@ -8,5 +8,7 @@
         public string BrandName { get; set; }
         public int TypeId { get; set; }
         public string TypeName { get; set; }
+
+        public string? ImageUrl { get; set; }
     }
 }

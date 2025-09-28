@@ -9,5 +9,6 @@ namespace PublicCarRental.Repository.Renter
         void Create(EVRenter renter);
         void Update(EVRenter renter);
         void Delete(int id);
+        public void ChangeStatus(int renterId);
     }
 }

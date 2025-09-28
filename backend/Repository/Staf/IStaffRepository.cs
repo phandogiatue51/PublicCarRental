@@ -8,5 +8,6 @@ namespace PublicCarRental.Repository.Staf
         public IEnumerable<Staff> GetAll();
         void Create(Staff staff);
         void Update(Staff staff);
+        public void ChangeStatus(int staffId);
     }
 }

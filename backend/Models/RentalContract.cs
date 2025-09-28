@@ -8,7 +8,8 @@ namespace PublicCarRental.Models
         ToBeConfirmed,
         Active,
         Completed,
-        Cancelled
+        Cancelled,
+        Confirmed
     }
     public class RentalContract
     {
@@ -27,12 +28,17 @@ namespace PublicCarRental.Models
         public int? StationId { get; set; }
         public Station Station { get; set; }
 
-        public DateTime? StartTime { get; set; }
-        public DateTime? EndTime { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
         public decimal? TotalCost { get; set; }
         public RentalStatus Status { get; set; } = RentalStatus.ToBeConfirmed;
 
         [InverseProperty("Contract")]
         public Invoice Invoice { get; set; }
+
+        [NotMapped]
+        public DateTime ChargingEndTime => EndTime.AddHours(6);
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     }
 }

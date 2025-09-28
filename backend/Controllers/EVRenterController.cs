@@ -48,4 +48,12 @@ public class EVRenterController : ControllerBase
 
         return Ok(new { message = "Renter deleted", renterId = id });
     }
+
+    [HttpPost("change-status/{id}")]
+    public IActionResult ChangeRenterStatus(int id)
+    {
+        var success = _eVRenterService.ChangeStatus(id);
+        if (!success) return NotFound("Renter not found");
+        return Ok($"Renter status changed");
+    }
 }

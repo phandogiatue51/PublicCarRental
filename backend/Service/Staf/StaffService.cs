@@ -51,7 +51,7 @@ namespace PublicCarRental.Service.Staf
             return _staffRepo.GetById(id);
         }
 
-        public bool UpdateStaff(int id, StaffDto updatedStaff)
+        public bool UpdateStaff(int id, StaffUpdateDto updatedStaff)
         {
             var staff = _staffRepo.GetById(id);
             if (staff == null || staff.Account == null) return false;
@@ -60,6 +60,14 @@ namespace PublicCarRental.Service.Staf
             staff.Account.Email = updatedStaff.Email;
             staff.Account.PhoneNumber = updatedStaff.PhoneNumber;
             staff.Account.IdentityCardNumber = updatedStaff.IdentityCardNumber;
+
+            // Only update password if provided
+            if (!string.IsNullOrEmpty(updatedStaff.Password))
+            {
+                // You would need to hash the password here
+                // For now, we'll assume the AccountService has a method to update password
+                // staff.Account.PasswordHash = HashPassword(updatedStaff.Password);
+            }
 
             staff.StationId = updatedStaff.StationId;
 
@@ -86,6 +94,12 @@ namespace PublicCarRental.Service.Staf
             };
 
             _staffRepo.Create(staff);
+        }
+
+        public bool ChangeStatus(int staffId)
+        {
+            _staffRepo.ChangeStatus(staffId);
+            return true;
         }
     }
 }

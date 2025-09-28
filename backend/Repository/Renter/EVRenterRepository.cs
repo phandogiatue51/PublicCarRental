@@ -48,5 +48,14 @@ namespace PublicCarRental.Repository.Renter
                 _context.SaveChanges();
             }
         }
+
+        public void ChangeStatus(int renterId)
+        {
+            var renter = _context.EVRenters.Include(r => r.Account).FirstOrDefault(r => r.RenterId == renterId);
+            if (renter == null) throw new Exception("Renter not found");
+            if (renter.Account == null) throw new Exception("Account not found");
+            renter.Account.Status = renter.Account.Status == AccountStatus.Active ? AccountStatus.Suspended : AccountStatus.Suspended;
+            _context.SaveChanges();
+        }
     }
 }

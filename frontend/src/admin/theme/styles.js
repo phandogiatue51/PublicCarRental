@@ -85,12 +85,21 @@ export const globalStyles = {
         bg: mode("secondaryGray.300", "navy.900")(props),
         fontFamily: "DM Sans",
         letterSpacing: "-0.5px",
+        fontSize: "16px",
       },
       input: {
         color: "gray.700",
+        fontSize: "16px",
+      },
+      "h1, h2, h3, h4, h5, h6": {
+        fontSize: "1.2em",
+      },
+      "p, div, span": {
+        fontSize: "16px",
       },
       html: {
         fontFamily: "DM Sans",
+        fontSize: "16px",
       },
     }),
   },

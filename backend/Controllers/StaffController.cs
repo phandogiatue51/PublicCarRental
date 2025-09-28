@@ -46,7 +46,7 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpPut("update-staff/{id}")]
-        public IActionResult UpdateStaff(int id, [FromBody] StaffDto updatedStaff)
+        public IActionResult UpdateStaff(int id, [FromBody] StaffUpdateDto updatedStaff)
         {
             var success = _staffService.UpdateStaff(id, updatedStaff);
             if (!success) return NotFound("Staff not found");
@@ -59,6 +59,14 @@ namespace PublicCarRental.Controllers
             var success = _staffService.DeleteStaff(id);
             if (!success) return NotFound("Staff not found");
             return Ok("Staff marked as OnLeave");
+        }
+
+        [HttpPost("change-status/{id}")]
+        public IActionResult ChangeStaffStatus(int id)
+        {
+            var success = _staffService.ChangeStatus(id);
+            if (!success) return NotFound("Staff not found");
+            return Ok($"Staff status changed");
         }
     }
 }

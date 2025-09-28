@@ -11,19 +11,22 @@ import Main from "./admin/AdminApp";
 
 function App() {
   return (
-    <>
-      <Navbar />
-      <Routes>
-        <Route index path="/" element={<Home />} />
-        <Route path="about" element={<About />} />
-        <Route path="models" element={<Models />} />
-        <Route path="testimonials" element={<TestimonialsPage />} />
-        <Route path="team" element={<Team />} />
-        <Route path="contact" element={<Contact />} />
-        
-        <Route path="admin/*" element={<Main />} />
-      </Routes>
-    </>
+    <Routes>
+      <Route path="admin/*" element={<Main />} />
+      <Route path="*" element={
+        <>
+          <Navbar />
+          <Routes>
+            <Route index path="/" element={<Home />} />
+            <Route path="about" element={<About />} />
+            <Route path="models" element={<Models />} />
+            <Route path="testimonials" element={<TestimonialsPage />} />
+            <Route path="team" element={<Team />} />
+            <Route path="contact" element={<Contact />} />
+          </Routes>
+        </>
+      } />
+    </Routes>
   );
 }
 

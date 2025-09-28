@@ -31,12 +31,33 @@ namespace PublicCarRental.Repository.Vehi
                 .FirstOrDefault(v => v.VehicleId == id);
         }
 
-        public Vehicle GetFirstAvailableVehicleByModel(int modelId)
+        public Vehicle GetFirstAvailableVehicleByModel(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd)
         {
-            return _context.Vehicles
-                .Where(v => v.ModelId == modelId && v.Status == VehicleStatus.Available)
-                .OrderBy(v => v.VehicleId)
-                .FirstOrDefault();
+            var vehicles = _context.Vehicles
+                .Include(v => v.RentalContracts)
+                .Where(v => v.ModelId == modelId && v.StationId == stationId)
+                .ToList();
+
+            foreach (var vehicle in vehicles)
+            {
+                bool isAvailable = true;
+
+                foreach (var contract in vehicle.RentalContracts
+                         .Where(c => c.Status == RentalStatus.Active || c.Status == RentalStatus.ToBeConfirmed))
+                {
+                    bool overlaps = requestedStart < contract.ChargingEndTime && requestedEnd > contract.StartTime;
+                    if (overlaps)
+                    {
+                        isAvailable = false;
+                        break;
+                    }
+                }
+
+                if (isAvailable)
+                    return vehicle;
+            }
+
+            return null;
         }
 
         public void Create(Vehicle vehicle)

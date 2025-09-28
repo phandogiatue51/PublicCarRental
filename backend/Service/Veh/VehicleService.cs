@@ -48,8 +48,8 @@ namespace PublicCarRental.Service.Veh
             };
         }
 
-        public Vehicle GetFirstAvailableVehicleByModel(int modelId) => _repo.GetFirstAvailableVehicleByModel(modelId);
-
+        public Vehicle GetFirstAvailableVehicleByModel(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd)
+        => _repo.GetFirstAvailableVehicleByModel(modelId, stationId, requestedStart, requestedEnd);
         public Vehicle GetEntityById(int id)
         {
             return _repo.GetById(id);
@@ -77,7 +77,7 @@ namespace PublicCarRental.Service.Veh
 
             existing.LicensePlate = updatedVehicle.LicensePlate;
             existing.BatteryLevel = (int)updatedVehicle.BatteryLevel;
-            existing.Status = (VehicleStatus)updatedVehicle.Status;
+            existing.Status = updatedVehicle.Status ?? existing.Status;
             existing.PricePerHour = (decimal)updatedVehicle.PricePerHour;
             existing.StationId = updatedVehicle.StationId;
             existing.ModelId = (int)updatedVehicle.ModelId;

@@ -82,5 +82,11 @@ namespace PublicCarRental.Service.Renter
 
             _renterRepo.Create(renter);
         }
+
+        public bool ChangeStatus(int renterId)
+        {
+            _renterRepo.ChangeStatus(renterId);
+            return true;
+        }
     }
 }
