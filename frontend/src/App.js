@@ -8,6 +8,8 @@ import TestimonialsPage from "./Pages/TestimonialsPage";
 import Team from "./Pages/Team";
 import Contact from "./Pages/Contact";
 import Main from "./admin/AdminApp";
+import Login from "./Pages/Login";
+import SignUp from "./Pages/SignUp";
 
 function App() {
   return (
@@ -23,6 +25,8 @@ function App() {
             <Route path="testimonials" element={<TestimonialsPage />} />
             <Route path="team" element={<Team />} />
             <Route path="contact" element={<Contact />} />
+            <Route path="login" element={<Login />} />
+            <Route path="sign-up" element={<SignUp />} />
           </Routes>
         </>
       } />
