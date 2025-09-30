@@ -46,45 +46,45 @@ INSERT INTO "VehicleBrands" ("Name") VALUES
 ('Hyundai');
 
 -- VINFAST Cars
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId") VALUES
-('VF e34', 1, 2),
-('VF 8', 1, 2),
-('VF 9', 1, 2);
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
+('VF e34', 1, 2, 'vf-e34.png'),
+('VF 8', 1, 2, 'vf-8.png'),
+('VF 9', 1, 2, 'vf-9.jpg');
 
 -- THACO Cars
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId") VALUES
-('Kia EV9', 2, 2);
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
+('Kia EV9', 2, 2, 'kia-ev9.jpg');
 
 -- HYUNDAI Cars
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId") VALUES
-('Ioniq 5', 7, 2),
-('Kona Electric', 7, 2);
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
+('Ioniq 5', 7, 2, 'ioniq.png'),
+('Kona Electric', 7, 2, 'kona-electric.jpg');
 
 -- DAT BIKE Motorcycles
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId") VALUES
-('Weaver++', 3, 1),
-('Gemini', 3, 1);
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
+('Weaver++', 3, 1, 'weaver++.jpg'),
+('Gemini', 3, 1, 'gemini.png');
 
 -- PEGA Motorcycles
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId") VALUES
-('S Series (S2000)', 4, 1);
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
+('S Series (S2000)', 4, 1, 's-series.jpg');
 
 -- YADEA Motorcycles
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId") VALUES
-('Elegant', 5, 1),
-('G5', 5, 1);
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
+('Elegant', 5, 1, 'elegant.png'),
+('G5', 5, 1, 'g5.jpg');
 
 -- VINFAST Motorcycles
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId") VALUES
-('Feliz', 1, 1);
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
+('Feliz', 1, 1, 'feliz.png');
 
 -- TESLA Cars
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId") VALUES
-('Model S', 6, 2),
-('Model 3', 6, 2),
-('Model X', 6, 2),
-('Model Y', 6, 2),
-('Cybertruck', 6, 2);
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
+('Model S', 6, 2, 'model-s.jpg'),
+('Model 3', 6, 2, 'model-3.jpg'),
+('Model X', 6, 2, 'model-x.png'),
+('Model Y', 6, 2, 'model-y.jpg'),
+('Cybertruck', 6, 2, 'cybertruck.jpg');
 
 -- VINFAST Cars
 INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "PricePerHour", "StationId", "ModelId") VALUES

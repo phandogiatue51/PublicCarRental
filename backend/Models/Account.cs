@@ -27,6 +27,11 @@ namespace PublicCarRental.Models
         public string? IdentityCardNumber { get; set; }
         public AccountStatus Status { get; set; } = AccountStatus.Active;
         public DateTime RegisteredAt { get; set; }
-        public AccountRole Role { get; set; } 
+        public AccountRole Role { get; set; }
+        public string? EmailVerificationToken { get; set; }
+        public bool IsEmailVerified { get; set; } = false;
+
+        public string? PasswordResetToken { get; set; }
+        public DateTime? PasswordResetRequestedAt { get; set; }
     }
 }

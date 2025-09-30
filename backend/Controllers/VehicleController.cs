@@ -37,8 +37,12 @@ namespace PublicCarRental.Controllers
         [HttpPost("create-vehicle")]
         public IActionResult Create([FromBody] VehicleCreateDto dto)
         {
-            var vehicle = _service.CreateVehicle(dto);
-            return Ok(new { message = "Vehicle created", vehicleId = vehicle});
+            var result = _service.CreateVehicle(dto);
+
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
+
+            return Ok(new { message = result.Message, vehicleId = result.VehicleId });
         }
 
         [HttpPut("update-vehicle/{id}")]

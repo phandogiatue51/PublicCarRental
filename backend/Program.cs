@@ -31,6 +31,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Server.IISIntegration;
 using Microsoft.Extensions.FileProviders;
+using PublicCarRental.Repository.Token;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -110,6 +111,8 @@ builder.Services.AddScoped<IStationRepository, StationRepository>();
 builder.Services.AddScoped<IContInvHelperService, ContInvHelperService>();
 builder.Services.AddScoped<ITypeRepository, TypeRepository>();
 builder.Services.AddScoped<ITypeService, TypeService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 
 var app = builder.Build();
 

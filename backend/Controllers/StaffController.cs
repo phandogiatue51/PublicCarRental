@@ -38,11 +38,14 @@ namespace PublicCarRental.Controllers
         [HttpPost("register-staff")]
         public IActionResult RegisterStaff([FromBody] StaffDto dto)
         {
-            var accountId = _accountService.CreateAccount(dto.FullName, dto.Email, dto.Password,dto.PhoneNumber, dto.IdentityCardNumber, AccountRole.Staff);
+            var result = _accountService.CreateAccount(dto.FullName, dto.Email, dto.Password, dto.PhoneNumber, dto.IdentityCardNumber, AccountRole.Staff);
 
-            _staffService.CreateStaff(accountId, dto);
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
 
-            return Ok(new { message = "Staff registered successfully", accountId });
+            _staffService.CreateStaff(result.AccountId.Value, dto);
+
+            return Ok(new { message = "Staff registered successfully", accountId = result.AccountId });
         }
 
         [HttpPut("update-staff/{id}")]

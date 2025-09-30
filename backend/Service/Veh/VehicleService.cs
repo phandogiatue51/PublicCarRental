@@ -55,7 +55,7 @@ namespace PublicCarRental.Service.Veh
             return _repo.GetById(id);
         }
 
-        public int CreateVehicle(VehicleCreateDto dto)
+        public (bool Success, string Message, int? VehicleId) CreateVehicle(VehicleCreateDto dto)
         {
             var vehicle = new Vehicle
             {
@@ -66,8 +66,16 @@ namespace PublicCarRental.Service.Veh
                 StationId = dto.StationId,
                 ModelId = (int)dto.ModelId
             };
-            _repo.Create(vehicle);
-            return vehicle.VehicleId;
+
+            try
+            {
+                _repo.Create(vehicle);
+                return (true, "Vehicle created successfully.", vehicle.VehicleId);
+            }
+            catch (Exception ex)
+            {
+                return (false, ex.Message, null);
+            }
         }
 
         public bool UpdateVehicle(int id, VehicleUpdateDto updatedVehicle)
