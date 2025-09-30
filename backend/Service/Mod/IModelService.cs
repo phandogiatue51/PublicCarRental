@@ -13,5 +13,7 @@ namespace PublicCarRental.Service
         public bool UpdateModel(int id, ModelCreateDto updatedModel, IFormFile imageFile = null);
         bool DeleteModel(int id);
         IEnumerable<string> GetAvailableImages();
+        public IEnumerable<ModelDto> GetModelFromBrandAndType(int? brandId, int? typeId);
+
     }
 }

@@ -22,7 +22,6 @@ namespace PublicCarRental.Service.Veh
                     LicensePlate = v.LicensePlate,
                     BatteryLevel = v.BatteryLevel,
                     Status = v.Status,
-                    PricePerHour = v.PricePerHour,
                     StationId = v.StationId,
                     StationName = v.Station.Name,
                     ModelId = v.ModelId,
@@ -40,7 +39,6 @@ namespace PublicCarRental.Service.Veh
                 LicensePlate = v.LicensePlate,
                 BatteryLevel = v.BatteryLevel,
                 Status = v.Status,
-                PricePerHour = v.PricePerHour,
                 StationId = v.StationId,
                 StationName = v.Station.Name,
                 ModelId = v.ModelId,
@@ -62,7 +60,6 @@ namespace PublicCarRental.Service.Veh
                 LicensePlate = dto.LicensePlate,
                 BatteryLevel = (int)dto.BatteryLevel,
                 Status = VehicleStatus.Available,
-                PricePerHour = (decimal)dto.PricePerHour,
                 StationId = dto.StationId,
                 ModelId = (int)dto.ModelId
             };
@@ -86,7 +83,6 @@ namespace PublicCarRental.Service.Veh
             existing.LicensePlate = updatedVehicle.LicensePlate;
             existing.BatteryLevel = (int)updatedVehicle.BatteryLevel;
             existing.Status = updatedVehicle.Status ?? existing.Status;
-            existing.PricePerHour = (decimal)updatedVehicle.PricePerHour;
             existing.StationId = updatedVehicle.StationId;
             existing.ModelId = (int)updatedVehicle.ModelId;
 

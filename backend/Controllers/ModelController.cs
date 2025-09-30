@@ -69,11 +69,19 @@ namespace PublicCarRental.Controllers
             return Ok(new { message = "Model deleted" });
         }
 
+        //do not delete this
         [HttpGet("available-images")]
         public IActionResult GetAvailableImages()
         {
             var images = _service.GetAvailableImages();
             return Ok(images);
+        }
+
+        [HttpGet("from-brand-and-type")]
+        public IActionResult GetModelFromBrandAndType([FromQuery] int? brandId, [FromQuery] int? typeId)
+        {
+            var models = _service.GetModelFromBrandAndType(brandId, typeId);
+            return Ok(models);
         }
     }
 }

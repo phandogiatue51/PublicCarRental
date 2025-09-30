@@ -11,7 +11,10 @@ namespace PublicCarRental.DTOs.Mod
         public int BrandId { get; set; }
         [Required]
         public int TypeId { get; set; }
-        
+
+        [Required]
+        public decimal PricePerHour { get; set; }
+
         public IFormFile? imageFile { get; set; }
     }
 }

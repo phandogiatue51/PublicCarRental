@@ -19,7 +19,7 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpGet("all")]
-        public async Task<IActionResult> GetAll()
+        public IActionResult GetAll()
         {
             var contracts = _contractService.GetAll();
             return Ok(contracts);

@@ -96,7 +96,7 @@ namespace PublicCarRental.Service.Cont
             Console.WriteLine($"Contract created with VehicleId: {contract.VehicleId}");
 
             var duration = (contract.EndTime - contract.StartTime).TotalHours;
-            contract.TotalCost = (decimal)duration * vehicle.PricePerHour;
+            contract.TotalCost = (decimal)duration * vehicle.Model.PricePerHour;
 
             _contractRepo.Create(contract);
 
@@ -121,7 +121,7 @@ namespace PublicCarRental.Service.Cont
             existing.EndTime = updatedContract.EndTime;
 
             var duration = (existing.EndTime - existing.StartTime).TotalHours;
-            existing.TotalCost = (decimal)duration * existing.Vehicle.PricePerHour;
+            existing.TotalCost = (decimal)duration * existing.Vehicle.Model.PricePerHour;
 
             _contractRepo.Update(existing);
             return true;
@@ -139,7 +139,7 @@ namespace PublicCarRental.Service.Cont
             contract.Status = RentalStatus.Completed;
 
             var duration = (contract.EndTime - contract.StartTime).TotalHours;
-            contract.TotalCost = (decimal)duration * vehicle.PricePerHour;
+            contract.TotalCost = (decimal)duration * vehicle.Model.PricePerHour;
 
             vehicle.Status = VehicleStatus.ToBeCheckup;
 

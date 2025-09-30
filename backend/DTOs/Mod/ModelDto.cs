@@ -1,4 +1,6 @@
-﻿namespace PublicCarRental.DTOs.Mod
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace PublicCarRental.DTOs.Mod
 {
     public class ModelDto
     {
@@ -8,6 +10,8 @@
         public string BrandName { get; set; }
         public int TypeId { get; set; }
         public string TypeName { get; set; }
+
+        public decimal PricePerHour { get; set; }
 
         public string? ImageUrl { get; set; }
     }

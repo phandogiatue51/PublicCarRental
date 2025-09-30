@@ -14,7 +14,7 @@ namespace PublicCarRental.Models
         public int TypeId { get; set; }
         public VehicleType Type { get; set; }
         public ICollection<Vehicle> Vehicles { get; set; }
-
+        public decimal PricePerHour { get; set; }
         public string? ImageUrl { get; set; }
         public ICollection<Favorite> FavoritedBy { get; set; }
     }

@@ -10,9 +10,6 @@ namespace PublicCarRental.DTOs.Veh
         [Range(0, 100)]
         public int BatteryLevel { get; set; }
 
-        [Required]
-        public decimal PricePerHour { get; set; }
-
         public int? StationId { get; set; }
 
         [Required]

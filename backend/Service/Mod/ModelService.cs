@@ -2,6 +2,7 @@
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Model;
 using Microsoft.AspNetCore.Http;
+using System.Linq;
 
 namespace PublicCarRental.Service.Mod
 {
@@ -25,6 +26,7 @@ namespace PublicCarRental.Service.Mod
                     BrandName = m.Brand != null ? m.Brand.Name : null,
                     TypeId = m.TypeId,
                     TypeName = m.Type != null ? m.Type.Name : null,
+                    PricePerHour = m.PricePerHour,
                     ImageUrl = m.ImageUrl
                 })
                 .ToList();
@@ -42,6 +44,7 @@ namespace PublicCarRental.Service.Mod
                 BrandName = m.Brand?.Name,
                 TypeId = m.TypeId,
                 TypeName = m.Type?.Name,
+                PricePerHour = m.PricePerHour,
                 ImageUrl = m.ImageUrl
             };
         }
@@ -56,7 +59,8 @@ namespace PublicCarRental.Service.Mod
             {
                 Name = dto.Name,
                 BrandId = dto.BrandId,
-                TypeId = dto.TypeId
+                TypeId = dto.TypeId,
+                PricePerHour = dto.PricePerHour,
             };
 
             if (imageFile != null && imageFile.Length > 0)
@@ -90,6 +94,7 @@ namespace PublicCarRental.Service.Mod
             existing.Name = updatedModel.Name;
             existing.BrandId = updatedModel.BrandId;
             existing.TypeId = updatedModel.TypeId;
+            existing.PricePerHour = updatedModel.PricePerHour;
 
             if (imageFile != null && imageFile.Length > 0)
             {
@@ -144,6 +149,24 @@ namespace PublicCarRental.Service.Mod
         {
             var extension = Path.GetExtension(filePath).ToLowerInvariant();
             return new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" }.Contains(extension);
+        }
+
+        public IEnumerable<ModelDto> GetModelFromBrandAndType(int? brandId, int? typeId)
+        {
+            return _repo.GetAll()
+                .Where(m => !brandId.HasValue || m.BrandId == brandId.Value)
+                .Where(m => !typeId.HasValue || m.TypeId == typeId.Value)
+                .Select(m => new ModelDto
+                {
+                    ModelId = m.ModelId,
+                    Name = m.Name,
+                    BrandId = m.BrandId,
+                    BrandName = m.Brand != null ? m.Brand.Name : null,
+                    TypeId = m.TypeId,
+                    TypeName = m.Type != null ? m.Type.Name : null,
+                    PricePerHour = m.PricePerHour,
+                    ImageUrl = m.ImageUrl
+                }).ToList();
         }
     }
 }

@@ -46,100 +46,100 @@ INSERT INTO "VehicleBrands" ("Name") VALUES
 ('Hyundai');
 
 -- VINFAST Cars
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
-('VF e34', 1, 2, 'vf-e34.png'),
-('VF 8', 1, 2, 'vf-8.png'),
-('VF 9', 1, 2, 'vf-9.jpg');
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl", "PricePerHour") VALUES
+('VF e34', 1, 2, '/image/models/vf-e34.png', '10000'),
+('VF 8', 1, 2, '/image/models/vf-8.png', '10000'),
+('VF 9', 1, 2, '/image/models/vf-9.jpg', '10000');
 
 -- THACO Cars
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
-('Kia EV9', 2, 2, 'kia-ev9.jpg');
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl", "PricePerHour") VALUES
+('Kia EV9', 2, 2, '/image/models/kia-ev9.jpg', '10000');
 
 -- HYUNDAI Cars
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
-('Ioniq 5', 7, 2, 'ioniq.png'),
-('Kona Electric', 7, 2, 'kona-electric.jpg');
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl", "PricePerHour") VALUES
+('Ioniq 5', 7, 2, '/image/models/ioniq.png', '10000'),
+('Kona Electric', 7, 2, '/image/models/kona-electric.jpg', '10000');
 
 -- DAT BIKE Motorcycles
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
-('Weaver++', 3, 1, 'weaver++.jpg'),
-('Gemini', 3, 1, 'gemini.png');
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl", "PricePerHour") VALUES
+('Weaver++', 3, 1, '/image/models/weaver++.jpg', '10000'),
+('Gemini', 3, 1, '/image/models/gemini.png', '10000');
 
 -- PEGA Motorcycles
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
-('S Series (S2000)', 4, 1, 's-series.jpg');
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl", "PricePerHour") VALUES
+('S Series (S2000)', 4, 1, '/image/models/s-series.jpg', '10000');
 
 -- YADEA Motorcycles
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
-('Elegant', 5, 1, 'elegant.png'),
-('G5', 5, 1, 'g5.jpg');
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl", "PricePerHour") VALUES
+('Elegant', 5, 1, '/image/models/elegant.png', '20000'),
+('G5', 5, 1, '/image/models/g5.jpg', '20000');
 
 -- VINFAST Motorcycles
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
-('Feliz', 1, 1, 'feliz.png');
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl", "PricePerHour") VALUES
+('Feliz', 1, 1, '/image/models/feliz.png', '20000');
 
 -- TESLA Cars
-INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl") VALUES
-('Model S', 6, 2, 'model-s.jpg'),
-('Model 3', 6, 2, 'model-3.jpg'),
-('Model X', 6, 2, 'model-x.png'),
-('Model Y', 6, 2, 'model-y.jpg'),
-('Cybertruck', 6, 2, 'cybertruck.jpg');
+INSERT INTO "VehicleModels" ("Name", "BrandId", "TypeId", "ImageUrl", "PricePerHour") VALUES
+('Model S', 6, 2, '/image/models/model-s.jpg', '20000'),
+('Model 3', 6, 2, '/image/models/model-3.jpg', '20000'),
+('Model X', 6, 2, '/image/models/model-x.png', '20000'),
+('Model Y', 6, 2, '/image/models/model-y.jpg', '20000'),
+('Cybertruck', 6, 2, '/image/models/cybertruck.jpg', '20000');
 
 -- VINFAST Cars
-INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "PricePerHour", "StationId", "ModelId") VALUES
-('59A-001.01', 85, 5, 120000, 1, 1),
-('59A-001.02', 90, 5, 120000, 2, 1),
-('59A-002.01', 80, 5, 150000, 1, 2),
-('59A-002.02', 88, 5, 150000, 2, 2),
-('59A-003.01', 95, 5, 180000, 1, 3),
-('59A-003.02', 92, 5, 180000, 2, 3);
+INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "StationId", "ModelId") VALUES
+('59A-001.01', 85, 5, 1, 1),
+('59A-001.02', 90, 5, 2, 1),
+('59A-002.01', 80, 5, 1, 2),
+('59A-002.02', 88, 5, 2, 2),
+('59A-003.01', 95, 5, 1, 3),
+('59A-003.02', 92, 5, 2, 3);
 
 -- THACO Car
-INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "PricePerHour", "StationId", "ModelId") VALUES
-('60A-004.01', 87, 5, 170000, 1, 4),
-('60A-004.02', 89, 5, 170000, 2, 4);
+INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "StationId", "ModelId") VALUES
+('60A-004.01', 87, 5, 1, 4),
+('60A-004.02', 89, 5, 2, 4);
 
 -- HYUNDAI Cars
-INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "PricePerHour", "StationId", "ModelId") VALUES
-('61A-005.01', 93, 5, 160000, 1, 5),
-('61A-005.02', 91, 5, 160000, 2, 5),
-('61A-006.01', 85, 5, 140000, 1, 6),
-('61A-006.02', 88, 5, 140000, 2, 6);
+INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "StationId", "ModelId") VALUES
+('61A-005.01', 93, 5, 1, 5),
+('61A-005.02', 91, 5, 2, 5),
+('61A-006.01', 85, 5, 1, 6),
+('61A-006.02', 88, 5, 2, 6);
 
 -- DAT BIKE Motorcycles
-INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "PricePerHour", "StationId", "ModelId") VALUES
-('62B1-007.01', 95, 5, 50000, 1, 7),
-('62B1-007.02', 97, 5, 50000, 2, 7),
-('62B1-008.01', 90, 5, 45000, 1, 8),
-('62B1-008.02', 92, 5, 45000, 2, 8);
+INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "StationId", "ModelId") VALUES
+('62B1-007.01', 95, 5, 1, 7),
+('62B1-007.02', 97, 5, 2, 7),
+('62B1-008.01', 90, 5, 1, 8),
+('62B1-008.02', 92, 5, 2, 8);
 
 -- PEGA Motorcycle
-INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "PricePerHour", "StationId", "ModelId") VALUES
-('63B1-009.01', 85, 5, 40000, 1, 9),
-('63B1-009.02', 87, 5, 40000, 2, 9);
+INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "StationId", "ModelId") VALUES
+('63B1-009.01', 85, 5, 1, 9),
+('63B1-009.02', 87, 5, 2, 9);
 
 -- YADEA Motorcycles
-INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "PricePerHour", "StationId", "ModelId") VALUES
-('64B1-010.01', 88, 5, 42000, 1, 10),
-('64B1-010.02', 90, 5, 42000, 2, 10),
-('64B1-011.01', 93, 5, 46000, 1, 11),
-('64B1-011.02', 95, 5, 46000, 2, 11);
+INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "StationId", "ModelId") VALUES
+('64B1-010.01', 88, 5, 1, 10),
+('64B1-010.02', 90, 5, 2, 10),
+('64B1-011.01', 93, 5, 1, 11),
+('64B1-011.02', 95, 5, 2, 11);
 
 -- VINFAST Motorcycle
-INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "PricePerHour", "StationId", "ModelId") VALUES
-('65B1-012.01', 89, 5, 48000, 1, 12),
-('65B1-012.02', 91, 5, 48000, 2, 12);
+INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "StationId", "ModelId") VALUES
+('65B1-012.01', 89, 5, 1, 12),
+('65B1-012.02', 91, 5, 2, 12);
 
 -- TESLA Cars
-INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "PricePerHour", "StationId", "ModelId") VALUES
-('66A-013.01', 96, 5, 200000, 1, 13),
-('66A-013.02', 94, 5, 200000, 2, 13),
-('66A-014.01', 92, 5, 190000, 1, 14),
-('66A-014.02', 93, 5, 190000, 2, 14),
-('66A-015.01', 95, 5, 210000, 1, 15),
-('66A-015.02', 97, 5, 210000, 2, 15),
-('66A-016.01', 90, 5, 180000, 1, 16),
-('66A-016.02', 89, 5, 180000, 2, 16),
-('66A-017.01', 98, 5, 220000, 1, 17),
-('66A-017.02', 96, 5, 220000, 2, 17);
+INSERT INTO "Vehicles" ("LicensePlate", "BatteryLevel", "Status", "StationId", "ModelId") VALUES
+('66A-013.01', 96, 5, 1, 13),
+('66A-013.02', 94, 5, 2, 13),
+('66A-014.01', 92, 5, 1, 14),
+('66A-014.02', 93, 5, 2, 14),
+('66A-015.01', 95, 5, 1, 15),
+('66A-015.02', 97, 5, 2, 15),
+('66A-016.01', 90, 5, 1, 16),
+('66A-016.02', 89, 5, 2, 16),
+('66A-017.01', 98, 5, 1, 17),
+('66A-017.02', 96, 5, 2, 17);

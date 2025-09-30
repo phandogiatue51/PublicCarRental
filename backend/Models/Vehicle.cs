@@ -21,7 +21,6 @@ namespace PublicCarRental.Models
         public string LicensePlate { get; set; }
         public int BatteryLevel { get; set; }
         public VehicleStatus Status { get; set; } = VehicleStatus.Available;
-        public decimal PricePerHour { get; set; }
         public int? StationId { get; set; }
         public Station Station { get; set; }
         public int ModelId { get; set; }

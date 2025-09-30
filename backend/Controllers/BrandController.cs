@@ -7,7 +7,6 @@ using PublicCarRental.Service.Bran;
 
 namespace PublicCarRental.Controllers
 {
-    [Authorize(Roles = "Admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class BrandController : ControllerBase
