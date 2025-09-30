@@ -31,14 +31,17 @@ namespace PublicCarRental.Repository.Cont
                 .Include(c => c.Invoice)
                 .FirstOrDefault(c => c.ContractId == id);
         }
-        public IEnumerable<RentalContract> GetAll()
+
+        public IQueryable<RentalContract> GetAll()
         {
             return _context.RentalContracts
-                .Include(c => c.EVRenter)
-                .Include(c => c.Vehicle)
-                .Include(c => c.Station)
                 .Include(c => c.Invoice)
-                .ToList();
+                .Include(c => c.EVRenter)
+                    .ThenInclude(r => r.Account)
+                .Include(c => c.Staff)
+                    .ThenInclude(s => s.Account)
+                .Include(c => c.Vehicle)
+                .Include(c => c.Station);
         }
 
         public void Update(RentalContract contract)

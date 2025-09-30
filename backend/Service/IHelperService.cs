@@ -2,9 +2,10 @@
 
 namespace PublicCarRental.Service
 {
-    public interface IContInvHelperService
+    public interface IHelperService
     {
         public RentalContract GetContractById(int contractId);
-        public bool IsInvoicePaid(int contractId);
+        public int AutoCancelOverdueInvoices();
+
     }
 }

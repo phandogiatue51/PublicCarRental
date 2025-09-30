@@ -23,9 +23,9 @@ namespace PublicCarRental.Service.Stat
                     Latitude = s.Latitude,
                     Longitude = s.Longitude,
 
-                    VehicleCount = s.Vehicles?.Count ?? 0,
-                    StaffCount = s.StaffMembers?.Count ?? 0
-                });
+                    VehicleCount = s.Vehicles != null ? s.Vehicles.Count : 0,
+                    StaffCount = s.StaffMembers != null ? s.StaffMembers.Count : 0
+                }).ToList();
         }
 
         public StationDto? GetById(int id)

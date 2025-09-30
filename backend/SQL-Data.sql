@@ -15,11 +15,11 @@ INSERT INTO "Stations" ("Name", "Address", "Latitude", "Longitude") VALUES
 ('Thu Duc Depot', '456 Vo Van Ngan, Thu Duc, HCMC', 10.8510, 106.7580);
 
 -- Accounts
-INSERT INTO "Accounts" ("FullName", "Email", "PasswordHash", "PhoneNumber", "IdentityCardNumber", "Status", "RegisteredAt", "Role") VALUES
-('Nguyen Van A', 'staff1@com', '123', '0901234567', '012345678', 0, NOW(), 1), -- Staff
-('Tran Thi B', 'staff2@com', '123', '0902345678', '023456789', 0, NOW(), 1), -- Staff
-('Le Quang C', 'admin@com', '123', '0903456789', '034567890', 0, NOW(), 2), -- Admin
-('Pham Thi D', 'renter@com', '123', '0904567890', '045678901', 0, NOW(), 0); -- EVRenter
+INSERT INTO "Accounts" ("FullName", "Email", "PasswordHash", "PhoneNumber", "IdentityCardNumber", "Status", "RegisteredAt", "Role", "IsEmailVerified") VALUES
+('Nguyen Van A', 'staff1@com', '123', '0901234567', '012345678', 0, NOW(), 1, false), -- Staff
+('Tran Thi B', 'staff2@com', '123', '0902345678', '023456789', 0, NOW(), 1, false), -- Staff
+('Le Quang C', 'admin@com', '123', '0903456789', '034567890', 0, NOW(), 2, false), -- Admin
+('Pham Thi D', 'renter@com', '123', '0904567890', '045678901', 0, NOW(), 0, false); -- EVRenter
 
 -- Staff Members
 INSERT INTO "Staffs" ("AccountId", "StationId") VALUES

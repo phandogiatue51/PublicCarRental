@@ -26,7 +26,7 @@ namespace PublicCarRental.Service.Staf
                     IdentityCardNumber = s.Account.IdentityCardNumber,
                     StationId = s.StationId,
                     Status = s.Account.Status
-                });
+                }).ToList();
         }
 
         public StaffReadDto? GetById(int id)

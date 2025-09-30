@@ -5,7 +5,7 @@ namespace PublicCarRental.Repository.Cont
     public interface IContractRepository
     {
         void Create(RentalContract contract);
-        IEnumerable<RentalContract> GetAll();
+        public IQueryable<RentalContract> GetAll();
         RentalContract GetById(int id);
         void Update(RentalContract contract);
     }

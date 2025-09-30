@@ -11,9 +11,9 @@ namespace PublicCarRental.Repository.Typ
             _context = context;
         }
 
-        public IEnumerable<VehicleType> GetAll()
+        public IQueryable<VehicleType> GetAll()
         {
-            return _context.VehicleTypes.ToList();
+            return _context.VehicleTypes;
         }
         public VehicleType GetById(int id)
         {

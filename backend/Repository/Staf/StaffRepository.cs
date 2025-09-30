@@ -26,12 +26,11 @@ namespace PublicCarRental.Repository.Staf
             _context.SaveChanges();
         }
 
-        public IEnumerable<Staff> GetAll()
+        public IQueryable<Staff> GetAll()
         {
             return _context.Staffs
                 .Include(s => s.Account)
-                .Include(s => s.Station)
-                .ToList();
+                .Include(s => s.Station);
         }
 
         public Staff? GetById(int id)

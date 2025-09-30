@@ -5,7 +5,7 @@ namespace PublicCarRental.Repository.Acc
     public interface IAccountRepository
     {
         Account GetById(int id);
-        IEnumerable<Account> GetAll();
+        IQueryable<Account> GetAll();
         void Create(Account account);
         void Update(Account account);
         void Delete(int id);

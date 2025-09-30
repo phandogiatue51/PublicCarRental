@@ -20,7 +20,7 @@ namespace PublicCarRental.Service.Bran
                 {
                     BrandId = b.BrandId,
                     Name = b.Name
-                });
+                }).ToList();
         }
 
         public BrandDto? GetById(int id)

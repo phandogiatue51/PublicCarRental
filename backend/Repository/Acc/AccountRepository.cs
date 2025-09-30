@@ -18,9 +18,9 @@ namespace PublicCarRental.Repository.Acc
             return _context.Accounts.Find(id);
         }
 
-        public IEnumerable<Account> GetAll()
+        public IQueryable<Account> GetAll()
         {
-            return _context.Accounts.ToList();
+            return _context.Accounts;
         }
 
         public void Create(Account account)

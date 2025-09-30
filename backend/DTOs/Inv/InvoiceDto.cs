@@ -1,4 +1,6 @@
-﻿using PublicCarRental.Models;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using PublicCarRental.Models;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PublicCarRental.DTOs.Inv
 {
@@ -11,6 +13,9 @@ namespace PublicCarRental.DTOs.Inv
         public decimal AmountDue { get; set; }
         public decimal? AmountPaid { get; set; }
         public DateTime? PaidAt { get; set; }
+
+        public DateTime PaymentDeadline => IssuedAt.AddMinutes(30);
+        public bool IsExpired => DateTime.UtcNow > PaymentDeadline;
 
         public InvoiceStatus Status { get; set; }
     }

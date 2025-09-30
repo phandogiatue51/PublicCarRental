@@ -13,9 +13,9 @@ namespace PublicCarRental.Repository.Bran
             _context = context;
         }
 
-        public IEnumerable<VehicleBrand> GetAll()
+        public IQueryable<VehicleBrand> GetAll()
         {
-            return _context.VehicleBrands.Include(b => b.Models).ToList();
+            return _context.VehicleBrands.Include(b => b.Models);
         }
 
         public VehicleBrand GetById(int id)

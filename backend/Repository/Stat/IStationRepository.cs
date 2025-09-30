@@ -4,7 +4,7 @@ namespace PublicCarRental.Repository.Stat
 {
     public interface IStationRepository
     {
-        IEnumerable<Station> GetAll();
+        IQueryable<Station> GetAll();
         Station GetById(int id);
         void Create(Station station);
         void Update(Station station);

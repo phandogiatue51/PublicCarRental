@@ -21,6 +21,7 @@ namespace PublicCarRental.DTOs.Cont
 
         public DateTime? StartTime { get; set; }
         public DateTime? EndTime { get; set; }
+
         public decimal? TotalCost { get; set; }
         public RentalStatus Status { get; set; }
     }

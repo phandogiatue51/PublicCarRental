@@ -33,5 +33,7 @@ namespace PublicCarRental.Models
 
         public string? PasswordResetToken { get; set; }
         public DateTime? PasswordResetRequestedAt { get; set; }
+
+        public ICollection<Favorite> Favorites { get; set; }
     }
 }

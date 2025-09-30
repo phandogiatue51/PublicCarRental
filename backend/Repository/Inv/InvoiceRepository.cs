@@ -18,11 +18,10 @@ namespace PublicCarRental.Repository.Inv
             _context.Invoices.Add(invoice);
             _context.SaveChanges();
         }
-        public IEnumerable<Invoice> GetAll()
+        public IQueryable<Invoice> GetAll()
         {
             return _context.Invoices
-                .Include(i => i.Contract)
-                .ToList();
+                .Include(i => i.Contract);
         }
 
         public Invoice GetById(int id)

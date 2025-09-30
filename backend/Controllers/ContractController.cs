@@ -62,12 +62,12 @@ namespace PublicCarRental.Controllers
             }
         }
 
-        [HttpPost("confirm-contract")]
-        public IActionResult ConfirmContract([FromBody] ConfirmContractDto dto)
+        [HttpPost("active-contract")]
+        public IActionResult ActiveContract([FromBody] ConfirmContractDto dto)
         {
             try
             {
-                var success = _contractService.ConfirmContract(dto);
+                var success = _contractService.StartRental(dto.ContractId, dto.StaffId);
                 if (!success) return NotFound("Contract not found");
                 return Ok(new { message = "Handover confirmed", contractId = dto.ContractId });
             }

@@ -27,7 +27,7 @@ namespace PublicCarRental.Service.Veh
                     StationName = v.Station.Name,
                     ModelId = v.ModelId,
                     ModelName = v.Model.Name
-                });
+                }).ToList();
         }
 
         public VehicleDto GetById(int id)

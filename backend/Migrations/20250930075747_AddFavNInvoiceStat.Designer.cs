@@ -12,8 +12,8 @@ using PublicCarRental.Models;
 namespace PublicCarRental.Migrations
 {
     [DbContext(typeof(EVRentalDbContext))]
-    [Migration("20250930053327_FixSQLForVerification")]
-    partial class FixSQLForVerification
+    [Migration("20250930075747_AddFavNInvoiceStat")]
+    partial class AddFavNInvoiceStat
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -109,6 +109,32 @@ namespace PublicCarRental.Migrations
                         .IsUnique();
 
                     b.ToTable("EVRenters");
+                });
+
+            modelBuilder.Entity("PublicCarRental.Models.Favorite", b =>
+                {
+                    b.Property<int>("FavoriteId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("FavoriteId"));
+
+                    b.Property<int>("AccountId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("FavoritedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ModelId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("FavoriteId");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("ModelId");
+
+                    b.ToTable("Favorites");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Invoice", b =>
@@ -358,6 +384,25 @@ namespace PublicCarRental.Migrations
                     b.Navigation("Account");
                 });
 
+            modelBuilder.Entity("PublicCarRental.Models.Favorite", b =>
+                {
+                    b.HasOne("PublicCarRental.Models.Account", "Account")
+                        .WithMany("Favorites")
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PublicCarRental.Models.VehicleModel", "VehicleModel")
+                        .WithMany("FavoritedBy")
+                        .HasForeignKey("ModelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+
+                    b.Navigation("VehicleModel");
+                });
+
             modelBuilder.Entity("PublicCarRental.Models.Invoice", b =>
                 {
                     b.HasOne("PublicCarRental.Models.RentalContract", "Contract")
@@ -451,6 +496,11 @@ namespace PublicCarRental.Migrations
                     b.Navigation("Type");
                 });
 
+            modelBuilder.Entity("PublicCarRental.Models.Account", b =>
+                {
+                    b.Navigation("Favorites");
+                });
+
             modelBuilder.Entity("PublicCarRental.Models.EVRenter", b =>
                 {
                     b.Navigation("RentalContracts");
@@ -483,6 +533,8 @@ namespace PublicCarRental.Migrations
 
             modelBuilder.Entity("PublicCarRental.Models.VehicleModel", b =>
                 {
+                    b.Navigation("FavoritedBy");
+
                     b.Navigation("Vehicles");
                 });
 

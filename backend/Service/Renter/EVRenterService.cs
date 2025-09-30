@@ -1,6 +1,9 @@
 ﻿using PublicCarRental.DTOs.Acc;
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Renter;
+using PublicCarRental.Service.Cont;
+using PublicCarRental.Service.Fav;
+using PublicCarRental.Service.Inv;
 
 namespace PublicCarRental.Service.Renter
 {
@@ -26,7 +29,7 @@ namespace PublicCarRental.Service.Renter
                     IdentityCardNumber = r.Account.IdentityCardNumber,
                     LicenseNumber = r.LicenseNumber,
                     Status = r.Account.Status
-                });
+                }).ToList();
         }
 
         public EVRenterDto? GetById(int id)
@@ -88,5 +91,7 @@ namespace PublicCarRental.Service.Renter
             _renterRepo.ChangeStatus(renterId);
             return true;
         }
+
+
     }
 }

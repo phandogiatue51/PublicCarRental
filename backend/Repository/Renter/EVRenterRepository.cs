@@ -13,11 +13,10 @@ namespace PublicCarRental.Repository.Renter
             _context = context;
         }
 
-        public IEnumerable<EVRenter> GetAll()
+        public IQueryable<EVRenter> GetAll()
         {
             return _context.EVRenters
-                .Include(r => r.Account)
-                .ToList();
+                .Include(r => r.Account);
         }
 
         public EVRenter? GetById(int id)

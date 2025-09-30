@@ -1,4 +1,4 @@
-﻿namespace PublicCarRental.Service
+﻿namespace PublicCarRental.Service.Email
 {
     public interface IEmailService
     {

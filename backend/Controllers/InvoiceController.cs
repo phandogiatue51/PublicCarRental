@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.DTOs.Inv;
 using PublicCarRental.Models;
+using PublicCarRental.Service.Cont;
 using PublicCarRental.Service.Inv;
 
 namespace PublicCarRental.Controllers
@@ -11,10 +12,12 @@ namespace PublicCarRental.Controllers
     public class InvoiceController : ControllerBase
     {
         private readonly IInvoiceService _service;
+        private readonly IContractService _contractService;
 
-        public InvoiceController(IInvoiceService service)
+        public InvoiceController(IInvoiceService service, IContractService contractService)
         {
             _service = service;
+            _contractService = contractService;
         }
 
         [HttpGet("all-invoices")]
@@ -48,6 +51,11 @@ namespace PublicCarRental.Controllers
             invoice.Status = InvoiceStatus.Paid;
             invoice.AmountPaid = invoice.AmountDue;
             invoice.PaidAt = DateTime.UtcNow;
+
+            var contract = _contractService.GetEntityById(invoice.ContractId);
+            if (contract == null) return NotFound("Associated contract not found");
+
+            _contractService.UpdateContractStatus(contract.ContractId);
 
             var success = _service.UpdateInvoice(id, invoice);
             if (!success) return BadRequest("Failed to update invoice");

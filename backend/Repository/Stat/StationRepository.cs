@@ -13,13 +13,12 @@ namespace PublicCarRental.Repository.Stat
             _context = context;
         }
 
-        public IEnumerable<Station> GetAll()
+        public IQueryable<Station> GetAll()
         {
             return _context.Stations
                 .Include(s => s.Vehicles)
                 .Include(s => s.StaffMembers)
-                .Include(s => s.RentalContracts)
-                .ToList();
+                .Include(s => s.RentalContracts);
         }
 
         public Station GetById(int id)

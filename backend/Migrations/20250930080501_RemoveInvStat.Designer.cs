@@ -12,8 +12,8 @@ using PublicCarRental.Models;
 namespace PublicCarRental.Migrations
 {
     [DbContext(typeof(EVRentalDbContext))]
-    [Migration("20250921085948_FixStatus")]
-    partial class FixStatus
+    [Migration("20250930080501_RemoveInvStat")]
+    partial class RemoveInvStat
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -37,14 +37,26 @@ namespace PublicCarRental.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("EmailVerificationToken")
+                        .HasColumnType("text");
+
                     b.Property<string>("FullName")
                         .HasColumnType("text");
 
                     b.Property<string>("IdentityCardNumber")
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsEmailVerified")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("PasswordResetRequestedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PasswordResetToken")
                         .HasColumnType("text");
 
                     b.Property<string>("PhoneNumber")
@@ -99,6 +111,32 @@ namespace PublicCarRental.Migrations
                     b.ToTable("EVRenters");
                 });
 
+            modelBuilder.Entity("PublicCarRental.Models.Favorite", b =>
+                {
+                    b.Property<int>("FavoriteId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("FavoriteId"));
+
+                    b.Property<int>("AccountId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("FavoritedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ModelId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("FavoriteId");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("ModelId");
+
+                    b.ToTable("Favorites");
+                });
+
             modelBuilder.Entity("PublicCarRental.Models.Invoice", b =>
                 {
                     b.Property<int>("InvoiceId")
@@ -118,9 +156,6 @@ namespace PublicCarRental.Migrations
 
                     b.Property<DateTime>("IssuedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("text");
 
                     b.Property<DateTime?>("PaidAt")
                         .HasColumnType("timestamp with time zone");
@@ -144,16 +179,19 @@ namespace PublicCarRental.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("ContractId"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("EVRenterId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("EndTime")
+                    b.Property<DateTime>("EndTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int?>("StaffId")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime?>("StartTime")
+                    b.Property<DateTime>("StartTime")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int?>("StationId")
@@ -299,6 +337,9 @@ namespace PublicCarRental.Migrations
                     b.Property<int>("BrandId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -341,6 +382,25 @@ namespace PublicCarRental.Migrations
                         .IsRequired();
 
                     b.Navigation("Account");
+                });
+
+            modelBuilder.Entity("PublicCarRental.Models.Favorite", b =>
+                {
+                    b.HasOne("PublicCarRental.Models.Account", "Account")
+                        .WithMany("Favorites")
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PublicCarRental.Models.VehicleModel", "VehicleModel")
+                        .WithMany("FavoritedBy")
+                        .HasForeignKey("ModelId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+
+                    b.Navigation("VehicleModel");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Invoice", b =>
@@ -436,6 +496,11 @@ namespace PublicCarRental.Migrations
                     b.Navigation("Type");
                 });
 
+            modelBuilder.Entity("PublicCarRental.Models.Account", b =>
+                {
+                    b.Navigation("Favorites");
+                });
+
             modelBuilder.Entity("PublicCarRental.Models.EVRenter", b =>
                 {
                     b.Navigation("RentalContracts");
@@ -468,6 +533,8 @@ namespace PublicCarRental.Migrations
 
             modelBuilder.Entity("PublicCarRental.Models.VehicleModel", b =>
                 {
+                    b.Navigation("FavoritedBy");
+
                     b.Navigation("Vehicles");
                 });
 

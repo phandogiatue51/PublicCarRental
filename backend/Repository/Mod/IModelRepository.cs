@@ -4,7 +4,7 @@ namespace PublicCarRental.Repository.Model
 {
     public interface IModelRepository
     {
-        IEnumerable<VehicleModel> GetAll();
+        IQueryable<VehicleModel> GetAll();
         VehicleModel GetById(int id);
         void Create(VehicleModel model);
         void Update(VehicleModel model);

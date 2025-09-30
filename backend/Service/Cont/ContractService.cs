@@ -14,10 +14,10 @@ namespace PublicCarRental.Service.Cont
         private readonly IVehicleRepository _vehicleRepo;
         private readonly IContractRepository _contractRepo;
         private readonly IStaffRepository _staffRepo;
-        private readonly IContInvHelperService _contInvHelperService;
+        private readonly IHelperService _contInvHelperService;
 
         public ContractService(IContractRepository repo, IVehicleRepository vehicleRepo, 
-            IStaffRepository staffRepo, IContInvHelperService contInvHelperService)
+            IStaffRepository staffRepo, IHelperService contInvHelperService)
         {
             _contractRepo = repo;
             _vehicleRepo = vehicleRepo;
@@ -27,25 +27,26 @@ namespace PublicCarRental.Service.Cont
 
         public IEnumerable<ContractDto> GetAll()
         {
-            var contracts = _contractRepo.GetAll();
-
-            return contracts.Select(contract => new ContractDto
+            return _contractRepo.GetAll()
+            .Select(contract => new ContractDto
             {
                 ContractId = contract.ContractId,
-                InvoiceId = contract.Invoice?.InvoiceId,
+                InvoiceId = contract.Invoice != null ? contract.Invoice.InvoiceId : null,
                 EVRenterId = contract.EVRenterId,
-                EVRenterName = contract.EVRenter?.Account?.FullName,
+                EVRenterName = contract.EVRenter != null && contract.EVRenter.Account != null ? contract.EVRenter.Account.FullName : null,
                 StaffId = contract.StaffId,
-                StaffName = contract.Staff?.Account?.FullName,
+                StaffName = contract.Staff != null && contract.Staff.Account != null ? contract.Staff.Account.FullName : null,
                 VehicleId = contract.VehicleId ?? 0,
-                VehicleLicensePlate = contract.Vehicle?.LicensePlate,
+                VehicleLicensePlate = contract.Vehicle != null ? contract.Vehicle.LicensePlate : null,
                 StationId = contract.StationId ?? 0,
-                StationName = contract.Station?.Name,
+                StationName = contract.Station != null ? contract.Station.Name : null,
                 StartTime = contract.StartTime,
                 EndTime = contract.EndTime,
                 TotalCost = contract.TotalCost,
                 Status = contract.Status
-            });
+                
+            })
+            .ToList();
         }
 
         public ContractDto GetById(int id)
@@ -68,6 +69,7 @@ namespace PublicCarRental.Service.Cont
                 EndTime = contract.EndTime,
                 TotalCost = contract.TotalCost,
                 Status = contract.Status
+               
             };
         }
 
@@ -105,6 +107,8 @@ namespace PublicCarRental.Service.Cont
         {
             var existing = _contractRepo.GetById(id);
             if (existing == null) return false;
+            if (existing.Status != RentalStatus.ToBeConfirmed)
+                throw new InvalidOperationException("Only contracts with 'ToBeConfirmed' status can be updated");
 
             var vehicle = _vehicleRepo.GetFirstAvailableVehicleByModel(updatedContract.ModelId, updatedContract.StationId, updatedContract.StartTime, updatedContract.EndTime);
             if (vehicle == null)
@@ -120,26 +124,6 @@ namespace PublicCarRental.Service.Cont
             existing.TotalCost = (decimal)duration * existing.Vehicle.PricePerHour;
 
             _contractRepo.Update(existing);
-            return true;
-        }
-
-        public bool ConfirmContract(ConfirmContractDto dto)
-        {
-            var contract = _contractRepo.GetById(dto.ContractId);
-            if (contract.Status != RentalStatus.ToBeConfirmed)
-                throw new InvalidOperationException("Contract is not in a confirmable state");
-
-            if (contract == null) return false;
-
-            if (!_contInvHelperService.IsInvoicePaid(dto.ContractId))
-                throw new InvalidOperationException("Invoice must be paid before confirming contract");
-
-            contract.StartTime = DateTime.UtcNow;
-            contract.Status = RentalStatus.Confirmed;
-
-            _vehicleRepo.Update(contract.Vehicle);
-            _contractRepo.Update(contract);
-
             return true;
         }
 
@@ -164,11 +148,12 @@ namespace PublicCarRental.Service.Cont
 
             return true;
         }
+
         public bool StartRental(int contractId, int staffId)
         {
             var contract = _contractRepo.GetById(contractId);
-            if (contract == null || contract.Status != RentalStatus.ToBeConfirmed)
-                throw new InvalidOperationException("Contract is not ready to start");
+            if (contract == null || contract.Status != RentalStatus.Confirmed)
+                throw new InvalidOperationException("Invoice for Contract is Unpaid");
 
             var vehicle = contract.Vehicle;
             if (vehicle == null)
@@ -182,6 +167,41 @@ namespace PublicCarRental.Service.Cont
             _vehicleRepo.Update(vehicle);
             _contractRepo.Update(contract);
 
+            return true;
+        }
+
+        public IEnumerable<ContractDto> GetContractByRenterId(int renterId)
+        {
+            var contracts = _contractRepo.GetAll()
+            .Where(r => r.EVRenter.RenterId == renterId)
+            .ToList();
+
+            return contracts.Select(contract => new ContractDto
+            {
+                ContractId = contract.ContractId,
+                InvoiceId = contract.Invoice?.InvoiceId,
+                EVRenterId = contract.EVRenterId,
+                EVRenterName = contract.EVRenter?.Account?.FullName,
+                StaffId = contract.StaffId,
+                StaffName = contract.Staff?.Account?.FullName,
+                VehicleId = contract.VehicleId ?? 0,
+                VehicleLicensePlate = contract.Vehicle?.LicensePlate,
+                StationId = contract.StationId ?? 0,
+                StationName = contract.Station?.Name,
+                StartTime = contract.StartTime,
+                EndTime = contract.EndTime,
+                TotalCost = contract.TotalCost,
+                Status = contract.Status
+            });
+        }
+
+        public bool UpdateContractStatus(int contractId)
+        {
+            var contract = _contractRepo.GetById(contractId);
+            if (contract == null) return false;
+
+            contract.Status = RentalStatus.Confirmed;
+            _contractRepo.Update(contract);
             return true;
         }
 

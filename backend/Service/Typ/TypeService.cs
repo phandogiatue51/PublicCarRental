@@ -11,15 +11,17 @@ namespace PublicCarRental.Service.Typ
         {
             _typeRepo = typeRepo;
         }
+
         public IEnumerable<TypeDto> GetAllTypes()
         {
-            var type = _typeRepo.GetAll();
-            return type.Select(type => new TypeDto
+            return _typeRepo.GetAll()
+            .Select(type => new TypeDto
             {
                 TypeId = type.TypeId,
                 Name = type.Name
-            });
+            }).ToList();
         }
+
         public TypeDto GetById(int id)
         {
             var type = _typeRepo.GetById(id);

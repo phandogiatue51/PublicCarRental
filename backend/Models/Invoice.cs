@@ -20,6 +20,7 @@ namespace PublicCarRental.Models
         public decimal AmountDue { get; set; }
         public decimal? AmountPaid { get; set; }
         public DateTime? PaidAt { get; set; }
+
         public InvoiceStatus Status { get; set; } = InvoiceStatus.Unpaid;
     }
 }

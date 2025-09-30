@@ -4,7 +4,7 @@ namespace PublicCarRental.Repository.Vehi
 {
     public interface IVehicleRepository
     {
-        IEnumerable<Vehicle> GetAll();
+        IQueryable<Vehicle> GetAll();
         Vehicle GetById(int id);
         public Vehicle GetFirstAvailableVehicleByModel(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd);
         void Create(Vehicle vehicle);

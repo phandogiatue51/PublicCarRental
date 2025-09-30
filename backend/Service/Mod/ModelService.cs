@@ -13,6 +13,7 @@ namespace PublicCarRental.Service.Mod
         {
             _repo = repo;
         }
+
         public IEnumerable<ModelDto> GetAllModels()
         {
             return _repo.GetAll()
@@ -21,12 +22,14 @@ namespace PublicCarRental.Service.Mod
                     ModelId = m.ModelId,
                     Name = m.Name,
                     BrandId = m.BrandId,
-                    BrandName = m.Brand?.Name,
+                    BrandName = m.Brand != null ? m.Brand.Name : null,
                     TypeId = m.TypeId,
-                    TypeName = m.Type?.Name,
+                    TypeName = m.Type != null ? m.Type.Name : null,
                     ImageUrl = m.ImageUrl
-                });
+                })
+                .ToList();
         }
+
         public ModelDto GetById(int id)
         {
             var m = _repo.GetById(id);

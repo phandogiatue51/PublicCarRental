@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using MimeKit;
 using System.Net.Mail;
 
-namespace PublicCarRental.Service
+namespace PublicCarRental.Service.Email
 {
     public class EmailService : IEmailService
     {

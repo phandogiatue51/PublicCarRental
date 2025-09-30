@@ -16,5 +16,6 @@ namespace PublicCarRental.Models
         public ICollection<Vehicle> Vehicles { get; set; }
 
         public string? ImageUrl { get; set; }
+        public ICollection<Favorite> FavoritedBy { get; set; }
     }
 }

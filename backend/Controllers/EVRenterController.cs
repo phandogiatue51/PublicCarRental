@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.DTOs.Acc;
+using PublicCarRental.Service.Cont;
+using PublicCarRental.Service.Inv;
 using PublicCarRental.Service.Renter;
 
 [ApiController]
@@ -7,10 +9,14 @@ using PublicCarRental.Service.Renter;
 public class EVRenterController : ControllerBase
 {
     private readonly IEVRenterService _eVRenterService;
+    private readonly IContractService _contractService;
+    private readonly IInvoiceService _invoiceService;
 
-    public EVRenterController(IEVRenterService eVRenterService)
+    public EVRenterController(IEVRenterService eVRenterService, IContractService contractService, IInvoiceService invoiceService)
     {
         _eVRenterService = eVRenterService;
+        _contractService = contractService;
+        _invoiceService = invoiceService;
     }
 
     [HttpGet("all-renters")]
@@ -55,5 +61,19 @@ public class EVRenterController : ControllerBase
         var success = _eVRenterService.ChangeStatus(id);
         if (!success) return NotFound("Renter not found");
         return Ok($"Renter status changed");
+    }
+
+    [HttpGet("{userId}/contracts")]
+    public IActionResult GetUserContracts(int userId)
+    {
+        var contracts = _contractService.GetContractByRenterId(userId);
+        return Ok(contracts);
+    }
+
+    [HttpGet("{userId}/invoices")]
+    public IActionResult GetUserInvoices(int userId)
+    {
+        var invoices = _invoiceService.GetInvoiceByRenterId(userId);
+        return Ok(invoices);
     }
 }

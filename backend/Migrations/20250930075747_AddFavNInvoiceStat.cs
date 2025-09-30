@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace PublicCarRental.Migrations
 {
     /// <inheritdoc />
-    public partial class FixStatus : Migration
+    public partial class AddFavNInvoiceStat : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -25,7 +25,11 @@ namespace PublicCarRental.Migrations
                     IdentityCardNumber = table.Column<string>(type: "text", nullable: true),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     RegisteredAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Role = table.Column<int>(type: "integer", nullable: false)
+                    Role = table.Column<int>(type: "integer", nullable: false),
+                    EmailVerificationToken = table.Column<string>(type: "text", nullable: true),
+                    IsEmailVerified = table.Column<bool>(type: "boolean", nullable: false),
+                    PasswordResetToken = table.Column<string>(type: "text", nullable: true),
+                    PasswordResetRequestedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -127,7 +131,8 @@ namespace PublicCarRental.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "text", nullable: false),
                     BrandId = table.Column<int>(type: "integer", nullable: false),
-                    TypeId = table.Column<int>(type: "integer", nullable: false)
+                    TypeId = table.Column<int>(type: "integer", nullable: false),
+                    ImageUrl = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -143,6 +148,33 @@ namespace PublicCarRental.Migrations
                         column: x => x.TypeId,
                         principalTable: "VehicleTypes",
                         principalColumn: "TypeId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Favorites",
+                columns: table => new
+                {
+                    FavoriteId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    AccountId = table.Column<int>(type: "integer", nullable: false),
+                    ModelId = table.Column<int>(type: "integer", nullable: false),
+                    FavoritedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Favorites", x => x.FavoriteId);
+                    table.ForeignKey(
+                        name: "FK_Favorites_Accounts_AccountId",
+                        column: x => x.AccountId,
+                        principalTable: "Accounts",
+                        principalColumn: "AccountId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Favorites_VehicleModels_ModelId",
+                        column: x => x.ModelId,
+                        principalTable: "VehicleModels",
+                        principalColumn: "ModelId",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -185,10 +217,11 @@ namespace PublicCarRental.Migrations
                     StaffId = table.Column<int>(type: "integer", nullable: true),
                     VehicleId = table.Column<int>(type: "integer", nullable: true),
                     StationId = table.Column<int>(type: "integer", nullable: true),
-                    StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    StartTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    EndTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     TotalCost = table.Column<decimal>(type: "numeric", nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false)
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -227,8 +260,7 @@ namespace PublicCarRental.Migrations
                     AmountDue = table.Column<decimal>(type: "numeric", nullable: false),
                     AmountPaid = table.Column<decimal>(type: "numeric", nullable: true),
                     PaidAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    Notes = table.Column<string>(type: "text", nullable: true)
+                    Status = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -270,6 +302,16 @@ namespace PublicCarRental.Migrations
                 table: "EVRenters",
                 column: "LicenseNumber",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Favorites_AccountId",
+                table: "Favorites",
+                column: "AccountId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Favorites_ModelId",
+                table: "Favorites",
+                column: "ModelId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Invoices_ContractId",
@@ -338,6 +380,9 @@ namespace PublicCarRental.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "Favorites");
+
             migrationBuilder.DropTable(
                 name: "Invoices");
 

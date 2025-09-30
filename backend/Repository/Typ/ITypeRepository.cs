@@ -4,7 +4,7 @@ namespace PublicCarRental.Repository.Typ
 {
     public interface ITypeRepository
     {
-        IEnumerable<VehicleType> GetAll();
+        IQueryable<VehicleType> GetAll();
         VehicleType GetById(int id);
     }
 }

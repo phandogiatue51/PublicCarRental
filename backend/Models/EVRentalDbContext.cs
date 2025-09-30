@@ -18,7 +18,7 @@ namespace PublicCarRental.Models
         public DbSet<VehicleModel> VehicleModels { get; set; }
         public DbSet<VehicleBrand> VehicleBrands { get; set; }
         public DbSet<VehicleType> VehicleTypes { get; set; }
-
+        public DbSet<Favorite> Favorites { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Account>()
@@ -113,6 +113,16 @@ namespace PublicCarRental.Models
             modelBuilder.Entity<Invoice>()
                 .Property(i => i.Status)
                 .HasConversion<int>();
+
+            modelBuilder.Entity<Favorite>()
+               .HasOne(f => f.Account)
+               .WithMany(a => a.Favorites)
+               .HasForeignKey(f => f.AccountId);
+
+            modelBuilder.Entity<Favorite>()
+                .HasOne(f => f.VehicleModel)
+                .WithMany(vm => vm.FavoritedBy)
+                .HasForeignKey(f => f.ModelId);
         }
     }
 }

@@ -5,6 +5,7 @@ using PublicCarRental.Helpers;
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Acc;
 using PublicCarRental.Repository.Token;
+using PublicCarRental.Service.Email;
 
 namespace PublicCarRental.Service.Acc
 {
@@ -30,7 +31,7 @@ namespace PublicCarRental.Service.Acc
 
         public IEnumerable<Account> GetAllAccounts()
         {
-            return _accountRepo.GetAll();
+            return _accountRepo.GetAll().ToList();
         }
 
         public void UpdateAccount(Account account)

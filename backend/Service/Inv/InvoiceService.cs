@@ -8,8 +8,8 @@ namespace PublicCarRental.Service.Inv
     public class InvoiceService : IInvoiceService
     {
         private readonly IInvoiceRepository _repo;
-        private readonly IContInvHelperService _contInvHelperService;
-        public InvoiceService(IInvoiceRepository repo, IContInvHelperService contInvHelperService)
+        private readonly IHelperService _contInvHelperService;
+        public InvoiceService(IInvoiceRepository repo, IHelperService contInvHelperService)
         {
             _repo = repo;
             _contInvHelperService = contInvHelperService;
@@ -27,7 +27,7 @@ namespace PublicCarRental.Service.Inv
                     AmountPaid = i.AmountPaid,
                     PaidAt = i.PaidAt,
                     Status = i.Status,
-                });
+                }).ToList();
         }
 
         public InvoiceDto GetById(int id)
@@ -75,6 +75,23 @@ namespace PublicCarRental.Service.Inv
 
             _repo.Update(existing);
             return true;
+        }
+
+        public IEnumerable<InvoiceDto> GetInvoiceByRenterId (int renterId)
+        {
+            var invoices = _repo.GetAll()
+                .Where(i => i.Contract.EVRenter.RenterId == renterId)
+                .ToList();
+            return invoices.Select(i => new InvoiceDto
+            {
+                InvoiceId = i.InvoiceId,
+                ContractId = i.ContractId,
+                IssuedAt = i.IssuedAt,
+                AmountDue = i.AmountDue,
+                AmountPaid = i.AmountPaid,
+                PaidAt = i.PaidAt,
+                Status = i.Status,
+            });
         }
     }
 }
