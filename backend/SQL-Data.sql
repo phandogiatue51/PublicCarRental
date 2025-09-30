@@ -16,10 +16,10 @@ INSERT INTO "Stations" ("Name", "Address", "Latitude", "Longitude") VALUES
 
 -- Accounts
 INSERT INTO "Accounts" ("FullName", "Email", "PasswordHash", "PhoneNumber", "IdentityCardNumber", "Status", "RegisteredAt", "Role", "IsEmailVerified") VALUES
-('Nguyen Van A', 'staff1@com', '123', '0901234567', '012345678', 0, NOW(), 1, false), -- Staff
-('Tran Thi B', 'staff2@com', '123', '0902345678', '023456789', 0, NOW(), 1, false), -- Staff
-('Le Quang C', 'admin@com', '123', '0903456789', '034567890', 0, NOW(), 2, false), -- Admin
-('Pham Thi D', 'renter@com', '123', '0904567890', '045678901', 0, NOW(), 0, false); -- EVRenter
+('Nguyen Van A', 'staff1@com', 'pmWkWSBCL51Bfkhn79xPuKBKHz//H6B+mY6G9/eieuM=', '0901234567', '012345678', 0, NOW(), 1, false), -- Staff
+('Tran Thi B', 'staff2@com', 'pmWkWSBCL51Bfkhn79xPuKBKHz//H6B+mY6G9/eieuM=', '0902345678', '023456789', 0, NOW(), 1, false), -- Staff
+('Le Quang C', 'admin@com', 'pmWkWSBCL51Bfkhn79xPuKBKHz//H6B+mY6G9/eieuM=', '0903456789', '034567890', 0, NOW(), 2, false), -- Admin
+('Pham Thi D', 'renter@com', 'pmWkWSBCL51Bfkhn79xPuKBKHz//H6B+mY6G9/eieuM=', '0904567890', '045678901', 0, NOW(), 0, false); -- EVRenter
 
 -- Staff Members
 INSERT INTO "Staffs" ("AccountId", "StationId") VALUES

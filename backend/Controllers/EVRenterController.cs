@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.DTOs.Acc;
 using PublicCarRental.Service.Cont;
+using PublicCarRental.Service.Fav;
 using PublicCarRental.Service.Inv;
 using PublicCarRental.Service.Renter;
 
@@ -11,12 +12,15 @@ public class EVRenterController : ControllerBase
     private readonly IEVRenterService _eVRenterService;
     private readonly IContractService _contractService;
     private readonly IInvoiceService _invoiceService;
+    private readonly IFavoriteService _favoriteService;
 
-    public EVRenterController(IEVRenterService eVRenterService, IContractService contractService, IInvoiceService invoiceService)
+    public EVRenterController(IEVRenterService eVRenterService, IContractService contractService, 
+        IInvoiceService invoiceService, IFavoriteService favoriteService)
     {
         _eVRenterService = eVRenterService;
         _contractService = contractService;
         _invoiceService = invoiceService;
+        _favoriteService = favoriteService;
     }
 
     [HttpGet("all-renters")]
@@ -61,6 +65,29 @@ public class EVRenterController : ControllerBase
         var success = _eVRenterService.ChangeStatus(id);
         if (!success) return NotFound("Renter not found");
         return Ok($"Renter status changed");
+    }
+
+    [HttpGet("{userId}/favorites")]
+    public IActionResult GetFavorites(int userId)
+    {
+        var favorites = _favoriteService.GetFavorite(userId);
+        return Ok(favorites);
+    }
+
+    [HttpDelete("{userId}/favorites/{modelId}")]
+    public IActionResult RemoveFavorite(int userId, int modelId)
+    {
+        var success = _favoriteService.RemoveFavorites(userId, modelId);
+        if (!success) return NotFound("Favorite not found");
+        return Ok("Favorite removed");
+    }
+
+    [HttpPost("{userId}/favorites/{modelId}")]
+    public IActionResult AddFavorite(int userId, int modelId)
+    {
+        var success = _favoriteService.AddFavorites(userId, modelId);
+        if (!success) return BadRequest("Already favorited");
+        return Ok("Favorite added");
     }
 
     [HttpGet("{userId}/contracts")]

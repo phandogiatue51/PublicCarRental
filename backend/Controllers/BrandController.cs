@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.DTOs.Bran;
 using PublicCarRental.Models;
@@ -6,6 +7,7 @@ using PublicCarRental.Service.Bran;
 
 namespace PublicCarRental.Controllers
 {
+    [Authorize(Roles = "Admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class BrandController : ControllerBase

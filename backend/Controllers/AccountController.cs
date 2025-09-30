@@ -44,13 +44,9 @@ namespace PublicCarRental.Controllers
             var result = _accountService.Login(dto.Identifier, dto.Password);
 
             if (!result.Success)
-                return Unauthorized(result.Message);
+                return BadRequest(new { message = result.Message });
 
-            return Ok(new
-            {
-                message = result.Message,
-                role = result.Role
-            });
+            return Ok(new { token = result.Token, role = result.Role });
         }
 
         [HttpGet("verify-email")]

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using PublicCarRental.DTOs;
 using PublicCarRental.DTOs.Acc;
 using PublicCarRental.Helpers;
@@ -6,6 +7,9 @@ using PublicCarRental.Models;
 using PublicCarRental.Repository.Acc;
 using PublicCarRental.Repository.Token;
 using PublicCarRental.Service.Email;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace PublicCarRental.Service.Acc
 {
@@ -15,13 +19,16 @@ namespace PublicCarRental.Service.Acc
         private readonly PasswordHelper _passwordHelper;
         private readonly ITokenRepository _tokenRepository;
         private readonly IEmailService _emailService;
-        public AccountService(IAccountRepository accountRepo, PasswordHelper passwordHelper, 
-            ITokenRepository tokenRepository, IEmailService emailService)
+        private readonly IConfiguration _configuration;
+
+        public AccountService(IAccountRepository accountRepo, PasswordHelper passwordHelper,
+            ITokenRepository tokenRepository, IEmailService emailService, IConfiguration configuration)
         {
             _accountRepo = accountRepo;
             _passwordHelper = passwordHelper;
             _tokenRepository = tokenRepository;
             _emailService = emailService;
+            _configuration = configuration;
         }
 
         public Account GetAccountById(int id)
@@ -73,14 +80,38 @@ namespace PublicCarRental.Service.Acc
             }
         }
 
-        public (bool Success, string Message, AccountRole Role) Login(string identifier, string password)
+        public (bool Success, string Message, string Token, AccountRole Role) Login(string identifier, string password)
         {
             var user = _accountRepo.GetByIdentifier(identifier);
 
-            if (user == null || !_passwordHelper.VerifyPassword(password, user.PasswordHash) || password.Equals(user.PasswordHash))
-                return (false, "Invalid credentials", default);
+            if (user == null)
+                return (false, "Account does not exist!", null, default);
 
-            return (true, "Login successful", user.Role);
+            if (!_passwordHelper.VerifyPassword(password, user.PasswordHash))
+                return (false, "Wrong email/phone or password", null, default);
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.AccountId.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role.ToString())
+            };
+
+            var key = Convert.FromBase64String(_configuration["Jwt:Key"]);
+            var securityKey = new SymmetricSecurityKey(key);
+
+            var creds = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(1),
+                signingCredentials: creds
+            );
+
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+            return (true, "Login successful", tokenString, user.Role);
         }
 
         public (bool success, string message) ResetPassword(string token, string newPassword)

@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.IdentityModel.Tokens.Jwt;
 using PublicCarRental.Helpers;
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Acc;
@@ -12,11 +13,14 @@ using PublicCarRental.Repository.Model;
 using PublicCarRental.Repository.Renter;
 using PublicCarRental.Repository.Staf;
 using PublicCarRental.Repository.Stat;
+using PublicCarRental.Repository.Token;
+using PublicCarRental.Repository.Typ;
 using PublicCarRental.Repository.Vehi;
 using PublicCarRental.Service;
 using PublicCarRental.Service.Acc;
 using PublicCarRental.Service.Bran;
 using PublicCarRental.Service.Cont;
+using PublicCarRental.Service.Email;
 using PublicCarRental.Service.Inv;
 using PublicCarRental.Service.Mod;
 using PublicCarRental.Service.Renter;
@@ -24,19 +28,10 @@ using PublicCarRental.Service.Staf;
 using PublicCarRental.Service.Stat;
 using PublicCarRental.Service.Typ;
 using PublicCarRental.Service.Veh;
-using PublicCarRental.Service.Typ;
-using PublicCarRental.Repository.Typ;
-using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Server.IISIntegration;
-using Microsoft.Extensions.FileProviders;
-using PublicCarRental.Repository.Token;
-using PublicCarRental.Service.Email;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
 
 builder.Services.AddControllers(options =>
 {
@@ -116,7 +111,117 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 builder.Services.AddHostedService<InvoiceCleanupService>();
 
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var key = jwtSettings["Key"];
+var issuer = jwtSettings["Issuer"];
+var audiences = jwtSettings["Audiences"];
 
+if (string.IsNullOrEmpty(key))
+{
+    throw new InvalidOperationException("JWT Key is not configured.");
+}
+
+if (string.IsNullOrEmpty(issuer))
+{
+    throw new InvalidOperationException("JWT Issuer is not configured.");
+}
+
+if (string.IsNullOrEmpty(audiences))
+{
+    throw new InvalidOperationException("JWT Audience is not configured.");
+}
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = false,
+        ValidIssuer = issuer,
+        ValidAudience = audiences,
+        IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(key)),
+        ClockSkew = TimeSpan.Zero
+    };
+    
+    // Ensure proper token extraction
+    options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
+            Console.WriteLine($"Authorization header: {authHeader}");
+            
+            if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+            {
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                Console.WriteLine($"Extracted token: {token}");
+                Console.WriteLine($"Token length: {token.Length}");
+                Console.WriteLine($"Token parts count: {token.Split('.').Length}");
+                
+                // Manual JWT validation test
+                try
+                {
+                    var handler = new JwtSecurityTokenHandler();
+                    var jsonToken = handler.ReadJwtToken(token);
+                    Console.WriteLine($"Manual JWT validation successful. Issuer: {jsonToken.Issuer}, Audiences: {jsonToken.Audiences}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Manual JWT validation failed: {ex.Message}");
+                }
+                
+                context.Token = token;
+            }
+            return Task.CompletedTask;
+        },
+        OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine($"JWT Authentication failed: {context.Exception.Message}");
+            Console.WriteLine($"Exception type: {context.Exception.GetType().Name}");
+            Console.WriteLine($"Stack trace: {context.Exception.StackTrace}");
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            Console.WriteLine("JWT Token validated successfully");
+            return Task.CompletedTask;
+        }
+    };
+});
+
+
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 
 var app = builder.Build();
@@ -144,7 +249,7 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/image"
 });
 
-app.UseAuthentication();   
+app.UseAuthentication();
 app.UseAuthorization();
 
 
