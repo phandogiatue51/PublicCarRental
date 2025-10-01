@@ -51,10 +51,14 @@ namespace PublicCarRental.Service.Renter
 
         public EVRenter? GetEntityById(int id) => _renterRepo.GetById(id);
 
-        public bool UpdateRenter(int id, AccountDto renter)
+        public bool UpdateRenter(int id, EVRenterUpdateDto renter)
         {
             var existingRenter = _renterRepo.GetById(id);
             if (existingRenter == null || existingRenter.Account == null) return false;
+            if (existingRenter.Account.Email != renter.Email)
+            {
+                existingRenter.Account.IsEmailVerified = false;
+            }
             existingRenter.Account.FullName = renter.FullName;
             existingRenter.Account.Email = renter.Email;
             existingRenter.Account.PhoneNumber = renter.PhoneNumber;

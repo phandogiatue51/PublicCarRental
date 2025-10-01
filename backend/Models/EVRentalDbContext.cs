@@ -19,6 +19,9 @@ namespace PublicCarRental.Models
         public DbSet<VehicleBrand> VehicleBrands { get; set; }
         public DbSet<VehicleType> VehicleTypes { get; set; }
         public DbSet<Favorite> Favorites { get; set; }
+        public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<Rating> Ratings { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Account>()
@@ -123,6 +126,32 @@ namespace PublicCarRental.Models
                 .HasOne(f => f.VehicleModel)
                 .WithMany(vm => vm.FavoritedBy)
                 .HasForeignKey(f => f.ModelId);
+
+            modelBuilder.Entity<Transaction>(entity =>
+            {
+                entity.ToTable("Transactions");
+
+                entity.HasOne(t => t.Contract)
+                      .WithMany()
+                      .HasForeignKey(t => t.ContractId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(t => t.Amount)
+                      .HasColumnType("decimal(15,2)")
+                      .IsRequired();
+
+                entity.Property(t => t.Note)
+                      .HasMaxLength(1000);
+            });
+
+            modelBuilder.Entity<Rating>()
+                    .Property(r => r.Stars)
+                    .HasConversion<int>();
+
+            modelBuilder.Entity<Rating>()
+                    .HasIndex(r => r.ContractId)
+                    .IsUnique();
+
         }
     }
 }

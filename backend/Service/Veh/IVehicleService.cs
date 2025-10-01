@@ -1,4 +1,5 @@
-﻿using PublicCarRental.DTOs.Veh;
+﻿using PublicCarRental.DTOs.Stat;
+using PublicCarRental.DTOs.Veh;
 using PublicCarRental.Models;
 
 namespace PublicCarRental.Service.Veh
@@ -12,5 +13,6 @@ namespace PublicCarRental.Service.Veh
         public (bool Success, string Message, int? VehicleId) CreateVehicle(VehicleCreateDto dto);
         public bool UpdateVehicle(int id, VehicleUpdateDto updatedVehicle);
         bool DeleteVehicle(int id);
+        public IEnumerable<StationDtoForView> GetStationFromModel(int modelId);
     }
 }

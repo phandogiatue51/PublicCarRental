@@ -5,6 +5,7 @@ using PublicCarRental.DTOs.Cont;
 using PublicCarRental.DTOs.Inv;
 using PublicCarRental.Models;
 using PublicCarRental.Service.Cont;
+using PublicCarRental.Service.Trans;
 
 namespace PublicCarRental.Controllers
 {
@@ -13,9 +14,12 @@ namespace PublicCarRental.Controllers
     public class ContractController : ControllerBase
     {
         private readonly IContractService _contractService;
-        public ContractController(IContractService contractService)
+        private readonly ITransactionService _transactionService;
+
+        public ContractController(IContractService contractService, ITransactionService transactionService)
         {
             _contractService = contractService;
+            _transactionService = transactionService;
         }
 
         [HttpGet("all")]
@@ -63,11 +67,11 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpPost("active-contract")]
-        public IActionResult ActiveContract([FromBody] ConfirmContractDto dto)
+        public IActionResult ActiveContract([FromForm] ConfirmContractDto dto)
         {
             try
             {
-                var success = _contractService.StartRental(dto.ContractId, dto.StaffId);
+                var success = _contractService.StartRental(dto);
                 if (!success) return NotFound("Contract not found");
                 return Ok(new { message = "Handover confirmed", contractId = dto.ContractId });
             }
@@ -78,7 +82,7 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpPost("finish-contract")]
-        public IActionResult FinishContract([FromBody] InvoiceCreateDto dto)
+        public IActionResult FinishContract([FromForm] FinishContractDto dto)
         {
             try
             {
@@ -101,5 +105,18 @@ namespace PublicCarRental.Controllers
                 return BadRequest(new { message = "Error during return", details = ex.Message });
             }
         }
+
+        [HttpPost("cancel-contract/{id}")]
+        public IActionResult CancelContract(int id)
+        {
+            var contract = _contractService.GetEntityById(id);
+            _contractService.CancelContract(contract);
+            var success = _transactionService.RefundContract(contract);
+            if (success)
+                return Ok(new { message = "Contract refunded." });
+            else
+                return BadRequest(new { error = "Couldn't refund contract." });
+        }
+
     }
 }

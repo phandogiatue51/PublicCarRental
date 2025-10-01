@@ -3,6 +3,7 @@ using PublicCarRental.DTOs.Inv;
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Cont;
 using PublicCarRental.Repository.Staf;
+using PublicCarRental.Repository.Trans;
 using PublicCarRental.Repository.Vehi;
 using PublicCarRental.Service.Inv;
 using System.Diagnostics.Contracts;
@@ -15,14 +16,16 @@ namespace PublicCarRental.Service.Cont
         private readonly IContractRepository _contractRepo;
         private readonly IStaffRepository _staffRepo;
         private readonly IHelperService _contInvHelperService;
+        private readonly ITransactionRepository _transactionRepository;
 
         public ContractService(IContractRepository repo, IVehicleRepository vehicleRepo, 
-            IStaffRepository staffRepo, IHelperService contInvHelperService)
+            IStaffRepository staffRepo, IHelperService contInvHelperService, ITransactionRepository transactionRepository)
         {
             _contractRepo = repo;
             _vehicleRepo = vehicleRepo;
             _staffRepo = staffRepo;
             _contInvHelperService = contInvHelperService;
+            _transactionRepository = transactionRepository;
         }
 
         public IEnumerable<ContractDto> GetAll()
@@ -43,8 +46,9 @@ namespace PublicCarRental.Service.Cont
                 StartTime = contract.StartTime,
                 EndTime = contract.EndTime,
                 TotalCost = contract.TotalCost,
-                Status = contract.Status
-                
+                Status = contract.Status,
+                ImageIn = contract.ImageUrlIn,
+                ImageOut = contract.ImageUrlOut
             })
             .ToList();
         }
@@ -68,8 +72,9 @@ namespace PublicCarRental.Service.Cont
                 StartTime = contract.StartTime,
                 EndTime = contract.EndTime,
                 TotalCost = contract.TotalCost,
-                Status = contract.Status
-               
+                Status = contract.Status,
+                ImageIn = contract.ImageUrlIn,
+                ImageOut = contract.ImageUrlOut
             };
         }
 
@@ -108,7 +113,7 @@ namespace PublicCarRental.Service.Cont
             var existing = _contractRepo.GetById(id);
             if (existing == null) return false;
             if (existing.Status != RentalStatus.ToBeConfirmed)
-                throw new InvalidOperationException("Only contracts with 'ToBeConfirmed' status can be updated");
+                throw new InvalidOperationException("Couldn't change contract. Refund or start a new contract instead.");
 
             var vehicle = _vehicleRepo.GetFirstAvailableVehicleByModel(updatedContract.ModelId, updatedContract.StationId, updatedContract.StartTime, updatedContract.EndTime);
             if (vehicle == null)
@@ -121,19 +126,18 @@ namespace PublicCarRental.Service.Cont
             existing.EndTime = updatedContract.EndTime;
 
             var duration = (existing.EndTime - existing.StartTime).TotalHours;
-            existing.TotalCost = (decimal)duration * existing.Vehicle.Model.PricePerHour;
+            existing.TotalCost = (decimal)duration * vehicle.Model.PricePerHour;
 
             _contractRepo.Update(existing);
             return true;
         }
 
-        public bool ReturnVehicle(InvoiceCreateDto dto)
+        public bool ReturnVehicle(FinishContractDto dto)
         {
             var contract = _contractRepo.GetById(dto.ContractId);
             if (contract == null) return false;
 
-            var vehicle = contract.Vehicle;
-            if (vehicle == null) throw new InvalidOperationException("Vehicle not found");
+            var vehicle = _vehicleRepo.GetById((int)contract.VehicleId);
 
             contract.EndTime = DateTime.UtcNow;
             contract.Status = RentalStatus.Completed;
@@ -143,15 +147,35 @@ namespace PublicCarRental.Service.Cont
 
             vehicle.Status = VehicleStatus.ToBeCheckup;
 
+            if (dto.imageFile != null && dto.imageFile.Length > 0)
+            {
+                // Save the uploaded file to image/models directory
+                var imagePath = Path.Combine("image", "models");
+                if (!Directory.Exists(imagePath))
+                {
+                    Directory.CreateDirectory(imagePath);
+                }
+
+                var fileName = Path.GetFileName(dto.imageFile.FileName);
+                var filePath = Path.Combine(imagePath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    dto.imageFile.CopyTo(stream);
+                }
+
+                contract.ImageUrlOut = $"/image/contracts/{fileName}";
+            }
+
             _vehicleRepo.Update(vehicle);
             _contractRepo.Update(contract);
 
             return true;
         }
 
-        public bool StartRental(int contractId, int staffId)
+        public bool StartRental(ConfirmContractDto dto)
         {
-            var contract = _contractRepo.GetById(contractId);
+            var contract = _contractRepo.GetById(dto.ContractId);
             if (contract == null || contract.Status != RentalStatus.Confirmed)
                 throw new InvalidOperationException("Invoice for Contract is Unpaid");
 
@@ -161,7 +185,27 @@ namespace PublicCarRental.Service.Cont
 
             contract.Status = RentalStatus.Active;
             contract.StartTime = DateTime.UtcNow;
-            contract.StaffId = staffId;
+            contract.StaffId = dto.StaffId;
+
+            if (dto.imageFile != null && dto.imageFile.Length > 0)
+            {
+                // Save the uploaded file to image/models directory
+                var imagePath = Path.Combine("image", "models");
+                if (!Directory.Exists(imagePath))
+                {
+                    Directory.CreateDirectory(imagePath);
+                }
+
+                var fileName = Path.GetFileName(dto.imageFile.FileName);
+                var filePath = Path.Combine(imagePath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    dto.imageFile.CopyTo(stream);
+                }
+
+                contract.ImageUrlIn = $"/image/contracts/{fileName}";
+            }
 
             vehicle.Status = VehicleStatus.Renting;
             _vehicleRepo.Update(vehicle);
@@ -205,5 +249,15 @@ namespace PublicCarRental.Service.Cont
             return true;
         }
 
+        public bool CancelContract(RentalContract contract)
+        {
+            if (contract == null) return false;
+            if (contract.Status != RentalStatus.ToBeConfirmed && contract.Status != RentalStatus.Completed)
+                return false;
+
+            contract.Status = RentalStatus.Cancelled;
+            _contractRepo.Update(contract);
+            return true;
+        }
     }
 }

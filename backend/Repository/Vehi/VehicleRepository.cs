@@ -34,6 +34,7 @@ namespace PublicCarRental.Repository.Vehi
         {
             var vehicles = _context.Vehicles
                 .Include(v => v.RentalContracts)
+                .Include(v => v.Model)
                 .Where(v => v.ModelId == modelId && v.StationId == stationId)
                 .ToList();
 

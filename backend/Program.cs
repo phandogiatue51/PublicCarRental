@@ -30,6 +30,10 @@ using PublicCarRental.Service.Typ;
 using PublicCarRental.Service.Veh;
 using System.Text;
 using System.Text.Json.Serialization;
+using PublicCarRental.Repository.Trans;
+using PublicCarRental.Service.Trans;
+using PublicCarRental.Service.Fav;
+using PublicCarRental.Repository.Fav;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -110,6 +114,10 @@ builder.Services.AddScoped<ITypeService, TypeService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 builder.Services.AddHostedService<InvoiceCleanupService>();
+builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+builder.Services.AddScoped<ITransactionService,  TransactionService>();
+builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
+builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = jwtSettings["Key"];

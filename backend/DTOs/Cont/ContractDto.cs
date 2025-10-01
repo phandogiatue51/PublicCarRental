@@ -24,5 +24,8 @@ namespace PublicCarRental.DTOs.Cont
 
         public decimal? TotalCost { get; set; }
         public RentalStatus Status { get; set; }
+
+        public string? ImageIn { get; set; }
+        public string? ImageOut { get; set; }
     }
 }

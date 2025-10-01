@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using PublicCarRental.DTOs.Cont;
 using PublicCarRental.DTOs.Mod;
 using PublicCarRental.Models;
 using PublicCarRental.Service;
+using PublicCarRental.Service.Stat;
+using PublicCarRental.Service.Veh;
 
 namespace PublicCarRental.Controllers
 {
@@ -11,10 +14,12 @@ namespace PublicCarRental.Controllers
     public class ModelController : ControllerBase
     {
         private readonly IModelService _service;
+        private readonly IVehicleService _vehicleService;
 
-        public ModelController(IModelService service)
+        public ModelController(IModelService service, IVehicleService vehicleService)
         {
             _service = service;
+            _vehicleService = vehicleService;
         }
 
         [HttpGet("get-all")]
@@ -34,11 +39,7 @@ namespace PublicCarRental.Controllers
 
         [HttpPost("create-model")]
         public IActionResult Create([FromForm] ModelCreateDto dto)
-        {
-            // Debug logging
-            Console.WriteLine($"Received DTO - Name: {dto?.Name}, BrandId: {dto?.BrandId}, TypeId: {dto?.TypeId}");
-            Console.WriteLine($"Image file: {dto?.imageFile?.FileName}, Size: {dto?.imageFile?.Length}");
-            
+        {            
             if (dto == null)
             {
                 return BadRequest("DTO is null");
@@ -81,6 +82,24 @@ namespace PublicCarRental.Controllers
         public IActionResult GetModelFromBrandAndType([FromQuery] int? brandId, [FromQuery] int? typeId)
         {
             var models = _service.GetModelFromBrandAndType(brandId, typeId);
+            return Ok(models);
+        }
+
+        [HttpGet("check-available")]
+        public IActionResult CheckAvailability(CreateContractDto dto)
+        {
+            var vehicle = _vehicleService.GetFirstAvailableVehicleByModel(dto.ModelId, dto.StationId, dto.StartTime, dto.EndTime);
+            if (vehicle == null)
+            {
+                return NotFound($"No available vehicle found for model ID {dto.ModelId} at station ID {dto.StationId} between {dto.StartTime:g} and {dto.EndTime:g}.");
+            }
+            return Ok("You can rent this model");
+        }
+
+        [HttpGet("get-station-from-model/{modelId}")]
+        public IActionResult GetStation(int modelId)
+        {
+            var models = _vehicleService.GetStationFromModel(modelId);
             return Ok(models);
         }
     }

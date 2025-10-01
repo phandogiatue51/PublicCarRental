@@ -1,6 +1,6 @@
 // Chakra imports
 import { Portal, Box, useDisclosure } from '@chakra-ui/react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import React, { useState } from 'react';
 
 import Footer from '@admin/components/footer/FooterAdmin';
@@ -12,15 +12,17 @@ import routes from '@admin/routes';
 // Custom Chakra theme
 export default function Dashboard(props) {
   const { ...rest } = props;
+  const location = useLocation();
   // states and functions
   const [fixed] = useState(false);
   const [toggleSidebar, setToggleSidebar] = useState(false);
   // functions for changing the states from components
   const getRoute = () => {
-    return window.location.pathname !== '/admin/full-screen-maps';
+    return location.pathname !== '/admin/full-screen-maps';
   };
   const getActiveRoute = (routes) => {
-    let activeRoute = 'Default Brand Text';
+    let activeRoute = 'Main Dashboard';
+    const currentPath = location.pathname;
     for (let i = 0; i < routes.length; i++) {
       if (routes[i].collapse) {
         let collapseActiveRoute = getActiveRoute(routes[i].items);
@@ -33,9 +35,7 @@ export default function Dashboard(props) {
           return categoryActiveRoute;
         }
       } else {
-        if (
-          window.location.href.indexOf(routes[i].layout + routes[i].path) !== -1
-        ) {
+        if (currentPath === routes[i].layout + routes[i].path) {
           return routes[i].name;
         }
       }
@@ -44,6 +44,7 @@ export default function Dashboard(props) {
   };
   const getActiveNavbar = (routes) => {
     let activeNavbar = false;
+    const currentPath = location.pathname;
     for (let i = 0; i < routes.length; i++) {
       if (routes[i].collapse) {
         let collapseActiveNavbar = getActiveNavbar(routes[i].items);
@@ -56,9 +57,7 @@ export default function Dashboard(props) {
           return categoryActiveNavbar;
         }
       } else {
-        if (
-          window.location.href.indexOf(routes[i].layout + routes[i].path) !== -1
-        ) {
+        if (currentPath === routes[i].layout + routes[i].path) {
           return routes[i].secondary;
         }
       }
@@ -67,6 +66,7 @@ export default function Dashboard(props) {
   };
   const getActiveNavbarText = (routes) => {
     let activeNavbar = false;
+    const currentPath = location.pathname;
     for (let i = 0; i < routes.length; i++) {
       if (routes[i].collapse) {
         let collapseActiveNavbar = getActiveNavbarText(routes[i].items);
@@ -79,9 +79,7 @@ export default function Dashboard(props) {
           return categoryActiveNavbar;
         }
       } else {
-        if (
-          window.location.href.indexOf(routes[i].layout + routes[i].path) !== -1
-        ) {
+        if (currentPath === routes[i].layout + routes[i].path) {
           return routes[i].messageNavbar;
         }
       }
@@ -133,7 +131,7 @@ export default function Dashboard(props) {
               <Box>
                 <Navbar
                   onOpen={onOpen}
-                  logoText={'Car Rental Admin'}
+                  logoText={'CAR RENTAL'}
                   brandText={getActiveRoute(routes)}
                   secondary={getActiveNavbar(routes)}
                   message={getActiveNavbarText(routes)}

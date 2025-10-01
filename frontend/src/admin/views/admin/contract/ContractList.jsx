@@ -2,16 +2,17 @@
 
 import {
   Box, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue, Spinner, Alert, AlertIcon,
-  AlertTitle, AlertDescription, Badge, Select, HStack, VStack, useToast, Tooltip
+  AlertTitle, AlertDescription, Badge, Select, HStack, VStack, useToast, Tooltip,
+  Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Image, Grid
 } from '@chakra-ui/react';
 import {
   createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable
 } from '@tanstack/react-table';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { contractAPI } from '../../../../services/api';
-import { 
-  MdChevronLeft, MdChevronRight, MdPerson, MdDriveEta, MdLocationOn, MdRefresh, 
-  MdVisibility, MdAttachMoney, MdSchedule, MdAssignment
+import {
+  MdChevronLeft, MdChevronRight, MdPerson, MdDriveEta, MdLocationOn, MdRefresh,
+  MdVisibility, MdAttachMoney, MdSchedule, MdAssignment, MdPhotoLibrary
 } from 'react-icons/md';
 
 // Custom components
@@ -27,13 +28,15 @@ export default function ContractList() {
   const [sorting, setSorting] = useState([]);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedContract, setSelectedContract] = useState(null);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [selectedImages, setSelectedImages] = useState({ imageIn: '', imageOut: '' });
   const toast = useToast();
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
-  
+
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const brandColor = useColorModeValue('brand.500', 'white');
@@ -65,7 +68,7 @@ export default function ContractList() {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const paginatedContracts = contracts.slice(startIndex, endIndex);
-    
+
     return {
       totalPages,
       startIndex,
@@ -118,10 +121,34 @@ export default function ContractList() {
     }
   }, [toast]);
 
+  // Handle image view
+  const handleImageView = useCallback((contract) => {
+    const baseUrl = 'https://localhost:7230';
+    
+    const imageInUrl = contract.imageIn 
+      ? (contract.imageIn.startsWith('http') ? contract.imageIn : `${baseUrl}${contract.imageIn}`)
+      : null;
+    
+    const imageOutUrl = contract.imageOut 
+      ? (contract.imageOut.startsWith('http') ? contract.imageOut : `${baseUrl}${contract.imageOut}`)
+      : null;
+
+    setSelectedImages({
+      imageIn: imageInUrl,
+      imageOut: imageOutUrl
+    });
+    setIsImageModalOpen(true);
+  }, []);
+
   // Handle modal close
   const handleDetailModalClose = useCallback(() => {
     setIsDetailModalOpen(false);
     setSelectedContract(null);
+  }, []);
+
+  const handleImageModalClose = useCallback(() => {
+    setIsImageModalOpen(false);
+    setSelectedImages({ imageIn: '', imageOut: '' });
   }, []);
 
   // Get status badge color
@@ -172,7 +199,7 @@ export default function ContractList() {
           fontSize={{ sm: '10px', lg: '12px' }}
           color="gray.400"
         >
-          CONTRACT ID
+          ID
         </Text>
       ),
       cell: (info) => (
@@ -203,27 +230,29 @@ export default function ContractList() {
         </Flex>
       ),
     }),
-    columnHelper.accessor('stationName', {
-      id: 'station',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          STATION
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center" gap={2}>
-          <Icon as={MdLocationOn} color="gray.500" />
-          <Text color={textColor} fontSize="sm">
-            {info.getValue()}
-          </Text>
-        </Flex>
-      ),
-    }),
+
+    // columnHelper.accessor('stationName', {
+    //   id: 'station',
+    //   header: () => (
+    //     <Text
+    //       justifyContent="space-between"
+    //       align="center"
+    //       fontSize={{ sm: '10px', lg: '12px' }}
+    //       color="gray.400"
+    //     >
+    //       STATION
+    //     </Text>
+    //   ),
+    //   cell: (info) => (
+    //     <Flex align="center" gap={2}>
+    //       <Icon as={MdLocationOn} color="gray.500" />
+    //       <Text color={textColor} fontSize="sm">
+    //         {info.getValue()}
+    //       </Text>
+    //     </Flex>
+    //   ),
+    // }),
+
     columnHelper.accessor('startTime', {
       id: 'startTime',
       header: () => (
@@ -266,8 +295,9 @@ export default function ContractList() {
         </Flex>
       ),
     }),
-    columnHelper.accessor('totalCost', {
-      id: 'totalCost',
+    
+    columnHelper.accessor('imageIn', {
+      id: 'images',
       header: () => (
         <Text
           justifyContent="space-between"
@@ -275,18 +305,37 @@ export default function ContractList() {
           fontSize={{ sm: '10px', lg: '12px' }}
           color="gray.400"
         >
-          TOTAL COST
+          IMAGES
         </Text>
       ),
-      cell: (info) => (
-        <Flex align="center" gap={2}>
-          <Icon as={MdAttachMoney} color="green.500" />
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {formatCurrency(info.getValue())}
-          </Text>
-        </Flex>
-      ),
+      cell: (info) => {
+        const contract = info.row.original;
+        const hasImages = contract.imageIn || contract.imageOut;
+
+        if (!hasImages) {
+          return (
+            <Text color="gray.500" fontSize="sm">
+              No images
+            </Text>
+          );
+        }
+
+        return (
+          <Tooltip label="View Check-in & Check-out Images">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleImageView(contract)}
+              leftIcon={<Icon as={MdPhotoLibrary} />}
+              colorScheme="blue"
+            >
+              View Images
+            </Button>
+          </Tooltip>
+        );
+      },
     }),
+
     columnHelper.accessor('status', {
       id: 'status',
       header: () => (
@@ -316,6 +365,7 @@ export default function ContractList() {
         );
       },
     }),
+
     columnHelper.accessor('actions', {
       id: 'actions',
       header: () => (
@@ -336,7 +386,7 @@ export default function ContractList() {
               size="sm"
               leftIcon={<Icon as={MdVisibility} />}
               colorScheme="blue"
-               onClick={() => handleView(info.row.original)}
+              onClick={() => handleView(info.row.original)}
             >
               View
             </Button>
@@ -344,7 +394,8 @@ export default function ContractList() {
         </Flex>
       ),
     }),
-  ], [textColor]);
+
+  ], [textColor, handleImageView]);
 
   const table = useReactTable({
     data: paginatedContracts,
@@ -362,7 +413,7 @@ export default function ContractList() {
   const pageNumbers = useMemo(() => {
     const maxVisiblePages = 5;
     const pages = [];
-    
+
     if (totalPages <= maxVisiblePages) {
       // Show all pages if total is 5 or less
       for (let i = 1; i <= totalPages; i++) {
@@ -371,7 +422,7 @@ export default function ContractList() {
     } else {
       // Smart pagination logic
       let startPage, endPage;
-      
+
       if (currentPage <= 3) {
         startPage = 1;
         endPage = maxVisiblePages;
@@ -382,12 +433,12 @@ export default function ContractList() {
         startPage = currentPage - 2;
         endPage = currentPage + 2;
       }
-      
+
       for (let i = startPage; i <= endPage; i++) {
         pages.push(i);
       }
     }
-    
+
     return pages;
   }, [currentPage, totalPages]);
 
@@ -475,9 +526,9 @@ export default function ContractList() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                         </Flex>
                       </Th>
                     ))}
@@ -552,7 +603,7 @@ export default function ContractList() {
               >
                 Previous
               </Button>
-              
+
               <HStack spacing={1}>
                 {pageNumbers.map((pageNum) => (
                   <Button
@@ -596,6 +647,105 @@ export default function ContractList() {
         onClose={handleDetailModalClose}
         contract={selectedContract}
       />
+
+      {/* Images Modal */}
+      <Modal isOpen={isImageModalOpen} onClose={handleImageModalClose} size="4xl" isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            <Flex align="center" gap={2}>
+              <Icon as={MdPhotoLibrary} />
+              Vehicle Check-in & Check-out Images
+            </Flex>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={6}>
+              {/* Check-in Image */}
+              <Box>
+                <Text fontWeight="bold" mb={3} textAlign="center" color={textColor}>
+                  Check-in Image
+                </Text>
+                {selectedImages.imageIn ? (
+                  <Image
+                    src={selectedImages.imageIn}
+                    alt="Vehicle check-in"
+                    borderRadius="md"
+                    boxShadow="md"
+                    maxH="400px"
+                    objectFit="contain"
+                    mx="auto"
+                    fallback={
+                      <Box 
+                        bg="gray.100" 
+                        height="200px" 
+                        display="flex" 
+                        alignItems="center" 
+                        justifyContent="center"
+                        borderRadius="md"
+                      >
+                        <Text color="gray.500">Failed to load image</Text>
+                      </Box>
+                    }
+                  />
+                ) : (
+                  <Box 
+                    bg="gray.100" 
+                    height="200px" 
+                    display="flex" 
+                    alignItems="center" 
+                    justifyContent="center"
+                    borderRadius="md"
+                  >
+                    <Text color="gray.500">No check-in image available</Text>
+                  </Box>
+                )}
+              </Box>
+
+              {/* Check-out Image */}
+              <Box>
+                <Text fontWeight="bold" mb={3} textAlign="center" color={textColor}>
+                  Check-out Image
+                </Text>
+                {selectedImages.imageOut ? (
+                  <Image
+                    src={selectedImages.imageOut}
+                    alt="Vehicle check-out"
+                    borderRadius="md"
+                    boxShadow="md"
+                    maxH="400px"
+                    objectFit="contain"
+                    mx="auto"
+                    fallback={
+                      <Box 
+                        bg="gray.100" 
+                        height="200px" 
+                        display="flex" 
+                        alignItems="center" 
+                        justifyContent="center"
+                        borderRadius="md"
+                      >
+                        <Text color="gray.500">Failed to load image</Text>
+                      </Box>
+                    }
+                  />
+                ) : (
+                  <Box 
+                    bg="gray.100" 
+                    height="200px" 
+                    display="flex" 
+                    alignItems="center" 
+                    justifyContent="center"
+                    borderRadius="md"
+                  >
+                    <Text color="gray.500">No check-out image available</Text>
+                  </Box>
+                )}
+              </Box>
+            </Grid>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }

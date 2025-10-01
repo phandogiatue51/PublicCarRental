@@ -4,6 +4,7 @@ using PublicCarRental.DTOs.Inv;
 using PublicCarRental.Models;
 using PublicCarRental.Service.Cont;
 using PublicCarRental.Service.Inv;
+using PublicCarRental.Service.Trans;
 
 namespace PublicCarRental.Controllers
 {
@@ -13,11 +14,12 @@ namespace PublicCarRental.Controllers
     {
         private readonly IInvoiceService _service;
         private readonly IContractService _contractService;
-
-        public InvoiceController(IInvoiceService service, IContractService contractService)
+        private readonly ITransactionService _transactionService;
+        public InvoiceController(IInvoiceService service, IContractService contractService, ITransactionService transactionService)
         {
             _service = service;
             _contractService = contractService;
+            _transactionService = transactionService;
         }
 
         [HttpGet("all-invoices")]
@@ -56,8 +58,10 @@ namespace PublicCarRental.Controllers
             if (contract == null) return NotFound("Associated contract not found");
 
             _contractService.UpdateContractStatus(contract.ContractId);
-
+            _transactionService.CreateTransaction(contract);
             var success = _service.UpdateInvoice(id, invoice);
+
+
             if (!success) return BadRequest("Failed to update invoice");
 
             return Ok(new { message = "Invoice marked as paid" });

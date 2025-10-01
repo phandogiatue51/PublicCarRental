@@ -1,4 +1,5 @@
-﻿using PublicCarRental.DTOs.Veh;
+﻿using PublicCarRental.DTOs.Stat;
+using PublicCarRental.DTOs.Veh;
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Vehi;
 
@@ -48,6 +49,7 @@ namespace PublicCarRental.Service.Veh
 
         public Vehicle GetFirstAvailableVehicleByModel(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd)
         => _repo.GetFirstAvailableVehicleByModel(modelId, stationId, requestedStart, requestedEnd);
+
         public Vehicle GetEntityById(int id)
         {
             return _repo.GetById(id);
@@ -97,6 +99,22 @@ namespace PublicCarRental.Service.Veh
 
             _repo.Delete(id);
             return true;
+        }
+
+        public IEnumerable<StationDtoForView> GetStationFromModel(int modelId)
+        {
+            return _repo.GetAll()
+                .Where(v => v.ModelId == modelId)
+                .Where(v => v.Station != null)
+                .Select(v => new StationDtoForView
+                {
+                    Name = v.Station.Name,
+                    Address = v.Station.Address,
+                    Latitude = v.Station.Latitude,
+                    Longitude = v.Station.Longitude
+                })
+                .Distinct()
+                .ToList();
         }
     }
 }

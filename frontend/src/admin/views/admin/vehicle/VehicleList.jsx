@@ -198,7 +198,7 @@ export default function VehicleList() {
           fontSize={{ sm: '10px', lg: '12px' }}
           color="gray.400"
         >
-          VEHICLE ID
+          ID
         </Text>
       ),
       cell: (info) => (
@@ -302,27 +302,7 @@ export default function VehicleList() {
         </Flex>
       ),
     }),
-    columnHelper.accessor('pricePerHour', {
-      id: 'price',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          PRICE/HOUR
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center" gap={2}>
-          <Icon as={MdAttachMoney} color="green.500" />
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {formatCurrency(info.getValue())}
-          </Text>
-        </Flex>
-      ),
-    }),
+   
     columnHelper.accessor('status', {
       id: 'status',
       header: () => (

@@ -139,7 +139,7 @@ export default function InvoiceList() {
           fontSize={{ sm: '10px', lg: '12px' }}
           color="gray.400"
         >
-          INVOICE ID
+          ID
         </Text>
       ),
       cell: (info) => (
@@ -148,27 +148,7 @@ export default function InvoiceList() {
         </Text>
       ),
     }),
-    columnHelper.accessor('contractId', {
-      id: 'contractId',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          CONTRACT ID
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center" gap={2}>
-          <Icon as={MdAssignment} color="gray.500" />
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
-        </Flex>
-      ),
-    }),
+   
     columnHelper.accessor('issuedAt', {
       id: 'issuedAt',
       header: () => (

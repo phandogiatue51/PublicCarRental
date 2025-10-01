@@ -40,5 +40,8 @@ namespace PublicCarRental.Models
         public DateTime ChargingEndTime => EndTime.AddHours(6);
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        public string? ImageUrlIn { get; set; }
+        public string? ImageUrlOut { get; set; }
+        public Rating Rating { get; set; }
     }
 }

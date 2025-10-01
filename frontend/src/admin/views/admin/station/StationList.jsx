@@ -205,32 +205,7 @@ export default function StationList() {
         </Text>
       ),
     }),
-    columnHelper.accessor('coordinates', {
-      id: 'coordinates',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          COORDINATES
-        </Text>
-      ),
-      cell: (info) => {
-        const station = info.row.original;
-        return (
-          <VStack spacing={1} align="start">
-            <Text color={textColor} fontSize="xs">
-              Lat: {station.latitude.toFixed(4)}
-            </Text>
-            <Text color={textColor} fontSize="xs">
-              Lng: {station.longitude.toFixed(4)}
-            </Text>
-          </VStack>
-        );
-      },
-    }),
+    
     columnHelper.accessor('vehicleCount', {
       id: 'vehicles',
       header: () => (

@@ -41,7 +41,7 @@ public class EVRenterController : ControllerBase
     }
 
     [HttpPut("update-renter/{id}")]
-    public IActionResult UpdateRenter(int id, [FromBody] AccountDto dto)
+    public IActionResult UpdateRenter(int id, [FromBody] EVRenterUpdateDto dto)
     {
         var success = _eVRenterService.UpdateRenter(id, dto);
         if (!success)

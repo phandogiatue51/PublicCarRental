@@ -11,9 +11,10 @@ namespace PublicCarRental.Service.Cont
         RentalContract? GetEntityById(int id);
         public bool UpdateContract(int id, UpdateContractDto updatedContract);
         public int CreateContract(CreateContractDto dto);
-        public bool StartRental(int contractId, int staffId);
-        public bool ReturnVehicle(InvoiceCreateDto dto);
+        public bool StartRental(ConfirmContractDto dto);
+        public bool ReturnVehicle(FinishContractDto dto);
         public IEnumerable<ContractDto> GetContractByRenterId(int renterId);
         public bool UpdateContractStatus(int contractId);
+        public bool CancelContract(RentalContract contract);
     }
 }
