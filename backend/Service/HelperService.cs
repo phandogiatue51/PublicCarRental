@@ -21,7 +21,12 @@ public class HelperService : IHelperService
 
     public int AutoCancelOverdueInvoices()
     {
-        var overdueInvoices = _invoiceRepo.GetAll()
+        var invoices = _invoiceRepo.GetAll();
+
+        if (invoices == null || !invoices.Any())
+            return 0;
+
+        var overdueInvoices = invoices
             .Where(i => i.Status == InvoiceStatus.Unpaid && DateTime.UtcNow > i.IssuedAt.AddMinutes(30))
             .ToList();
 
