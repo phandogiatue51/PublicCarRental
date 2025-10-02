@@ -71,8 +71,8 @@ namespace PublicCarRental.Service.Acc
 
                 _accountRepo.Create(account);
 
-                var token = _tokenRepository.GenerateToken(account, TokenPurpose.EmailVerification);
-                _emailService.SendVerificationEmail(account.Email, token);
+                //var token = _tokenRepository.GenerateToken(account, TokenPurpose.EmailVerification);
+                //_emailService.SendVerificationEmail(account.Email, token);
 
                 return (true, "Account created successfully.", account.AccountId);
             }

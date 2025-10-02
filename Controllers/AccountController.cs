@@ -34,7 +34,7 @@ namespace PublicCarRental.Controllers
             if (!result.Success)
                 return BadRequest(new { message = result.Message });
 
-            _renterService.CreateRenter(result.AccountId.Value, dto);
+            _renterService.CreateRenter((int)result.AccountId, dto);
             return Ok(new { message = "EVRenter registered", accountId = result.AccountId });
         }
 
