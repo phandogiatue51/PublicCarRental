@@ -209,10 +209,7 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
-const cors = require('cors');
-app.use(cors({
-  origin: '*' // hoặc '*' nếu muốn cho phép tất cả (chỉ dùng khi test)
-}));
+
 
 
 builder.Services.AddSwaggerGen(c =>
@@ -247,9 +244,6 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
-
-// Enable CORS
-app.UseCors("AllowReactApp");
 
 // Enable static files serving
 app.UseStaticFiles();
