@@ -1,6 +1,6 @@
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "backend/Dockerfile"
+builder = "nixpacks"
+buildCommand = "cd backend && dotnet publish -c Release -o /app/publish"
 
 [deploy]
-startCommand = "dotnet PublicCarRental.dll --urls http://0.0.0.0:$PORT"
+startCommand = "cd /app/publish && dotnet PublicCarRental.dll --urls http://0.0.0.0:$PORT"
