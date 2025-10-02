@@ -203,6 +203,10 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
+const cors = require('cors');
+app.use(cors({
+  origin: '*' // hoặc '*' nếu muốn cho phép tất cả (chỉ dùng khi test)
+}));
 
 
 builder.Services.AddSwaggerGen(c =>

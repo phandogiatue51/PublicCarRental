@@ -7,6 +7,7 @@ import {
   MdHome,
   MdLock,
   MdOutlineShoppingCart,
+  MdExitToApp,
 } from 'react-icons/md';
 
 // Admin Imports
@@ -26,6 +27,7 @@ import StationList from '@admin/views/admin/station/StationList';
 
 // Auth Imports
 import SignInCentered from '@views/auth/signIn';
+import Home from 'Pages/Home';
 
 const routes = [
   {
@@ -35,6 +37,7 @@ const routes = [
     icon: <Icon as={MdHome} width="20px" height="20px" color="inherit" />,
     component: <MainDashboard />,
   },
+ 
   {
   name: 'Renter',
   layout: '/admin',
@@ -91,6 +94,15 @@ const routes = [
     icon: <Icon as={MdBarChart} width="20px" height="20px" color="inherit" />,
     component: <StationList />,
   },
+  {
+    name: 'Return to Home',
+    layout: '/',
+    path: '/',
+    icon: <Icon as={MdExitToApp} width="20px" height="20px" color="inherit" />,
+    component: <Home />,
+  },
+ 
 ];
+
 
 export default routes;
