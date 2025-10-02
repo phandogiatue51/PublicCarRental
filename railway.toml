@@ -1,6 +1,8 @@
 [build]
 builder = "nixpacks"
-buildCommand = "cd backend && dotnet publish -c Release -o /app/publish"
 
 [deploy]
-startCommand = "cd /app/publish && dotnet PublicCarRental.dll --urls http://0.0.0.0:$PORT"
+startCommand = "cd backend && dotnet PublicCarRental.dll --urls http://0.0.0.0:$PORT"
+
+[build.env]
+DOTNET_VERSION = "8.0"
