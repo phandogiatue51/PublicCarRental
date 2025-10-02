@@ -1,0 +1,9 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "backend/Dockerfile"
+
+[deploy]
+startCommand = "dotnet PublicCarRental.dll --urls http://0.0.0.0:$PORT"
+
+[build.env]
+NODE_VERSION = "18"
