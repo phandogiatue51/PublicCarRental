@@ -1,7 +1,6 @@
 ﻿using MailKit.Net.Smtp;
 using Microsoft.Extensions.Configuration;
 using MimeKit;
-using System.Net.Mail;
 
 namespace PublicCarRental.Service.Email
 {
@@ -28,7 +27,9 @@ namespace PublicCarRental.Service.Email
             message.To.Add(new MailboxAddress("", toEmail));
             message.Subject = "Verify your email";
 
-            var verificationLink = $"https://localhost:7230/api/Account/verify-email?token={token}";
+
+            var verificationLink = $"https://publiccarrental-production-b7c5.up.railway.app/api/Account/verify-email?token={token}";
+
             message.Body = new TextPart("html")
             {
                 Text = $@"
@@ -69,8 +70,8 @@ namespace PublicCarRental.Service.Email
             message.From.Add(new MailboxAddress(senderName, senderEmail));
             message.To.Add(new MailboxAddress("", toEmail));
             message.Subject = "Reset your password";
+            var resetLink = $"https://publiccarrental-production-b7c5.up.railway.app/api/Account/reset-password?token={token}";
 
-            var resetLink = $"https://localhost:7230/api/Account/reset-password?token={token}";
             message.Body = new TextPart("html")
             {
                 Text = $@"
