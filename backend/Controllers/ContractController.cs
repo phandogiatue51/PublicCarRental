@@ -106,17 +106,5 @@ namespace PublicCarRental.Controllers
             }
         }
 
-        [HttpPost("cancel-contract/{id}")]
-        public IActionResult CancelContract(int id)
-        {
-            var contract = _contractService.GetEntityById(id);
-            _contractService.CancelContract(contract);
-            var success = _transactionService.RefundContract(contract);
-            if (success)
-                return Ok(new { message = "Contract refunded." });
-            else
-                return BadRequest(new { error = "Couldn't refund contract." });
-        }
-
     }
 }

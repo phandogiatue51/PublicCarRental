@@ -43,28 +43,5 @@ namespace PublicCarRental.Controllers
             _service.CreateInvoice(dto);
             return Ok(new { message = "Invoice created" });
         }
-
-        [HttpPost("pay-invoice/{id}")]
-        public IActionResult PayInvoice(int id)
-        {
-            var invoice = _service.GetEntityById(id);
-            if (invoice == null) return NotFound();
-
-            invoice.Status = InvoiceStatus.Paid;
-            invoice.AmountPaid = invoice.AmountDue;
-            invoice.PaidAt = DateTime.UtcNow;
-
-            var contract = _contractService.GetEntityById(invoice.ContractId);
-            if (contract == null) return NotFound("Associated contract not found");
-
-            _contractService.UpdateContractStatus(contract.ContractId);
-            _transactionService.CreateTransaction(contract);
-            var success = _service.UpdateInvoice(id, invoice);
-
-
-            if (!success) return BadRequest("Failed to update invoice");
-
-            return Ok(new { message = "Invoice marked as paid" });
-        }
     }
 }

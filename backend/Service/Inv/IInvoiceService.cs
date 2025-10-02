@@ -9,7 +9,7 @@ namespace PublicCarRental.Service.Inv
         public InvoiceDto GetById(int id);
         public Invoice GetEntityById(int id);
         public void CreateInvoice(InvoiceCreateDto dto);
-        public bool UpdateInvoice(int id, Invoice updatedInvoice);
+        public bool UpdateInvoice(Invoice invoice);
         public IEnumerable<InvoiceDto> GetInvoiceByRenterId(int renterId);
     }
 }

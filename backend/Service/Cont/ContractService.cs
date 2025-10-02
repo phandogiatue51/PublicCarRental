@@ -249,15 +249,5 @@ namespace PublicCarRental.Service.Cont
             return true;
         }
 
-        public bool CancelContract(RentalContract contract)
-        {
-            if (contract == null) return false;
-            if (contract.Status != RentalStatus.ToBeConfirmed && contract.Status != RentalStatus.Completed)
-                return false;
-
-            contract.Status = RentalStatus.Cancelled;
-            _contractRepo.Update(contract);
-            return true;
-        }
     }
 }
