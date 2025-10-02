@@ -63,17 +63,9 @@ namespace PublicCarRental.Service.Inv
             _repo.Create(invoice);
         }
 
-        public bool UpdateInvoice(int id, Invoice updatedInvoice)
+        public bool UpdateInvoice(Invoice invoice)
         {
-            var existing = _repo.GetById(id);
-            if (existing == null) return false;
-
-            existing.AmountDue = updatedInvoice.AmountDue;
-            existing.AmountPaid = updatedInvoice.AmountPaid;
-            existing.PaidAt = updatedInvoice.PaidAt;
-            existing.Status = updatedInvoice.Status;
-
-            _repo.Update(existing);
+            _repo.Update(invoice);
             return true;
         }
 

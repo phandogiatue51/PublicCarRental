@@ -6,7 +6,7 @@ namespace PublicCarRental.Service.Trans
     public interface ITransactionService
     {
         public IEnumerable<TransactionDto> GetAll();
-        public void CreateTransaction(RentalContract contract);
+        public void CreateTransaction(int contractId);
         public bool RefundContract(RentalContract contract);
     }
 }

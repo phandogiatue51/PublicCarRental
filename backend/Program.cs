@@ -2,18 +2,19 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System.IdentityModel.Tokens.Jwt;
 using PublicCarRental.Helpers;
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Acc;
 using PublicCarRental.Repository.Bran;
 using PublicCarRental.Repository.Cont;
+using PublicCarRental.Repository.Fav;
 using PublicCarRental.Repository.Inv;
 using PublicCarRental.Repository.Model;
 using PublicCarRental.Repository.Renter;
 using PublicCarRental.Repository.Staf;
 using PublicCarRental.Repository.Stat;
 using PublicCarRental.Repository.Token;
+using PublicCarRental.Repository.Trans;
 using PublicCarRental.Repository.Typ;
 using PublicCarRental.Repository.Vehi;
 using PublicCarRental.Service;
@@ -21,19 +22,19 @@ using PublicCarRental.Service.Acc;
 using PublicCarRental.Service.Bran;
 using PublicCarRental.Service.Cont;
 using PublicCarRental.Service.Email;
+using PublicCarRental.Service.Fav;
 using PublicCarRental.Service.Inv;
 using PublicCarRental.Service.Mod;
 using PublicCarRental.Service.Renter;
 using PublicCarRental.Service.Staf;
 using PublicCarRental.Service.Stat;
+using PublicCarRental.Service.Trans;
 using PublicCarRental.Service.Typ;
 using PublicCarRental.Service.Veh;
+using PublicCarRental.Service.VNPay;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json.Serialization;
-using PublicCarRental.Repository.Trans;
-using PublicCarRental.Service.Trans;
-using PublicCarRental.Service.Fav;
-using PublicCarRental.Repository.Fav;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -118,6 +119,9 @@ builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<ITransactionService,  TransactionService>();
 builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
+builder.Services.Configure<VNPayConfig>(builder.Configuration.GetSection("VNPay"));
+builder.Services.AddScoped<IVNPayService, VNPayService>();
+
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = jwtSettings["Key"];

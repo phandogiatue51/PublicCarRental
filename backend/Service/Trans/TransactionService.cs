@@ -1,6 +1,8 @@
 ﻿using PublicCarRental.DTOs;
 using PublicCarRental.Models;
+using PublicCarRental.Repository.Cont;
 using PublicCarRental.Repository.Trans;
+using PublicCarRental.Service.Cont;
 using Transaction = PublicCarRental.Models.Transaction;
 
 namespace PublicCarRental.Service.Trans
@@ -8,12 +10,13 @@ namespace PublicCarRental.Service.Trans
     public class TransactionService : ITransactionService
     {
         private readonly ITransactionRepository _transactionRepository;
-        private readonly IHelperService _contInvHelperService;
+        private readonly IContractRepository _contractRepository;
 
-        public TransactionService(ITransactionRepository transactionRepository, IHelperService helperService)
+        public TransactionService(ITransactionRepository transactionRepository, 
+            IContractRepository contractRepository)
         {
             _transactionRepository = transactionRepository;
-            _contInvHelperService = helperService;
+            _contractRepository = contractRepository;
         }
 
         public IEnumerable<TransactionDto> GetAll()
@@ -30,8 +33,9 @@ namespace PublicCarRental.Service.Trans
                 }).ToList(); 
         }
 
-        public void CreateTransaction(RentalContract contract)
+        public void CreateTransaction(int contractId)
         {
+            var contract = _contractRepository.GetById(contractId);
             var transaction = new Transaction
             {
                 ContractId = contract.ContractId,
@@ -55,6 +59,10 @@ namespace PublicCarRental.Service.Trans
                 Note = $"Refund issued for cancelled contract #{contract.ContractId}"
             };
             _transactionRepository.Create(refundTransaction);
+
+            contract.Status = RentalStatus.Cancelled;
+            _contractRepository.Update(contract);
+
             return true;
         }
     }
