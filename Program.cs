@@ -73,17 +73,21 @@ builder.Services.Configure<IISServerOptions>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Add CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:3000",
-            "https://localhost:3000",
-            "https://publiccarrental-production.up.railway.app")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        policy.SetIsOriginAllowed(origin =>
+        {
+            // Allow all localhost ports and your Railway domain
+            return origin.StartsWith("http://localhost:") ||
+                   origin.StartsWith("https://localhost:") ||
+                   origin.Contains("publiccarrental-production") ||
+                   origin.Contains("railway.app");
+        })
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
     });
 });
 
@@ -244,6 +248,8 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();
+
+app.UseCors("AllowReactApp");
 
 // Enable static files serving
 app.UseStaticFiles();
