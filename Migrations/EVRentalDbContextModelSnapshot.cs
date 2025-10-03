@@ -79,7 +79,7 @@ namespace PublicCarRental.Migrations
                     b.HasIndex("PhoneNumber")
                         .IsUnique();
 
-                    b.ToTable("Accounts");
+                    b.ToTable("Accounts", (string)null);
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.EVRenter", b =>
@@ -105,7 +105,7 @@ namespace PublicCarRental.Migrations
                     b.HasIndex("LicenseNumber")
                         .IsUnique();
 
-                    b.ToTable("EVRenters");
+                    b.ToTable("EVRenters", (string)null);
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Favorite", b =>
@@ -131,7 +131,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasIndex("ModelId");
 
-                    b.ToTable("Favorites");
+                    b.ToTable("Favorites", (string)null);
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Invoice", b =>
@@ -168,7 +168,7 @@ namespace PublicCarRental.Migrations
                     b.HasIndex("ContractId")
                         .IsUnique();
 
-                    b.ToTable("Invoices");
+                    b.ToTable("Invoices", (string)null);
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Rating", b =>
@@ -197,7 +197,7 @@ namespace PublicCarRental.Migrations
                     b.HasIndex("ContractId")
                         .IsUnique();
 
-                    b.ToTable("Ratings");
+                    b.ToTable("Ratings", (string)null);
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.RentalContract", b =>
@@ -251,7 +251,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasIndex("VehicleId");
 
-                    b.ToTable("RentalContracts");
+                    b.ToTable("RentalContracts", (string)null);
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Staff", b =>
@@ -275,7 +275,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasIndex("StationId");
 
-                    b.ToTable("Staffs");
+                    b.ToTable("Staffs", (string)null);
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Station", b =>
@@ -302,7 +302,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasKey("StationId");
 
-                    b.ToTable("Stations");
+                    b.ToTable("Stations", (string)null);
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Transaction", b =>
@@ -370,7 +370,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasIndex("StationId");
 
-                    b.ToTable("Vehicles");
+                    b.ToTable("Vehicles", (string)null);
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.VehicleBrand", b =>
@@ -387,7 +387,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasKey("BrandId");
 
-                    b.ToTable("VehicleBrands");
+                    b.ToTable("VehicleBrands", (string)null);
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.VehicleModel", b =>
@@ -420,7 +420,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasIndex("TypeId");
 
-                    b.ToTable("VehicleModels");
+                    b.ToTable("VehicleModels", (string)null);
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.VehicleType", b =>
@@ -437,7 +437,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasKey("TypeId");
 
-                    b.ToTable("VehicleTypes");
+                    b.ToTable("VehicleTypes", (string)null);
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.EVRenter", b =>

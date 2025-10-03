@@ -31,6 +31,7 @@ using PublicCarRental.Service.Stat;
 using PublicCarRental.Service.Trans;
 using PublicCarRental.Service.Typ;
 using PublicCarRental.Service.Veh;
+using PublicCarRental.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -38,18 +39,8 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddPolicy("PaymentPolicy", context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: context.Connection.RemoteIpAddress?.ToString(),
-            factory: partition => new FixedWindowRateLimiterOptions
-            {
-                AutoReplenishment = true,
-                PermitLimit = 5,
-                Window = TimeSpan.FromMinutes(1)
-            }));
-});
+builder.Services.AddHttpClient();
+
 
 builder.Services.AddControllers(options =>
 {
@@ -133,12 +124,11 @@ builder.Services.AddScoped<ITypeRepository, TypeRepository>();
 builder.Services.AddScoped<ITypeService, TypeService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
-builder.Services.AddHostedService<InvoiceCleanupService>();
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<ITransactionService,  TransactionService>();
 builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
-
+builder.Services.AddScoped<IPayOSService, PayOSService>();
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = jwtSettings["Key"];
@@ -185,7 +175,6 @@ builder.Services.AddAuthentication(options =>
         OnMessageReceived = context =>
         {
             var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
-            Console.WriteLine($"Authorization header: {authHeader}");
             
             if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
             {

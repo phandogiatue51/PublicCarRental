@@ -1,55 +1,39 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
-using Newtonsoft.Json;
 using PublicCarRental.Service.Inv;
-using PublicCarRental.Service.Pay;
+using PublicCarRental.Services;
+using System.Text.Json;
 
 namespace PublicCarRental.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
-    [EnableRateLimiting("PaymentPolicy")]
+    [Route("api/[controller]")]
     public class PaymentController : ControllerBase
     {
-        private readonly IPaymentService _paymentService;
-        private readonly IInvoiceService _invoiceService;
+        private readonly IPayOSService _payOSService;
         private readonly ILogger<PaymentController> _logger;
+        private readonly IInvoiceService _invoiceService;
 
-        public PaymentController(IPaymentService paymentService, ILogger<PaymentController> logger,
+        public PaymentController(
+            IPayOSService payOSService,
+            ILogger<PaymentController> logger,
             IInvoiceService invoiceService)
         {
-            _paymentService = paymentService;
+            _payOSService = payOSService;
             _logger = logger;
             _invoiceService = invoiceService;
         }
 
-        [HttpPost("create/{invoiceId}")]
-        public async Task<IActionResult> CreatePayment(int invoiceId)
+        [HttpPost("create-payment")]
+        public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentRequest request)
         {
             try
             {
-                // Better validation
-                if (invoiceId <= 0)
-                    return BadRequest(new { error = "Invalid invoice ID" });
+                if (request.InvoiceId <= 0 || request.RenterId <= 0)
+                    return BadRequest(new { error = "Invalid parameters" });
 
-                // Get renter ID from authentication - add null checking
-                var renterIdClaim = User.FindFirst("renterId");
-                if (renterIdClaim == null || !int.TryParse(renterIdClaim.Value, out int renterId) || renterId <= 0)
-                    return Unauthorized(new { error = "Invalid user" });
-
-                var paymentResponse = await _paymentService.CreatePaymentAsync(invoiceId, renterId);
-                return Ok(paymentResponse);
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Invalid request for payment creation");
-                return BadRequest(new { error = ex.Message });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogWarning(ex, "Unauthorized payment attempt");
-                return Unauthorized(new { error = ex.Message });
+                var paymentLink = await _payOSService.CreatePaymentLink(request.InvoiceId, request.RenterId);
+                return Ok(paymentLink);
             }
             catch (Exception ex)
             {
@@ -59,39 +43,108 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpPost("webhook")]
-        public async Task<IActionResult> Webhook()
+        public async Task<IActionResult> HandleWebhook()
         {
             try
             {
-                // Read the raw body for signature verification
                 using var reader = new StreamReader(HttpContext.Request.Body);
-                var body = await reader.ReadToEndAsync();
+                var webhookBody = await reader.ReadToEndAsync();
 
-                // Log webhook receipt (be careful not to log sensitive data in production)
-                _logger.LogInformation("Webhook received: {Body}", body);
+                _logger.LogInformation($"Webhook received: {webhookBody}");
 
-                var webhookData = JsonConvert.DeserializeObject<dynamic>(body);
+                // Get signature from header
+                var signature = HttpContext.Request.Headers["x-payos-signature"].FirstOrDefault();
 
-                var result = await _paymentService.HandleWebhook(webhookData);
-
-                if (result)
+                // Verify webhook signature
+                var isValid = _payOSService.VerifyWebhook(webhookBody, signature);
+                if (!isValid)
                 {
-                    return Ok(new { success = true });
+                    _logger.LogWarning("Invalid webhook signature");
+                    return BadRequest(new { error = "Invalid signature" });
+                }
+
+                // Parse webhook data manually
+                var webhookData = JsonSerializer.Deserialize<JsonElement>(webhookBody);
+
+                if (webhookData.TryGetProperty("data", out var dataElement) &&
+                    dataElement.TryGetProperty("orderCode", out var orderCodeElement) &&
+                    dataElement.TryGetProperty("status", out var statusElement))
+                {
+                    var orderCode = orderCodeElement.GetInt32();
+                    var status = statusElement.GetString();
+
+                    _logger.LogInformation($"Webhook processed: Order {orderCode} - Status {status}");
+
+                    // Update invoice based on status
+                    var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
+                    _logger.LogInformation($"Invoice lookup result: {(invoice != null ? $"Found invoice {invoice.InvoiceId} with status {invoice.Status}" : "No invoice found")}");
+                    
+                    if (invoice != null)
+                    {
+                        _logger.LogInformation($"Current invoice status: {invoice.Status}, Contract status: {invoice.Contract?.Status}");
+                        
+                        if (status == "PAID")
+                        {
+                            _logger.LogInformation($"Attempting to update invoice {invoice.InvoiceId} to PAID status with amount {invoice.AmountDue}");
+                            
+                            // Use your service method instead of updating directly
+                            var success = _invoiceService.UpdateInvoiceStatus(
+                                invoice.InvoiceId,
+                                Models.InvoiceStatus.Paid,
+                                invoice.AmountDue
+                            );
+
+                            if (success)
+                            {
+                                _logger.LogInformation($"Invoice {invoice.InvoiceId} marked as PAID and contract status updated");
+                                
+                                // Verify the update by fetching the invoice again
+                                var updatedInvoice = _invoiceService.GetEntityById(invoice.InvoiceId);
+                                _logger.LogInformation($"Verification - Updated invoice status: {updatedInvoice?.Status}, Contract status: {updatedInvoice?.Contract?.Status}");
+                            }
+                            else
+                            {
+                                _logger.LogError($"Failed to update invoice status for invoice {invoice.InvoiceId}");
+                            }
+                        }
+                        else if (status == "CANCELLED" || status == "EXPIRED")
+                        {
+                            _logger.LogInformation($"Updating invoice {invoice.InvoiceId} to UNPAID status");
+                            
+                            var success = _invoiceService.UpdateInvoiceStatus(
+                                invoice.InvoiceId,
+                                Models.InvoiceStatus.Unpaid
+                            );
+                            
+                            if (success)
+                            {
+                                _logger.LogInformation($"Invoice {invoice.InvoiceId} marked as UNPAID");
+                            }
+                            else
+                            {
+                                _logger.LogError($"Failed to update invoice {invoice.InvoiceId} to UNPAID status");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"No invoice found for order code: {orderCode}");
+                        
+                        // Let's also log all invoices with their order codes for debugging
+                        var allInvoices = _invoiceService.GetAll();
+                        _logger.LogInformation($"Available invoices with order codes: {string.Join(", ", allInvoices.Select(i => $"ID:{i.InvoiceId} OrderCode:{(i as dynamic)?.OrderCode ?? "null"}"))}");
+                    }
                 }
                 else
                 {
-                    _logger.LogWarning("Webhook processing failed");
-                    return BadRequest(new { error = "Webhook processing failed" });
+                    _logger.LogWarning("Webhook data missing required fields (data, orderCode, or status)");
                 }
-            }
-            catch (JsonException ex)
-            {
-                _logger.LogError(ex, "Invalid JSON in webhook");
-                return BadRequest(new { error = "Invalid JSON format" });
+
+                return Ok(new { success = true });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Webhook error");
+                _logger.LogError(ex, "Error processing webhook");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
@@ -104,41 +157,199 @@ namespace PublicCarRental.Controllers
                 if (orderCode <= 0)
                     return BadRequest(new { error = "Invalid order code" });
 
-                var status = await _paymentService.GetPaymentStatusAsync(orderCode);
+                var status = await _payOSService.GetPaymentStatus(orderCode);
                 return Ok(status);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting payment status for order {OrderCode}", orderCode);
+                _logger.LogError(ex, "Error getting payment status");
                 return BadRequest(new { error = ex.Message });
             }
         }
 
-        [HttpGet("invoice/{invoiceId}/status")]
-        public async Task<IActionResult> GetPaymentStatusByInvoiceId(int invoiceId)
+        [HttpGet("check-and-update/{orderCode}")]
+        public async Task<IActionResult> CheckAndUpdatePayment(int orderCode)
         {
             try
             {
-                if (invoiceId <= 0)
-                    return BadRequest(new { error = "Invalid invoice ID" });
+                if (orderCode <= 0)
+                    return BadRequest(new { error = "Invalid order code" });
 
-                // Get the invoice to find the order code
-                var invoice = _invoiceService.GetEntityById(invoiceId);
+                _logger.LogInformation($"Checking payment status for order code: {orderCode}");
+
+                // Get payment status from PayOS
+                var paymentStatus = await _payOSService.GetPaymentStatus(orderCode);
+                _logger.LogInformation($"PayOS payment status: {paymentStatus.status}");
+
+                // Find the invoice
+                var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
                 if (invoice == null)
-                    return NotFound(new { error = "Invoice not found" });
+                {
+                    return NotFound(new { error = $"No invoice found for order code: {orderCode}" });
+                }
 
-                if (invoice.OrderCode == null)
-                    return BadRequest(new { error = "No payment associated with this invoice" });
+                _logger.LogInformation($"Found invoice {invoice.InvoiceId} with current status: {invoice.Status}");
 
-                var status = await _paymentService.GetPaymentStatusAsync(invoice.OrderCode.Value);
-                return Ok(status);
+                // If payment is PAID and invoice is not yet paid, update it
+                if (paymentStatus.status == "PAID" && invoice.Status != Models.InvoiceStatus.Paid)
+                {
+                    _logger.LogInformation($"Payment is PAID, updating invoice {invoice.InvoiceId} to PAID status");
+                    
+                    var success = _invoiceService.UpdateInvoiceStatus(
+                        invoice.InvoiceId,
+                        Models.InvoiceStatus.Paid,
+                        invoice.AmountDue
+                    );
+
+                    if (success)
+                    {
+                        var updatedInvoice = _invoiceService.GetEntityById(invoice.InvoiceId);
+                        return Ok(new { 
+                            success = true, 
+                            message = "Payment confirmed and invoice updated to PAID",
+                            paymentStatus = paymentStatus.status,
+                            invoiceId = invoice.InvoiceId,
+                            oldStatus = invoice.Status,
+                            newStatus = updatedInvoice?.Status,
+                            contractStatus = updatedInvoice?.Contract?.Status
+                        });
+                    }
+                    else
+                    {
+                        return StatusCode(500, new { error = "Payment confirmed but failed to update invoice" });
+                    }
+                }
+                else if (invoice.Status == Models.InvoiceStatus.Paid)
+                {
+                    return Ok(new { 
+                        message = "Invoice is already marked as PAID",
+                        paymentStatus = paymentStatus.status,
+                        invoiceStatus = invoice.Status
+                    });
+                }
+                else
+                {
+                    return Ok(new { 
+                        message = $"Payment status is {paymentStatus.status}, no update needed",
+                        paymentStatus = paymentStatus.status,
+                        invoiceStatus = invoice.Status
+                    });
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting payment status for invoice {InvoiceId}", invoiceId);
-                return BadRequest(new { error = ex.Message });
+                _logger.LogError(ex, "Error checking and updating payment");
+                return StatusCode(500, new { error = ex.Message });
             }
         }
 
+        [HttpGet("test")]
+        public IActionResult Test()
+        {
+            return Ok(new { message = "Payment controller is working" });
+        }
+
+        [AllowAnonymous]
+        [HttpGet("success")]
+        public async Task<IActionResult> PaymentSuccess([FromQuery] string orderCode)
+        {
+            // Log the successful payment
+            _logger.LogInformation($"Payment successful for order: {orderCode}");
+
+            string statusMessage = "Thank you for your payment. Your rental has been confirmed.";
+            string additionalInfo = "";
+
+            // Try to automatically check and update the payment status
+            if (!string.IsNullOrEmpty(orderCode) && int.TryParse(orderCode, out int orderCodeInt))
+            {
+                try
+                {
+                    _logger.LogInformation($"Auto-checking payment status for order: {orderCodeInt}");
+                    
+                    // Get payment status from PayOS
+                    var paymentStatus = await _payOSService.GetPaymentStatus(orderCodeInt);
+                    _logger.LogInformation($"PayOS payment status: {paymentStatus.status}");
+
+                    // Find and update the invoice if needed
+                    var invoice = _invoiceService.GetInvoiceByOrderCode(orderCodeInt);
+                    if (invoice != null)
+                    {
+                        if (paymentStatus.status == "PAID" && invoice.Status != Models.InvoiceStatus.Paid)
+                        {
+                            _logger.LogInformation($"Auto-updating invoice {invoice.InvoiceId} to PAID status");
+                            
+                            var success = _invoiceService.UpdateInvoiceStatus(
+                                invoice.InvoiceId,
+                                Models.InvoiceStatus.Paid,
+                                invoice.AmountDue
+                            );
+
+                            if (success)
+                            {
+                                statusMessage = "✅ Payment confirmed! Your rental has been confirmed and invoice updated.";
+                                additionalInfo = $"Invoice #{invoice.InvoiceId} has been marked as PAID.";
+                            }
+                            else
+                            {
+                                statusMessage = "Payment received but there was an issue updating the invoice. Please contact support.";
+                                additionalInfo = $"Invoice #{invoice.InvoiceId} needs manual review.";
+                            }
+                        }
+                        else if (invoice.Status == Models.InvoiceStatus.Paid)
+                        {
+                            statusMessage = "✅ Payment already confirmed! Your rental is ready.";
+                            additionalInfo = $"Invoice #{invoice.InvoiceId} is already marked as PAID.";
+                        }
+                        else
+                        {
+                            statusMessage = "Payment received. Processing your rental confirmation...";
+                            additionalInfo = $"Payment status: {paymentStatus.status}. Invoice status: {invoice.Status}";
+                        }
+                    }
+                    else
+                    {
+                        statusMessage = "Payment received but invoice not found. Please contact support.";
+                        additionalInfo = $"Order code: {orderCode}";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error auto-checking payment status");
+                    statusMessage = "Payment received. We're processing your rental confirmation...";
+                    additionalInfo = "If you don't receive confirmation within 24 hours, please contact support.";
+                }
+            }
+
+            return Content(@"
+            <html>
+                <body style='text-align: center; padding: 50px; font-family: Arial;'>
+                    <h1>✅ Payment Successful!</h1>
+                    <p>" + statusMessage + @"</p>
+                    <p>Order Code: " + orderCode + @"</p>
+                    " + (!string.IsNullOrEmpty(additionalInfo) ? "<p style='color: #666; font-size: 14px;'>" + additionalInfo + "</p>" : "") + @"
+                    <a href='/'>Return to Home</a>
+                </body>
+            </html>", "text/html");
+        }
+
+        [AllowAnonymous]
+        [HttpGet("cancel")]
+        public IActionResult PaymentCancel()
+        {
+            return Content(@"
+            <html>
+                <body style='text-align: center; padding: 50px; font-family: Arial;'>
+                    <h1>❌ Payment Cancelled</h1>
+                    <p>Your payment was cancelled. You can try again anytime.</p>
+                    <a href='/'>Return to Home</a>
+                </body>
+            </html>", "text/html");
+        }
+    }
+
+    public class CreatePaymentRequest
+    {
+        public int InvoiceId { get; set; }
+        public int RenterId { get; set; }
     }
 }
