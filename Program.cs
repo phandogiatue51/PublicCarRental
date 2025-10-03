@@ -34,8 +34,22 @@ using PublicCarRental.Service.Veh;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("PaymentPolicy", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString(),
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+});
 
 builder.Services.AddControllers(options =>
 {

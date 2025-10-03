@@ -23,10 +23,7 @@ namespace PublicCarRental.Models
 
         public InvoiceStatus Status { get; set; } = InvoiceStatus.Unpaid;
 
-        public string? PaymentGateway { get; set; } // "VNPay"
-        public string? PaymentTransactionId { get; set; } // VNPay's transaction ID
-        public string? PaymentResponseCode { get; set; } // VNPay response code
-        public string? PaymentSecureHash { get; set; } // VNPay security hash
-        public DateTime? PaymentExpiryTime { get; set; } // When payment link expires
+        public int? OrderCode { get; set; } 
+
     }
 }

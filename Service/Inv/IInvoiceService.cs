@@ -11,5 +11,6 @@ namespace PublicCarRental.Service.Inv
         public void CreateInvoice(InvoiceCreateDto dto);
         public bool UpdateInvoice(Invoice invoice);
         public IEnumerable<InvoiceDto> GetInvoiceByRenterId(int renterId);
+        public Invoice GetInvoiceByOrderCode(int orderCode);
     }
 }

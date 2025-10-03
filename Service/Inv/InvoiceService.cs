@@ -85,5 +85,9 @@ namespace PublicCarRental.Service.Inv
                 Status = i.Status,
             });
         }
+        public Invoice GetInvoiceByOrderCode(int orderCode)
+        {
+            return _repo.GetAll().FirstOrDefault(i => i.OrderCode == orderCode);
+        }
     }
 }
