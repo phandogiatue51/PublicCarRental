@@ -18,6 +18,7 @@ namespace PublicCarRental.Repository.Inv
             _context.Invoices.Add(invoice);
             _context.SaveChanges();
         }
+
         public IQueryable<Invoice> GetAll()
         {
             return _context.Invoices

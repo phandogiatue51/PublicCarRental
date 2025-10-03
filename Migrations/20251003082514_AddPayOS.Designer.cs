@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PublicCarRental.Models;
@@ -11,9 +12,11 @@ using PublicCarRental.Models;
 namespace PublicCarRental.Migrations
 {
     [DbContext(typeof(EVRentalDbContext))]
-    partial class EVRentalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251003082514_AddPayOS")]
+    partial class AddPayOS
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -79,7 +82,7 @@ namespace PublicCarRental.Migrations
                     b.HasIndex("PhoneNumber")
                         .IsUnique();
 
-                    b.ToTable("Accounts", (string)null);
+                    b.ToTable("Accounts");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.EVRenter", b =>
@@ -105,7 +108,7 @@ namespace PublicCarRental.Migrations
                     b.HasIndex("LicenseNumber")
                         .IsUnique();
 
-                    b.ToTable("EVRenters", (string)null);
+                    b.ToTable("EVRenters");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Favorite", b =>
@@ -131,7 +134,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasIndex("ModelId");
 
-                    b.ToTable("Favorites", (string)null);
+                    b.ToTable("Favorites");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Invoice", b =>
@@ -168,7 +171,7 @@ namespace PublicCarRental.Migrations
                     b.HasIndex("ContractId")
                         .IsUnique();
 
-                    b.ToTable("Invoices", (string)null);
+                    b.ToTable("Invoices");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Rating", b =>
@@ -197,7 +200,7 @@ namespace PublicCarRental.Migrations
                     b.HasIndex("ContractId")
                         .IsUnique();
 
-                    b.ToTable("Ratings", (string)null);
+                    b.ToTable("Ratings");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.RentalContract", b =>
@@ -251,7 +254,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasIndex("VehicleId");
 
-                    b.ToTable("RentalContracts", (string)null);
+                    b.ToTable("RentalContracts");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Staff", b =>
@@ -275,7 +278,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasIndex("StationId");
 
-                    b.ToTable("Staffs", (string)null);
+                    b.ToTable("Staffs");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Station", b =>
@@ -302,7 +305,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasKey("StationId");
 
-                    b.ToTable("Stations", (string)null);
+                    b.ToTable("Stations");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.Transaction", b =>
@@ -370,7 +373,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasIndex("StationId");
 
-                    b.ToTable("Vehicles", (string)null);
+                    b.ToTable("Vehicles");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.VehicleBrand", b =>
@@ -387,7 +390,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasKey("BrandId");
 
-                    b.ToTable("VehicleBrands", (string)null);
+                    b.ToTable("VehicleBrands");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.VehicleModel", b =>
@@ -420,7 +423,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasIndex("TypeId");
 
-                    b.ToTable("VehicleModels", (string)null);
+                    b.ToTable("VehicleModels");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.VehicleType", b =>
@@ -437,7 +440,7 @@ namespace PublicCarRental.Migrations
 
                     b.HasKey("TypeId");
 
-                    b.ToTable("VehicleTypes", (string)null);
+                    b.ToTable("VehicleTypes");
                 });
 
             modelBuilder.Entity("PublicCarRental.Models.EVRenter", b =>

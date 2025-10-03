@@ -40,29 +40,33 @@ namespace PublicCarRental.Controllers
         [HttpPost("create-contract")]
         public IActionResult CreateContract([FromBody] CreateContractDto dto)
         {
-            try
+            var result = _contractService.CreateContract(dto);
+
+            if (result.Success)
             {
-                var contractId = _contractService.CreateContract(dto);
-                return Ok(new { message = "Rental on Pending", contractId });
+                return Ok(new
+                {
+                    message = result.Message,
+                    contractId = result.contractId
+                });
             }
-            catch (Exception ex)
+            else
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { error = result.Message });
             }
         }
 
         [HttpPost("update-contract/{id}")]
         public IActionResult UpdateContract(int id, [FromBody] UpdateContractDto dto)
         {
-            try
+            var result = _contractService.UpdateContract(id, dto);
+            if (result.Success)
             {
-                var success = _contractService.UpdateContract(id, dto);
-                if (!success) return NotFound("Contract not found");
-                return Ok(new { message = "Contract updated", contractId = id });
+                return Ok(new { message = result.Message });
             }
-            catch (Exception ex)
+            else
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { error = result.Message });
             }
         }
 

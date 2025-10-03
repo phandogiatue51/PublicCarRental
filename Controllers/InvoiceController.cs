@@ -37,11 +37,12 @@ namespace PublicCarRental.Controllers
             return Ok(invoice);
         }
 
-        [HttpPost("create-invoice")]
-        public IActionResult Create([FromBody] InvoiceCreateDto dto)
+        [HttpPost("create-invoice/{contractId}")]
+        public IActionResult Create(int contractId) 
         {
-            _service.CreateInvoice(dto);
-            return Ok(new { message = "Invoice created" });
+            var result = _service.CreateInvoice(contractId);
+            if (result.Success) return Ok( result.Message);
+            return BadRequest(result.Message);
         }
     }
 }

@@ -6,6 +6,7 @@ using PublicCarRental.Repository.Staf;
 using PublicCarRental.Repository.Trans;
 using PublicCarRental.Repository.Vehi;
 using PublicCarRental.Service.Inv;
+using PublicCarRental.Service.Ren;
 using System.Diagnostics.Contracts;
 
 namespace PublicCarRental.Service.Cont
@@ -17,15 +18,18 @@ namespace PublicCarRental.Service.Cont
         private readonly IStaffRepository _staffRepo;
         private readonly IHelperService _contInvHelperService;
         private readonly ITransactionRepository _transactionRepository;
+        private readonly IEVRenterService _renterService;
 
         public ContractService(IContractRepository repo, IVehicleRepository vehicleRepo, 
-            IStaffRepository staffRepo, IHelperService contInvHelperService, ITransactionRepository transactionRepository)
+            IStaffRepository staffRepo, IHelperService contInvHelperService, 
+            ITransactionRepository transactionRepository, IEVRenterService eVRenterService)
         {
             _contractRepo = repo;
             _vehicleRepo = vehicleRepo;
             _staffRepo = staffRepo;
             _contInvHelperService = contInvHelperService;
             _transactionRepository = transactionRepository;
+            _renterService = eVRenterService;
         }
 
         public IEnumerable<ContractDto> GetAll()
@@ -83,41 +87,50 @@ namespace PublicCarRental.Service.Cont
             return _contractRepo.GetById(id);
         }
 
-        public int CreateContract(CreateContractDto dto)
+        public (bool Success, string Message, int contractId) CreateContract(CreateContractDto dto)
         {
-            var vehicle = _vehicleRepo.GetFirstAvailableVehicleByModel(dto.ModelId, dto.StationId, dto.StartTime, dto.EndTime);
-            if (vehicle == null)
-                throw new InvalidOperationException("Vehicle not available");
-
-            var contract = new RentalContract
+            try
             {
-                EVRenterId = dto.EVRenterId,
-                VehicleId = vehicle.VehicleId,
-                StationId = dto.StationId,
-                StartTime = dto.StartTime,
-                EndTime = dto.EndTime,
-                Status = RentalStatus.ToBeConfirmed,
-            };
-            Console.WriteLine($"Contract created with VehicleId: {contract.VehicleId}");
+                var vehicle = _vehicleRepo.GetFirstAvailableVehicleByModel(dto.ModelId, dto.StationId, dto.StartTime, dto.EndTime);
+                if (vehicle == null)
+                    return (false, "Model not available. Choose another time, station, or model.", 0);
+                var renter = _renterService.GetEntityById(dto.EVRenterId);
+                if (renter == null)
+                    return (false, "Renter not found!", 0);
 
-            var duration = (contract.EndTime - contract.StartTime).TotalHours;
-            contract.TotalCost = (decimal)duration * vehicle.Model.PricePerHour;
+                var contract = new RentalContract
+                {
+                    EVRenterId = dto.EVRenterId,
+                    VehicleId = vehicle.VehicleId,
+                    StationId = dto.StationId,
+                    StartTime = dto.StartTime,
+                    EndTime = dto.EndTime,
+                    Status = RentalStatus.ToBeConfirmed,
+                };
 
-            _contractRepo.Create(contract);
+                var duration = (contract.EndTime - contract.StartTime).TotalHours;
+                contract.TotalCost = (decimal)duration * vehicle.Model.PricePerHour;
 
-            return contract.ContractId;
+                _contractRepo.Create(contract);
+
+                return (true, "Please view your contract.", contract.ContractId);
+            }
+            catch (Exception ex)
+            {
+                return (false, "Please enter the existing station ID or model ID.", 0);
+            }
         }
 
-        public bool UpdateContract(int id, UpdateContractDto updatedContract)
+        public (bool Success, string Message) UpdateContract(int id, UpdateContractDto updatedContract)
         {
             var existing = _contractRepo.GetById(id);
-            if (existing == null) return false;
+            if (existing == null) return (false, "Vehicle not found!");
             if (existing.Status != RentalStatus.ToBeConfirmed)
-                throw new InvalidOperationException("Couldn't change contract. Refund or start a new contract instead.");
+                return (false, "Couldn't change contract. Refund or start a new contract instead.");
 
             var vehicle = _vehicleRepo.GetFirstAvailableVehicleByModel(updatedContract.ModelId, updatedContract.StationId, updatedContract.StartTime, updatedContract.EndTime);
             if (vehicle == null)
-                throw new InvalidOperationException("Vehicle not available");
+                return (false, "Model not available. Choose another time, station, or model.");
 
             existing.VehicleId = vehicle.VehicleId;
             existing.StaffId = updatedContract.StaffId;
@@ -129,7 +142,7 @@ namespace PublicCarRental.Service.Cont
             existing.TotalCost = (decimal)duration * vehicle.Model.PricePerHour;
 
             _contractRepo.Update(existing);
-            return true;
+            return (true, "Contract updated successfully!");
         }
 
         public bool ReturnVehicle(FinishContractDto dto)
@@ -239,14 +252,29 @@ namespace PublicCarRental.Service.Cont
             });
         }
 
-        public bool UpdateContractStatus(int contractId)
+        public bool UpdateContractStatus(int contractId, RentalStatus status)
         {
-            var contract = _contractRepo.GetById(contractId);
-            if (contract == null) return false;
+            try
+            {
+                var contract = _contractRepo.GetById(contractId);
+                if (contract == null) 
+                {
+                    Console.WriteLine($"ContractService: Contract {contractId} not found");
+                    return false;
+                }
 
-            contract.Status = RentalStatus.Confirmed;
-            _contractRepo.Update(contract);
-            return true;
+                Console.WriteLine($"ContractService: Updating contract {contractId} from {contract.Status} to {status}");
+                contract.Status = status;
+                _contractRepo.Update(contract);
+                Console.WriteLine($"ContractService: Contract {contractId} updated successfully to {status}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ContractService: Error updating contract {contractId}: {ex.Message}");
+                Console.WriteLine($"ContractService: Stack trace: {ex.StackTrace}");
+                return false;
+            }
         }
 
     }
