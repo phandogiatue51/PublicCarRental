@@ -3,7 +3,7 @@ using PublicCarRental.DTOs.Acc;
 using PublicCarRental.Service.Cont;
 using PublicCarRental.Service.Fav;
 using PublicCarRental.Service.Inv;
-using PublicCarRental.Service.Renter;
+using PublicCarRental.Service.Ren;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -43,10 +43,11 @@ public class EVRenterController : ControllerBase
     [HttpPut("update-renter/{id}")]
     public IActionResult UpdateRenter(int id, [FromBody] EVRenterUpdateDto dto)
     {
-        var success = _eVRenterService.UpdateRenter(id, dto);
-        if (!success)
-            return NotFound(new { message = "Renter not found" });
-        return Ok(new { message = "Renter updated", renterId = id });
+        var result = _eVRenterService.UpdateRenter(id, dto);
+        if (!result.Success)
+            return BadRequest(new { message = result.Message });
+
+        return Ok(new { message = result.Message, renterId = id });
     }
 
     [HttpDelete("delete-renter/{id}")]

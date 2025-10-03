@@ -48,9 +48,12 @@ namespace PublicCarRental.Controllers
         [HttpPut("update-vehicle/{id}")]
         public IActionResult Update(int id, [FromBody] VehicleUpdateDto vehicle)
         {
-            var success = _service.UpdateVehicle(id, vehicle);
-            if (!success) return NotFound();
-            return Ok(new { message = "Vehicle updated" });
+            var result = _service.UpdateVehicle(id, vehicle);
+
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
+
+            return Ok(new { message = result.Message });
         }
 
         [HttpDelete("delete-vehicle/{id}")]

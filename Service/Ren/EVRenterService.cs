@@ -1,0 +1,150 @@
+﻿using PublicCarRental.DTOs.Acc;
+using PublicCarRental.Models;
+using PublicCarRental.Repository.Acc;
+using PublicCarRental.Repository.Ren;
+using PublicCarRental.Service.Cont;
+using PublicCarRental.Service.Fav;
+using PublicCarRental.Service.Inv;
+
+namespace PublicCarRental.Service.Ren
+{
+    public class EVRenterService : IEVRenterService
+    {
+        private readonly IEVRenterRepository _renterRepo;
+        private readonly IAccountRepository _accountRepo;
+
+        public EVRenterService(IEVRenterRepository renterRepo, IAccountRepository accountRepository)
+        {
+            _renterRepo = renterRepo;
+            _accountRepo = accountRepository;
+        }
+
+        public IEnumerable<EVRenterDto> GetAll()
+        {
+            return _renterRepo.GetAll()
+                .Where(r => r.Account != null)
+                .Select(r => new EVRenterDto
+                {
+                    RenterId = r.RenterId,
+                    FullName = r.Account.FullName,
+                    Email = r.Account.Email,
+                    PhoneNumber = r.Account.PhoneNumber,
+                    IdentityCardNumber = r.Account.IdentityCardNumber,
+                    LicenseNumber = r.LicenseNumber,
+                    Status = r.Account.Status
+                }).ToList();
+        }
+
+        public EVRenterDto? GetById(int id)
+        {
+            var r = _renterRepo.GetById(id);
+            if (r == null || r.Account == null) return null;
+
+            return new EVRenterDto
+            {
+                RenterId = r.RenterId,
+                FullName = r.Account.FullName,
+                Email = r.Account.Email,
+                PhoneNumber = r.Account.PhoneNumber,
+                IdentityCardNumber = r.Account.IdentityCardNumber,
+                LicenseNumber = r.LicenseNumber,
+                Status = r.Account.Status
+            };
+        }
+
+        public EVRenter? GetEntityById(int id) => _renterRepo.GetById(id);
+
+        public (bool Success, string Message) UpdateRenter(int id, EVRenterUpdateDto renter)
+        {
+            var existingRenter = _renterRepo.GetById(id);
+            if (existingRenter == null || existingRenter.Account == null)
+                return (false, "Renter not found");
+
+            if (existingRenter.Account.PhoneNumber != renter.PhoneNumber &&
+                _accountRepo.Exists(a => a.AccountId != existingRenter.AccountId && a.PhoneNumber == renter.PhoneNumber))
+            {
+                return (false, "Phone number is already registered to another account");
+            }
+
+            if (existingRenter.Account.IdentityCardNumber != renter.IdentityCardNumber &&
+                _accountRepo.Exists(a => a.AccountId != existingRenter.AccountId && a.IdentityCardNumber == renter.IdentityCardNumber))
+            {
+                return (false, "Identity card number is already registered to another account");
+            }
+
+            if (existingRenter.LicenseNumber != renter.LicenseNumber &&
+                _renterRepo.Exists(r => r.RenterId != id && r.LicenseNumber == renter.LicenseNumber))
+            {
+                return (false, "License number is already registered to another renter");
+            }
+
+            if (existingRenter.Account.Email != renter.Email)
+            {
+                existingRenter.Account.IsEmailVerified = false;
+
+                if (_accountRepo.Exists(a => a.AccountId != existingRenter.AccountId && a.Email == renter.Email))
+                {
+                    return (false, "Email is already registered to another account");
+                }
+            }
+
+            existingRenter.Account.FullName = renter.FullName;
+            existingRenter.Account.Email = renter.Email;
+            existingRenter.Account.PhoneNumber = renter.PhoneNumber;
+            existingRenter.Account.IdentityCardNumber = renter.IdentityCardNumber;
+            existingRenter.LicenseNumber = renter.LicenseNumber;
+
+            try
+            {
+                _renterRepo.Update(existingRenter);
+                return (true, "Renter updated successfully");
+            }
+            catch (Exception ex)
+            {
+              
+                return (false, "An error occurred while updating the renter");
+            }
+        }
+
+        public bool DeleteRenter(int id)
+        {
+        
+            var renter = _renterRepo.GetById(id);
+            if (renter == null) return false;
+
+            renter.Account.Status = AccountStatus.Inactive;
+            _renterRepo.Update(renter);
+            return true;
+        }
+
+        public (bool Success, string Message) CreateRenter (int accountId, AccountDto dto)
+        {
+            try
+            {
+                if (_renterRepo.Exists(a => a.LicenseNumber == dto.LicenseNumber))
+                    return (false, "License is already registered.");
+
+                var renter = new EVRenter
+                {
+                    AccountId = accountId,
+                    LicenseNumber = dto.LicenseNumber
+                };
+
+                _renterRepo.Create(renter);
+                return (true, "Renter created successfully.");
+            }
+            catch (Exception ex)
+            {
+                return (false, "An error occurred while creating the account.");
+            }
+        }
+
+        public bool ChangeStatus(int renterId)
+        {
+            _renterRepo.ChangeStatus(renterId);
+            return true;
+        }
+
+
+    }
+}

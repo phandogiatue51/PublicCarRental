@@ -1,4 +1,5 @@
 ﻿using PublicCarRental.Models;
+using System.Linq.Expressions;
 
 namespace PublicCarRental.Repository.Vehi
 {
@@ -10,5 +11,6 @@ namespace PublicCarRental.Repository.Vehi
         void Create(Vehicle vehicle);
         void Update(Vehicle vehicle);
         void Delete(int id);
+        public bool Exists(Expression<Func<Vehicle, bool>> predicate);
     }
 }

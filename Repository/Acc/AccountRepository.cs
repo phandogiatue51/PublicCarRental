@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PublicCarRental.Models;
 using System;
+using System.Linq.Expressions;
 
 namespace PublicCarRental.Repository.Acc
 {
@@ -48,6 +49,34 @@ namespace PublicCarRental.Repository.Acc
         public Account? GetByIdentifier(string identifier)
         {
             return _context.Accounts.FirstOrDefault(a => a.Email == identifier || a.PhoneNumber == identifier);
+        }
+
+        public bool Exists(Expression<Func<Account, bool>> predicate)
+        {
+            return _context.Accounts.Any(predicate);
+        }
+        public int? GetRenterId(int accountId)
+        {
+            return _context.EVRenters
+                .Where(r => r.AccountId == accountId)
+                .Select(r => (int?)r.RenterId)
+                .FirstOrDefault();
+        }
+
+        public int? GetStaffId(int accountId)
+        {
+            return _context.Staffs
+                .Where(s => s.AccountId == accountId)
+                .Select(s => (int?)s.StaffId)
+                .FirstOrDefault();
+        }
+
+        public int? GetStaffStationId(int accountId)
+        {
+            return _context.Staffs
+                .Where(s => s.AccountId == accountId)
+                .Select(s => s.StationId)
+                .FirstOrDefault();
         }
     }
 }

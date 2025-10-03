@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PublicCarRental.Models;
 using System;
+using System.Linq.Expressions;
 
 namespace PublicCarRental.Repository.Vehi
 {
@@ -80,6 +81,11 @@ namespace PublicCarRental.Repository.Vehi
                 _context.Vehicles.Remove(vehicle);
                 _context.SaveChanges();
             }
+        }
+
+        public bool Exists(Expression<Func<Vehicle, bool>> predicate)
+        {
+            return _context.Vehicles.Any(predicate);
         }
     }
 }

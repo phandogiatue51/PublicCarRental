@@ -1,6 +1,7 @@
 ﻿using PublicCarRental.Models;
+using System.Linq.Expressions;
 
-namespace PublicCarRental.Repository.Renter
+namespace PublicCarRental.Repository.Ren
 {
     public interface IEVRenterRepository
     {
@@ -10,5 +11,6 @@ namespace PublicCarRental.Repository.Renter
         void Update(EVRenter renter);
         void Delete(int id);
         public void ChangeStatus(int renterId);
+        public bool Exists(Expression<Func<EVRenter, bool>> predicate);
     }
 }

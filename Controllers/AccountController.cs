@@ -7,7 +7,7 @@ using PublicCarRental.DTOs.Acc;
 using PublicCarRental.Helpers;
 using PublicCarRental.Models;
 using PublicCarRental.Service.Acc;
-using PublicCarRental.Service.Renter;
+using PublicCarRental.Service.Ren;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -20,22 +20,35 @@ namespace PublicCarRental.Controllers
     {
         private readonly IAccountService _accountService;
         private readonly IEVRenterService _renterService;
-        public AccountController(IAccountService accountService, IEVRenterService renterService)
+        private readonly ILogger<AccountController> _logger;
+        public AccountController(IAccountService accountService, 
+            IEVRenterService renterService, ILogger<AccountController> logger) 
         {
             _accountService = accountService;
             _renterService = renterService;
+            _logger = logger;
         }
 
         [HttpPost("register")]
         public IActionResult RegisterRenter(AccountDto dto)
         {
-            var result = _accountService.CreateAccount(dto.FullName, dto.Email, dto.Password, dto.PhoneNumber, dto.IdentityCardNumber, AccountRole.EVRenter);
+            if (string.IsNullOrWhiteSpace(dto.LicenseNumber))
+                return BadRequest(new { message = "License number is required." });
 
-            if (!result.Success)
-                return BadRequest(new { message = result.Message });
+            if (string.IsNullOrWhiteSpace(dto.IdentityCardNumber))
+                return BadRequest(new { message = "Identity card number is required." });
 
-            _renterService.CreateRenter((int)result.AccountId, dto);
-            return Ok(new { message = "EVRenter registered", accountId = result.AccountId });
+            var accountResult = _accountService.CreateAccount(dto, AccountRole.EVRenter);
+
+            if (!accountResult.Success)
+                return BadRequest(new { message = accountResult.Message });
+
+            var renterResult = _renterService.CreateRenter((int)accountResult.AccountId, dto);
+
+            if (!renterResult.Success)
+                return BadRequest(new { message = renterResult.Message });
+
+            return Ok(new { message = "EVRenter registered successfully", accountId = accountResult.AccountId });
         }
 
         [HttpPost("login")]
@@ -46,8 +59,24 @@ namespace PublicCarRental.Controllers
             if (!result.Success)
                 return BadRequest(new { message = result.Message });
 
-            return Ok(new { token = result.Token, role = result.Role });
+            return Ok(new
+            {
+                message = result.Message, 
+                token = result.Token,
+                role = result.Role
+            });
         }
+
+        [Authorize]
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            var accountId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            _logger.LogInformation("User {AccountId} logged out", accountId);
+
+            return Ok(new { message = "Logged out successfully" });
+        }
+
 
         [HttpGet("verify-email")]
         public IActionResult VerifyEmail([FromQuery] string token)

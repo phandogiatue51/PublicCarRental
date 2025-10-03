@@ -1,8 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PublicCarRental.Models;
 using System;
+using System.Linq.Expressions;
 
-namespace PublicCarRental.Repository.Renter
+namespace PublicCarRental.Repository.Ren
 {
     public class EVRenterRepository : IEVRenterRepository
     {
@@ -55,6 +56,11 @@ namespace PublicCarRental.Repository.Renter
             if (renter.Account == null) throw new Exception("Account not found");
             renter.Account.Status = renter.Account.Status == AccountStatus.Active ? AccountStatus.Suspended : AccountStatus.Suspended;
             _context.SaveChanges();
+        }
+ 
+        public bool Exists(Expression<Func<EVRenter, bool>> predicate)
+        {
+            return _context.EVRenters.Any(predicate);
         }
     }
 }

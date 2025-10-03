@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PublicCarRental.DTOs.Acc;
 using PublicCarRental.DTOs.Staf;
 using PublicCarRental.Models;
 using PublicCarRental.Service.Acc;
@@ -38,14 +39,28 @@ namespace PublicCarRental.Controllers
         [HttpPost("register-staff")]
         public IActionResult RegisterStaff([FromBody] StaffDto dto)
         {
-            var result = _accountService.CreateAccount(dto.FullName, dto.Email, dto.Password, dto.PhoneNumber, dto.IdentityCardNumber, AccountRole.Staff);
+            var accountResult = _accountService.CreateAccount(new AccountDto
+            {
+                FullName = dto.FullName,
+                Email = dto.Email,
+                Password = dto.Password,
+                PhoneNumber = dto.PhoneNumber,
+                IdentityCardNumber = dto.IdentityCardNumber
+            }, AccountRole.Staff);
 
-            if (!result.Success)
-                return BadRequest(new { message = result.Message });
+            if (!accountResult.Success)
+                return BadRequest(new { message = accountResult.Message });
 
-            _staffService.CreateStaff(result.AccountId.Value, dto);
+            var staffResult = _staffService.CreateStaff((int)accountResult.AccountId, dto);
 
-            return Ok(new { message = "Staff registered successfully", accountId = result.AccountId });
+            if (!staffResult.Success)
+                return BadRequest(new { message = staffResult.Message });
+
+            return Ok(new
+            {
+                message = "Staff registered successfully",
+                accountId = accountResult.AccountId
+            });
         }
 
         [HttpPut("update-staff/{id}")]

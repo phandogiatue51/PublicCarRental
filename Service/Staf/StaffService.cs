@@ -85,15 +85,23 @@ namespace PublicCarRental.Service.Staf
             return true;
         }
 
-        public void CreateStaff(int accountId, StaffDto dto)
+        public (bool Success, string Message) CreateStaff(int accountId, StaffDto dto)
         {
-            var staff = new Staff
+            try
             {
-                AccountId = accountId,
-                StationId = dto.StationId,
-            };
+                var staff = new Staff
+                {
+                    AccountId = accountId,
+                    StationId = dto.StationId,
+                };
 
-            _staffRepo.Create(staff);
+                _staffRepo.Create(staff);
+                return (true, "Staff created successfully.");
+            }
+            catch (Exception ex)
+            {
+                return (false, "An error occurred while creating the account.");
+            }
         }
 
         public bool ChangeStatus(int staffId)

@@ -1,4 +1,5 @@
 ﻿using PublicCarRental.Models;
+using System.Linq.Expressions;
 
 namespace PublicCarRental.Repository.Acc
 {
@@ -10,5 +11,10 @@ namespace PublicCarRental.Repository.Acc
         void Update(Account account);
         void Delete(int id);
         public Account? GetByIdentifier(string identifier);
+        public bool Exists(Expression<Func<Account, bool>> predicate);
+        public int? GetRenterId(int accountId);
+        public int? GetStaffId(int accountId);
+        public int? GetStaffStationId(int accountId);
+
     }
 }

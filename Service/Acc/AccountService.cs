@@ -51,37 +51,43 @@ namespace PublicCarRental.Service.Acc
             _accountRepo.Delete(id);
         }
 
-        public (bool Success, string Message, int? AccountId) CreateAccount(string fullName, string email, string password, string phoneNumber, string identityCardNumber, AccountRole role)
+        public (bool Success, string Message, int? AccountId) CreateAccount(AccountDto dto, AccountRole role)
         {
             try
             {
-                var hashedPassword = _passwordHelper.HashPassword(password);
+                if (_accountRepo.Exists(a => a.Email == dto.Email))
+                    return (false, "Email is already registered.", null);
+
+                if (_accountRepo.Exists(a => a.PhoneNumber == dto.PhoneNumber))
+                    return (false, "Phone number is already registered.", null);
+
+                if (_accountRepo.Exists(a => a.IdentityCardNumber == dto.IdentityCardNumber))
+                    return (false, "Identity card number is already registered.", null);
+
+                var hashedPassword = _passwordHelper.HashPassword(dto.Password);
 
                 var account = new Account
                 {
-                    FullName = fullName,
-                    Email = email,
+                    FullName = dto.FullName,
+                    Email = dto.Email,
                     PasswordHash = hashedPassword,
                     Role = role,
-                    PhoneNumber = phoneNumber,
-                    IdentityCardNumber = identityCardNumber,
+                    PhoneNumber = dto.PhoneNumber,
+                    IdentityCardNumber = dto.IdentityCardNumber,
                     RegisteredAt = DateTime.UtcNow,
                     Status = AccountStatus.Active
                 };
 
                 _accountRepo.Create(account);
 
-                //var token = _tokenRepository.GenerateToken(account, TokenPurpose.EmailVerification);
-                //_emailService.SendVerificationEmail(account.Email, token);
-
                 return (true, "Account created successfully.", account.AccountId);
             }
             catch (Exception ex)
             {
-                return (false, ex.Message, null);
+                // Fallback for any other errors
+                return (false, "An error occurred while creating the account.", null);
             }
         }
-
         public (bool Success, string Message, string Token, AccountRole Role) Login(string identifier, string password)
         {
             var user = _accountRepo.GetByIdentifier(identifier);
@@ -92,12 +98,7 @@ namespace PublicCarRental.Service.Acc
             if (!_passwordHelper.VerifyPassword(password, user.PasswordHash))
                 return (false, "Wrong email/phone or password", null, default);
 
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.AccountId.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role.ToString())
-            };
+            var claims = GenerateUserClaims(user);
 
             var key = Convert.FromBase64String(_configuration["Jwt:Key"]);
             var securityKey = new SymmetricSecurityKey(key);
@@ -113,7 +114,65 @@ namespace PublicCarRental.Service.Acc
             );
 
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-            return (true, "Login successful", tokenString, user.Role);
+            string welcomeMessage = GetWelcomeMessage(user);
+
+            return (true, welcomeMessage, tokenString, user.Role);
+        }
+
+        private string GetWelcomeMessage(Account user)
+        {
+            return user.Role switch
+            {
+                AccountRole.Admin => "Welcome Admin",
+                AccountRole.Staff => $"Welcome, Staff {user.FullName}",
+                AccountRole.EVRenter => $"Welcome, Renter {user.FullName}",
+                _ => "Login successful"
+            };
+        }
+
+        private List<Claim> GenerateUserClaims(Account user)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.AccountId.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role.ToString()),
+                new Claim("AccountId", user.AccountId.ToString())
+            };
+
+            switch (user.Role)
+            {
+                case AccountRole.EVRenter:
+                    var renterId = _accountRepo.GetRenterId(user.AccountId);
+                    if (renterId.HasValue)
+                    {
+                        claims.Add(new Claim("RenterId", renterId.Value.ToString()));
+                        claims.Add(new Claim("UserTypeId", renterId.Value.ToString()));
+                    }
+                    break;
+
+                case AccountRole.Staff:
+                    var staffId = _accountRepo.GetStaffId(user.AccountId);
+                    if (staffId.HasValue)
+                    {
+                        claims.Add(new Claim("StaffId", staffId.Value.ToString()));
+                        claims.Add(new Claim("UserTypeId", staffId.Value.ToString()));
+
+                        var stationId = _accountRepo.GetStaffStationId(user.AccountId);
+                        if (stationId.HasValue)
+                        {
+                            claims.Add(new Claim("StationId", stationId.Value.ToString()));
+                        }
+                    }
+                    break;
+
+                case AccountRole.Admin:
+                    claims.Add(new Claim("UserTypeId", user.AccountId.ToString()));
+                    claims.Add(new Claim("IsAdmin", "true"));
+                    break;
+            }
+
+            return claims;
         }
 
         public (bool success, string message) ResetPassword(string token, string newPassword)

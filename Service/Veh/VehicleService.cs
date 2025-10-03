@@ -57,6 +57,12 @@ namespace PublicCarRental.Service.Veh
 
         public (bool Success, string Message, int? VehicleId) CreateVehicle(VehicleCreateDto dto)
         {
+            // Check for duplicate license plate before creating
+            if (_repo.Exists(v => v.LicensePlate == dto.LicensePlate))
+            {
+                return (false, "License plate is already registered.", null);
+            }
+
             var vehicle = new Vehicle
             {
                 LicensePlate = dto.LicensePlate,
@@ -73,14 +79,21 @@ namespace PublicCarRental.Service.Veh
             }
             catch (Exception ex)
             {
-                return (false, ex.Message, null);
+                return (false, "An error occurred while creating the vehicle.", null);
             }
         }
 
-        public bool UpdateVehicle(int id, VehicleUpdateDto updatedVehicle)
+        public (bool Success, string Message) UpdateVehicle(int id, VehicleUpdateDto updatedVehicle)
         {
             var existing = _repo.GetById(id);
-            if (existing == null) return false;
+            if (existing == null) return (false, "Vehicle not found.");
+
+            // Check for duplicate license plate (only if license plate is being changed)
+            if (existing.LicensePlate != updatedVehicle.LicensePlate &&
+                _repo.Exists(v => v.VehicleId != id && v.LicensePlate == updatedVehicle.LicensePlate))
+            {
+                return (false, "License plate is already registered to another vehicle.");
+            }
 
             existing.LicensePlate = updatedVehicle.LicensePlate;
             existing.BatteryLevel = (int)updatedVehicle.BatteryLevel;
@@ -88,8 +101,16 @@ namespace PublicCarRental.Service.Veh
             existing.StationId = updatedVehicle.StationId;
             existing.ModelId = (int)updatedVehicle.ModelId;
 
-            _repo.Update(existing);
-            return true;
+            try
+            {
+                _repo.Update(existing);
+                return (true, "Vehicle updated successfully.");
+            }
+            catch (Exception ex)
+            {
+               
+                return (false, "An error occurred while updating the vehicle.");
+            }
         }
 
         public bool DeleteVehicle(int id)
