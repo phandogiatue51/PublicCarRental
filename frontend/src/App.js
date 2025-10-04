@@ -8,6 +8,7 @@ import TestimonialsPage from "./Pages/TestimonialsPage";
 import Team from "./Pages/Team";
 import Contact from "./Pages/Contact";
 import Main from "./admin/AdminApp";
+import StaffApp from "./staff/App";
 import Login from "./Pages/Login";
 import SignUp from "./Pages/SignUp";
 
@@ -15,6 +16,7 @@ function App() {
   return (
     <Routes>
       <Route path="admin/*" element={<Main />} />
+      <Route path="staff/*" element={<StaffApp />} />
       <Route path="*" element={
         <>
           <Navbar />
