@@ -11,29 +11,34 @@ function Models() {
   const [types, setTypes] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
+  const [station, setStation] = useState([]);
+  const [selectedStation, setSelectedStation] = useState(null);
 
   useEffect(() => {
     // Fetch brands and types for dropdowns
-    axios.get("https://localhost:7230/api/Brand/get-all").then((res) => setBrands(res.data));
-    axios.get("https://localhost:7230/api/Type/get-all").then((res) => setTypes(res.data));
+    axios.get("https://publiccarrental-production-b7c5.up.railway.app/api/Brand/get-all").then((res) => setBrands(res.data));
+    axios.get("https://publiccarrental-production-b7c5.up.railway.app/api/Type/get-all").then((res) => setTypes(res.data));
+    axios.get("https://publiccarrental-production-b7c5.up.railway.app/api/Station/all-stations").then((res) => setStation(res.data));
   }, []);
 
   useEffect(() => {
     // Fetch models based on selected brand and type
     axios
-      .get("https://localhost:7230/api/Model/from-brand-and-type", {
+      .get("https://publiccarrental-production-b7c5.up.railway.app/api/Model/filter-models", {
         params: {
           brandId: selectedBrand,
           typeId: selectedType,
+          stationId : selectedStation
         },
       })
       .then((res) => setModels(res.data))
       .catch((err) => console.error("Failed to fetch models", err));
-  }, [selectedBrand, selectedType]);
+  }, [selectedBrand, selectedType, selectedStation]);
 
   const clearFilters = () => {
     setSelectedBrand(null);
     setSelectedType(null);
+    setSelectedStation(null);
   };
 
   return (
@@ -86,6 +91,26 @@ function Models() {
                   <i className="fa-solid fa-chevron-down dropdown-arrow"></i>
                 </div>
               </div>
+              
+               <div className="filter-group">
+                <div className="filter-input-wrapper">
+                  <i className="fa-solid fa-tag filter-icon"></i>
+                  <select 
+                    className="filter-select"
+                    onChange={(e) => setSelectedType(e.target.value || null)}
+                    value={selectedType || ''}
+                  >
+                    <option value="">All Stations</option>
+                    {station.map((s) => (
+                      <option key={s.stationId} value={s.stationId}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                  <i className="fa-solid fa-chevron-down dropdown-arrow"></i>
+                </div>
+              </div>
+
 
               <button 
                 className="clear-filters-btn"

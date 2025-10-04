@@ -10,8 +10,8 @@ namespace PublicCarRental.Service
         public IEnumerable<ModelDto> GetAllModels();
         public VehicleModel GetEntityById(int id);
         public ModelDto GetById(int id);
-        public int CreateModel(ModelCreateDto dto, IFormFile imageFile = null);
-        public bool UpdateModel(int id, ModelCreateDto updatedModel, IFormFile imageFile = null);
+        Task<int> CreateModelAsync(ModelCreateDto dto, IFormFile imageFile = null);
+        Task<bool> UpdateModelAsync(int id, ModelCreateDto updatedModel, IFormFile newImageFile = null);
         bool DeleteModel(int id);
         IEnumerable<string> GetAvailableImages();
         public IEnumerable<ModelDto> GetModelsByFilters(int? brandId, int? typeId, int? stationId);

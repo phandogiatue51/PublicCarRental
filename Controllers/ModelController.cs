@@ -38,28 +38,20 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpPost("create-model")]
-        public IActionResult Create([FromForm] ModelCreateDto dto)
-        {            
-            if (dto == null)
-            {
-                return BadRequest("DTO is null");
-            }
-            
-            if (string.IsNullOrEmpty(dto.Name))
-            {
-                return BadRequest("Name is required");
-            }
-            
-            var model = _service.CreateModel(dto, dto.imageFile);
-            return Ok(new { message = "Model created", modelId = model});
+        public async Task<IActionResult> Create([FromForm] ModelCreateDto dto)
+        {
+            if (dto == null) return BadRequest("DTO is null");
+            if (string.IsNullOrEmpty(dto.Name)) return BadRequest("Name is required");
+
+            var modelId = await _service.CreateModelAsync(dto, dto.ImageFile);
+            return Ok(new { message = "Model created", modelId = modelId });
         }
 
         [HttpPut("update-model/{id}")]
-        public IActionResult Update(int id, [FromForm] ModelCreateDto model)
+        public async Task<IActionResult> Update(int id, [FromForm] ModelCreateDto model)
         {
-            var success = _service.UpdateModel(id, model, model.imageFile);
-            if (!success) return NotFound();
-            return Ok(new { message = "Model updated" });
+            var success = await _service.UpdateModelAsync(id, model, model.ImageFile);
+            return success ? Ok(new { message = "Model updated" }) : NotFound();
         }
 
         [HttpDelete("delete-model/{id}")]

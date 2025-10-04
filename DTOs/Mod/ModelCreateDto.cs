@@ -15,6 +15,6 @@ namespace PublicCarRental.DTOs.Mod
         [Required]
         public decimal PricePerHour { get; set; }
 
-        public IFormFile? imageFile { get; set; }
+        public IFormFile? ImageFile { get; set; }
     }
 }

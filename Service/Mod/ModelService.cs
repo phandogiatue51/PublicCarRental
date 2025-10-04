@@ -11,10 +11,12 @@ namespace PublicCarRental.Service.Mod
     public class ModelService : IModelService
     {
         private readonly IModelRepository _repo;
+        private readonly AzureBlobService _blobService;
 
-        public ModelService(IModelRepository repo)
+        public ModelService(IModelRepository repo, AzureBlobService blobService)
         {
             _repo = repo;
+            _blobService = blobService;
         }
 
         public IEnumerable<ModelDto> GetAllModels()
@@ -55,7 +57,7 @@ namespace PublicCarRental.Service.Mod
             return _repo.GetById(id);
         }
 
-        public int CreateModel(ModelCreateDto dto, IFormFile imageFile = null)
+        public async Task<int> CreateModelAsync(ModelCreateDto dto, IFormFile imageFile = null)
         {
             var model = new VehicleModel
             {
@@ -65,30 +67,17 @@ namespace PublicCarRental.Service.Mod
                 PricePerHour = dto.PricePerHour,
             };
 
+
             if (imageFile != null && imageFile.Length > 0)
             {
-                // Save the uploaded file to image/models directory
-                var imagePath = Path.Combine("image", "models");
-                if (!Directory.Exists(imagePath))
-                {
-                    Directory.CreateDirectory(imagePath);
-                }
-
-                var fileName = Path.GetFileName(imageFile.FileName);
-                var filePath = Path.Combine(imagePath, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    imageFile.CopyTo(stream);
-                }
-
-                model.ImageUrl = $"/image/models/{fileName}";
+                model.ImageUrl = await _blobService.UploadImageAsync(imageFile);
             }
 
             _repo.Create(model);
             return model.ModelId;
         }
-        public bool UpdateModel(int id, ModelCreateDto updatedModel, IFormFile imageFile = null)
+
+        public async Task<bool> UpdateModelAsync(int id, ModelCreateDto updatedModel, IFormFile newImageFile = null)
         {
             var existing = _repo.GetById(id);
             if (existing == null) return false;
@@ -98,24 +87,12 @@ namespace PublicCarRental.Service.Mod
             existing.TypeId = updatedModel.TypeId;
             existing.PricePerHour = updatedModel.PricePerHour;
 
-            if (imageFile != null && imageFile.Length > 0)
+            if (newImageFile != null && newImageFile.Length > 0)
             {
-                // Save the uploaded file to image/models directory
-                var imagePath = Path.Combine("image", "models");
-                if (!Directory.Exists(imagePath))
-                {
-                    Directory.CreateDirectory(imagePath);
-                }
-
-                var fileName = Path.GetFileName(imageFile.FileName);
-                var filePath = Path.Combine(imagePath, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    imageFile.CopyTo(stream);
-                }
-
-                existing.ImageUrl = $"/image/models/{fileName}";
+                existing.ImageUrl = await _blobService.UpdateImageAsync(
+                    existing.ImageUrl,
+                    newImageFile
+                );
             }
 
             _repo.Update(existing);

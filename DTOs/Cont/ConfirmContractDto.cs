@@ -5,6 +5,6 @@
         public int StaffId { get; set; }
         public int ContractId { get; set; }
 
-        public IFormFile? imageFile { get; set; }
+        public IFormFile? ImageFile { get; set; }
     }
 }

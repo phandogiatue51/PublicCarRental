@@ -71,11 +71,11 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpPost("active-contract")]
-        public IActionResult ActiveContract([FromForm] ConfirmContractDto dto)
+        public async Task<IActionResult> ActiveContract([FromForm] ConfirmContractDto dto)
         {
             try
             {
-                var success = _contractService.StartRental(dto);
+                var success = await _contractService.StartRentalAsync(dto);
                 if (!success) return NotFound("Contract not found");
                 return Ok(new { message = "Handover confirmed", contractId = dto.ContractId });
             }
@@ -86,11 +86,11 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpPost("finish-contract")]
-        public IActionResult FinishContract([FromForm] FinishContractDto dto)
+        public async Task<IActionResult> FinishContract([FromForm] FinishContractDto dto)
         {
             try
             {
-                var success = _contractService.ReturnVehicle(dto);
+                var success = await _contractService.ReturnVehicleAsync(dto);
                 if (!success)
                     return NotFound(new { message = "Contract not found or vehicle missing" });
 

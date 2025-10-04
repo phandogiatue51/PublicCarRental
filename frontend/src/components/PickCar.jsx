@@ -13,7 +13,7 @@ function PickCar() {
 
   useEffect(() => {
     // Fetch all models from API
-    axios.get("https://localhost:7230/api/Model/get-all")
+    axios.get("https://publiccarrental-production-b7c5.up.railway.app/api/Model/get-all")
       .then((res) => {
         setModels(res.data);
         setLoading(false);

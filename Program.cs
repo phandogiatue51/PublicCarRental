@@ -129,6 +129,10 @@ builder.Services.AddScoped<ITransactionService,  TransactionService>();
 builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<IPayOSService, PayOSService>();
+builder.Services.AddHostedService<AzureBlobInitializer>();
+builder.Services.AddScoped<AzureBlobService>();
+
+
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = jwtSettings["Key"];

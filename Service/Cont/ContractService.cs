@@ -19,10 +19,12 @@ namespace PublicCarRental.Service.Cont
         private readonly IHelperService _contInvHelperService;
         private readonly ITransactionRepository _transactionRepository;
         private readonly IEVRenterService _renterService;
+        private readonly AzureBlobService _blobService;
 
         public ContractService(IContractRepository repo, IVehicleRepository vehicleRepo, 
             IStaffRepository staffRepo, IHelperService contInvHelperService, 
-            ITransactionRepository transactionRepository, IEVRenterService eVRenterService)
+            ITransactionRepository transactionRepository, IEVRenterService eVRenterService, 
+            AzureBlobService blobService)
         {
             _contractRepo = repo;
             _vehicleRepo = vehicleRepo;
@@ -30,8 +32,8 @@ namespace PublicCarRental.Service.Cont
             _contInvHelperService = contInvHelperService;
             _transactionRepository = transactionRepository;
             _renterService = eVRenterService;
+            _blobService = blobService;
         }
-
         public IEnumerable<ContractDto> GetAll()
         {
             return _contractRepo.GetAll()
@@ -145,7 +147,7 @@ namespace PublicCarRental.Service.Cont
             return (true, "Contract updated successfully!");
         }
 
-        public bool ReturnVehicle(FinishContractDto dto)
+        public async Task<bool> ReturnVehicleAsync(FinishContractDto dto)
         {
             var contract = _contractRepo.GetById(dto.ContractId);
             if (contract == null) return false;
@@ -162,22 +164,7 @@ namespace PublicCarRental.Service.Cont
 
             if (dto.imageFile != null && dto.imageFile.Length > 0)
             {
-                // Save the uploaded file to image/models directory
-                var imagePath = Path.Combine("image", "models");
-                if (!Directory.Exists(imagePath))
-                {
-                    Directory.CreateDirectory(imagePath);
-                }
-
-                var fileName = Path.GetFileName(dto.imageFile.FileName);
-                var filePath = Path.Combine(imagePath, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    dto.imageFile.CopyTo(stream);
-                }
-
-                contract.ImageUrlOut = $"/image/contracts/{fileName}";
+                contract.ImageUrlOut = await _blobService.UploadImageAsync(dto.imageFile);
             }
 
             _vehicleRepo.Update(vehicle);
@@ -186,7 +173,7 @@ namespace PublicCarRental.Service.Cont
             return true;
         }
 
-        public bool StartRental(ConfirmContractDto dto)
+        public async Task<bool> StartRentalAsync(ConfirmContractDto dto)
         {
             var contract = _contractRepo.GetById(dto.ContractId);
             if (contract == null || contract.Status != RentalStatus.Confirmed)
@@ -200,24 +187,9 @@ namespace PublicCarRental.Service.Cont
             contract.StartTime = DateTime.UtcNow;
             contract.StaffId = dto.StaffId;
 
-            if (dto.imageFile != null && dto.imageFile.Length > 0)
+            if (dto.ImageFile != null && dto.ImageFile.Length > 0)
             {
-                // Save the uploaded file to image/models directory
-                var imagePath = Path.Combine("image", "models");
-                if (!Directory.Exists(imagePath))
-                {
-                    Directory.CreateDirectory(imagePath);
-                }
-
-                var fileName = Path.GetFileName(dto.imageFile.FileName);
-                var filePath = Path.Combine(imagePath, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    dto.imageFile.CopyTo(stream);
-                }
-
-                contract.ImageUrlIn = $"/image/contracts/{fileName}";
+                contract.ImageUrlIn = await _blobService.UploadImageAsync(dto.ImageFile);
             }
 
             vehicle.Status = VehicleStatus.Renting;
