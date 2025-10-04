@@ -124,12 +124,12 @@ export default function ContractList() {
   // Handle image view
   const handleImageView = useCallback((contract) => {
     const baseUrl = 'https://localhost:7230';
-    
-    const imageInUrl = contract.imageIn 
+
+    const imageInUrl = contract.imageIn
       ? (contract.imageIn.startsWith('http') ? contract.imageIn : `${baseUrl}${contract.imageIn}`)
       : null;
-    
-    const imageOutUrl = contract.imageOut 
+
+    const imageOutUrl = contract.imageOut
       ? (contract.imageOut.startsWith('http') ? contract.imageOut : `${baseUrl}${contract.imageOut}`)
       : null;
 
@@ -154,10 +154,11 @@ export default function ContractList() {
   // Get status badge color
   const getStatusColor = (status) => {
     switch (status) {
-      case 0: return 'green'; // Active
-      case 1: return 'orange'; // Pending
-      case 2: return 'gray'; // Completed
-      case 3: return 'red'; // Cancelled
+      case 0: return 'orange'; // ToBeConfirmed - màu cam cho chờ xác nhận
+      case 1: return 'green'; // Active - màu xanh lá cho đang hoạt động
+      case 2: return 'purple'; // Completed - màu tím cho hoàn thành
+      case 3: return 'red'; // Cancelled - màu đỏ cho đã hủy
+      case 4: return 'teal'; // Confirmed - màu xanh ngọc cho đã xác nhận
       default: return 'gray';
     }
   };
@@ -165,10 +166,11 @@ export default function ContractList() {
   // Get status text
   const getStatusText = (status) => {
     switch (status) {
-      case 0: return 'Active';
-      case 1: return 'Pending';
+      case 0: return 'To Be Confirmed';
+      case 1: return 'Active';
       case 2: return 'Completed';
       case 3: return 'Cancelled';
+      case 4: return 'Confirmed';
       default: return 'Unknown';
     }
   };
@@ -295,7 +297,7 @@ export default function ContractList() {
         </Flex>
       ),
     }),
-    
+
     columnHelper.accessor('imageIn', {
       id: 'images',
       header: () => (
@@ -676,11 +678,11 @@ export default function ContractList() {
                     objectFit="contain"
                     mx="auto"
                     fallback={
-                      <Box 
-                        bg="gray.100" 
-                        height="200px" 
-                        display="flex" 
-                        alignItems="center" 
+                      <Box
+                        bg="gray.100"
+                        height="200px"
+                        display="flex"
+                        alignItems="center"
                         justifyContent="center"
                         borderRadius="md"
                       >
@@ -689,11 +691,11 @@ export default function ContractList() {
                     }
                   />
                 ) : (
-                  <Box 
-                    bg="gray.100" 
-                    height="200px" 
-                    display="flex" 
-                    alignItems="center" 
+                  <Box
+                    bg="gray.100"
+                    height="200px"
+                    display="flex"
+                    alignItems="center"
                     justifyContent="center"
                     borderRadius="md"
                   >
@@ -717,11 +719,11 @@ export default function ContractList() {
                     objectFit="contain"
                     mx="auto"
                     fallback={
-                      <Box 
-                        bg="gray.100" 
-                        height="200px" 
-                        display="flex" 
-                        alignItems="center" 
+                      <Box
+                        bg="gray.100"
+                        height="200px"
+                        display="flex"
+                        alignItems="center"
                         justifyContent="center"
                         borderRadius="md"
                       >
@@ -730,11 +732,11 @@ export default function ContractList() {
                     }
                   />
                 ) : (
-                  <Box 
-                    bg="gray.100" 
-                    height="200px" 
-                    display="flex" 
-                    alignItems="center" 
+                  <Box
+                    bg="gray.100"
+                    height="200px"
+                    display="flex"
+                    alignItems="center"
                     justifyContent="center"
                     borderRadius="md"
                   >
