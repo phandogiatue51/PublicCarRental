@@ -109,20 +109,24 @@ namespace PublicCarRental.Controllers
                         }
                         else if (status == "CANCELLED" || status == "EXPIRED")
                         {
-                            _logger.LogInformation($"Updating invoice {invoice.InvoiceId} to UNPAID status");
+                            _logger.LogInformation($"Webhook: Payment {status} for invoice {invoice.InvoiceId}, updating to UNPAID status");
                             
                             var success = _invoiceService.UpdateInvoiceStatus(
                                 invoice.InvoiceId,
-                                Models.InvoiceStatus.Unpaid
+                                Models.InvoiceStatus.Cancelled
                             );
                             
                             if (success)
                             {
-                                _logger.LogInformation($"Invoice {invoice.InvoiceId} marked as UNPAID");
+                                _logger.LogInformation($"Webhook: Invoice {invoice.InvoiceId} marked as UNPAID and contract updated");
+                                
+                                // Verify the update by fetching the invoice again
+                                var updatedInvoice = _invoiceService.GetEntityById(invoice.InvoiceId);
+                                _logger.LogInformation($"Webhook: Verification - Updated invoice status: {updatedInvoice?.Status}, Contract status: {updatedInvoice?.Contract?.Status}");
                             }
                             else
                             {
-                                _logger.LogError($"Failed to update invoice {invoice.InvoiceId} to UNPAID status");
+                                _logger.LogError($"Webhook: Failed to update invoice {invoice.InvoiceId} to UNPAID status");
                             }
                         }
                     }
@@ -177,11 +181,9 @@ namespace PublicCarRental.Controllers
 
                 _logger.LogInformation($"Checking payment status for order code: {orderCode}");
 
-                // Get payment status from PayOS
                 var paymentStatus = await _payOSService.GetPaymentStatus(orderCode);
                 _logger.LogInformation($"PayOS payment status: {paymentStatus.status}");
 
-                // Find the invoice
                 var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
                 if (invoice == null)
                 {
@@ -190,11 +192,10 @@ namespace PublicCarRental.Controllers
 
                 _logger.LogInformation($"Found invoice {invoice.InvoiceId} with current status: {invoice.Status}");
 
-                // If payment is PAID and invoice is not yet paid, update it
                 if (paymentStatus.status == "PAID" && invoice.Status != Models.InvoiceStatus.Paid)
                 {
                     _logger.LogInformation($"Payment is PAID, updating invoice {invoice.InvoiceId} to PAID status");
-                    
+
                     var success = _invoiceService.UpdateInvoiceStatus(
                         invoice.InvoiceId,
                         Models.InvoiceStatus.Paid,
@@ -204,8 +205,9 @@ namespace PublicCarRental.Controllers
                     if (success)
                     {
                         var updatedInvoice = _invoiceService.GetEntityById(invoice.InvoiceId);
-                        return Ok(new { 
-                            success = true, 
+                        return Ok(new
+                        {
+                            success = true,
                             message = "Payment confirmed and invoice updated to PAID",
                             paymentStatus = paymentStatus.status,
                             invoiceId = invoice.InvoiceId,
@@ -219,20 +221,45 @@ namespace PublicCarRental.Controllers
                         return StatusCode(500, new { error = "Payment confirmed but failed to update invoice" });
                     }
                 }
-                else if (invoice.Status == Models.InvoiceStatus.Paid)
+                else if (paymentStatus.status == "CANCELLED" || paymentStatus.status == "EXPIRED")
                 {
-                    return Ok(new { 
-                        message = "Invoice is already marked as PAID",
-                        paymentStatus = paymentStatus.status,
-                        invoiceStatus = invoice.Status
-                    });
+                    _logger.LogInformation($"Payment is {paymentStatus.status}, updating invoice {invoice.InvoiceId} to UNPAID status");
+
+                    var success = _invoiceService.UpdateInvoiceStatus(
+                        invoice.InvoiceId,
+                        Models.InvoiceStatus.Cancelled
+                    );
+
+                    if (success)
+                    {
+                        var updatedInvoice = _invoiceService.GetEntityById(invoice.InvoiceId);
+                        return Ok(new
+                        {
+                            success = true,
+                            message = $"Payment {paymentStatus.status.ToLower()} and invoice updated to CANCELLED",
+                            paymentStatus = paymentStatus.status,
+                            invoiceId = invoice.InvoiceId,
+                            oldStatus = invoice.Status,
+                            newStatus = updatedInvoice?.Status,
+                            contractStatus = updatedInvoice?.Contract?.Status
+                        });
+                    }
+                    else
+                    {
+                        return StatusCode(500, new { error = $"Payment {paymentStatus.status.ToLower()} but failed to update invoice" });
+                    }
                 }
                 else
                 {
-                    return Ok(new { 
-                        message = $"Payment status is {paymentStatus.status}, no update needed",
+                    // Handle other payment statuses (PENDING, etc.)
+                    _logger.LogInformation($"Payment status is {paymentStatus.status}, no action required");
+                    return Ok(new
+                    {
+                        success = true,
+                        message = $"Payment status is {paymentStatus.status}, no update required",
                         paymentStatus = paymentStatus.status,
-                        invoiceStatus = invoice.Status
+                        invoiceId = invoice.InvoiceId,
+                        currentStatus = invoice.Status
                     });
                 }
             }
@@ -248,6 +275,7 @@ namespace PublicCarRental.Controllers
         {
             return Ok(new { message = "Payment controller is working" });
         }
+
 
         [AllowAnonymous]
         [HttpGet("success")]

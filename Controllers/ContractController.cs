@@ -110,5 +110,13 @@ namespace PublicCarRental.Controllers
             }
         }
 
+        [HttpDelete("delete-contract/{id}")]
+        public IActionResult DeleteContract(int id)
+        {
+            var result = _contractService.DeleteContract(id);
+            if (result.Success) return Ok(result.Message);
+            return BadRequest(result.Message);
+        }
+
     }
 }

@@ -5,9 +5,10 @@ namespace PublicCarRental.Models
 {
     public enum InvoiceStatus
     {
-        Unpaid,
+        Pending,
         Paid,
-        Overdue
+        Overdue,
+        Cancelled
     }
     public class Invoice
     {
@@ -21,7 +22,7 @@ namespace PublicCarRental.Models
         public decimal? AmountPaid { get; set; }
         public DateTime? PaidAt { get; set; }
 
-        public InvoiceStatus Status { get; set; } = InvoiceStatus.Unpaid;
+        public InvoiceStatus Status { get; set; } = InvoiceStatus.Pending;
 
         public int? OrderCode { get; set; } 
 

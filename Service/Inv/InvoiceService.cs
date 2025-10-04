@@ -120,7 +120,7 @@ namespace PublicCarRental.Service.Inv
                     
                     var contractUpdateResult = _contractService.UpdateContractStatus(invoice.ContractId, RentalStatus.Confirmed);
                 }
-                else if (status == InvoiceStatus.Unpaid && invoice.Contract.Status != RentalStatus.Cancelled)
+                else if (status == InvoiceStatus.Cancelled && invoice.Contract.Status != RentalStatus.Cancelled)
                 {
                     var contractUpdateResult = _contractService.UpdateContractStatus(invoice.ContractId, RentalStatus.Cancelled);
                 }

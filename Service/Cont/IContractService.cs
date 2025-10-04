@@ -15,5 +15,7 @@ namespace PublicCarRental.Service.Cont
         public bool ReturnVehicle(FinishContractDto dto);
         public IEnumerable<ContractDto> GetContractByRenterId(int renterId);
         public bool UpdateContractStatus(int contractId, RentalStatus status);
+        public (bool Success, string Message) DeleteContract(int contractId);
+
     }
 }

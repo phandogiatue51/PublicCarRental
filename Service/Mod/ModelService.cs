@@ -1,7 +1,9 @@
-﻿using PublicCarRental.DTOs.Mod;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using PublicCarRental.DTOs.Mod;
+using PublicCarRental.DTOs.Stat;
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Model;
-using Microsoft.AspNetCore.Http;
 using System.Linq;
 
 namespace PublicCarRental.Service.Mod
@@ -74,7 +76,7 @@ namespace PublicCarRental.Service.Mod
 
                 var fileName = Path.GetFileName(imageFile.FileName);
                 var filePath = Path.Combine(imagePath, fileName);
-                
+
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     imageFile.CopyTo(stream);
@@ -107,7 +109,7 @@ namespace PublicCarRental.Service.Mod
 
                 var fileName = Path.GetFileName(imageFile.FileName);
                 var filePath = Path.Combine(imagePath, fileName);
-                
+
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     imageFile.CopyTo(stream);
@@ -151,21 +153,47 @@ namespace PublicCarRental.Service.Mod
             return new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" }.Contains(extension);
         }
 
-        public IEnumerable<ModelDto> GetModelFromBrandAndType(int? brandId, int? typeId)
+        public IEnumerable<ModelDto> GetModelsByFilters(int? brandId, int? typeId, int? stationId)
         {
             return _repo.GetAll()
                 .Where(m => !brandId.HasValue || m.BrandId == brandId.Value)
                 .Where(m => !typeId.HasValue || m.TypeId == typeId.Value)
+                .Where(m => !stationId.HasValue || m.Vehicles.Any(v =>
+                    v.StationId == stationId.Value &&
+                    v.Status == VehicleStatus.Available))
                 .Select(m => new ModelDto
                 {
                     ModelId = m.ModelId,
                     Name = m.Name,
                     BrandId = m.BrandId,
-                    BrandName = m.Brand != null ? m.Brand.Name : null,
+                    BrandName = m.Brand.Name,
                     TypeId = m.TypeId,
-                    TypeName = m.Type != null ? m.Type.Name : null,
+                    TypeName = m.Type.Name,
                     PricePerHour = m.PricePerHour,
                     ImageUrl = m.ImageUrl
+                }).ToList();
+        }
+
+        public IEnumerable<StationDtoForView> GetStationsByModel(int modelId)
+        {
+            var model = _repo.GetAll()
+                .Include(m => m.Vehicles)
+                .ThenInclude(v => v.Station)
+                .FirstOrDefault(m => m.ModelId == modelId);
+
+            if (model == null)
+                return Enumerable.Empty<StationDtoForView>();
+
+            return model.Vehicles
+                .Where(v => v.Status == VehicleStatus.Available)
+                .GroupBy(v => v.Station)
+                .Select(g => new StationDtoForView
+                {
+                   Name = g.Key.Name,
+                    Address = g.Key.Address,
+                    Latitude = g.Key.Latitude,
+                    Longitude = g.Key.Longitude,
+                    
                 }).ToList();
         }
     }
