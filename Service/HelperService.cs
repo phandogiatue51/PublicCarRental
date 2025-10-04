@@ -27,7 +27,7 @@ public class HelperService : IHelperService
             return 0;
 
         var overdueInvoices = invoices
-            .Where(i => i.Status == InvoiceStatus.Unpaid && DateTime.UtcNow > i.IssuedAt.AddMinutes(30))
+            .Where(i => i.Status == InvoiceStatus.Pending && DateTime.UtcNow > i.IssuedAt.AddMinutes(30))
             .ToList();
 
         int cancelledCount = 0;

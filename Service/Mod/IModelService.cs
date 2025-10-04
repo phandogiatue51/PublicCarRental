@@ -1,6 +1,7 @@
-﻿using PublicCarRental.DTOs.Mod;
+﻿using Microsoft.AspNetCore.Http;
+using PublicCarRental.DTOs.Mod;
+using PublicCarRental.DTOs.Stat;
 using PublicCarRental.Models;
-using Microsoft.AspNetCore.Http;
 
 namespace PublicCarRental.Service
 {
@@ -13,7 +14,9 @@ namespace PublicCarRental.Service
         public bool UpdateModel(int id, ModelCreateDto updatedModel, IFormFile imageFile = null);
         bool DeleteModel(int id);
         IEnumerable<string> GetAvailableImages();
-        public IEnumerable<ModelDto> GetModelFromBrandAndType(int? brandId, int? typeId);
+        public IEnumerable<ModelDto> GetModelsByFilters(int? brandId, int? typeId, int? stationId);
+        public IEnumerable<StationDtoForView> GetStationsByModel(int modelId);
+
 
     }
 }

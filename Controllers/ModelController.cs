@@ -78,10 +78,10 @@ namespace PublicCarRental.Controllers
             return Ok(images);
         }
 
-        [HttpGet("from-brand-and-type")]
-        public IActionResult GetModelFromBrandAndType([FromQuery] int? brandId, [FromQuery] int? typeId)
+        [HttpGet("filter-models")]
+        public IActionResult GetModelFromBrandAndType([FromQuery] int? brandId, [FromQuery] int? typeId, [FromQuery] int? stationId)
         {
-            var models = _service.GetModelFromBrandAndType(brandId, typeId);
+            var models = _service.GetModelsByFilters(brandId, typeId, stationId);
             return Ok(models);
         }
 

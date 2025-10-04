@@ -8,5 +8,6 @@ namespace PublicCarRental.Repository.Cont
         public IQueryable<RentalContract> GetAll();
         RentalContract GetById(int id);
         void Update(RentalContract contract);
+        void Delete(int id);
     }
 }

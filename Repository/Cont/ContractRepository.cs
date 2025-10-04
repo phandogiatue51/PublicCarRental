@@ -49,5 +49,16 @@ namespace PublicCarRental.Repository.Cont
             _context.RentalContracts.Update(contract);
             _context.SaveChanges();
         }
+
+        public void Delete(int id)
+        {
+            var contract = _context.RentalContracts.Find(id);
+            if (contract != null)
+            {
+                _context.RentalContracts.Remove(contract);
+                _context.SaveChanges();
+            }
+        }
+
     }
 }

@@ -190,7 +190,7 @@ namespace PublicCarRental.Service.Cont
         {
             var contract = _contractRepo.GetById(dto.ContractId);
             if (contract == null || contract.Status != RentalStatus.Confirmed)
-                throw new InvalidOperationException("Invoice for Contract is Unpaid");
+                throw new InvalidOperationException("Invoice for Contract is Pending");
 
             var vehicle = contract.Vehicle;
             if (vehicle == null)
@@ -275,6 +275,17 @@ namespace PublicCarRental.Service.Cont
                 Console.WriteLine($"ContractService: Stack trace: {ex.StackTrace}");
                 return false;
             }
+        }
+
+        public (bool Success, string Message) DeleteContract(int contractId)
+        {
+            var contract = _contractRepo.GetById(contractId);
+            if (contract == null) return (false, "Contract not found");
+
+            if (contract.Status != RentalStatus.ToBeConfirmed || contract.Status != RentalStatus.Cancelled) 
+            return (false, $"Contract {contractId} is not in a cancellable state");
+            _contractRepo.Delete(contractId);
+            return (true, $"Contract {contractId} deleted successfully");
         }
 
     }
