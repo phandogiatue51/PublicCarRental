@@ -31,6 +31,7 @@ using PublicCarRental.Service.Stat;
 using PublicCarRental.Service.Trans;
 using PublicCarRental.Service.Typ;
 using PublicCarRental.Service.Veh;
+using PublicCarRental.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -119,12 +120,13 @@ builder.Services.AddScoped<ITypeRepository, TypeRepository>();
 builder.Services.AddScoped<ITypeService, TypeService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
-builder.Services.AddHostedService<InvoiceCleanupService>();
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 builder.Services.AddScoped<ITransactionService,  TransactionService>();
 builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
-
+builder.Services.AddScoped<AzureBlobService>();
+builder.Services.AddHostedService<AzureBlobInitializer>();
+builder.Services.AddScoped<IPayOSService, PayOSService>();
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = jwtSettings["Key"];

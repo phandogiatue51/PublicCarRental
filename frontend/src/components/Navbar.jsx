@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "../images/logo/logo.png";
 import { useState } from "react";
-import { useAuth } from "../hooks/useAuth";
 
 function Navbar() {
   const [nav, setNav] = useState(false);
@@ -12,9 +11,12 @@ function Navbar() {
   };
 
   const isLoggedIn = !!sessionStorage.getItem("userRole");
-  const [menuOpen, setMenuOpen] = useState(false);
   const handleLogout = () => {
     sessionStorage.removeItem("userRole");
+    sessionStorage.removeItem("renterId");
+    sessionStorage.removeItem("fullName");
+    sessionStorage.removeItem("email");
+    sessionStorage.removeItem("phoneNumber");
     navigate("/");
   };
 
@@ -57,46 +59,11 @@ function Navbar() {
                 Contact
               </Link>
             </li>
-            
-            {/* Mobile Auth Links - using same styling */}
-            {isAuthenticated ? (
-              <>
-                {user?.isAdmin && (
-                  <li>
-                    <Link onClick={openNav} to="/admin" className="admin-link">
-                      Admin
-                    </Link>
-                  </li>
-                )}
-                <li>
-                  <Link onClick={openNav} to="/profile" className="profile-link">
-                    Profile
-                  </Link>
-                </li>
-                <li>
-                  <button onClick={handleLogout} className="mobile-navbar__logout">
-                    Logout
-                  </button>
-                </li>
-              </>
-            ) : (
-              <>
-                <li>
-                  <Link onClick={openNav} to="/login" className="mobile-navbar__sign-in">
-                    Login
-                  </Link>
-                </li>
-                <li>
-                  <Link onClick={openNav} to="/sign-up" className="mobile-navbar__register">
-                    Sign Up
-                  </Link>
-                </li>
-              </>
-            )}
           </ul>
         </div>
 
         {/* desktop */}
+
         <div className="navbar">
           <div className="navbar__img">
             <Link to="/" onClick={() => window.scrollTo(0, 0)}>
@@ -110,26 +77,31 @@ function Navbar() {
               </Link>
             </li>
             <li>
+              {" "}
               <Link className="about-link" to="/about">
                 About
               </Link>
             </li>
             <li>
+              {" "}
               <Link className="models-link" to="/models">
                 Our Models
               </Link>
             </li>
             <li>
+              {" "}
               <Link className="testi-link" to="/testimonials">
                 Testimonials
               </Link>
             </li>
             <li>
+              {" "}
               <Link className="team-link" to="/team">
                 Our Team
               </Link>
             </li>
             <li>
+              {" "}
               <Link className="contact-link" to="/contact">
                 Contact
               </Link>
@@ -137,80 +109,22 @@ function Navbar() {
           </ul>
           {/* hide auth buttons when logged in */}
           {isLoggedIn ? (
-            <div className="navbar__buttons" style={{ position: "relative" }}>
-              <button
-                onClick={() => setMenuOpen((v) => !v)}
+            <div className="navbar__buttons">
+              <Link className="navbar__buttons__sign-in" to="/account">
+                Profile
+              </Link>
+              <button 
+                className="navbar__buttons__register"
+                onClick={handleLogout}
                 style={{
                   background: "transparent",
-                  border: 0,
-                  padding: 0,
+                  border: "1px solid #ff4d30",
+                  color: "#ff4d30",
                   cursor: "pointer"
                 }}
-                aria-label="Open user menu"
               >
-                <img
-                  src={process.env.PUBLIC_URL + "/avatar-fb-mac-dinh-1.jpg"}
-                  alt="avatar"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src =
-                      "data:image/svg+xml;utf8,"
-                      + encodeURIComponent(
-                        '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">\n  <rect width="128" height="128" fill="#f3f4f6"/>\n  <circle cx="64" cy="48" r="24" fill="#9ca3af"/>\n  <path d="M16 116c0-22.091 17.909-40 40-40h16c22.091 0 40 17.909 40 40" fill="#9ca3af"/>\n</svg>'
-                      );
-                  }}
-                  style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: 9999,
-                    objectFit: "cover",
-                    display: "block",
-                    border: "1px solid #e5e7eb"
-                  }}
-                />
+                Logout
               </button>
-              {menuOpen && (
-                <div
-                  style={{
-                    position: "absolute",
-                    right: 0,
-                    top: 44,
-                    background: "#fff",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: 8,
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
-                    minWidth: 160,
-                    zIndex: 50
-                  }}
-                >
-                  <Link
-                    to="/profile"
-                    onClick={() => setMenuOpen(false)}
-                    style={{
-                      display: "block",
-                      padding: "10px 12px",
-                      color: "#111827",
-                      textDecoration: "none"
-                    }}
-                  >
-                    My Profile
-                  </Link>
-                  <button
-                    onClick={handleLogout}
-                    style={{
-                      width: "100%",
-                      textAlign: "left",
-                      padding: "10px 12px",
-                      background: "transparent",
-                      border: 0,
-                      color: "#111827",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
             </div>
           ) : (
             <div className="navbar__buttons">
@@ -223,7 +137,7 @@ function Navbar() {
             </div>
           )}
 
-          {/* mobile hamburger */}
+          {/* mobile */}
           <div className="mobile-hamb" onClick={openNav}>
             <i className="fa-solid fa-bars"></i>
           </div>

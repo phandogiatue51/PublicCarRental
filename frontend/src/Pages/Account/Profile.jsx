@@ -1,46 +1,58 @@
 // Profile.jsx
-import { useAuth } from "../../hooks/useAuth";
 import { useState, useEffect } from "react";
 import { renterAPI } from "../../services/api";
 import "../../styles/Account/Profile.css";
 
 function Profile() {
-  const { user } = useAuth();
-  const [profileData, setProfileData] = useState(null);
+  const role = sessionStorage.getItem("userRole");
+  const storedFullName = sessionStorage.getItem("fullName");
+  const storedEmail = sessionStorage.getItem("email");
+  const storedPhoneNumber = sessionStorage.getItem("phoneNumber");
+  const renterId = sessionStorage.getItem("renterId");
+
+  const [profileData, setProfileData] = useState({
+    fullName: storedFullName || "",
+    email: storedEmail || "",
+    phoneNumber: storedPhoneNumber || "",
+    identityCardNumber: "",
+    licenseNumber: "",
+    status: 0
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchProfileData = async () => {
+    const controller = new AbortController();
+    async function loadProfile() {
+      if (!renterId) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      setError("");
       try {
-        setLoading(true);
-        // For now, we'll use mock data since the API will be connected later
-        // const data = await renterAPI.getById(user.renterId);
-        
-        // Mock data based on the API response you showed
-        const mockData = {
-          renterId: user.renterId || 1,
-          fullName: "Phan Do Gia Tue",
-          email: user.email || "phandogiatue51@gmail.com",
-          phoneNumber: "0901697330",
-          identityCardNumber: "045678901",
-          licenseNumber: "B123456789",
-          status: 0
-        };
-        
-        setProfileData(mockData);
-      } catch (err) {
-        setError("Failed to load profile data");
-        console.error("Profile fetch error:", err);
+        const data = await renterAPI.getById(renterId);
+        setProfileData({
+          fullName: data.fullName || storedFullName || "",
+          email: data.email || storedEmail || "",
+          phoneNumber: data.phoneNumber || storedPhoneNumber || "",
+          identityCardNumber: data.identityCardNumber || "",
+          licenseNumber: data.licenseNumber || "",
+          status: data.status !== undefined ? data.status : 0
+        });
+        // cache for later sessions
+        if (data.fullName) sessionStorage.setItem("fullName", data.fullName);
+        if (data.email) sessionStorage.setItem("email", data.email);
+        if (data.phoneNumber) sessionStorage.setItem("phoneNumber", data.phoneNumber);
+      } catch (e) {
+        if (e.name !== "AbortError") setError(e.message || "Failed to load profile");
       } finally {
         setLoading(false);
       }
-    };
-
-    if (user) {
-      fetchProfileData();
     }
-  }, [user]);
+    loadProfile();
+    return () => controller.abort();
+  }, [renterId, storedEmail, storedFullName, storedPhoneNumber]);
 
   if (loading) {
     return (
@@ -60,11 +72,11 @@ function Profile() {
     );
   }
 
-  if (!profileData) {
+  if (!role) {
     return (
       <div className="empty-state">
-        <h3>No Profile Data</h3>
-        <p>Unable to load profile information.</p>
+        <h3>Access Denied</h3>
+        <p>Please log in to view your profile.</p>
       </div>
     );
   }

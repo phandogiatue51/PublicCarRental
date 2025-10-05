@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { accountAPI } from "../services/api";
+import { accountAPI, renterAPI } from "../services/api";
 import loginImg from "../images/login/login.jpg";
 import "../styles/Login.css";
 
@@ -17,36 +17,27 @@ function Login() {
         setLoading(true);
 
         try {
-            const res = await fetch(
-                `${process.env.REACT_APP_API_BASE || "https://publiccarrental-production-b7c5.up.railway.app"}/api/Account/login`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ identifier, password })
-                }
-            );
-
+            const data = await accountAPI.login({
+                Identifier: identifier,
+                Password: password
+            });
+            
             console.log('Login response data:', data); // Debug log
-
-            const data = await res.json();
             sessionStorage.setItem("userRole", data.role);
+            
             // Try to resolve renter info if identifier matches a renter
             try {
-                const base = process.env.REACT_APP_API_BASE || "https://publiccarrental-production-b7c5.up.railway.app";
-                const rentersRes = await fetch(`${base}/api/EVRenter/all-renters`);
-                if (rentersRes.ok) {
-                    const renters = await rentersRes.json();
-                    const idLower = (identifier || "").toLowerCase();
-                    const matched = renters.find(r =>
-                        (r.email && r.email.toLowerCase() === idLower) ||
-                        (r.phoneNumber && r.phoneNumber === identifier)
-                    );
-                    if (matched) {
-                        sessionStorage.setItem("renterId", String(matched.renterId));
-                        if (matched.fullName) sessionStorage.setItem("fullName", matched.fullName);
-                        if (matched.email) sessionStorage.setItem("email", matched.email);
-                        if (matched.phoneNumber) sessionStorage.setItem("phoneNumber", matched.phoneNumber);
-                    }
+                const renters = await renterAPI.getAll();
+                const idLower = (identifier || "").toLowerCase();
+                const matched = renters.find(r =>
+                    (r.email && r.email.toLowerCase() === idLower) ||
+                    (r.phoneNumber && r.phoneNumber === identifier)
+                );
+                if (matched) {
+                    sessionStorage.setItem("renterId", String(matched.renterId));
+                    if (matched.fullName) sessionStorage.setItem("fullName", matched.fullName);
+                    if (matched.email) sessionStorage.setItem("email", matched.email);
+                    if (matched.phoneNumber) sessionStorage.setItem("phoneNumber", matched.phoneNumber);
                 }
             } catch (_) {
                 // ignore enrichment errors; proceed to home

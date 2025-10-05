@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useAuth } from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import Profile from './Profile';
 import Contract from './Contract';
@@ -36,11 +35,23 @@ const tabs = [
 ];
 
 function AccountTabs() {
-  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
+  
+  const role = sessionStorage.getItem("userRole");
+  const fullName = sessionStorage.getItem("fullName");
+  const email = sessionStorage.getItem("email");
 
-  if (!user) {
+  const handleLogout = () => {
+    sessionStorage.removeItem("userRole");
+    sessionStorage.removeItem("renterId");
+    sessionStorage.removeItem("fullName");
+    sessionStorage.removeItem("email");
+    sessionStorage.removeItem("phoneNumber");
+    navigate("/");
+  };
+
+  if (!role) {
     navigate("/login");
     return null;
   }
@@ -56,36 +67,40 @@ function AccountTabs() {
   };
 
   return (
-    <div className="account-tabs-container">
-      <div className="account-header">
-        <h1>My Account</h1>
-        <p>Welcome back, {user.email}</p>
-      </div>
-
-      <div className="account-tabs">
-        <div className="tabs-nav">
+    <div className="account-layout">
+      {/* Sidebar */}
+      <div className="account-sidebar">
+        <div className="sidebar-header">
+          <h2>My Account</h2>
+          <p>Welcome back, {fullName || email || 'User'}</p>
+        </div>
+        
+        <div className="sidebar-nav">
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+              className={`sidebar-nav-item ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
             >
-              <span className="tab-icon">{tab.icon}</span>
-              <span className="tab-label">{tab.label}</span>
+              <span className="nav-icon">{tab.icon}</span>
+              <span className="nav-label">{tab.label}</span>
             </button>
           ))}
         </div>
 
-        <div className="tab-content">
-          {renderTabContent()}
+        <div className="sidebar-footer">
+          <button onClick={handleLogout} className="logout-btn">
+            <span className="logout-icon">🚪</span>
+            Logout
+          </button>
         </div>
       </div>
 
-      <div className="account-footer">
-        <button onClick={logout} className="logout-btn">
-          <span className="logout-icon">🚪</span>
-          Logout
-        </button>
+      {/* Main Content */}
+      <div className="account-main">
+        <div className="main-content">
+          {renderTabContent()}
+        </div>
       </div>
     </div>
   );
