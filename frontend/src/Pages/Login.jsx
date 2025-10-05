@@ -16,7 +16,7 @@ function Login() {
 
         try {
             const res = await fetch(
-                `${process.env.REACT_APP_API_BASE || "https://localhost:7230"}/api/Account/login`,
+                `${process.env.REACT_APP_API_BASE || "https://publiccarrental-production-b7c5.up.railway.app"}/api/Account/login`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -31,6 +31,27 @@ function Login() {
 
             const data = await res.json();
             sessionStorage.setItem("userRole", data.role);
+            // Try to resolve renter info if identifier matches a renter
+            try {
+                const base = process.env.REACT_APP_API_BASE || "https://publiccarrental-production-b7c5.up.railway.app";
+                const rentersRes = await fetch(`${base}/api/EVRenter/all-renters`);
+                if (rentersRes.ok) {
+                    const renters = await rentersRes.json();
+                    const idLower = (identifier || "").toLowerCase();
+                    const matched = renters.find(r =>
+                        (r.email && r.email.toLowerCase() === idLower) ||
+                        (r.phoneNumber && r.phoneNumber === identifier)
+                    );
+                    if (matched) {
+                        sessionStorage.setItem("renterId", String(matched.renterId));
+                        if (matched.fullName) sessionStorage.setItem("fullName", matched.fullName);
+                        if (matched.email) sessionStorage.setItem("email", matched.email);
+                        if (matched.phoneNumber) sessionStorage.setItem("phoneNumber", matched.phoneNumber);
+                    }
+                }
+            } catch (_) {
+                // ignore enrichment errors; proceed to home
+            }
             navigate("/");
         } catch (err) {
             setError(err.message || "Login failed");

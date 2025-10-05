@@ -25,7 +25,7 @@ function SignUp() {
         setLoading(true);
         try {
             const res = await fetch(
-                `${process.env.REACT_APP_API_BASE || "https://publiccarrental-production.up.railway.app"}/api/Account/register`,
+                `${process.env.REACT_APP_API_BASE || "https://publiccarrental-production-b7c5.up.railway.app"}/api/Account/register`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
