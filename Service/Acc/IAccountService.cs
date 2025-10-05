@@ -17,5 +17,9 @@ namespace PublicCarRental.Service.Acc
         public bool ValidatePasswordResetToken(string token);
         public bool VerifyEmail(string token);
         public (bool success, string message) SendPasswordResetToken(string email);
+        public Account? GetAccountByIdentifier(string identifier);
+        public int? GetRenterId(int accountId);
+        public int? GetStaffId(int accountId);
+        public int? GetStaffStationId(int accountId);
     }
 }

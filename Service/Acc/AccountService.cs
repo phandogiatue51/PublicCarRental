@@ -250,6 +250,30 @@ namespace PublicCarRental.Service.Acc
 
             return (true, "Password reset token sent.");
         }
+
+        public Account? GetAccountByIdentifier(string identifier)
+        {
+            var account = _accountRepo.GetByIdentifier(identifier);
+            Console.WriteLine($"GetAccountByIdentifier called for identifier: {identifier}, returned AccountId: {account?.AccountId}");
+            return account;
+        }
+
+        public int? GetRenterId(int accountId)
+        {
+            var renterId = _accountRepo.GetRenterId(accountId);
+            Console.WriteLine($"GetRenterId called for AccountId: {accountId}, returned: {renterId}");
+            return renterId;
+        }
+
+        public int? GetStaffId(int accountId)
+        {
+            return _accountRepo.GetStaffId(accountId);
+        }
+
+        public int? GetStaffStationId(int accountId)
+        {
+            return _accountRepo.GetStaffStationId(accountId);
+        }
     }
 }
  

@@ -14,5 +14,6 @@ namespace PublicCarRental.Service.Veh
         public (bool Success, string Message) UpdateVehicle(int id, VehicleUpdateDto updatedVehicle);
         bool DeleteVehicle(int id);
         public IEnumerable<StationDtoForView> GetStationFromModel(int modelId);
+        public IEnumerable<VehicleFilter> GetVehiclesByFilters(int? modelId, int? status, int? stationId, int? typeId, int? brandId);
     }
 }

@@ -11,6 +11,7 @@ export default function ModelModal({ isOpen, onClose, onSuccess, model = null, i
   const [name, setName] = useState('');
   const [brandId, setBrandId] = useState('');
   const [typeId, setTypeId] = useState('');
+  const [pricePerHour, setPricePerHour] = useState('');
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,11 +43,12 @@ export default function ModelModal({ isOpen, onClose, onSuccess, model = null, i
       setName(modelData.name || '');
       setBrandId(modelData.brandId || '');
       setTypeId(modelData.typeId || '');
+      setPricePerHour(modelData.pricePerHour || '');
       
       // Set image preview for existing model (for display only)
       if (modelData.imageUrl) {
-        // If it's already a full URL, use it as is
-        if (modelData.imageUrl.startsWith('http')) {
+        // If it's already a full URL (http/https), use it as is
+        if (modelData.imageUrl.startsWith('http://') || modelData.imageUrl.startsWith('https://')) {
           setImagePreview(modelData.imageUrl);
         } else {
           // If it's a relative URL, prepend the API base URL
@@ -99,6 +101,7 @@ export default function ModelModal({ isOpen, onClose, onSuccess, model = null, i
     setName('');
     setBrandId('');
     setTypeId('');
+    setPricePerHour('');
     setSelectedImageFile(null);
     setImagePreview('');
   };
@@ -120,9 +123,6 @@ export default function ModelModal({ isOpen, onClose, onSuccess, model = null, i
       }
     }
   };
-
-
-
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -160,6 +160,17 @@ export default function ModelModal({ isOpen, onClose, onSuccess, model = null, i
       return;
     }
 
+    if (!pricePerHour) {
+      toast({
+        title: 'Validation Error',
+        description: 'Price per hour is required',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -168,6 +179,7 @@ export default function ModelModal({ isOpen, onClose, onSuccess, model = null, i
       formData.append('Name', name.trim());
       formData.append('BrandId', brandId);
       formData.append('TypeId', typeId);
+      formData.append('PricePerHour', pricePerHour);
       
       if (selectedImageFile) {
         formData.append('imageFile', selectedImageFile);
@@ -266,6 +278,18 @@ export default function ModelModal({ isOpen, onClose, onSuccess, model = null, i
                   </option>
                 ))}
               </Select>
+            </FormControl>
+
+            <FormControl isRequired mb={4}>
+              <FormLabel>Price per Hour</FormLabel>
+              <Input
+                type="number"
+                value={pricePerHour}
+                onChange={(e) => setPricePerHour(e.target.value)}
+                placeholder="Enter price per hour"
+                min="1"
+                isDisabled={fetchingModel}
+              />
             </FormControl>
 
             <FormControl mb={4}>

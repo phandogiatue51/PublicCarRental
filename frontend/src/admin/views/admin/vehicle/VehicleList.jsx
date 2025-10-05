@@ -152,10 +152,12 @@ export default function VehicleList() {
   // Get status badge color
   const getStatusColor = (status) => {
     switch (status) {
-      case 0: return 'green'; // Available
-      case 1: return 'blue'; // In Use
-      case 2: return 'orange'; // Maintenance
-      case 3: return 'red'; // Out of Service
+      case 0: return 'orange'; 
+      case 1: return 'blue'; 
+      case 2: return 'purple'; 
+      case 3: return 'red'; 
+      case 4: return 'orange'; 
+      case 5: return 'green'; 
       default: return 'gray';
     }
   };
@@ -163,10 +165,12 @@ export default function VehicleList() {
   // Get status text
   const getStatusText = (status) => {
     switch (status) {
-      case 0: return 'Available';
-      case 1: return 'In Use';
-      case 2: return 'Maintenance';
-      case 3: return 'Out of Service';
+      case 0: return 'To Be Rented';
+      case 1: return 'Renting';
+      case 2: return 'Charging';
+      case 3: return 'To Be Checkup';
+      case 4: return 'In Maintenance';
+      case 5: return 'Available';
       default: return 'Unknown';
     }
   };

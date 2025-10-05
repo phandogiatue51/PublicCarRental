@@ -1,52 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-    Box,
-    Button,
-    Flex,
-    Icon,
-    Table,
-    Tbody,
-    Td,
-    Text,
-    Th,
-    Thead,
-    Tr,
-    useColorModeValue,
-    Spinner,
-    Alert,
-    AlertIcon,
-    AlertTitle,
-    AlertDescription,
-    Badge,
-    Select,
-    HStack,
-    useToast,
-    Tooltip,
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalCloseButton,
-    VStack,
-    Divider,
-    Progress
+    Box,    Button,    Flex,    Icon,    Table,    Tbody,    Td,    Text,    Th,    Thead,    Tr,    useColorModeValue,    Spinner,    Alert,
+    AlertIcon,    AlertTitle,    AlertDescription,    Badge,    Select,    HStack,    useToast,    Tooltip,    Modal,    ModalOverlay,    ModalContent,
+    ModalHeader,    ModalBody,    ModalCloseButton,    VStack,    Divider,    Progress
 } from '@chakra-ui/react';
 import {
-    createColumnHelper,
-    flexRender,
-    getCoreRowModel,
-    getSortedRowModel,
-    useReactTable
+    createColumnHelper,    flexRender,    getCoreRowModel,    getSortedRowModel,    useReactTable
 } from '@tanstack/react-table';
 import {
-    MdChevronLeft,
-    MdChevronRight,
-    MdDriveEta,
-    MdLocationOn,
-    MdRefresh,
-    MdVisibility,
-    MdBattery6Bar
+    MdChevronLeft,    MdChevronRight,    MdDriveEta,    MdLocationOn,    MdRefresh,    MdVisibility,    MdBattery6Bar
 } from 'react-icons/md';
 import { vehicleAPI } from '../../services/api';
 
@@ -139,24 +101,28 @@ const VehicleList = () => {
     // Get status badge color
     const getStatusColor = (status) => {
         switch (status) {
-            case 0: return 'green'; // Available
-            case 1: return 'blue'; // In Use
-            case 2: return 'orange'; // Maintenance
-            case 3: return 'red'; // Out of Service
-            default: return 'gray';
+          case 0: return 'orange'; 
+          case 1: return 'blue'; 
+          case 2: return 'purple'; 
+          case 3: return 'red'; 
+          case 4: return 'orange'; 
+          case 5: return 'green'; 
+          default: return 'gray';
         }
-    };
+      };
 
     // Get status text
     const getStatusText = (status) => {
         switch (status) {
-            case 0: return 'Available';
-            case 1: return 'In Use';
-            case 2: return 'Maintenance';
-            case 3: return 'Out of Service';
-            default: return 'Unknown';
+          case 0: return 'To Be Rented';
+          case 1: return 'Renting';
+          case 2: return 'Charging';
+          case 3: return 'To Be Checkup';
+          case 4: return 'In Maintenance';
+          case 5: return 'Available';
+          default: return 'Unknown';
         }
-    };
+      };
 
     // Get battery color based on level
     const getBatteryColor = (level) => {
@@ -235,6 +201,7 @@ const VehicleList = () => {
                 </Flex>
             ),
         }),
+        
         columnHelper.accessor('batteryLevel', {
             id: 'battery',
             header: () => (

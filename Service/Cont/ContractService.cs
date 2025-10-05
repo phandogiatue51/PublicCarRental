@@ -260,5 +260,28 @@ namespace PublicCarRental.Service.Cont
             return (true, $"Contract {contractId} deleted successfully");
         }
 
+        public IEnumerable<ContractDto> GetContractByStationId(int stationId)
+        {
+            var contracts = _contractRepo.GetAll()
+            .Where(r => r.Station.StationId == stationId)
+            .ToList();
+            return contracts.Select(contract => new ContractDto
+            {
+                ContractId = contract.ContractId,
+                InvoiceId = contract.Invoice?.InvoiceId,
+                EVRenterId = contract.EVRenterId,
+                EVRenterName = contract.EVRenter?.Account?.FullName,
+                StaffId = contract.StaffId,
+                StaffName = contract.Staff?.Account?.FullName,
+                VehicleId = contract.VehicleId ?? 0,
+                VehicleLicensePlate = contract.Vehicle?.LicensePlate,
+                StationId = contract.StationId ?? 0,
+                StationName = contract.Station?.Name,
+                StartTime = contract.StartTime,
+                EndTime = contract.EndTime,
+                TotalCost = contract.TotalCost,
+                Status = contract.Status
+            });
+        }
     }
 }

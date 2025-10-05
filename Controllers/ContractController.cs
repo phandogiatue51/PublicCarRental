@@ -118,5 +118,11 @@ namespace PublicCarRental.Controllers
             return BadRequest(result.Message);
         }
 
+        [HttpGet("get-by-station/{stationId}")]
+        public IActionResult GetByStationId(int stationId)
+        {
+            var contracts = _contractService.GetContractByStationId(stationId);
+            return Ok(contracts);
+        }
     }
 }

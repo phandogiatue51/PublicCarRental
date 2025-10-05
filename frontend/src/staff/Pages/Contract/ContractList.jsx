@@ -1,22 +1,22 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue, Spinner, Alert, AlertIcon,
-    AlertTitle, AlertDescription, Badge, Select, HStack, VStack, useToast, Tooltip,
-    Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Image, Grid, Divider,
-    FormControl, FormLabel, Input, FormHelperText
+    AlertTitle, AlertDescription, Badge, Select, HStack, useToast, Tooltip,
+    Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Image, Grid
 } from '@chakra-ui/react';
 import {
     createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable
 } from '@tanstack/react-table';
-import { contractAPI } from '../../services/api';
+import { contractAPI } from '../../../services/api';
 import {
     MdChevronLeft, MdChevronRight, MdPerson, MdDriveEta, MdLocationOn, MdRefresh,
     MdVisibility, MdAttachMoney, MdSchedule, MdAssignment, MdPhotoLibrary, MdDirectionsCar, MdExitToApp
 } from 'react-icons/md';
 
 // Custom components
-import Card from '../../admin/components/card/Card';
-import ContractDetailModal from '../components/ContractDetailModal';
+import Card from '../../../admin/components/card/Card';
+import ContractDetailModal from '../../components/ContractDetailModal';
+import ContractModal from './ContractModal';
 
 const columnHelper = createColumnHelper();
 
@@ -29,11 +29,9 @@ const ContractList = () => {
     const [selectedContract, setSelectedContract] = useState(null);
     const [isImageModalOpen, setIsImageModalOpen] = useState(false);
     const [selectedImages, setSelectedImages] = useState({ imageIn: '', imageOut: '' });
-    const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
-    const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+    const [isActionModalOpen, setIsActionModalOpen] = useState(false);
     const [selectedContractForAction, setSelectedContractForAction] = useState(null);
-    const [handoverFile, setHandoverFile] = useState(null);
-    const [returnFile, setReturnFile] = useState(null);
+    const [modalAction, setModalAction] = useState(null); // 'handover' or 'return'
     const toast = useToast();
 
     // Pagination state
@@ -100,6 +98,15 @@ const ContractList = () => {
     const goToPreviousPage = useCallback(() => setCurrentPage(prev => Math.max(prev - 1, 1)), []);
     const goToNextPage = useCallback(() => setCurrentPage(prev => Math.min(prev + 1, totalPages)), [totalPages]);
 
+    // Format currency helper function
+    const formatCurrency = (amount) => {
+        if (amount === null || amount === undefined) return 'N/A';
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(amount);
+    };
+
     // Handle refresh
     const handleRefresh = useCallback(() => {
         fetchContracts();
@@ -157,93 +164,29 @@ const ContractList = () => {
         setSelectedImages({ imageIn: '', imageOut: '' });
     }, []);
 
-    // Handle handover modal
+    // Handle action modal
     const handleHandover = useCallback((contract) => {
         setSelectedContractForAction(contract);
-        setIsHandoverModalOpen(true);
+        setModalAction('handover');
+        setIsActionModalOpen(true);
     }, []);
 
-    const handleHandoverModalClose = useCallback(() => {
-        setIsHandoverModalOpen(false);
-        setSelectedContractForAction(null);
-        setHandoverFile(null);
-    }, []);
-
-    // Handle return modal
     const handleReturn = useCallback((contract) => {
         setSelectedContractForAction(contract);
-        setIsReturnModalOpen(true);
+        setModalAction('return');
+        setIsActionModalOpen(true);
     }, []);
 
-    const handleReturnModalClose = useCallback(() => {
-        setIsReturnModalOpen(false);
+    const handleActionModalClose = useCallback(() => {
+        setIsActionModalOpen(false);
         setSelectedContractForAction(null);
-        setReturnFile(null);
+        setModalAction(null);
     }, []);
 
-    // Handle file uploads
-    const handleHandoverFileChange = useCallback((event) => {
-        const file = event.target.files[0];
-        setHandoverFile(file);
-    }, []);
-
-    const handleReturnFileChange = useCallback((event) => {
-        const file = event.target.files[0];
-        setReturnFile(file);
-    }, []);
-
-    // Handle confirm actions
-    const handleConfirmHandover = useCallback(() => {
-        if (!handoverFile) {
-            toast({
-                title: 'Error',
-                description: 'Please select an image file',
-                status: 'error',
-                duration: 3000,
-                isClosable: true,
-            });
-            return;
-        }
-
-        // TODO: Connect to API
-        console.log('Handover confirmed for contract:', selectedContractForAction?.contractId, 'File:', handoverFile);
-
-        toast({
-            title: 'Success',
-            description: 'Vehicle handover completed successfully',
-            status: 'success',
-            duration: 3000,
-            isClosable: true,
-        });
-
-        handleHandoverModalClose();
-    }, [handoverFile, selectedContractForAction, toast, handleHandoverModalClose]);
-
-    const handleConfirmReturn = useCallback(() => {
-        if (!returnFile) {
-            toast({
-                title: 'Error',
-                description: 'Please select an image file',
-                status: 'error',
-                duration: 3000,
-                isClosable: true,
-            });
-            return;
-        }
-
-        // TODO: Connect to API
-        console.log('Return confirmed for contract:', selectedContractForAction?.contractId, 'File:', returnFile);
-
-        toast({
-            title: 'Success',
-            description: 'Vehicle return completed successfully',
-            status: 'success',
-            duration: 3000,
-            isClosable: true,
-        });
-
-        handleReturnModalClose();
-    }, [returnFile, selectedContractForAction, toast, handleReturnModalClose]);
+    // Handle modal success callback
+    const handleModalSuccess = useCallback(async () => {
+        await fetchContracts();
+    }, [fetchContracts]);
     // Get status badge color
     const getStatusColor = (status) => {
         switch (status) {
@@ -251,7 +194,7 @@ const ContractList = () => {
             case 1: return 'green'; // Active - màu xanh lá cho đang hoạt động
             case 2: return 'purple'; // Completed - màu tím cho hoàn thành
             case 3: return 'red'; // Cancelled - màu đỏ cho đã hủy
-            case 4: return 'teal'; // Confirmed - màu xanh ngọc cho đã xác nhận
+            case 4: return 'teal'; 
             default: return 'gray';
         }
     };
@@ -275,14 +218,6 @@ const ContractList = () => {
         return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-    // Format currency
-    const formatCurrency = (amount) => {
-        if (amount === null || amount === undefined) return 'N/A';
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND'
-        }).format(amount);
-    };
 
     const columns = useMemo(() => [
         columnHelper.accessor('contractId', {
@@ -451,43 +386,64 @@ const ContractList = () => {
                     ACTIONS
                 </Text>
             ),
-            cell: (info) => (
-                <Flex align="center" gap={2} wrap="wrap">
-                    <Tooltip label="View Details">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            leftIcon={<Icon as={MdVisibility} />}
-                            colorScheme="blue"
-                            onClick={() => handleView(info.row.original)}
-                        >
-                            View
-                        </Button>
-                    </Tooltip>
-                    <Tooltip label="Hand Over Vehicle">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            leftIcon={<Icon as={MdDirectionsCar} />}
-                            colorScheme="green"
-                            onClick={() => handleHandover(info.row.original)}
-                        >
-                            Hand Over
-                        </Button>
-                    </Tooltip>
-                    <Tooltip label="Return Vehicle">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            leftIcon={<Icon as={MdExitToApp} />}
-                            colorScheme="orange"
-                            onClick={() => handleReturn(info.row.original)}
-                        >
-                            Return
-                        </Button>
-                    </Tooltip>
-                </Flex>
-            ),
+            cell: (info) => {
+                const contract = info.row.original;
+                const status = contract.status;
+                
+                // Determine which actions are available based on contract status
+                const canHandover = status === 4; // Confirmed status
+                const canReturn = status === 1; // Active status
+                
+                return (
+                    <Flex align="center" gap={2} wrap="wrap">
+                        <Tooltip label="View Details">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                leftIcon={<Icon as={MdVisibility} />}
+                                colorScheme="blue"
+                                onClick={() => handleView(contract)}
+                            >
+                                View
+                            </Button>
+                        </Tooltip>
+                        
+                        {canHandover && (
+                            <Tooltip label="Hand Over Vehicle">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    leftIcon={<Icon as={MdDirectionsCar} />}
+                                    colorScheme="green"
+                                    onClick={() => handleHandover(contract)}
+                                >
+                                    Hand Over
+                                </Button>
+                            </Tooltip>
+                        )}
+                        
+                        {canReturn && (
+                            <Tooltip label="Return Vehicle">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    leftIcon={<Icon as={MdExitToApp} />}
+                                    colorScheme="orange"
+                                    onClick={() => handleReturn(contract)}
+                                >
+                                    Return
+                                </Button>
+                            </Tooltip>
+                        )}
+                        
+                        {!canHandover && !canReturn && status !== 2 && status !== 3 && (
+                            <Text fontSize="sm" color="gray.500">
+                                No actions available
+                            </Text>
+                        )}
+                    </Flex>
+                );
+            },
         }),
 
     ], [textColor, handleImageView, handleHandover, handleReturn]);
@@ -843,113 +799,14 @@ const ContractList = () => {
                 </ModalContent>
             </Modal>
 
-            {/* Hand Over Vehicle Modal */}
-            <Modal isOpen={isHandoverModalOpen} onClose={handleHandoverModalClose} size="md" isCentered>
-                <ModalOverlay />
-                <ModalContent>
-                    <ModalHeader>
-                        <Flex align="center" gap={2}>
-                            <Icon as={MdDirectionsCar} color="green.500" />
-                            <Text>Hand Over Vehicle for Contract {selectedContractForAction?.contractId}</Text>
-                        </Flex>
-                    </ModalHeader>
-                    <ModalCloseButton />
-                    <ModalBody pb={6}>
-                        <VStack spacing={4}>
-                            <FormControl>
-                                <FormLabel>Upload Vehicle Handover Image</FormLabel>
-                                <Input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleHandoverFileChange}
-                                    p={1}
-                                />
-                                <FormHelperText>
-                                    Please select an image file showing the vehicle condition at handover
-                                </FormHelperText>
-                            </FormControl>
-
-                            {handoverFile && (
-                                <Box>
-                                    <Text fontSize="sm" color="green.500" mb={2}>
-                                        Selected file: {handoverFile.name}
-                                    </Text>
-                                </Box>
-                            )}
-
-                            <HStack spacing={4} w="full" justify="center">
-                                <Button
-                                    colorScheme="green"
-                                    onClick={handleConfirmHandover}
-                                    isDisabled={!handoverFile}
-                                >
-                                    Confirm Handover
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={handleHandoverModalClose}
-                                >
-                                    Cancel
-                                </Button>
-                            </HStack>
-                        </VStack>
-                    </ModalBody>
-                </ModalContent>
-            </Modal>
-
-            {/* Return Vehicle Modal */}
-            <Modal isOpen={isReturnModalOpen} onClose={handleReturnModalClose} size="md" isCentered>
-                <ModalOverlay />
-                <ModalContent>
-                    <ModalHeader>
-                        <Flex align="center" gap={2}>
-                            <Icon as={MdExitToApp} color="orange.500" />
-                            <Text>Return Vehicle for Contract {selectedContractForAction?.contractId}</Text>
-                        </Flex>
-                    </ModalHeader>
-                    <ModalCloseButton />
-                    <ModalBody pb={6}>
-                        <VStack spacing={4}>
-                            <FormControl>
-                                <FormLabel>Upload Vehicle Return Image</FormLabel>
-                                <Input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleReturnFileChange}
-                                    p={1}
-                                />
-                                <FormHelperText>
-                                    Please select an image file showing the vehicle condition at return
-                                </FormHelperText>
-                            </FormControl>
-
-                            {returnFile && (
-                                <Box>
-                                    <Text fontSize="sm" color="green.500" mb={2}>
-                                        Selected file: {returnFile.name}
-                                    </Text>
-                                </Box>
-                            )}
-
-                            <HStack spacing={4} w="full" justify="center">
-                                <Button
-                                    colorScheme="orange"
-                                    onClick={handleConfirmReturn}
-                                    isDisabled={!returnFile}
-                                >
-                                    Confirm Return
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    onClick={handleReturnModalClose}
-                                >
-                                    Cancel
-                                </Button>
-                            </HStack>
-                        </VStack>
-                    </ModalBody>
-                </ModalContent>
-            </Modal>
+            {/* Action Modal (Handover/Return) */}
+            <ContractModal
+                isOpen={isActionModalOpen}
+                onClose={handleActionModalClose}
+                contract={selectedContractForAction}
+                action={modalAction}
+                onSuccess={handleModalSuccess}
+            />
         </Box>
     );
 };

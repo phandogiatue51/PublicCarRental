@@ -1,33 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Box,
-    Grid,
-    GridItem,
-    Card,
-    CardBody,
-    Text,
-    Stat,
-    StatLabel,
-    StatNumber,
-    StatHelpText,
-    StatArrow,
-    Icon,
-    Flex,
-    useColorModeValue,
-    Spinner,
-    Alert,
-    AlertIcon,
-    AlertTitle,
-    AlertDescription
+    Box,    Grid,    GridItem,    Card,    CardBody,    Text,    Stat,    StatLabel,    StatNumber,    StatHelpText,    StatArrow,    Icon,
+    Flex,    useColorModeValue,    Spinner,    Alert,    AlertIcon,    AlertTitle,    AlertDescription
 } from '@chakra-ui/react';
 import {
-    MdPerson,
-    MdDriveEta,
-    MdAssignment,
-    MdReceipt,
-    MdTrendingUp,
-    MdTrendingDown
-} from 'react-icons/md';
+    MdPerson,    MdDriveEta,    MdAssignment,
+    MdReceipt} from 'react-icons/md';
 import { renterAPI, vehicleAPI, contractAPI, invoiceAPI } from '../../services/api';
 
 const StaffDashboard = () => {

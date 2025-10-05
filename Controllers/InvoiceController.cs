@@ -44,5 +44,12 @@ namespace PublicCarRental.Controllers
             if (result.Success) return Ok( result.Message);
             return BadRequest(result.Message);
         }
+
+        [HttpGet("get-by-station/{stationId}")]
+        public IActionResult GetByStation(int stationId)
+        {
+            var invoices = _service.GetInvoiceByStationId(stationId);
+            return Ok(invoices);
+        }
     }
 }

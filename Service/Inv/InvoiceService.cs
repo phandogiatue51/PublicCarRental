@@ -134,5 +134,22 @@ namespace PublicCarRental.Service.Inv
                 return false;
             }
         }
+
+        public IEnumerable<InvoiceDto> GetInvoiceByStationId(int stationId)
+        {
+            var invoices = _repo.GetAll()
+                .Where(i => i.Contract.Vehicle.StationId == stationId)
+                .ToList();
+            return invoices.Select(i => new InvoiceDto
+            {
+                InvoiceId = i.InvoiceId,
+                ContractId = i.ContractId,
+                IssuedAt = i.IssuedAt,
+                AmountDue = i.AmountDue,
+                AmountPaid = i.AmountPaid,
+                PaidAt = i.PaidAt,
+                Status = i.Status,
+            });
+        }
     }
 }

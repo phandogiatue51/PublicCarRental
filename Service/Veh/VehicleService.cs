@@ -137,5 +137,43 @@ namespace PublicCarRental.Service.Veh
                 .Distinct()
                 .ToList();
         }
+
+        public IEnumerable<VehicleFilter> GetVehiclesByFilters(int? modelId, int? status, int? stationId, int? typeId, int? brandId)
+        {
+            var query = _repo.GetAll().AsQueryable();
+
+            if (modelId.HasValue)
+                query = query.Where(v => v.ModelId == modelId.Value);
+
+            if (status.HasValue)
+                query = query.Where(v => (int)v.Status == status.Value);
+
+            if (stationId.HasValue)
+                query = query.Where(v => v.StationId == stationId.Value);
+
+            if (typeId.HasValue)
+                query = query.Where(v => v.Model.TypeId == typeId.Value);
+
+            if (brandId.HasValue)
+                query = query.Where(v => v.Model.BrandId == brandId.Value);
+
+            return query.Select(v => new VehicleFilter
+            {
+                VehicleId = v.VehicleId,
+                LicensePlate = v.LicensePlate,
+                BatteryLevel = v.BatteryLevel,
+                Status = v.Status,
+                StationId = v.StationId,
+                StationName = v.Station.Name,
+                ModelId = v.ModelId,
+                ModelName = v.Model.Name,
+                BrandId = v.Model.BrandId,
+                BrandName = v.Model.Brand.Name,
+                TypeId = v.Model.TypeId,
+                TypeName = v.Model.Type.Name,
+                PricePerHour = v.Model.PricePerHour,
+                ImageUrl = v.Model.ImageUrl
+            }).ToList();
+        }
     }
 }

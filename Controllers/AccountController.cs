@@ -54,16 +54,86 @@ namespace PublicCarRental.Controllers
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginDto dto)
         {
+            _logger.LogInformation("Login attempt for identifier: {Identifier}", dto.Identifier);
+            
             var result = _accountService.Login(dto.Identifier, dto.Password);
 
             if (!result.Success)
+            {
+                _logger.LogWarning("Login failed for identifier: {Identifier}, reason: {Message}", dto.Identifier, result.Message);
                 return BadRequest(new { message = result.Message });
+            }
 
+            // Get user data for the response
+            var user = _accountService.GetAccountByIdentifier(dto.Identifier);
+            if (user == null)
+            {
+                _logger.LogError("User not found after successful login for identifier: {Identifier}", dto.Identifier);
+                return BadRequest(new { message = "User not found" });
+            }
+
+            _logger.LogInformation("Login successful for user: {AccountId}, role: {Role}", user.AccountId, result.Role);
+
+            // Add role-specific data
+            switch (result.Role)
+            {
+                case AccountRole.EVRenter:
+                    var renterId = _accountService.GetRenterId(user.AccountId);
+                    _logger.LogInformation("EVRenter login - AccountId: {AccountId}, RenterId: {RenterId}", user.AccountId, renterId);
+                    if (renterId.HasValue)
+                    {
+                        return Ok(new
+                        {
+                            message = result.Message,
+                            token = result.Token,
+                            role = result.Role,
+                            accountId = user.AccountId,
+                            email = user.Email,
+                            fullName = user.FullName,
+                            renterId = renterId.Value
+                        });
+                    }
+                    break;
+
+                case AccountRole.Staff:
+                    var staffId = _accountService.GetStaffId(user.AccountId);
+                    var stationId = _accountService.GetStaffStationId(user.AccountId);
+                    _logger.LogInformation("Staff login - AccountId: {AccountId}, StaffId: {StaffId}, StationId: {StationId}", user.AccountId, staffId, stationId);
+                    return Ok(new
+                    {
+                        message = result.Message,
+                        token = result.Token,
+                        role = result.Role,
+                        accountId = user.AccountId,
+                        email = user.Email,
+                        fullName = user.FullName,
+                        staffId = staffId,
+                        stationId = stationId
+                    });
+
+                case AccountRole.Admin:
+                    _logger.LogInformation("Admin login - AccountId: {AccountId}", user.AccountId);
+                    return Ok(new
+                    {
+                        message = result.Message,
+                        token = result.Token,
+                        role = result.Role,
+                        accountId = user.AccountId,
+                        email = user.Email,
+                        fullName = user.FullName,
+                        isAdmin = true
+                    });
+            }
+
+            // Fallback for any unhandled role
             return Ok(new
             {
-                message = result.Message, 
+                message = result.Message,
                 token = result.Token,
-                role = result.Role
+                role = result.Role,
+                accountId = user.AccountId,
+                email = user.Email,
+                fullName = user.FullName
             });
         }
 

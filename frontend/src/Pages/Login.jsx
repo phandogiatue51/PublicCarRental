@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { accountAPI } from "../services/api";
 import loginImg from "../images/login/login.jpg";
+import "../styles/Login.css";
 
 function Login() {
     const [identifier, setIdentifier] = useState("");
@@ -15,116 +17,86 @@ function Login() {
         setLoading(true);
 
         try {
-            const res = await fetch(
-                `${process.env.REACT_APP_API_BASE || "https://localhost:7230"}/api/Account/login`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ identifier, password })
-                }
-            );
+            // Use the API service instead of direct fetch
+            const data = await accountAPI.login({
+                Identifier: identifier,
+                Password: password
+            });
 
-            if (!res.ok) {
-                const text = await res.text();
-                throw new Error(text || "Login failed");
+            console.log('Login response data:', data); // Debug log
+
+            // Map numeric role to string role
+            const roleMap = {
+                0: "EVRenter",
+                1: "Staff", 
+                2: "Admin"
+            };
+            const roleString = roleMap[data.role] || "EVRenter";
+            
+            console.log('Role mapping:', { role: data.role, roleString }); // Debug log
+            
+            // Store all user data from the response
+            if (data.accountId) sessionStorage.setItem("accountId", data.accountId);
+            sessionStorage.setItem("userRole", roleString);
+            if (data.email) sessionStorage.setItem("userEmail", data.email);
+            if (data.renterId) sessionStorage.setItem("renterId", data.renterId);
+            if (data.staffId) sessionStorage.setItem("staffId", data.staffId);
+            if (data.stationId) sessionStorage.setItem("stationId", data.stationId);
+            if (data.token) sessionStorage.setItem("userToken", data.token);
+            sessionStorage.setItem("isAdmin", (roleString === "Admin").toString());
+            
+            console.log('Stored session data:', {
+                accountId: data.accountId,
+                role: roleString,
+                email: data.email,
+                renterId: data.renterId,
+                staffId: data.staffId,
+                stationId: data.stationId
+            }); // Debug log
+            
+            // Dispatch custom event to notify other components of auth state change
+            window.dispatchEvent(new Event('authStateChanged'));
+            
+            // Redirect based on role
+            if (roleString === "Admin") {
+                navigate("/admin/dashboard");
+            } else if (roleString === "Staff") {
+                navigate("/staff/dashboard");
+            } else {
+                navigate("/");
             }
-
-            const data = await res.json();
-            sessionStorage.setItem("userRole", data.role);
-            navigate("/");
+            
         } catch (err) {
-            setError(err.message || "Login failed");
+            setError(err.message || "Login failed. Please check your credentials.");
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div
-            style={{
-                minHeight: "100vh",
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                background: "#ffffff",
-                position: "relative",
-                overflow: "hidden"
-            }}
-        >
+        <div className="login-container">
             {/* Header */}
-            <div
-                style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: 96,
-                    background: "#ffffff",
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 20px",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                    zIndex: 10
-                }}
-            >
-                <div style={{ fontWeight: 700, color: "#111827" }}></div>
+            <div className="login-header">
+                <div className="header-content"></div>
             </div>
 
-            {/* Cột trái (ảnh) */}
-            <div
-                style={{
-                    backgroundImage: `url(${loginImg})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    minHeight: "100vh"
-                }}
+            {/* Left Column (Image) */}
+            <div 
+                className="login-image"
+                style={{ backgroundImage: `url(${loginImg})` }}
             />
 
-            {/* Cột phải (form) */}
-            <div
-                style={{
-                    padding: 40,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    minHeight: "100vh",
-                    alignItems: "center", 
-                }}
-            >
-                <div style={{ marginBottom: 12 }}>
-                    <div style={{ fontSize: 36, fontWeight: 800, color: "#111827" }}>
-                        Welcome back
-                    </div>
-                    <div
-                        style={{
-                            color: "#6b7280",
-                            marginTop: 6,
-                            fontSize: 18
-                        }}
-                    >
-                        Sign in to continue to your account
-                    </div>
+            {/* Right Column (Form) */}
+            <div className="login-form">
+                <div className="form-header">
+                    <h1>Welcome back</h1>
+                    <p>Log in to continue to your account</p>
                 </div>
-                <form
-                    onSubmit={handleSubmit}
-                    style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 16,
-                        width: "100%",
-                        maxWidth: 400,        // khung form gọn hơn
-                        alignItems: "flex-start"
-                    }}
-                >
+
+                <form onSubmit={handleSubmit} className="login-form-content">
                     {/* Email or Phone */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%" }}>
-                        <label
-                            htmlFor="identifier"
-                            style={{
-                                fontSize: 16,
-                                color: "#374151",
-                                marginBottom: 4,
-                            }}
-                        >
+                    <div className="form-field">
+                        <label htmlFor="identifier" className="form-label">
                             Email or Phone
                         </label>
                         <input
@@ -134,28 +106,13 @@ function Login() {
                             onChange={(e) => setIdentifier(e.target.value)}
                             placeholder="you@example.com or 0123456789"
                             required
-                            style={{
-                                width: "100%",   // full theo form
-                                padding: "14px 16px",
-                                borderRadius: 12,
-                                border: "1px solid #d1d5db",
-                                background: "#ffffff",
-                                color: "#111827",
-                                fontSize: 16,
-                            }}
+                            className="form-input"
                         />
                     </div>
 
                     {/* Password */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%" }}>
-                        <label
-                            htmlFor="password"
-                            style={{
-                                fontSize: 16,
-                                color: "#374151",
-                                marginBottom: 4,
-                            }}
-                        >
+                    <div className="form-field">
+                        <label htmlFor="password" className="form-label">
                             Password
                         </label>
                         <input
@@ -165,55 +122,37 @@ function Login() {
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
                             required
-                            style={{
-                                width: "100%",   // full theo form
-                                padding: "14px 16px",
-                                borderRadius: 12,
-                                border: "1px solid #d1d5db",
-                                background: "#ffffff",
-                                color: "#111827",
-                                fontSize: 16,
-                            }}
+                            className="form-input"
                         />
                     </div>
 
                     {error && (
-                        <div style={{ color: "#dc2626", fontSize: 16 }}>{error}</div>
+                        <div className="error-message">
+                            {error}
+                        </div>
                     )}
 
-                    <div style={{ width: "100%", display: "flex", justifyContent: "center" }}>
+                    <div className="submit-container">
                         <button
                             type="submit"
                             disabled={loading}
-                            style={{
-                                width: "50%",
-                                padding: "14px 16px",
-                                borderRadius: 20,
-                                border: "1px solid #ff4d30",
-                                background: "#ff4d30",
-                                color: "#ffffff",
-                                fontWeight: 700,
-                                fontSize: 16,
-                                cursor: loading ? "not-allowed" : "pointer",
-                            }}
+                            className="submit-button"
                         >
-                            {loading ? "Signing in..." : "Sign In"}
+                            {loading ? (
+                                <>
+                                    <span className="loading-spinner"></span>
+                                    Logging in...
+                                </>
+                            ) : (
+                                "Log In"
+                            )}
                         </button>
                     </div>
-
                 </form>
 
-
-                <div
-                    style={{
-                        marginTop: 18,
-                        color: "#6b7280",
-                        fontSize: 16,
-                        textAlign: "center"
-                    }}
-                >
+                <div className="signup-redirect">
                     Don't have an account?{" "}
-                    <a href="/sign-up" style={{ color: "#ff4d30", fontWeight: 600 }}>
+                    <a href="/sign-up" className="signup-link">
                         Sign up
                     </a>
                 </div>

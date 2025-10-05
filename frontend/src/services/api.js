@@ -73,6 +73,58 @@ const apiRequest = async (endpoint, options = {}) => {
   }
 };
 
+// Account API services
+export const accountAPI = {
+  // Login user
+  login: (credentials) => apiRequest('/Account/login', {
+    method: 'POST',
+    body: JSON.stringify({
+      Identifier: credentials.Identifier,
+      Password: credentials.Password
+    })
+  }),
+
+  register: (userData) => apiRequest('/Account/register', {
+    method: 'POST',
+    body: JSON.stringify({
+      FullName: userData.fullName,       
+      Email: userData.email,           
+      Password: userData.password,       
+      PhoneNumber: userData.phoneNumber, 
+      IdentityCardNumber: userData.identityCardNumber, 
+      LicenseNumber: userData.licenseNumber 
+    })
+  }),
+
+  // Logout user
+  logout: () => apiRequest('/Account/logout', {
+    method: 'POST'
+  }),
+
+  // Verify email
+  verifyEmail: (token) => apiRequest(`/Account/verify-email?token=${token}`, {
+    method: 'GET'
+  }),
+
+  // Change password
+  changePassword: (passwordData) => apiRequest('/Account/change-password', {
+    method: 'POST',
+    body: JSON.stringify(passwordData)
+  }),
+
+  // Forgot password
+  forgotPassword: (email) => apiRequest('/Account/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email })
+  }),
+
+  // Reset password
+  resetPassword: (resetData) => apiRequest('/Account/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(resetData)
+  }),
+};
+
 // Brand API services
 export const brandAPI = {
   // Get all brands
@@ -207,6 +259,31 @@ export const contractAPI = {
 
   // Get contract by ID
   getById: (id) => apiRequest(`/Contract/${id}`),
+
+  // Handover vehicle (active contract)
+  handoverVehicle: (contractId, staffId, imageFile) => {
+    const formData = new FormData();
+    formData.append('ContractId', contractId);
+    formData.append('StaffId', staffId);
+    formData.append('ImageFile', imageFile);
+    
+    return apiRequest('/Contract/active-contract', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  // Return vehicle (finish contract)
+  returnVehicle: (contractId, imageFile) => {
+    const formData = new FormData();
+    formData.append('ContractId', contractId);
+    formData.append('imageFile', imageFile);
+    
+    return apiRequest('/Contract/finish-contract', {
+      method: 'POST',
+      body: formData,
+    });
+  },
 };
 
 // Vehicle API services

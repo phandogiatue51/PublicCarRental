@@ -2,13 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Box, Flex, Text, Icon, Button, useColorModeValue } from '@chakra-ui/react';
 import {
-    MdDashboard,
-    MdPerson,
-    MdDriveEta,
-    MdAssignment,
-    MdReceipt,
-    MdMenu,
-    MdLogout
+    MdDashboard,    MdPerson,    MdDriveEta,    MdAssignment,    MdReceipt,    MdMenu,    MdLogout
 } from 'react-icons/md';
 
 const StaffLayout = () => {
@@ -26,6 +20,7 @@ const StaffLayout = () => {
         { path: '/vehicles', label: 'Vehicles', icon: MdDriveEta },
         { path: '/contracts', label: 'Contracts', icon: MdAssignment },
         { path: '/invoices', label: 'Invoices', icon: MdReceipt },
+        { path: '/models', label: 'Models', icon: MdDriveEta },
     ];
 
     const isActive = (path) => {

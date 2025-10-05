@@ -1,30 +1,32 @@
 /* eslint-disable */
 
 import {
-    Box, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue, Spinner, Alert, AlertIcon,
-    AlertTitle, AlertDescription, Badge, Select, HStack, VStack, useToast, Tooltip
-  } from '@chakra-ui/react';
+    Box,  Button,  Flex,  Icon,  Table,  Tbody,  Td,  Text,  Th,  Thead,  Tr,  useColorModeValue,  Spinner,  Alert,  AlertIcon,
+    AlertTitle,  AlertDescription,  Image,  Badge,  Select,  HStack,  VStack,  Modal,  ModalOverlay,  ModalContent,  ModalBody,
+    ModalCloseButton,  useDisclosure,} from '@chakra-ui/react';
   import {
-    createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable
+    createColumnHelper,  flexRender,  getCoreRowModel,  getSortedRowModel,  useReactTable,
   } from '@tanstack/react-table';
   import { useState, useEffect, useMemo, useCallback } from 'react';
-  import { invoiceAPI } from '../../services/api';
-  import { 
-    MdChevronLeft, MdChevronRight, MdReceipt, MdRefresh, 
-    MdVisibility, MdAttachMoney, MdSchedule, MdAssignment
-  } from 'react-icons/md';
+  import { modelAPI } from '../../services/api';
+  import { MdEdit, MdDelete, MdAdd, MdVisibility, MdVisibilityOff, MdChevronLeft, MdChevronRight } from 'react-icons/md';
+  import ModelModal from '../../admin/views/admin/model/ModelModal';
   
   // Custom components
   import Card from '@components/card/Card';
   
   const columnHelper = createColumnHelper();
   
-  export default function InvoiceList() {
-    const [invoices, setInvoices] = useState([]);
+  export default function ModelList() {
+    const [models, setModels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [sorting, setSorting] = useState([]);
-    const toast = useToast();
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedModel, setSelectedModel] = useState(null);
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [selectedImageUrl, setSelectedImageUrl] = useState('');
+    const { isOpen: isImageModalOpen, onOpen: onImageModalOpen, onClose: onImageModalClose } = useDisclosure();
     
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -35,25 +37,25 @@ import {
     const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
     const brandColor = useColorModeValue('brand.500', 'white');
   
-    // Fetch invoices from API
-    const fetchInvoices = async () => {
+    // Fetch models from API
+    const fetchModels = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await invoiceAPI.getAll();
-        console.log('Invoices response:', response);
-        setInvoices(response || []);
+        const response = await modelAPI.getAll();
+        console.log('Models response:', response);
+        setModels(response || []);
         setTotalItems(response?.length || 0);
       } catch (err) {
-        console.error('Error fetching invoices:', err);
-        setError(err.message || 'Failed to fetch invoices');
+        console.error('Error fetching models:', err);
+        setError(err.message || 'Failed to fetch models');
       } finally {
         setLoading(false);
       }
     };
   
     useEffect(() => {
-      fetchInvoices();
+      fetchModels();
     }, []);
   
     // Pagination calculations - memoized for performance
@@ -61,17 +63,17 @@ import {
       const totalPages = Math.ceil(totalItems / pageSize);
       const startIndex = (currentPage - 1) * pageSize;
       const endIndex = startIndex + pageSize;
-      const paginatedInvoices = invoices.slice(startIndex, endIndex);
+      const paginatedModels = models.slice(startIndex, endIndex);
       
       return {
         totalPages,
         startIndex,
         endIndex,
-        paginatedInvoices
+        paginatedModels
       };
-    }, [invoices, currentPage, pageSize, totalItems]);
+    }, [models, currentPage, pageSize, totalItems]);
   
-    const { totalPages, startIndex, endIndex, paginatedInvoices } = paginationData;
+    const { totalPages, startIndex, endIndex, paginatedModels } = paginationData;
   
     // Pagination handlers - memoized for performance
     const handlePageChange = useCallback((page) => {
@@ -88,229 +90,11 @@ import {
     const goToPreviousPage = useCallback(() => setCurrentPage(prev => Math.max(prev - 1, 1)), []);
     const goToNextPage = useCallback(() => setCurrentPage(prev => Math.min(prev + 1, totalPages)), [totalPages]);
   
-    // Handle refresh
-    const handleRefresh = useCallback(() => {
-      fetchInvoices();
-    }, []);
-  
-    // Get status badge color
-    const getStatusColor = (status) => {
-      switch (status) {
-        case 0: return 'orange'; 
-        case 1: return 'green';
-        case 2: return 'gray'; 
-        case 3: return 'red';
-        default: return 'gray';
-      }
-    };
-  
-    // Get status text
-    const getStatusText = (status) => {
-      switch (status) {
-        case 0: return 'Pending';
-        case 1: return 'Paid';
-        case 2: return 'Overdue';
-        case 3: return 'Cancelled';
-        default: return 'Unknown';
-      }
-    };
-  
-    // Format date
-    const formatDate = (dateString) => {
-      if (!dateString) return 'N/A';
-      const date = new Date(dateString);
-      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    };
-  
-    // Format currency
-    const formatCurrency = (amount) => {
-      if (amount === null || amount === undefined) return 'N/A';
-      return new Intl.NumberFormat('vi-VN', {
-        style: 'currency',
-        currency: 'VND'
-      }).format(amount);
-    };
-  
-    const columns = useMemo(() => [
-      columnHelper.accessor('invoiceId', {
-        id: 'invoiceId',
-        header: () => (
-          <Text
-            justifyContent="space-between"
-            align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
-          >
-            ID
-          </Text>
-        ),
-        cell: (info) => (
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {info.getValue()}
-          </Text>
-        ),
-      }),
-     
-      columnHelper.accessor('issuedAt', {
-        id: 'issuedAt',
-        header: () => (
-          <Text
-            justifyContent="space-between"
-            align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
-          >
-            ISSUED DATE
-          </Text>
-        ),
-        cell: (info) => (
-          <Flex align="center" gap={2}>
-            <Icon as={MdSchedule} color="gray.500" />
-            <Text color={textColor} fontSize="sm">
-              {formatDate(info.getValue())}
-            </Text>
-          </Flex>
-        ),
-      }),
-      columnHelper.accessor('amountDue', {
-        id: 'amountDue',
-        header: () => (
-          <Text
-            justifyContent="space-between"
-            align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
-          >
-            AMOUNT DUE
-          </Text>
-        ),
-        cell: (info) => (
-          <Flex align="center" gap={2}>
-            <Icon as={MdAttachMoney} color="red.500" />
-            <Text color={textColor} fontSize="sm" fontWeight="700">
-              {formatCurrency(info.getValue())}
-            </Text>
-          </Flex>
-        ),
-      }),
-      columnHelper.accessor('amountPaid', {
-        id: 'amountPaid',
-        header: () => (
-          <Text
-            justifyContent="space-between"
-            align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
-          >
-            AMOUNT PAID
-          </Text>
-        ),
-        cell: (info) => (
-          <Flex align="center" gap={2}>
-            <Icon as={MdAttachMoney} color="green.500" />
-            <Text color={textColor} fontSize="sm" fontWeight="700">
-              {formatCurrency(info.getValue())}
-            </Text>
-          </Flex>
-        ),
-      }),
-      columnHelper.accessor('paidAt', {
-        id: 'paidAt',
-        header: () => (
-          <Text
-            justifyContent="space-between"
-            align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
-          >
-            PAID DATE
-          </Text>
-        ),
-        cell: (info) => {
-          const paidAt = info.getValue();
-          return (
-            <Flex align="center" gap={2}>
-              <Icon as={MdSchedule} color="gray.500" />
-              <Text color={textColor} fontSize="sm">
-                {paidAt ? formatDate(paidAt) : 'Not Paid'}
-              </Text>
-            </Flex>
-          );
-        },
-      }),
-      columnHelper.accessor('status', {
-        id: 'status',
-        header: () => (
-          <Text
-            justifyContent="space-between"
-            align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
-          >
-            STATUS
-          </Text>
-        ),
-        cell: (info) => {
-          const status = info.getValue();
-          return (
-            <Badge
-              colorScheme={getStatusColor(status)}
-              variant="solid"
-              px={3}
-              py={1}
-              borderRadius="full"
-              fontSize="xs"
-              fontWeight="bold"
-            >
-              {getStatusText(status)}
-            </Badge>
-          );
-        },
-      }),
-      columnHelper.accessor('actions', {
-        id: 'actions',
-        header: () => (
-          <Text
-            justifyContent="space-between"
-            align="center"
-            fontSize={{ sm: '10px', lg: '12px' }}
-            color="gray.400"
-          >
-            ACTIONS
-          </Text>
-        ),
-        cell: (info) => (
-          <Flex align="center" gap={2}>
-            <Tooltip label="View Details">
-              <Button
-                variant="ghost"
-                size="sm"
-                leftIcon={<Icon as={MdVisibility} />}
-                colorScheme="blue"
-                onClick={() => {
-                  // TODO: Implement view details functionality
-                  console.log('View invoice:', info.row.original);
-                }}
-              >
-                View
-              </Button>
-            </Tooltip>
-          </Flex>
-        ),
-      }),
-    ], [textColor]);
-  
-    const table = useReactTable({
-      data: paginatedInvoices,
-      columns,
-      state: {
-        sorting,
-      },
-      onSortingChange: setSorting,
-      getCoreRowModel: getCoreRowModel(),
-      getSortedRowModel: getSortedRowModel(),
-      debugTable: true,
-    });
+    const handleImageClick = useCallback((imageUrl) => {
+      console.log('handleImageClick called with:', imageUrl);
+      setSelectedImageUrl(imageUrl);
+      onImageModalOpen();
+    }, [onImageModalOpen]);
   
     // Memoized page numbers calculation
     const pageNumbers = useMemo(() => {
@@ -345,6 +129,190 @@ import {
       return pages;
     }, [currentPage, totalPages]);
   
+ 
+    const columns = useMemo(() => [
+      columnHelper.accessor('modelId', {
+        id: 'modelId',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            ID
+          </Text>
+        ),
+        cell: (info) => (
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            {info.getValue()}
+          </Text>
+        ),
+      }),
+      columnHelper.accessor('name', {
+        id: 'name',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            MODEL NAME
+          </Text>
+        ),
+        cell: (info) => (
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            {info.getValue()}
+          </Text>
+        ),
+      }),
+      columnHelper.accessor('brandName', {
+        id: 'brandName',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            BRAND
+          </Text>
+        ),
+        cell: (info) => (
+          <Badge
+            variant="subtle"
+            colorScheme="blue"
+            fontSize="sm"
+            fontWeight="500"
+          >
+            {info.getValue()}
+          </Badge>
+        ),
+      }),
+      columnHelper.accessor('typeName', {
+        id: 'typeName',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            TYPE
+          </Text>
+        ),
+        cell: (info) => (
+          <Badge
+            variant="subtle"
+            colorScheme="green"
+            fontSize="sm"
+            fontWeight="500"
+          >
+            {info.getValue()}
+          </Badge>
+        ),
+      }),
+      columnHelper.accessor('pricePerHour', {
+        id: 'pricePerHour',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            PRICE PER HOUR
+          </Text>
+        ),
+        cell: (info) => (
+          <Text color={textColor} fontSize="sm" fontWeight="700">
+            ${info.getValue()}
+          </Text>
+        ),
+      }),
+      columnHelper.accessor('imageUrl', {
+        id: 'image',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            IMAGE
+          </Text>
+        ),
+        cell: (info) => {
+          const imageUrl = info.getValue();
+          
+          if (!imageUrl) {
+            return (
+              <Text color="gray.500" fontSize="sm">
+                No image
+              </Text>
+            );
+          }
+  
+          // Handle both Azure Blob Storage URLs and relative URLs
+          const fullImageUrl = imageUrl.startsWith('http://') || imageUrl.startsWith('https://') 
+            ? imageUrl 
+            : `https://localhost:7230${imageUrl}`;
+  
+          console.log('Original imageUrl:', imageUrl);
+          console.log('Processed fullImageUrl:', fullImageUrl);
+  
+          return (
+            <Flex align="center" gap={2}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  console.log('Opening image with URL:', fullImageUrl);
+                  handleImageClick(fullImageUrl);
+                }}
+                leftIcon={<Icon as={MdVisibility} />}
+              >
+                View
+              </Button>
+         
+            </Flex>
+          );
+        },
+      }),
+    ], [textColor, handleImageClick]);
+  
+    const table = useReactTable({
+      data: paginatedModels,
+      columns,
+      state: {
+        sorting,
+      },
+      onSortingChange: setSorting,
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      debugTable: true,
+    });
+  
+    // Handle add new model
+    const handleAdd = () => {
+      setSelectedModel(null);
+      setIsEditMode(false);
+      setIsModalOpen(true);
+    };
+  
+    // Handle modal close
+    const handleModalClose = () => {
+      setIsModalOpen(false);
+      setSelectedModel(null);
+      setIsEditMode(false);
+    };
+  
+    // Handle modal success (refresh data)
+    const handleModalSuccess = () => {
+      fetchModels();
+    };
+  
     if (loading) {
       return (
         <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
@@ -352,7 +320,7 @@ import {
             <Flex justify="center" align="center" minH="200px">
               <Spinner size="xl" color={brandColor} />
               <Text ml={4} color={textColor}>
-                Loading invoices...
+                Loading models...
               </Text>
             </Flex>
           </Card>
@@ -370,7 +338,7 @@ import {
               <AlertDescription>{error}</AlertDescription>
             </Alert>
             <Flex justify="center" mt={4}>
-              <Button onClick={fetchInvoices} colorScheme="blue">
+              <Button onClick={fetchModels} colorScheme="blue">
                 Retry
               </Button>
             </Flex>
@@ -390,18 +358,9 @@ import {
             align={{ base: 'start', md: 'center' }}
           >
             <Text color={textColor} fontSize="2xl" ms="24px" fontWeight="700">
-              Invoice Management
+              Model Management
             </Text>
-            <HStack spacing={2}>
-              <Button
-                leftIcon={<Icon as={MdRefresh} />}
-                colorScheme="gray"
-                variant="outline"
-                onClick={handleRefresh}
-              >
-                Refresh
-              </Button>
-            </HStack>
+ 
           </Flex>
   
           {/* Table Card */}
@@ -469,7 +428,7 @@ import {
             <Flex justify="space-between" align="center" p={4}>
               <HStack spacing={4}>
                 <Text fontSize="sm" color={textColor}>
-                  Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} invoices
+                  Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} models
                 </Text>
                 <HStack spacing={2}>
                   <Text fontSize="sm" color={textColor}>Rows per page:</Text>
@@ -543,6 +502,34 @@ import {
             </Flex>
           </Card>
         </Flex>
+  
+        {/* Model Modal */}
+        <ModelModal
+          isOpen={isModalOpen}
+          onClose={handleModalClose}
+          onSuccess={handleModalSuccess}
+          model={selectedModel}
+          isEdit={isEditMode}
+        />
+  
+        {/* Image Preview Modal */}
+        <Modal isOpen={isImageModalOpen} onClose={onImageModalClose} isCentered size="xl">
+          <ModalOverlay bg="blackAlpha.800" backdropFilter="blur(10px)" />
+          <ModalContent maxW="50vw" maxH="50vh" bg="transparent" boxShadow="none">
+            <ModalCloseButton color="white" size="lg" />
+            <ModalBody p={0} display="flex" justifyContent="center" alignItems="center">
+              <Image
+                src={selectedImageUrl}
+                alt="Model Preview"
+                maxW="100%"
+                maxH="100%"
+                objectFit="contain"
+                borderRadius="lg"
+                boxShadow="2xl"
+              />
+            </ModalBody>
+          </ModalContent>
+        </Modal>
       </Box>
     );
   }

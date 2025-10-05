@@ -1,52 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-    Box,
-    Button,
-    Flex,
-    Icon,
-    Table,
-    Tbody,
-    Td,
-    Text,
-    Th,
-    Thead,
-    Tr,
-    useColorModeValue,
-    Spinner,
-    Alert,
-    AlertIcon,
-    AlertTitle,
-    AlertDescription,
-    Badge,
-    Select,
-    HStack,
-    useToast,
-    Tooltip,
-    Modal,
-    ModalOverlay,
-    ModalContent,
-    ModalHeader,
-    ModalBody,
-    ModalCloseButton,
-    VStack,
-    Divider
+    Box,    Button,    Flex,    Icon,    Table,    Tbody,    Td,    Text,    Th,    Thead,    Tr,    useColorModeValue,    Spinner,    Alert,
+    AlertIcon,    AlertTitle,    AlertDescription,    Badge,    Select,    HStack,    useToast,    Tooltip,    Modal,    ModalOverlay,
+    ModalContent,    ModalHeader,    ModalBody,    ModalCloseButton,    VStack,    Divider
 } from '@chakra-ui/react';
 import {
-    createColumnHelper,
-    flexRender,
-    getCoreRowModel,
-    getSortedRowModel,
-    useReactTable
+    createColumnHelper,    flexRender,    getCoreRowModel,    getSortedRowModel,    useReactTable
 } from '@tanstack/react-table';
 import {
-    MdChevronLeft,
-    MdChevronRight,
-    MdPerson,
-    MdEmail,
-    MdPhone,
-    MdDriveEta,
-    MdRefresh,
-    MdVisibility
+    MdChevronLeft,    MdChevronRight,    MdPerson,    MdEmail,    MdPhone,    MdDriveEta,    MdRefresh,    MdVisibility
 } from 'react-icons/md';
 import { renterAPI } from '../../services/api';
 

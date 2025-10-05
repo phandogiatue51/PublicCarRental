@@ -96,9 +96,10 @@ export default function InvoiceList() {
   // Get status badge color
   const getStatusColor = (status) => {
     switch (status) {
-      case 0: return 'orange'; // Pending
-      case 1: return 'green'; // Paid
-      case 2: return 'red'; // Overdue
+      case 0: return 'orange'; 
+      case 1: return 'green';
+      case 2: return 'gray'; 
+      case 3: return 'red';
       default: return 'gray';
     }
   };
@@ -109,6 +110,7 @@ export default function InvoiceList() {
       case 0: return 'Pending';
       case 1: return 'Paid';
       case 2: return 'Overdue';
+      case 3: return 'Cancelled';
       default: return 'Unknown';
     }
   };

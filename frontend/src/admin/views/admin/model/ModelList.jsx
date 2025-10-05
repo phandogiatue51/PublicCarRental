@@ -91,6 +91,7 @@ export default function ModelList() {
   const goToNextPage = useCallback(() => setCurrentPage(prev => Math.min(prev + 1, totalPages)), [totalPages]);
 
   const handleImageClick = useCallback((imageUrl) => {
+    console.log('handleImageClick called with:', imageUrl);
     setSelectedImageUrl(imageUrl);
     onImageModalOpen();
   }, [onImageModalOpen]);
@@ -231,6 +232,24 @@ export default function ModelList() {
         </Badge>
       ),
     }),
+    columnHelper.accessor('pricePerHour', {
+      id: 'pricePerHour',
+      header: () => (
+        <Text
+          justifyContent="space-between"
+          align="center"
+          fontSize={{ sm: '10px', lg: '12px' }}
+          color="gray.400"
+        >
+          PRICE PER HOUR
+        </Text>
+      ),
+      cell: (info) => (
+        <Text color={textColor} fontSize="sm" fontWeight="700">
+          ${info.getValue()}
+        </Text>
+      ),
+    }),
     columnHelper.accessor('imageUrl', {
       id: 'image',
       header: () => (
@@ -254,14 +273,23 @@ export default function ModelList() {
           );
         }
 
-        const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `https://localhost:7230${imageUrl}`;
+        // Handle both Azure Blob Storage URLs and relative URLs
+        const fullImageUrl = imageUrl.startsWith('http://') || imageUrl.startsWith('https://') 
+          ? imageUrl 
+          : `https://localhost:7230${imageUrl}`;
+
+        console.log('Original imageUrl:', imageUrl);
+        console.log('Processed fullImageUrl:', fullImageUrl);
 
         return (
           <Flex align="center" gap={2}>
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => handleImageClick(fullImageUrl)}
+              onClick={() => {
+                console.log('Opening image with URL:', fullImageUrl);
+                handleImageClick(fullImageUrl);
+              }}
               leftIcon={<Icon as={MdVisibility} />}
             >
               View

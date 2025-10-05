@@ -6,8 +6,9 @@ import StaffLayout from './layouts/StaffLayout';
 import StaffDashboard from './Pages/StaffDashboard';
 import RenterList from './Pages/RenterList';
 import VehicleList from './Pages/VehicleList';
-import ContractList from './Pages/ContractList';
+import ContractList from './Pages/Contract/ContractList';
 import InvoiceList from './Pages/InvoiceList';
+import ModelList from './Pages/ModelList';
 
 export default function StaffApp() {
     return (
@@ -20,6 +21,7 @@ export default function StaffApp() {
                     <Route path="vehicles" element={<VehicleList />} />
                     <Route path="contracts" element={<ContractList />} />
                     <Route path="invoices" element={<InvoiceList />} />
+                    <Route path="models" element={<ModelList />} />
                 </Route>
             </Routes>
         </ChakraProvider>
