@@ -11,7 +11,7 @@ import Main from "./admin/AdminApp";
 import StaffApp from "./staff/App";
 import Login from "./Pages/Login";
 import SignUp from "./Pages/SignUp";
-import AccountTabs from "./Pages/Account/AccountTabs";
+import Profile from "./Pages/Profile";
 
 function App() {
   return (
@@ -30,7 +30,7 @@ function App() {
             <Route path="contact" element={<Contact />} />
             <Route path="login" element={<Login />} />
             <Route path="sign-up" element={<SignUp />} />
-            <Route path="profile" element={<AccountTabs />} />
+            <Route path="profile" element={<Profile />} />
           </Routes>
         </>
       } />

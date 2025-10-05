@@ -17,55 +17,41 @@ function Login() {
         setLoading(true);
 
         try {
-            // Use the API service instead of direct fetch
-            const data = await accountAPI.login({
-                Identifier: identifier,
-                Password: password
-            });
+            const res = await fetch(
+                `${process.env.REACT_APP_API_BASE || "https://publiccarrental-production-b7c5.up.railway.app"}/api/Account/login`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ identifier, password })
+                }
+            );
 
             console.log('Login response data:', data); // Debug log
 
-            // Map numeric role to string role
-            const roleMap = {
-                0: "EVRenter",
-                1: "Staff", 
-                2: "Admin"
-            };
-            const roleString = roleMap[data.role] || "EVRenter";
-            
-            console.log('Role mapping:', { role: data.role, roleString }); // Debug log
-            
-            // Store all user data from the response
-            if (data.accountId) sessionStorage.setItem("accountId", data.accountId);
-            sessionStorage.setItem("userRole", roleString);
-            if (data.email) sessionStorage.setItem("userEmail", data.email);
-            if (data.renterId) sessionStorage.setItem("renterId", data.renterId);
-            if (data.staffId) sessionStorage.setItem("staffId", data.staffId);
-            if (data.stationId) sessionStorage.setItem("stationId", data.stationId);
-            if (data.token) sessionStorage.setItem("userToken", data.token);
-            sessionStorage.setItem("isAdmin", (roleString === "Admin").toString());
-            
-            console.log('Stored session data:', {
-                accountId: data.accountId,
-                role: roleString,
-                email: data.email,
-                renterId: data.renterId,
-                staffId: data.staffId,
-                stationId: data.stationId
-            }); // Debug log
-            
-            // Dispatch custom event to notify other components of auth state change
-            window.dispatchEvent(new Event('authStateChanged'));
-            
-            // Redirect based on role
-            if (roleString === "Admin") {
-                navigate("/admin/dashboard");
-            } else if (roleString === "Staff") {
-                navigate("/staff/dashboard");
-            } else {
-                navigate("/");
+            const data = await res.json();
+            sessionStorage.setItem("userRole", data.role);
+            // Try to resolve renter info if identifier matches a renter
+            try {
+                const base = process.env.REACT_APP_API_BASE || "https://publiccarrental-production-b7c5.up.railway.app";
+                const rentersRes = await fetch(`${base}/api/EVRenter/all-renters`);
+                if (rentersRes.ok) {
+                    const renters = await rentersRes.json();
+                    const idLower = (identifier || "").toLowerCase();
+                    const matched = renters.find(r =>
+                        (r.email && r.email.toLowerCase() === idLower) ||
+                        (r.phoneNumber && r.phoneNumber === identifier)
+                    );
+                    if (matched) {
+                        sessionStorage.setItem("renterId", String(matched.renterId));
+                        if (matched.fullName) sessionStorage.setItem("fullName", matched.fullName);
+                        if (matched.email) sessionStorage.setItem("email", matched.email);
+                        if (matched.phoneNumber) sessionStorage.setItem("phoneNumber", matched.phoneNumber);
+                    }
+                }
+            } catch (_) {
+                // ignore enrichment errors; proceed to home
             }
-            
+            navigate("/");
         } catch (err) {
             setError(err.message || "Login failed. Please check your credentials.");
         } finally {

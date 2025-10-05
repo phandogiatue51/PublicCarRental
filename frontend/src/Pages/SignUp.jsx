@@ -29,8 +29,25 @@ function SignUp() {
         setLoading(true);
 
         try {
-            const result = await accountAPI.register(form);
-            
+            const res = await fetch(
+                `${process.env.REACT_APP_API_BASE || "https://publiccarrental-production-b7c5.up.railway.app"}/api/Account/register`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        fullName: form.fullName,
+                        email: form.email,
+                        phoneNumber: form.phoneNumber,
+                        identityCardNumber: form.identityCardNumber,
+                        licenseNumber: form.licenseNumber,
+                        password: form.password
+                    })
+                }
+            );
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text || "Registration failed");
+            }
             setSuccess("Account created! Redirecting to sign in...");
             setTimeout(() => navigate("/login"), 3000);
         } catch (err) {
