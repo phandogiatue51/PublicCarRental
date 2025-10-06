@@ -25,9 +25,8 @@ import InvoiceList from '@admin/views/admin/invoice/InvoiceList';
 import StaffList from '@admin/views/admin/staff/StaffList';
 import StationList from '@admin/views/admin/station/StationList';
 
-// Auth Imports
-import SignInCentered from '@views/auth/signIn';
 import Home from 'Pages/Home';
+
 
 const routes = [
   {
@@ -101,7 +100,6 @@ const routes = [
     icon: <Icon as={MdExitToApp} width="20px" height="20px" color="inherit" />,
     component: <Home />,
   },
- 
 ];
 
 

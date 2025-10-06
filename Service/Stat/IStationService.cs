@@ -5,11 +5,11 @@ namespace PublicCarRental.Service.Stat
 {
     public interface IStationService
     {
-        public IEnumerable<StationDto> GetAll();
-        public StationDto? GetById(int id);
+        Task<IEnumerable<StationDto>> GetAllAsync();
+        Task<StationDto?> GetByIdAsync(int id);
         Station GetEntityById(int id);
-        public int CreateStation(StationUpdateDto dto);
-        public bool UpdateStation(int id, StationUpdateDto station);
-        bool DeleteStation(int id);
+        Task<int> CreateStationAsync(StationUpdateDto dto);
+        Task<bool> UpdateStationAsync(int id, StationUpdateDto stationDto);
+        Task<(bool Success, string Message)> DeleteStationAsync(int id);
     }
 }
