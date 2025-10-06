@@ -24,7 +24,6 @@ using PublicCarRental.Service.Cont;
 using PublicCarRental.Service.Email;
 using PublicCarRental.Service.Fav;
 using PublicCarRental.Service.Inv;
-using PublicCarRental.Service.Mod;
 using PublicCarRental.Service.Ren;
 using PublicCarRental.Service.Staf;
 using PublicCarRental.Service.Stat;
@@ -35,8 +34,15 @@ using PublicCarRental.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "CarRental_";
+});
 
 builder.Services.AddControllers(options =>
 {
@@ -127,6 +133,8 @@ builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 builder.Services.AddScoped<AzureBlobService>();
 builder.Services.AddHostedService<AzureBlobInitializer>();
 builder.Services.AddScoped<IPayOSService, PayOSService>();
+builder.Services.AddScoped<GenericCacheDecorator>();
+
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = jwtSettings["Key"];

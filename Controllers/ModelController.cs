@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.DTOs.Cont;
 using PublicCarRental.DTOs.Mod;
+using PublicCarRental.DTOs.Veh;
 using PublicCarRental.Models;
 using PublicCarRental.Service;
 using PublicCarRental.Service.Stat;
@@ -25,7 +26,7 @@ namespace PublicCarRental.Controllers
         [HttpGet("get-all")]
         public IActionResult GetAll()
         {
-            var models = _service.GetAllModels();
+            var models = _service.GetAllModelsAsync();
             return Ok(models);
         }
 
@@ -62,23 +63,15 @@ namespace PublicCarRental.Controllers
             return Ok(new { message = "Model deleted" });
         }
 
-        //do not delete this
-        [HttpGet("available-images")]
-        public IActionResult GetAvailableImages()
-        {
-            var images = _service.GetAvailableImages();
-            return Ok(images);
-        }
-
         [HttpGet("filter-models")]
         public IActionResult GetModelFromBrandAndType([FromQuery] int? brandId, [FromQuery] int? typeId, [FromQuery] int? stationId)
         {
-            var models = _service.GetModelsByFilters(brandId, typeId, stationId);
+            var models = _service.GetModelsByFiltersAsync(brandId, typeId, stationId);
             return Ok(models);
         }
 
-        [HttpGet("check-available")]
-        public IActionResult CheckAvailability(CreateContractDto dto)
+        [HttpPost("check-available")]
+        public IActionResult CheckAvailability([FromBody] AvailableVehicle dto)
         {
             var vehicle = _vehicleService.GetFirstAvailableVehicleByModel(dto.ModelId, dto.StationId, dto.StartTime, dto.EndTime);
             if (vehicle == null)
