@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-    Box,    Button,    Flex,    Icon,    Table,    Tbody,    Td,    Text,    Th,    Thead,    Tr,    useColorModeValue,    Spinner,    Alert,
-    AlertIcon,    AlertTitle,    AlertDescription,    Badge,    Select,    HStack,    useToast,    Tooltip,    Modal,    ModalOverlay,    ModalContent,
-    ModalHeader,    ModalBody,    ModalCloseButton,    VStack,    Divider,    Progress
+    Box, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue, Spinner, Alert,
+    AlertIcon, AlertTitle, AlertDescription, Badge, Select, HStack, useToast, Tooltip, Modal, ModalOverlay, ModalContent,
+    ModalHeader, ModalBody, ModalCloseButton, VStack, Divider, Progress
 } from '@chakra-ui/react';
 import {
-    createColumnHelper,    flexRender,    getCoreRowModel,    getSortedRowModel,    useReactTable
+    createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable
 } from '@tanstack/react-table';
 import {
-    MdChevronLeft,    MdChevronRight,    MdDriveEta,    MdLocationOn,    MdRefresh,    MdVisibility,    MdBattery6Bar
+    MdChevronLeft, MdChevronRight, MdDriveEta, MdLocationOn, MdRefresh, MdVisibility, MdBattery6Bar
 } from 'react-icons/md';
-import { vehicleAPI } from '../../services/api';
+import { vehicleAPI, modelAPI, brandAPI, typeAPI, stationAPI } from '../../services/api';
 
 const columnHelper = createColumnHelper();
 
@@ -34,15 +34,38 @@ const VehicleList = () => {
     const brandColor = useColorModeValue('brand.500', 'white');
     const cardBg = useColorModeValue('white', 'gray.800');
 
+    // Filter state
+    const [filter, setFilter] = useState({ modelId: '', typeId: '', brandId: '', stationId: '', status: '' });
+    const [models, setModels] = useState([]);
+    const [brands, setBrands] = useState([]);
+    const [types, setTypes] = useState([]);
+    const [stations, setStations] = useState([]);
+
+    // Detect staff stationId from localStorage/sessionStorage (hide station selector if present)
+    const presetStationId = (typeof window !== 'undefined') ? (localStorage.getItem('staffStationId') || sessionStorage.getItem('staffStationId')) : '';
+
     // Fetch vehicles from API
     const fetchVehicles = async () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await vehicleAPI.getAll();
+            // Prefer filter endpoint with current filters
+            const query = {
+                modelId: filter.modelId ? Number(filter.modelId) : undefined,
+                typeId: filter.typeId ? Number(filter.typeId) : undefined,
+                brandId: filter.brandId ? Number(filter.brandId) : undefined,
+                status: filter.status !== '' ? Number(filter.status) : undefined,
+                stationId: (presetStationId || filter.stationId) ? Number(presetStationId || filter.stationId) : undefined,
+            };
+            let response = await vehicleAPI.filter(query);
+            if (!Array.isArray(response) || response.length === 0) {
+                console.warn('vehicleAPI.filter returned empty; falling back to getAll');
+                response = await vehicleAPI.getAll();
+            }
             console.log('Vehicles response:', response);
-            setVehicles(response || []);
-            setTotalItems(response?.length || 0);
+            const list = Array.isArray(response) ? response : [];
+            setVehicles(list);
+            setTotalItems(list.length || 0);
         } catch (err) {
             console.error('Error fetching vehicles:', err);
             setError(err.message || 'Failed to fetch vehicles');
@@ -52,15 +75,41 @@ const VehicleList = () => {
     };
 
     useEffect(() => {
-        fetchVehicles();
+        // Load filter dropdown options and then fetch
+        (async () => {
+            try {
+                let [m, b, t, s] = await Promise.all([
+                    modelAPI.getAll(),
+                    brandAPI.getAll(),
+                    typeAPI.getAll(),
+                    stationAPI.getAll(),
+                ]);
+                // Fallback to filterModels if models list empty
+                if (!Array.isArray(m) || m.length === 0) {
+                    m = await modelAPI.filterModels(undefined, undefined, undefined);
+                }
+                setModels(Array.isArray(m) ? m : []);
+                setBrands(Array.isArray(b) ? b : []);
+                setTypes(Array.isArray(t) ? t : []);
+                setStations(Array.isArray(s) ? s : []);
+            } catch (e) { /* ignore */ }
+            fetchVehicles();
+        })();
     }, []);
+
+    // Re-fetch when filters change
+    useEffect(() => {
+        fetchVehicles();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filter.modelId, filter.typeId, filter.brandId, filter.status, filter.stationId]);
 
     // Pagination calculations - memoized for performance
     const paginationData = useMemo(() => {
+        const safeVehicles = Array.isArray(vehicles) ? vehicles : [];
         const totalPages = Math.ceil(totalItems / pageSize);
         const startIndex = (currentPage - 1) * pageSize;
         const endIndex = startIndex + pageSize;
-        const paginatedVehicles = vehicles.slice(startIndex, endIndex);
+        const paginatedVehicles = safeVehicles.slice(startIndex, endIndex);
 
         return {
             totalPages,
@@ -101,28 +150,36 @@ const VehicleList = () => {
     // Get status badge color
     const getStatusColor = (status) => {
         switch (status) {
-          case 0: return 'orange'; 
-          case 1: return 'blue'; 
-          case 2: return 'purple'; 
-          case 3: return 'red'; 
-          case 4: return 'orange'; 
-          case 5: return 'green'; 
-          default: return 'gray';
+            case 0: return 'orange';
+            case 1: return 'blue';
+            case 2: return 'purple';
+            case 3: return 'red';
+            case 4: return 'orange';
+            case 5: return 'green';
+            default: return 'gray';
         }
-      };
+    };
 
     // Get status text
     const getStatusText = (status) => {
         switch (status) {
-          case 0: return 'To Be Rented';
-          case 1: return 'Renting';
-          case 2: return 'Charging';
-          case 3: return 'To Be Checkup';
-          case 4: return 'In Maintenance';
-          case 5: return 'Available';
-          default: return 'Unknown';
+            case 0: return 'To Be Rented';
+            case 1: return 'Renting';
+            case 2: return 'Charging';
+            case 3: return 'To Be Checkup';
+            case 4: return 'In Maintenance';
+            case 5: return 'Available';
+            default: return 'Unknown';
         }
-      };
+    };
+
+    const onFilterChange = (key) => (e) => {
+        setFilter((prev) => ({ ...prev, [key]: e.target.value }));
+    };
+
+    const clearFilters = () => {
+        setFilter({ modelId: '', typeId: '', brandId: '', stationId: '', status: '' });
+    };
 
     // Get battery color based on level
     const getBatteryColor = (level) => {
@@ -201,7 +258,7 @@ const VehicleList = () => {
                 </Flex>
             ),
         }),
-        
+
         columnHelper.accessor('batteryLevel', {
             id: 'battery',
             header: () => (
@@ -382,7 +439,31 @@ const VehicleList = () => {
                     <Text color={textColor} fontSize="2xl" ms="24px" fontWeight="700">
                         Vehicle Management
                     </Text>
-                    <HStack spacing={2}>
+                    <HStack spacing={3}>
+                        {/* Filters */}
+                        <Select placeholder="Model" value={filter.modelId} onChange={onFilterChange('modelId')} size="sm" width="160px">
+                            {models.map(m => (<option key={m.modelId} value={m.modelId}>{m.name}</option>))}
+                        </Select>
+                        <Select placeholder="Type" value={filter.typeId} onChange={onFilterChange('typeId')} size="sm" width="140px">
+                            {types.map(t => (<option key={t.typeId} value={t.typeId}>{t.name}</option>))}
+                        </Select>
+                        <Select placeholder="Brand" value={filter.brandId} onChange={onFilterChange('brandId')} size="sm" width="160px">
+                            {brands.map(b => (<option key={b.brandId} value={b.brandId}>{b.name}</option>))}
+                        </Select>
+                        {presetStationId ? null : (
+                            <Select placeholder="Station" value={filter.stationId} onChange={onFilterChange('stationId')} size="sm" width="180px">
+                                {stations.map(s => (<option key={s.stationId} value={s.stationId}>{s.name}</option>))}
+                            </Select>
+                        )}
+                        <Select placeholder="Status" value={filter.status} onChange={onFilterChange('status')} size="sm" width="140px">
+                            <option value="0">To Be Rented</option>
+                            <option value="1">Renting</option>
+                            <option value="2">Charging</option>
+                            <option value="3">To Be Checkup</option>
+                            <option value="4">In Maintenance</option>
+                            <option value="5">Available</option>
+                        </Select>
+                        <Button onClick={clearFilters} size="sm" variant="outline">Clear</Button>
                         <Button
                             leftIcon={<Icon as={MdRefresh} />}
                             colorScheme="gray"

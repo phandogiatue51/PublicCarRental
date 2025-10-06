@@ -26,7 +26,7 @@ namespace PublicCarRental.Controllers
         [HttpGet("get-all")]
         public IActionResult GetAll()
         {
-            var models = _service.GetAllModelsAsync();
+            var models = _service.GetAllModels();
             return Ok(models);
         }
 
@@ -66,7 +66,8 @@ namespace PublicCarRental.Controllers
         [HttpGet("filter-models")]
         public IActionResult GetModelFromBrandAndType([FromQuery] int? brandId, [FromQuery] int? typeId, [FromQuery] int? stationId)
         {
-            var models = _service.GetModelsByFiltersAsync(brandId, typeId, stationId);
+            var models = _service.GetModelsByFiltersAsync(brandId, typeId, stationId)
+                .GetAwaiter().GetResult();
             return Ok(models);
         }
 
