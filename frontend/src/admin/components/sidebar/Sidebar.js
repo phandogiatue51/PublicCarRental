@@ -2,22 +2,11 @@ import React from "react";
 
 // chakra imports
 import {
-  Box,
-  Flex,
-  Drawer,
-  DrawerBody,
-  Icon,
-  useColorModeValue,
-  DrawerOverlay,
-  useDisclosure,
-  DrawerContent,
-  DrawerCloseButton,
+  Box,  Flex,  Drawer,  DrawerBody,  Icon,  useColorModeValue,  DrawerOverlay,  useDisclosure,  DrawerContent,  DrawerCloseButton,
 } from "@chakra-ui/react";
 import Content from "./components/Content";
 import {
-  renderThumb,
-  renderTrack,
-  renderView,
+  renderThumb,  renderTrack,  renderView,
 } from "../scrollbar/Scrollbar";
 import { Scrollbars } from "react-custom-scrollbars-2";
 import PropTypes from "prop-types";
