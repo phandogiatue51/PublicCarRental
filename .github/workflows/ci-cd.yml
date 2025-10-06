@@ -3,32 +3,65 @@ name: CI and Deployment
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  test:
+  backend-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Run tests
-        run: echo "Running your tests here..."
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+      
+      - name: Restore dependencies
+        run: dotnet restore
+      
+      - name: Build backend
+        run: dotnet build --no-restore
+      
+      - name: Run backend tests
+        run: dotnet test --no-build --verbosity normal
 
-  lint:
-    runs-on: ubuntu-latest  
+  frontend-tests:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Run linting
-        run: echo "Running your linting here..."
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+      
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: ./frontend
+      
+      - name: Run frontend tests
+        run: npm test
+        working-directory: ./frontend
+      
+      - name: Build frontend
+        run: npm run build
+        working-directory: ./frontend
 
   deploy:
-    needs: [test, lint]   
+    needs: [backend-tests, frontend-tests]
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'  
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Deploy
-        run: echo "Deploying your app now..."
+      - name: Deploy to production
+        run: |
+          echo "Deploying backend and frontend..."
+          # Add your actual deployment commands here
+          # Example: docker build, deploy to Azure/AWS, etc.

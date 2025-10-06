@@ -178,6 +178,16 @@ export const modelAPI = {
 
   // Get available images
   getAvailableImages: () => apiRequest('/Model/available-images'),
+
+  // Filter models by brand, type, and station
+  filterModels: (brandId, typeId, stationId) => {
+    const params = new URLSearchParams();
+    if (brandId) params.append('brandId', brandId);
+    if (typeId) params.append('typeId', typeId);
+    if (stationId) params.append('stationId', stationId);
+    
+    return apiRequest(`/Model/filter-models?${params.toString()}`);
+  },
 };
 
 // Type API services

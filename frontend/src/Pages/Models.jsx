@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Link } from "react-router-dom";
 import HeroPages from "../components/HeroPages";
 import Footer from "../components/Footer";
+import { modelAPI, brandAPI, typeAPI, stationAPI } from "../services/api";
 import "../styles/Model.css"; 
 
 function Models() {
@@ -15,24 +15,35 @@ function Models() {
   const [selectedStation, setSelectedStation] = useState(null);
 
   useEffect(() => {
-    // Fetch brands and types for dropdowns
-    axios.get("https://publiccarrental-production-b7c5.up.railway.app/api/Brand/get-all").then((res) => setBrands(res.data));
-    axios.get("https://publiccarrental-production-b7c5.up.railway.app/api/Type/get-all").then((res) => setTypes(res.data));
-    axios.get("https://publiccarrental-production-b7c5.up.railway.app/api/Station/all-stations").then((res) => setStation(res.data));
+    // Fetch brands, types, and stations for dropdowns
+    const fetchData = async () => {
+      try {
+        const [brandsRes, typesRes, stationsRes] = await Promise.all([
+          brandAPI.getAll(),
+          typeAPI.getAll(),
+          stationAPI.getAll()
+        ]);
+        setBrands(brandsRes);
+        setTypes(typesRes);
+        setStation(stationsRes);
+      } catch (error) {
+        console.error("Failed to fetch filter data", error);
+      }
+    };
+    fetchData();
   }, []);
 
   useEffect(() => {
-    // Fetch models based on selected brand and type
-    axios
-      .get("https://publiccarrental-production-b7c5.up.railway.app/api/Model/filter-models", {
-        params: {
-          brandId: selectedBrand,
-          typeId: selectedType,
-          stationId : selectedStation
-        },
-      })
-      .then((res) => setModels(res.data))
-      .catch((err) => console.error("Failed to fetch models", err));
+    // Fetch models based on selected filters
+    const fetchModels = async () => {
+      try {
+        const modelsData = await modelAPI.filterModels(selectedBrand, selectedType, selectedStation);
+        setModels(modelsData);
+      } catch (error) {
+        console.error("Failed to fetch models", error);
+      }
+    };
+    fetchModels();
   }, [selectedBrand, selectedType, selectedStation]);
 
   const clearFilters = () => {
@@ -94,11 +105,11 @@ function Models() {
               
                <div className="filter-group">
                 <div className="filter-input-wrapper">
-                  <i className="fa-solid fa-tag filter-icon"></i>
+                  <i className="fa-solid fa-map-marker-alt filter-icon"></i>
                   <select 
                     className="filter-select"
-                    onChange={(e) => setSelectedType(e.target.value || null)}
-                    value={selectedType || ''}
+                    onChange={(e) => setSelectedStation(e.target.value || null)}
+                    value={selectedStation || ''}
                   >
                     <option value="">All Stations</option>
                     {station.map((s) => (

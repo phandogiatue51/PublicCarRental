@@ -1,49 +1,61 @@
-﻿using PublicCarRental.DTOs.Stat;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Build.Utilities;
+using PublicCarRental.DTOs.Stat;
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Stat;
 
 namespace PublicCarRental.Service.Stat
 {
-    public class StationService : IStationService
+    public class StationService : BaseCachedService, IStationService
     {
         private readonly IStationRepository _repo;
 
-        public StationService(IStationRepository repo)
+        public StationService(IStationRepository repo,
+                            GenericCacheDecorator cache,
+                            ILogger<StationService> logger)
+            : base(cache, logger)
         {
             _repo = repo;
         }
-        public IEnumerable<StationDto> GetAll()
+
+        public async Task<IEnumerable<StationDto>> GetAllAsync()
         {
-            return _repo.GetAll()
-                .Select(s => new StationDto
+            var cacheKey = CreateCacheKey("all_stations");
+            return await _cache.GetOrSetAsync(cacheKey, async () =>
+            {
+                return _repo.GetAll()
+                    .Select(s => new StationDto
+                    {
+                        StationId = s.StationId,
+                        Name = s.Name,
+                        Address = s.Address,
+                        Latitude = s.Latitude,
+                        Longitude = s.Longitude,
+                        VehicleCount = s.Vehicles != null ? s.Vehicles.Count : 0,
+                        StaffCount = s.StaffMembers != null ? s.StaffMembers.Count : 0
+                    }).ToList();
+            }, TimeSpan.FromMinutes(15)); // Stations change rarely
+        }
+
+        public async Task<StationDto?> GetByIdAsync(int id)
+        {
+            var cacheKey = CreateCacheKey("station", id);
+            return await _cache.GetOrSetAsync(cacheKey, async () =>
+            {
+                var s = _repo.GetById(id);
+                if (s == null) return null;
+
+                return new StationDto
                 {
                     StationId = s.StationId,
                     Name = s.Name,
                     Address = s.Address,
                     Latitude = s.Latitude,
                     Longitude = s.Longitude,
-
-                    VehicleCount = s.Vehicles != null ? s.Vehicles.Count : 0,
-                    StaffCount = s.StaffMembers != null ? s.StaffMembers.Count : 0
-                }).ToList();
-        }
-
-        public StationDto? GetById(int id)
-        {
-            var s = _repo.GetById(id);
-            if (s == null) return null;
-
-            return new StationDto
-            {
-                StationId = s.StationId,
-                Name = s.Name,
-                Address = s.Address,
-                Latitude = s.Latitude,
-                Longitude = s.Longitude,
-
-                VehicleCount = s.Vehicles?.Count ?? 0,
-                StaffCount = s.StaffMembers?.Count ?? 0
-            };
+                    VehicleCount = s.Vehicles?.Count ?? 0,
+                    StaffCount = s.StaffMembers?.Count ?? 0
+                };
+            }, TimeSpan.FromMinutes(10));
         }
 
         public Station GetEntityById(int id)
@@ -51,7 +63,7 @@ namespace PublicCarRental.Service.Stat
             return _repo.GetById(id);
         }
 
-        public int CreateStation(StationUpdateDto dto)
+        public async Task<int> CreateStationAsync(StationUpdateDto dto)
         {
             var station = new Station
             {
@@ -61,28 +73,56 @@ namespace PublicCarRental.Service.Stat
                 Longitude = dto.Longitude
             };
             _repo.Create(station);
+
+            // Invalidate station caches
+            await _cache.InvalidateAsync(
+                CreateCacheKey("all_stations")
+            );
+
             return station.StationId;
         }
 
-        public bool UpdateStation(int id, StationUpdateDto station)
+        public async Task<bool> UpdateStationAsync(int id, StationUpdateDto stationDto)
         {
             var existing = _repo.GetById(id);
             if (existing == null) return false;
-            existing.Name = station.Name;
-            existing.Address = station.Address;
-            existing.Latitude = station.Latitude;
-            existing.Longitude = station.Longitude;
+
+            existing.Name = stationDto.Name;
+            existing.Address = stationDto.Address;
+            existing.Latitude = stationDto.Latitude;
+            existing.Longitude = stationDto.Longitude;
+
             _repo.Update(existing);
+
+            // Invalidate relevant caches
+            await _cache.InvalidateAsync(
+                CreateCacheKey("all_stations"),
+                CreateCacheKey("station", id)
+            );
+
             return true;
         }
 
-        public bool DeleteStation(int id)
+        public async Task<(bool Success, string Message)> DeleteStationAsync(int id)
         {
             var existing = _repo.GetById(id);
-            if (existing == null) return false;
+            if (existing == null) return (false, "Station does not exist");
+            try
+            {
 
-            _repo.Delete(id);
-            return true;
+                _repo.Delete(id);
+
+                await _cache.InvalidateAsync(
+                    CreateCacheKey("all_stations"),
+                    CreateCacheKey("station", id)
+                );
+
+                return (true, "Station deleted successfully!");
+            }
+            catch (Exception ex)
+            {
+                return (false, "Could not delete this station!");
+            }
         }
     }
 }

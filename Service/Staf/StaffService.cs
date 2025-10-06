@@ -71,7 +71,7 @@ namespace PublicCarRental.Service.Staf
 
             staff.StationId = updatedStaff.StationId;
 
-            _staffRepo.Update(staff); 
+            _staffRepo.Update(staff);
             return true;
         }
 

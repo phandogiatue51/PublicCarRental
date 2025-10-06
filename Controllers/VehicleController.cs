@@ -6,6 +6,7 @@ using PublicCarRental.DTOs.Cont;
 using PublicCarRental.DTOs.Veh;
 using PublicCarRental.Models;
 using PublicCarRental.Service.Veh;
+using System.Threading.Tasks;
 
 namespace PublicCarRental.Controllers
 {
@@ -23,22 +24,22 @@ namespace PublicCarRental.Controllers
         [HttpGet("get-all")]
         public IActionResult GetAll()
         {
-            var vehicles = _service.GetAllVehicles();
+            var vehicles = _service.GetAllVehiclesAsync();
             return Ok(vehicles);
         }
 
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
-            var vehicle = _service.GetById(id);
+            var vehicle = _service.GetByIdAsync(id);
             if (vehicle == null) return NotFound();
             return Ok(vehicle);
         }
 
         [HttpPost("create-vehicle")]
-        public IActionResult Create([FromBody] VehicleCreateDto dto)
+        public async Task<IActionResult> CreateAsync([FromBody] VehicleCreateDto dto)
         {
-            var result = _service.CreateVehicle(dto);
+            var result = await _service.CreateVehicleAsync(dto);
 
             if (!result.Success)
                 return BadRequest(new { message = result.Message });
@@ -47,9 +48,9 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpPut("update-vehicle/{id}")]
-        public IActionResult Update(int id, [FromBody] VehicleUpdateDto vehicle)
+        public async Task<IActionResult> UpdateAsync(int id, [FromBody] VehicleUpdateDto vehicle)
         {
-            var result = _service.UpdateVehicle(id, vehicle);
+            var result = await _service.UpdateVehicleAsync(id, vehicle);
 
             if (!result.Success)
                 return BadRequest(new { message = result.Message });
@@ -58,9 +59,9 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpDelete("delete-vehicle/{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
-            var success = _service.DeleteVehicle(id);
+            var success = await _service.DeleteVehicleAsync(id);
             if (!success) return NotFound();
             return Ok(new { message = "Vehicle deleted" });
         }
@@ -85,7 +86,7 @@ namespace PublicCarRental.Controllers
             [FromQuery] int? typeId = null,
             [FromQuery] int? brandId = null)
         {
-            var vehicles = _service.GetVehiclesByFilters(modelId, status, stationId, typeId, brandId);
+            var vehicles = _service.GetVehiclesByFiltersAsync(modelId, status, stationId, typeId, brandId);
             return Ok(vehicles);
         }
     }

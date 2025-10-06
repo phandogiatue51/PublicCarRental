@@ -2,6 +2,7 @@
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Inv;
 using PublicCarRental.Service.Cont;
+using PublicCarRental.Service.Trans;
 
 namespace PublicCarRental.Service.Inv
 {
@@ -10,12 +11,15 @@ namespace PublicCarRental.Service.Inv
         private readonly IInvoiceRepository _repo;
         private readonly IHelperService _contInvHelperService;
         private readonly IContractService _contractService;
+        private readonly ITransactionService _transactionService;
+
         public InvoiceService(IInvoiceRepository repo, IHelperService contInvHelperService,
-            IContractService contractService)
+            IContractService contractService, ITransactionService transactionService)
         {
             _repo = repo;
             _contInvHelperService = contInvHelperService;
             _contractService = contractService;
+            _transactionService = transactionService;
         }
 
         public IEnumerable<InvoiceDto> GetAll()
@@ -119,6 +123,8 @@ namespace PublicCarRental.Service.Inv
                     invoice.AmountPaid = amountPaid > 0 ? amountPaid : invoice.AmountDue;
                     
                     var contractUpdateResult = _contractService.UpdateContractStatus(invoice.ContractId, RentalStatus.Confirmed);
+                    _transactionService.CreateTransaction(invoice.ContractId);                   
+                    
                 }
                 else if (status == InvoiceStatus.Cancelled && invoice.Contract.Status != RentalStatus.Cancelled)
                 {

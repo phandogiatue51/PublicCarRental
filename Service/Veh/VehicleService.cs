@@ -5,19 +5,48 @@ using PublicCarRental.Repository.Vehi;
 
 namespace PublicCarRental.Service.Veh
 {
-    public class VehicleService : IVehicleService
+    public class VehicleService : BaseCachedService, IVehicleService
     {
         private readonly IVehicleRepository _repo;
 
-        public VehicleService(IVehicleRepository repo)
+        public VehicleService(IVehicleRepository repo,
+                            GenericCacheDecorator cache,
+                            ILogger<VehicleService> logger)
+            : base(cache, logger)
         {
             _repo = repo;
         }
 
-        public IEnumerable<VehicleDto> GetAllVehicles()
+        public async Task<IEnumerable<VehicleDto>> GetAllVehiclesAsync()
         {
-            return _repo.GetAll()
-                .Select(v => new VehicleDto
+            var cacheKey = CreateCacheKey("all_vehicles");
+            return await _cache.GetOrSetAsync(cacheKey, async () =>
+            {
+                _logger.LogInformation("Cache miss - fetching all vehicles from database");
+                return _repo.GetAll()
+                    .Select(v => new VehicleDto
+                    {
+                        VehicleId = v.VehicleId,
+                        LicensePlate = v.LicensePlate,
+                        BatteryLevel = v.BatteryLevel,
+                        Status = v.Status,
+                        StationId = v.StationId,
+                        StationName = v.Station.Name,
+                        ModelId = v.ModelId,
+                        ModelName = v.Model.Name
+                    }).ToList();
+            }, TimeSpan.FromMinutes(5));
+        }
+
+        public async Task<VehicleDto> GetByIdAsync(int id)
+        {
+            var cacheKey = CreateCacheKey("vehicle", id);
+            return await _cache.GetOrSetAsync(cacheKey, async () =>
+            {
+                var v = _repo.GetById(id);
+                if (v == null) return null;
+
+                return new VehicleDto
                 {
                     VehicleId = v.VehicleId,
                     LicensePlate = v.LicensePlate,
@@ -27,37 +56,55 @@ namespace PublicCarRental.Service.Veh
                     StationName = v.Station.Name,
                     ModelId = v.ModelId,
                     ModelName = v.Model.Name
-                }).ToList();
+                };
+            }, TimeSpan.FromMinutes(10));
         }
 
-        public VehicleDto GetById(int id)
+        public async Task<IEnumerable<VehicleFilter>> GetVehiclesByFiltersAsync(int? modelId, int? status, int? stationId, int? typeId, int? brandId)
         {
-            var v = _repo.GetById(id);
-            if (v == null) return null;
-            return new VehicleDto
+            var cacheKey = CreateCacheKey("vehicles_filter", modelId, status, stationId, typeId, brandId);
+
+            return await _cache.GetOrSetAsync(cacheKey, async () =>
             {
-                VehicleId = v.VehicleId,
-                LicensePlate = v.LicensePlate,
-                BatteryLevel = v.BatteryLevel,
-                Status = v.Status,
-                StationId = v.StationId,
-                StationName = v.Station.Name,
-                ModelId = v.ModelId,
-                ModelName = v.Model.Name
-            };
+                var query = _repo.GetAll().AsQueryable();
+
+                if (modelId.HasValue)
+                    query = query.Where(v => v.ModelId == modelId.Value);
+
+                if (status.HasValue)
+                    query = query.Where(v => (int)v.Status == status.Value);
+
+                if (stationId.HasValue)
+                    query = query.Where(v => v.StationId == stationId.Value);
+
+                if (typeId.HasValue)
+                    query = query.Where(v => v.Model.TypeId == typeId.Value);
+
+                if (brandId.HasValue)
+                    query = query.Where(v => v.Model.BrandId == brandId.Value);
+
+                return query.Select(v => new VehicleFilter
+                {
+                    VehicleId = v.VehicleId,
+                    LicensePlate = v.LicensePlate,
+                    BatteryLevel = v.BatteryLevel,
+                    Status = v.Status,
+                    StationId = v.StationId,
+                    StationName = v.Station.Name,
+                    ModelId = v.ModelId,
+                    ModelName = v.Model.Name,
+                    BrandId = v.Model.BrandId,
+                    BrandName = v.Model.Brand.Name,
+                    TypeId = v.Model.TypeId,
+                    TypeName = v.Model.Type.Name,
+                    PricePerHour = v.Model.PricePerHour,
+                    ImageUrl = v.Model.ImageUrl
+                }).ToList();
+            }, TimeSpan.FromMinutes(3)); 
         }
 
-        public Vehicle GetFirstAvailableVehicleByModel(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd)
-        => _repo.GetFirstAvailableVehicleByModel(modelId, stationId, requestedStart, requestedEnd);
-
-        public Vehicle GetEntityById(int id)
+        public async Task<(bool Success, string Message, int? VehicleId)> CreateVehicleAsync(VehicleCreateDto dto)
         {
-            return _repo.GetById(id);
-        }
-
-        public (bool Success, string Message, int? VehicleId) CreateVehicle(VehicleCreateDto dto)
-        {
-            // Check for duplicate license plate before creating
             if (_repo.Exists(v => v.LicensePlate == dto.LicensePlate))
             {
                 return (false, "License plate is already registered.", null);
@@ -75,20 +122,26 @@ namespace PublicCarRental.Service.Veh
             try
             {
                 _repo.Create(vehicle);
+
+                await _cache.InvalidateAsync(
+                    CreateCacheKey("all_vehicles"),
+                    CreateCacheKey("vehicles_filter", null, null, dto.StationId, null, null)
+                );
+
                 return (true, "Vehicle created successfully.", vehicle.VehicleId);
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error creating vehicle");
                 return (false, "An error occurred while creating the vehicle.", null);
             }
         }
 
-        public (bool Success, string Message) UpdateVehicle(int id, VehicleUpdateDto updatedVehicle)
+        public async Task<(bool Success, string Message)> UpdateVehicleAsync(int id, VehicleUpdateDto updatedVehicle)
         {
             var existing = _repo.GetById(id);
             if (existing == null) return (false, "Vehicle not found.");
 
-            // Check for duplicate license plate (only if license plate is being changed)
             if (existing.LicensePlate != updatedVehicle.LicensePlate &&
                 _repo.Exists(v => v.VehicleId != id && v.LicensePlate == updatedVehicle.LicensePlate))
             {
@@ -104,27 +157,46 @@ namespace PublicCarRental.Service.Veh
             try
             {
                 _repo.Update(existing);
+
+                await _cache.InvalidateAsync(
+                    CreateCacheKey("all_vehicles"),
+                    CreateCacheKey("vehicle", id),
+                    CreateCacheKey("vehicles_filter", null, null, existing.StationId, null, null),
+                    CreateCacheKey("vehicles_filter", null, null, updatedVehicle.StationId, null, null)
+                );
+
                 return (true, "Vehicle updated successfully.");
             }
             catch (Exception ex)
             {
-               
+                _logger.LogError(ex, "Error updating vehicle {VehicleId}", id);
                 return (false, "An error occurred while updating the vehicle.");
             }
         }
 
-        public bool DeleteVehicle(int id)
+        public async Task<bool> DeleteVehicleAsync(int id)
         {
             var existing = _repo.GetById(id);
             if (existing == null) return false;
 
             _repo.Delete(id);
+
+            await _cache.InvalidateAsync(
+                CreateCacheKey("all_vehicles"),
+                CreateCacheKey("vehicle", id),
+                CreateCacheKey("vehicles_filter", null, null, existing.StationId, null, null)
+            );
+
             return true;
         }
 
+        public Vehicle GetFirstAvailableVehicleByModel(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd)
+            => _repo.GetFirstAvailableVehicleByModel(modelId, stationId, requestedStart, requestedEnd);
+
+        public Vehicle GetEntityById(int id) => _repo.GetById(id);
+
         public IEnumerable<StationDtoForView> GetStationFromModel(int modelId)
-        {
-            return _repo.GetAll()
+            => _repo.GetAll()
                 .Where(v => v.ModelId == modelId)
                 .Where(v => v.Station != null)
                 .Select(v => new StationDtoForView
@@ -135,45 +207,6 @@ namespace PublicCarRental.Service.Veh
                     Longitude = v.Station.Longitude
                 })
                 .Distinct()
-                .ToList();
-        }
-
-        public IEnumerable<VehicleFilter> GetVehiclesByFilters(int? modelId, int? status, int? stationId, int? typeId, int? brandId)
-        {
-            var query = _repo.GetAll().AsQueryable();
-
-            if (modelId.HasValue)
-                query = query.Where(v => v.ModelId == modelId.Value);
-
-            if (status.HasValue)
-                query = query.Where(v => (int)v.Status == status.Value);
-
-            if (stationId.HasValue)
-                query = query.Where(v => v.StationId == stationId.Value);
-
-            if (typeId.HasValue)
-                query = query.Where(v => v.Model.TypeId == typeId.Value);
-
-            if (brandId.HasValue)
-                query = query.Where(v => v.Model.BrandId == brandId.Value);
-
-            return query.Select(v => new VehicleFilter
-            {
-                VehicleId = v.VehicleId,
-                LicensePlate = v.LicensePlate,
-                BatteryLevel = v.BatteryLevel,
-                Status = v.Status,
-                StationId = v.StationId,
-                StationName = v.Station.Name,
-                ModelId = v.ModelId,
-                ModelName = v.Model.Name,
-                BrandId = v.Model.BrandId,
-                BrandName = v.Model.Brand.Name,
-                TypeId = v.Model.TypeId,
-                TypeName = v.Model.Type.Name,
-                PricePerHour = v.Model.PricePerHour,
-                ImageUrl = v.Model.ImageUrl
-            }).ToList();
-        }
+                .ToList();      
     }
 }

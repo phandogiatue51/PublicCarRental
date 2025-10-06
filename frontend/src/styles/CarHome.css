@@ -168,30 +168,246 @@
   color: #706f7b;
 }
 
+/* Vertical Carousel Styles */
+.vertical-carousel-container {
+  display: flex;
+  gap: 4rem;
+  align-items: flex-start;
+  min-height: 600px;
+}
+
+.vertical-pick-box {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 350px;
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 1rem;
+}
+
+.vertical-pick-box::-webkit-scrollbar {
+  width: 6px;
+}
+
+.vertical-pick-box::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.vertical-pick-box::-webkit-scrollbar-thumb {
+  background: #ff4d30;
+  border-radius: 3px;
+}
+
+.vertical-pick-box::-webkit-scrollbar-thumb:hover {
+  background: #e0442a;
+}
+
+.vertical-model-btn {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  background: #f8f8f8;
+  border: 2px solid #e9e9e9;
+  border-radius: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.vertical-model-btn:hover {
+  border-color: #ff4d30;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 77, 48, 0.15);
+}
+
+.vertical-model-btn.colored-button {
+  background: linear-gradient(135deg, #ff4d30, #ff6b4a);
+  border-color: #ff4d30;
+  color: white;
+  box-shadow: 0 8px 25px rgba(255, 77, 48, 0.3);
+}
+
+.model-btn-content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.model-btn-image {
+  width: 80px;
+  height: 60px;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.model-btn-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.model-btn-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+}
+
+.model-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #333;
+  line-height: 1.2;
+}
+
+.vertical-model-btn.colored-button .model-name {
+  color: white;
+}
+
+.model-brand {
+  font-size: 1.3rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.vertical-model-btn.colored-button .model-brand {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.model-price {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #ff4d30;
+}
+
+.vertical-model-btn.colored-button .model-price {
+  color: white;
+}
+
+.vertical-car-display {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.vertical-model-navigation {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+}
+
+.vertical-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  background: #ff4d30;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.vertical-nav-btn:hover:not(:disabled) {
+  background: #e0442a;
+  transform: scale(1.1);
+}
+
+.vertical-nav-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.vertical-model-indicator {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #333;
+  background: #f8f8f8;
+  padding: 0.8rem 1.5rem;
+  border-radius: 2rem;
+  border: 2px solid #e9e9e9;
+}
+
+.vertical-car-showcase {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  background: linear-gradient(135deg, #f8f9fa, #ffffff);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
 /* Responsive design */
+@media (max-width: 1200px) {
+  .vertical-carousel-container {
+    gap: 3rem;
+  }
+  
+  .vertical-pick-box {
+    width: 300px;
+  }
+  
+  .model-btn-image {
+    width: 70px;
+    height: 50px;
+  }
+  
+  .model-name {
+    font-size: 1.4rem;
+  }
+}
+
 @media (max-width: 1000px) {
-  .pick-container__car-content {
+  .vertical-carousel-container {
     flex-direction: column;
+    gap: 2rem;
   }
   
-  .car-display-container {
-    flex-direction: column;
-  }
-  
-  .model-navigation {
+  .vertical-pick-box {
+    width: 100%;
+    max-height: 300px;
     flex-direction: row;
-    order: 2;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-right: 0;
+    padding-bottom: 1rem;
   }
   
-  .pick-box {
+  .vertical-pick-box::-webkit-scrollbar {
+    height: 6px;
+    width: auto;
+  }
+  
+  .vertical-model-btn {
+    min-width: 250px;
+    flex-shrink: 0;
+  }
+  
+  .model-btn-image {
+    width: 60px;
+    height: 45px;
+  }
+  
+  .vertical-car-display {
+    order: -1;
+  }
+  
+  .vertical-model-navigation {
     flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    min-width: auto;
-  }
-  
-  .pick-box button {
-    min-width: 15rem;
   }
 }
 
@@ -200,10 +416,30 @@
     font-size: 3.2rem;
   }
   
-  .pick-box button {
-    min-width: 12rem;
-    font-size: 1.4rem;
-    padding: 1.2rem 2rem;
+  .vertical-model-btn {
+    min-width: 200px;
+    padding: 1rem;
+  }
+  
+  .model-btn-content {
+    gap: 1rem;
+  }
+  
+  .model-btn-image {
+    width: 50px;
+    height: 40px;
+  }
+  
+  .model-name {
+    font-size: 1.3rem;
+  }
+  
+  .model-brand {
+    font-size: 1.1rem;
+  }
+  
+  .model-price {
+    font-size: 1.2rem;
   }
   
   .page-navigation {
@@ -211,7 +447,14 @@
     gap: 1rem;
   }
   
-  .pick-car img {
-    max-height: 250px;
+  .vertical-nav-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+  }
+  
+  .vertical-car-showcase {
+    min-height: 300px;
+    padding: 1rem;
   }
 }

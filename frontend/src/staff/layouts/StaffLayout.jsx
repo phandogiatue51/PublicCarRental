@@ -2,8 +2,16 @@ import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Box, Flex, Text, Icon, Button, useColorModeValue } from '@chakra-ui/react';
 import {
-    MdDashboard,    MdPerson,    MdDriveEta,    MdAssignment,    MdReceipt,    MdMenu,    MdLogout
+    MdDashboard,
+    MdPerson,
+    MdDriveEta,
+    MdAssignment,
+    MdReceipt,
+    MdMenu,
+    MdLogout,
+    MdHome
 } from 'react-icons/md';
+import StaffFooter from '../components/StaffFooter';
 
 const StaffLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -20,7 +28,7 @@ const StaffLayout = () => {
         { path: '/vehicles', label: 'Vehicles', icon: MdDriveEta },
         { path: '/contracts', label: 'Contracts', icon: MdAssignment },
         { path: '/invoices', label: 'Invoices', icon: MdReceipt },
-        { path: '/models', label: 'Models', icon: MdDriveEta },
+        { path: '/models', label: 'Models', icon: MdDriveEta }
     ];
 
     const isActive = (path) => {
@@ -31,27 +39,37 @@ const StaffLayout = () => {
         navigate(`/staff${path}`);
     };
 
+    const handleBackToHome = () => {
+        navigate('/');
+    };
+
     const handleLogout = () => {
-        // Implement logout logic here
-        console.log('Logout clicked');
+        sessionStorage.removeItem("userRole");
+        sessionStorage.removeItem("accountId");
+        sessionStorage.removeItem("fullName");
+        sessionStorage.removeItem("email");
+        sessionStorage.removeItem("staffId");
+        sessionStorage.removeItem("stationId");
+        navigate('/');
     };
 
     return (
-        <Box minH="100vh" bg={useColorModeValue('gray.50', 'gray.900')}>
-            <Flex>
+        <Box minH="100vh" bg={useColorModeValue('gray.50', 'gray.900')} display="flex" flexDirection="column">
+            <Flex flex="1" overflow="hidden">
                 {/* Sidebar */}
                 <Box
                     w={{ base: sidebarOpen ? '250px' : '0', md: '250px' }}
                     bg={bgColor}
                     borderRight="1px"
                     borderColor={borderColor}
-                    minH="100vh"
                     transition="width 0.3s"
                     overflow="hidden"
                     position={{ base: 'fixed', md: 'relative' }}
                     zIndex={{ base: 1000, md: 'auto' }}
+                    display="flex"
+                    flexDirection="column"
                 >
-                    <Box p={4}>
+                    <Box p={4} flex="1">
                         <Text fontSize="xl" fontWeight="bold" color={textColor} mb={8}>
                             Staff Portal
                         </Text>
@@ -76,6 +94,17 @@ const StaffLayout = () => {
                         <Box mt={8}>
                             <Button
                                 w="100%"
+                                leftIcon={<Icon as={MdHome} />}
+                                colorScheme="green"
+                                variant="ghost"
+                                onClick={handleBackToHome}
+                                mb={2}
+                            >
+                                Back to Home
+                            </Button>
+
+                            <Button
+                                w="100%"
                                 leftIcon={<Icon as={MdLogout} />}
                                 colorScheme="red"
                                 variant="ghost"
@@ -87,8 +116,14 @@ const StaffLayout = () => {
                     </Box>
                 </Box>
 
-                {/* Main Content */}
-                <Box flex="1" ml={{ base: 0, md: 0 }}>
+                {/* Main Content Area */}
+                <Box 
+                    flex="1" 
+                    display="flex" 
+                    flexDirection="column" 
+                    minH="100vh"
+                    ml={{ base: 0, md: 0 }}
+                >
                     {/* Header */}
                     <Box
                         bg={bgColor}
@@ -98,6 +133,7 @@ const StaffLayout = () => {
                         display={{ base: 'flex', md: 'none' }}
                         justifyContent="space-between"
                         alignItems="center"
+                        flexShrink={0}
                     >
                         <Button
                             variant="ghost"
@@ -110,10 +146,19 @@ const StaffLayout = () => {
                         </Text>
                     </Box>
 
-                    {/* Page Content */}
-                    <Box p={6}>
+                    {/* Page Content - This should grow and push footer down */}
+                    <Box 
+                        p={6} 
+                        flex="1" 
+                        display="flex" 
+                        flexDirection="column"
+                        overflow="auto"
+                    >
                         <Outlet />
                     </Box>
+
+                    {/* Footer - This will always be at the bottom */}
+                    <StaffFooter />
                 </Box>
             </Flex>
         </Box>
