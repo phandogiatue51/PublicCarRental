@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import CarBox from "./CarBox";
-import "../styles/CarHome.css"; 
-import axios from "axios";
+import { modelAPI } from "../services/api";
+import "../styles/CarHome.css";
 
 function PickCar() {
   const [active, setActive] = useState(0);
@@ -13,15 +13,17 @@ function PickCar() {
 
   useEffect(() => {
     // Fetch all models from API
-    axios.get("https://publiccarrental-production-b7c5.up.railway.app/api/Model/get-all")
-      .then((res) => {
-        setModels(res.data);
+    const fetchModels = async () => {
+      try {
+        const modelsData = await modelAPI.getAll();
+        setModels(modelsData);
         setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch models", err);
+      } catch (error) {
+        console.error("Failed to fetch models", error);
         setLoading(false);
-      });
+      }
+    };
+    fetchModels();
   }, []);
 
   const btnID = (id) => {
@@ -132,55 +134,69 @@ function PickCar() {
             </div>
 
             <div className="pick-container__car-content">
-              {/* Car selection buttons - Show only 5 per page */}
-              <div className="pick-box">
-                {currentModels.map((model, index) => (
-                  <button
-                    key={model.modelId}
-                    className={`${coloringButton(`btn${index}`)}`}
-                    onClick={() => {
-                      setActive(index);
-                      btnID(`btn${index}`);
-                    }}
-                  >
-                    {model.name}
-                  </button>
-                ))}
-              </div>
-
-              {/* Car display with navigation */}
-              <div className="car-display-container">
-                {/* Model Navigation */}
-                <div className="model-navigation">
-                  <button 
-                    className="nav-btn model-nav-btn"
-                    onClick={prevModel}
-                    disabled={active === 0}
-                  >
-                    <i className="fa-solid fa-chevron-up"></i>
-                  </button>
-                  
-                  <span className="model-indicator">
-                    {active + 1} / {currentModels.length}
-                  </span>
-                  
-                  <button 
-                    className="nav-btn model-nav-btn"
-                    onClick={nextModel}
-                    disabled={active === currentModels.length - 1}
-                  >
-                    <i className="fa-solid fa-chevron-down"></i>
-                  </button>
+              {/* Vertical Carousel Container */}
+              <div className="vertical-carousel-container">
+                {/* Car selection buttons - Vertical layout */}
+                <div className="vertical-pick-box">
+                  {currentModels.map((model, index) => (
+                    <button
+                      key={model.modelId}
+                      className={`vertical-model-btn ${coloringButton(`btn${index}`)}`}
+                      onClick={() => {
+                        setActive(index);
+                        btnID(`btn${index}`);
+                      }}
+                    >
+                      <div className="model-btn-content">
+                        <div className="model-btn-image">
+                          <img src={model.imageUrl} alt={model.name} />
+                        </div>
+                        <div className="model-btn-info">
+                          <span className="model-name">{model.name}</span>
+                          <span className="model-brand">{model.brandName}</span>
+                          <span className="model-price">${model.pricePerHour}/hr</span>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
 
-                {/* Display CarBox with transformed data */}
-                <CarBox 
-                  data={transformedData.slice(
-                    currentPage * modelsPerPage,
-                    (currentPage + 1) * modelsPerPage
-                  )} 
-                  carID={active} 
-                />
+                {/* Car display area */}
+                <div className="vertical-car-display">
+                  {/* Model Navigation */}
+                  <div className="vertical-model-navigation">
+                    <button 
+                      className="vertical-nav-btn"
+                      onClick={prevModel}
+                      disabled={active === 0}
+                    >
+                      <i className="fa-solid fa-chevron-up"></i>
+                    </button>
+                    
+                    <span className="vertical-model-indicator">
+                      {active + 1} / {currentModels.length}
+                    </span>
+                    
+                    <button 
+                      className="vertical-nav-btn"
+                      onClick={nextModel}
+                      disabled={active === currentModels.length - 1}
+                    >
+                      <i className="fa-solid fa-chevron-down"></i>
+                    </button>
+                  </div>
+
+                  {/* Display CarBox with transformed data */}
+                  <div className="vertical-car-showcase">
+                    <CarBox 
+                      data={transformedData.slice(
+                        currentPage * modelsPerPage,
+                        (currentPage + 1) * modelsPerPage
+                      )} 
+                      carID={active} 
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
