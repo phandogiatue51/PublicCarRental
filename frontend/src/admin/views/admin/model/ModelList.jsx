@@ -13,7 +13,7 @@ import { MdEdit, MdDelete, MdAdd, MdVisibility, MdVisibilityOff, MdChevronLeft, 
 import ModelModal from './ModelModal';
 
 // Custom components
-import Card from '@components/card/Card';
+import Card from '../../../components/card/Card';
 
 const columnHelper = createColumnHelper();
 

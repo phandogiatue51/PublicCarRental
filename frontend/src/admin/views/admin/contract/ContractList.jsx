@@ -16,7 +16,7 @@ import {
 } from 'react-icons/md';
 
 // Custom components
-import Card from '@components/card/Card';
+import Card from '../../../components/card/Card';
 import ContractDetailModal from './ContractDetailModal';
 
 const columnHelper = createColumnHelper();

@@ -3,13 +3,13 @@ import { Portal, Box, useDisclosure } from '@chakra-ui/react';
 import React, { useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
-import Footer from '@admin/components/footer/FooterAdmin';
-import Navbar from '@admin/components/navbar/NavbarRTL';
-import Sidebar from '@admin/components/sidebar/Sidebar';
-import { RtlProvider } from '@admin/components/rtlProvider/RtlProvider';
+import Footer from '../../components/footer/FooterAdmin';
+import Navbar from '../../components/navbar/NavbarRTL';
+import Sidebar from '../../components/sidebar/Sidebar';
+import { RtlProvider } from '../../components/rtlProvider/RtlProvider';
 
-import { SidebarContext } from '@contexts/SidebarContext';
-import routes from '@admin/routes';
+import { SidebarContext } from '../../contexts/SidebarContext';
+import routes from '../../routes';
 
 // Custom Chakra theme
 export default function Dashboard(props) {

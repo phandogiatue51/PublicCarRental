@@ -1,8 +1,8 @@
 // Chakra imports
 import { Box, Flex, Select, Text, useColorModeValue } from "@chakra-ui/react";
-import Card from "@components/card/Card.js";
+import Card from "./../../../../components/card/Card";
 // Custom components
-import BarChart from "@components/charts/BarChart";
+import BarChart from "./../../../../components/charts/BarChart";
 import React from "react";
 import {
   barChartDataUserActivity,

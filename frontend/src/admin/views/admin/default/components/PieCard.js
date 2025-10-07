@@ -1,10 +1,10 @@
 // Chakra imports
 import { Box, Flex, Text, Select, useColorModeValue } from "@chakra-ui/react";
 // Custom components
-import Card from "../../../../components/card/Card";
-import PieChart from "../../../../../admin/components/charts/PieChart.js";
-import { pieChartData, pieChartOptions } from "../../../../variables/charts.js";
-import { VSeparator } from "../../../../components/separator/Separator";
+import Card from "./../../../../components/card/Card";
+import PieChart from "./../../../../../admin/components/charts/PieChart.js";
+import { pieChartData, pieChartOptions } from "./../../../../variables/charts.js";
+import { VSeparator } from "./../../../../components/separator/Separator";
 import React from "react";
 
 export default function Conversion(props) {

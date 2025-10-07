@@ -8,8 +8,8 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 // Custom components
-import Card from "../../../../components/card/Card";
-import LineChart from "../../../../../admin/components/charts/LineChart.js";
+import Card from "./../../../../components/card/Card";
+import LineChart from "./../../../../../admin/components/charts/LineChart.js";
 import React from "react";
 import { IoCheckmarkCircle } from "react-icons/io5";
 import { MdBarChart, MdOutlineCalendarToday } from "react-icons/md";
