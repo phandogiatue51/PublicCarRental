@@ -12,14 +12,15 @@ function PickCar() {
   const modelsPerPage = 5;
 
   useEffect(() => {
-    // Fetch all models from API
     const fetchModels = async () => {
       try {
         const modelsData = await modelAPI.getAll();
-        setModels(modelsData);
+        console.log('Fetched models:', modelsData); // Debug log
+        setModels(modelsData || []);
         setLoading(false);
       } catch (error) {
         console.error("Failed to fetch models", error);
+        setModels([]);
         setLoading(false);
       }
     };
@@ -34,32 +35,33 @@ function PickCar() {
     return colorBtn === id ? "colored-button" : "";
   };
 
-  // Transform all models to match CarBox expected format
-  const transformedData = models.map(model => ([{
-    name: model.name,
-    price: model.pricePerHour,
-    mark: model.brandName,
-    model: model.name,
-    year: "2023",
-    doors: "4",
-    air: "Yes",
-    transmission: "Automatic",
-    fuel: "Electric",
-    img: model.imageUrl
-  }]));
+  // Transform models to match CarBox expected format with safety checks
+  const transformedData = Array.isArray(models) 
+    ? models.map(model => ([{
+        name: model.name,
+        price: model.pricePerHour,
+        mark: model.brandName,
+        model: model.name,
+        year: "2023",
+        doors: "4/5",
+        air: "Yes",
+        transmission: "Automatic",
+        fuel: "Electric",
+        img: model.imageUrl
+      }]))
+    : [];
 
-  // Get current page models
-  const currentModels = models.slice(
-    currentPage * modelsPerPage,
-    (currentPage + 1) * modelsPerPage
-  );
+  // Get current page models with safety check
+  const currentModels = Array.isArray(models) 
+    ? models.slice(currentPage * modelsPerPage, (currentPage + 1) * modelsPerPage)
+    : [];
 
-  const totalPages = Math.ceil(models.length / modelsPerPage);
+  const totalPages = Math.ceil((Array.isArray(models) ? models.length : 0) / modelsPerPage);
 
   const nextPage = () => {
     if ((currentPage + 1) * modelsPerPage < models.length) {
       setCurrentPage(currentPage + 1);
-      setActive(0); // Reset to first model on new page
+      setActive(0);
       setColorBtn("btn0");
     }
   };
@@ -67,7 +69,7 @@ function PickCar() {
   const prevPage = () => {
     if (currentPage > 0) {
       setCurrentPage(currentPage - 1);
-      setActive(0); // Reset to first model on new page
+      setActive(0);
       setColorBtn("btn0");
     }
   };
@@ -90,7 +92,7 @@ function PickCar() {
     return <div className="loading">Loading vehicles...</div>;
   }
 
-  if (models.length === 0) {
+  if (!Array.isArray(models) || models.length === 0) {
     return <div className="no-vehicles">No vehicles available.</div>;
   }
 
@@ -140,7 +142,7 @@ function PickCar() {
                 <div className="vertical-pick-box">
                   {currentModels.map((model, index) => (
                     <button
-                      key={model.modelId}
+                      key={model.modelId || index}
                       className={`vertical-model-btn ${coloringButton(`btn${index}`)}`}
                       onClick={() => {
                         setActive(index);

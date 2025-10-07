@@ -151,43 +151,62 @@ export const brandAPI = {
   }),
 };
 
-// Model API services
 export const modelAPI = {
-  // Get all models
-  getAll: () => apiRequest('/Model/get-all'),
+  // Get all models - FIXED
+  getAll: async () => {
+    try {
+      const response = await apiRequest('/Model/get-all');
+      // Extract the array from the response object
+      return response.result || response || [];
+    } catch (error) {
+      console.error('Error fetching models:', error);
+      return [];
+    }
+  },
 
   // Get model by ID
-  getById: (id) => apiRequest(`/Model/${id}`),
+  getById: async (id) => {
+    try {
+      const response = await apiRequest(`/Model/${id}`);
+      return response.result || response;
+    } catch (error) {
+      console.error('Error fetching model by ID:', error);
+      return null;
+    }
+  },
+
+  // Filter models by brand, type, and station - FIXED
+  filterModels: async (brandId, typeId, stationId) => {
+    try {
+      const params = new URLSearchParams();
+      if (brandId) params.append('brandId', brandId);
+      if (typeId) params.append('typeId', typeId);
+      if (stationId) params.append('stationId', stationId);
+      
+      const response = await apiRequest(`/Model/filter-models?${params.toString()}`);
+      return response.result || response || [];
+    } catch (error) {
+      console.error('Error filtering models:', error);
+      return [];
+    }
+  },
 
   // Create new model
   create: (modelData) => apiRequest('/Model/create-model', {
     method: 'POST',
-    body: modelData, // Send FormData directly, don't stringify
+    body: modelData,
   }),
 
   // Update model
   update: (id, modelData) => apiRequest(`/Model/update-model/${id}`, {
     method: 'PUT',
-    body: modelData, // Send FormData directly, don't stringify
+    body: modelData,
   }),
 
   // Delete model
   delete: (id) => apiRequest(`/Model/delete-model/${id}`, {
     method: 'DELETE',
   }),
-
-  // Get available images
-  getAvailableImages: () => apiRequest('/Model/available-images'),
-
-  // Filter models by brand, type, and station
-  filterModels: (brandId, typeId, stationId) => {
-    const params = new URLSearchParams();
-    if (brandId) params.append('brandId', brandId);
-    if (typeId) params.append('typeId', typeId);
-    if (stationId) params.append('stationId', stationId);
-    
-    return apiRequest(`/Model/filter-models?${params.toString()}`);
-  },
 };
 
 // Type API services
