@@ -3,6 +3,7 @@ using Microsoft.Build.Utilities;
 using PublicCarRental.DTOs.Stat;
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Stat;
+using PublicCarRental.Service.Redis;
 
 namespace PublicCarRental.Service.Stat
 {

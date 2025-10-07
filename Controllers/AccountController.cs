@@ -30,7 +30,7 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpPost("register")]
-        public IActionResult RegisterRenter(AccountDto dto)
+        public async Task<IActionResult> RegisterRenterAsync(AccountDto dto)
         {
             if (string.IsNullOrWhiteSpace(dto.LicenseNumber))
                 return BadRequest(new { message = "License number is required." });
@@ -43,7 +43,7 @@ namespace PublicCarRental.Controllers
             if (!accountResult.Success)
                 return BadRequest(new { message = accountResult.Message });
 
-            var renterResult = _renterService.CreateRenter((int)accountResult.AccountId, dto);
+            var renterResult = await _renterService.CreateRenterAsync((int)accountResult.AccountId, dto);
 
             if (!renterResult.Success)
                 return BadRequest(new { message = renterResult.Message });
@@ -55,7 +55,7 @@ namespace PublicCarRental.Controllers
         public IActionResult Login([FromBody] LoginDto dto)
         {
             _logger.LogInformation("Login attempt for identifier: {Identifier}", dto.Identifier);
-            
+
             var result = _accountService.Login(dto.Identifier, dto.Password);
 
             if (!result.Success)
@@ -64,7 +64,6 @@ namespace PublicCarRental.Controllers
                 return BadRequest(new { message = result.Message });
             }
 
-            // Get user data for the response
             var user = _accountService.GetAccountByIdentifier(dto.Identifier);
             if (user == null)
             {
@@ -74,7 +73,6 @@ namespace PublicCarRental.Controllers
 
             _logger.LogInformation("Login successful for user: {AccountId}, role: {Role}", user.AccountId, result.Role);
 
-            // Add role-specific data
             switch (result.Role)
             {
                 case AccountRole.EVRenter:
@@ -82,9 +80,9 @@ namespace PublicCarRental.Controllers
                     _logger.LogInformation("EVRenter login - AccountId: {AccountId}, RenterId: {RenterId}", user.AccountId, renterId);
                     if (renterId.HasValue)
                     {
-                        return Ok(new
+                        return Ok(new 
                         {
-                            message = result.Message,
+                            message = result.Message, 
                             token = result.Token,
                             role = result.Role,
                             accountId = user.AccountId,
@@ -113,7 +111,7 @@ namespace PublicCarRental.Controllers
 
                 case AccountRole.Admin:
                     _logger.LogInformation("Admin login - AccountId: {AccountId}", user.AccountId);
-                    return Ok(new
+                    return Ok(new 
                     {
                         message = result.Message,
                         token = result.Token,
@@ -125,8 +123,7 @@ namespace PublicCarRental.Controllers
                     });
             }
 
-            // Fallback for any unhandled role
-            return Ok(new
+            return Ok(new 
             {
                 message = result.Message,
                 token = result.Token,
@@ -171,9 +168,9 @@ namespace PublicCarRental.Controllers
         }
 
         [HttpPost("forgot-password")]
-        public IActionResult ForgotPassword([FromForm] string email)
+        public async Task<IActionResult> ForgotPasswordAsync([FromForm] string email)
         {
-            var result = _accountService.SendPasswordResetToken(email);
+            var result = await _accountService.SendPasswordResetTokenAsync(email);
 
             if (result.success)
                 return Ok(new { message = result.message });
@@ -192,26 +189,5 @@ namespace PublicCarRental.Controllers
                 return BadRequest(new { error = result.message });
         }
 
-        [HttpPost("send-token")]
-        public IActionResult SendVerificationToken([FromForm] string email)
-        {
-            var result = _accountService.SendToken(email);
-
-            if (result.success)
-                return Ok(new { message = result.message });
-            else
-                return BadRequest(new { error = result.message });
-        }
-
-        [HttpGet("validate-reset-token")]
-        public IActionResult ValidateResetToken([FromQuery] string token)
-        {
-            var isValid = _accountService.ValidatePasswordResetToken(token);
-
-            if (isValid)
-                return Ok(new { message = "Token is valid." });
-            else
-                return BadRequest(new { error = "Token is invalid or expired." });
-        }
     }
 }

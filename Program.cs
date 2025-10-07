@@ -1,9 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Exchange.WebServices.Data;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PublicCarRental.Helpers;
 using PublicCarRental.Models;
+using PublicCarRental.Models.Configuration;
 using PublicCarRental.Repository.Acc;
 using PublicCarRental.Repository.Bran;
 using PublicCarRental.Repository.Cont;
@@ -19,11 +23,14 @@ using PublicCarRental.Repository.Typ;
 using PublicCarRental.Repository.Vehi;
 using PublicCarRental.Service;
 using PublicCarRental.Service.Acc;
+using PublicCarRental.Service.Azure;
 using PublicCarRental.Service.Bran;
 using PublicCarRental.Service.Cont;
 using PublicCarRental.Service.Email;
 using PublicCarRental.Service.Fav;
 using PublicCarRental.Service.Inv;
+using PublicCarRental.Service.Rabbit;
+using PublicCarRental.Service.Redis;
 using PublicCarRental.Service.Ren;
 using PublicCarRental.Service.Staf;
 using PublicCarRental.Service.Stat;
@@ -31,10 +38,12 @@ using PublicCarRental.Service.Trans;
 using PublicCarRental.Service.Typ;
 using PublicCarRental.Service.Veh;
 using PublicCarRental.Services;
+using PublicCarRental.Signal;
+using System.Configuration;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Text.Json.Serialization;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
+using Task = System.Threading.Tasks.Task;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +52,15 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
     options.InstanceName = "CarRental_";
 });
+
+
+    builder.Services.Configure<RabbitMQSettings>(builder.Configuration.GetSection("RabbitMQ"));
+    builder.Services.AddSingleton<IRabbitMQConnection>(provider =>
+    {
+        var settings = provider.GetRequiredService<IOptions<RabbitMQSettings>>().Value;
+        var logger = provider.GetRequiredService<ILogger<RabbitMQConnection>>();
+        return new RabbitMQConnection(settings.ConnectionString, logger);
+    });
 
 builder.Services.AddControllers(options =>
 {
@@ -134,6 +152,13 @@ builder.Services.AddScoped<AzureBlobService>();
 builder.Services.AddHostedService<AzureBlobInitializer>();
 builder.Services.AddScoped<IPayOSService, PayOSService>();
 builder.Services.AddScoped<GenericCacheDecorator>();
+builder.Services.AddScoped<BaseMessageProducer>();
+builder.Services.AddScoped<EmailProducerService>();
+builder.Services.AddHostedService<EmailConsumerService>();
+builder.Services.AddScoped<BookingEventProducerService>();
+builder.Services.AddHostedService<StaffNotificationConsumer>();
+builder.Services.AddScoped<StaffNotificationService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -181,7 +206,6 @@ builder.Services.AddAuthentication(options =>
         OnMessageReceived = context =>
         {
             var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
-            Console.WriteLine($"Authorization header: {authHeader}");
             
             if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
             {
@@ -221,6 +245,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+builder.Services.AddSignalR();
 
 
 builder.Services.AddSwaggerGen(c =>
@@ -258,16 +283,7 @@ app.UseHttpsRedirection();
 
 app.UseCors("AllowReactApp");
 
-// Enable static files serving
-app.UseStaticFiles();
-
-// Enable static files serving for images
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
-        Path.Combine(Directory.GetCurrentDirectory(), "image")),
-    RequestPath = "/image"
-});
+app.MapHub<NotificationHub>("/notificationHub");
 
 app.UseAuthentication();
 app.UseAuthorization();

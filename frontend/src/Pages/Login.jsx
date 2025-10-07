@@ -1,107 +1,22 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { accountAPI, renterAPI } from "../services/api";
+import { useAuth } from "../hooks/useAuth";
 import loginImg from "../images/login/login.jpg";
 import "../styles/Login.css";
 
 function Login() {
     const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
-    const navigate = useNavigate();
+    const { login, loading, error, setError } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
-        setLoading(true);
-
+        
         try {
-            const data = await accountAPI.login({
-                Identifier: identifier,
-                Password: password
-            });
-            
-            console.log('Login response data:', data); // Debug log
-            
-            // Store basic user info
-            sessionStorage.setItem("userRole", data.role.toString());
-            sessionStorage.setItem("accountId", data.accountId.toString());
-            
-            if (data.fullName) {
-                sessionStorage.setItem("fullName", data.fullName);
-            }
-            if (data.email) {
-                sessionStorage.setItem("email", data.email);
-            }
-
-            // Handle navigation based on role
-            switch (data.role.toString()) {
-                case "0": // EVRenter
-                    await handleRenterLogin(data, identifier);
-                    navigate("/");
-                    break;
-                    
-                case "1": // Staff
-                    await handleStaffLogin(data);
-                    navigate("/staff");
-                    break;
-                    
-                case "2": // Admin
-                    await handleAdminLogin(data);
-                    navigate("/admin");
-                    break;
-                    
-                default:
-                    navigate("/");
-                    break;
-            }
-            
+            await login(identifier, password);
         } catch (err) {
-            setError(err.message || "Login failed. Please check your credentials.");
-        } finally {
-            setLoading(false);
+            console.error("Login error:", err);
         }
-    };
-
-    // Handle renter login - enrich with renter data
-    const handleRenterLogin = async (data, identifier) => {
-        try {
-            const renters = await renterAPI.getAll();
-            const idLower = (identifier || "").toLowerCase();
-            const matched = renters.find(r =>
-                (r.email && r.email.toLowerCase() === idLower) ||
-                (r.phoneNumber && r.phoneNumber === identifier)
-            );
-            if (matched) {
-                sessionStorage.setItem("renterId", String(matched.renterId));
-                if (matched.fullName) sessionStorage.setItem("fullName", matched.fullName);
-                if (matched.email) sessionStorage.setItem("email", matched.email);
-                if (matched.phoneNumber) sessionStorage.setItem("phoneNumber", matched.phoneNumber);
-            }
-        } catch (error) {
-            console.warn("Could not enrich renter data:", error);
-            // Continue with basic account data
-        }
-    };
-
-    // Handle staff login - store staff specific data
-    const handleStaffLogin = async (data) => {
-        if (data.staffId) {
-            sessionStorage.setItem("staffId", data.staffId.toString());
-        }
-        if (data.stationId) {
-            sessionStorage.setItem("stationId", data.stationId.toString());
-        }
-        // You might want to fetch additional staff info here if needed
-        console.log("Staff logged in:", data);
-    };
-
-    // Handle admin login - store admin specific data
-    const handleAdminLogin = async (data) => {
-        // Store any admin-specific data if needed
-        sessionStorage.setItem("isAdmin", "true");
-        console.log("Admin logged in:", data);
     };
 
     return (

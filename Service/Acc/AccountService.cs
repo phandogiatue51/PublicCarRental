@@ -18,17 +18,18 @@ namespace PublicCarRental.Service.Acc
         private readonly IAccountRepository _accountRepo;
         private readonly PasswordHelper _passwordHelper;
         private readonly ITokenRepository _tokenRepository;
-        private readonly IEmailService _emailService;
         private readonly IConfiguration _configuration;
+        private readonly EmailProducerService _emailProducer;
 
         public AccountService(IAccountRepository accountRepo, PasswordHelper passwordHelper,
-            ITokenRepository tokenRepository, IEmailService emailService, IConfiguration configuration)
+            ITokenRepository tokenRepository, IConfiguration configuration
+            , EmailProducerService emailProducer)
         {
             _accountRepo = accountRepo;
             _passwordHelper = passwordHelper;
             _tokenRepository = tokenRepository;
-            _emailService = emailService;
             _configuration = configuration;
+            _emailProducer = emailProducer;
         }
 
         public Account GetAccountById(int id)
@@ -84,10 +85,10 @@ namespace PublicCarRental.Service.Acc
             }
             catch (Exception ex)
             {
-                // Fallback for any other errors
                 return (false, "An error occurred while creating the account.", null);
             }
         }
+
         public (bool Success, string Message, string Token, AccountRole Role) Login(string identifier, string password)
         {
             var user = _accountRepo.GetByIdentifier(identifier);
@@ -117,17 +118,6 @@ namespace PublicCarRental.Service.Acc
             string welcomeMessage = GetWelcomeMessage(user);
 
             return (true, welcomeMessage, tokenString, user.Role);
-        }
-
-        private string GetWelcomeMessage(Account user)
-        {
-            return user.Role switch
-            {
-                AccountRole.Admin => "Welcome Admin",
-                AccountRole.Staff => $"Welcome, Staff {user.FullName}",
-                AccountRole.EVRenter => $"Welcome, Renter {user.FullName}",
-                _ => "Login successful"
-            };
         }
 
         private List<Claim> GenerateUserClaims(Account user)
@@ -175,6 +165,17 @@ namespace PublicCarRental.Service.Acc
             return claims;
         }
 
+        private string GetWelcomeMessage(Account user)
+        {
+            return user.Role switch
+            {
+                AccountRole.Admin => "Welcome Admin",
+                AccountRole.Staff => $"Welcome, Staff {user.FullName}",
+                AccountRole.EVRenter => $"Welcome, Renter {user.FullName}",
+                _ => "Login successful"
+            };
+        }
+
         public (bool success, string message) ResetPassword(string token, string newPassword)
         {
             var account = _tokenRepository.GetAccountByResetToken(token);
@@ -211,7 +212,7 @@ namespace PublicCarRental.Service.Acc
             return (true, "Password changed successfully.");
         }
 
-        public (bool success, string message) SendToken(string email)
+        public async Task<(bool success, string message)> SendTokenAsync(string email)
         {
             var account = _accountRepo.GetByIdentifier(email);
             if (account == null)
@@ -225,13 +226,9 @@ namespace PublicCarRental.Service.Acc
             }
 
             var token = _tokenRepository.GenerateToken(account, TokenPurpose.EmailVerification);
-            _emailService.SendVerificationEmail(account.Email, token);
+            await _emailProducer.QueueVerificationEmailAsync(account.Email, token);
 
             return (true, "Verification email has been sent.");
-        }
-        public bool ValidatePasswordResetToken(string token)
-        {
-            return _tokenRepository.IsPasswordResetTokenValid(token);
         }
 
         public bool VerifyEmail(string token)
@@ -239,14 +236,14 @@ namespace PublicCarRental.Service.Acc
             return _tokenRepository.VerifyEmail(token);
         }
 
-        public (bool success, string message) SendPasswordResetToken(string email)
+        public async Task<(bool success, string message)> SendPasswordResetTokenAsync(string email)
         {
             var account = _accountRepo.GetByIdentifier(email);
             if (account == null)
                 return (false, "Email not found.");
 
             var token = _tokenRepository.GenerateToken(account, TokenPurpose.PasswordReset);
-            _emailService.SendPasswordResetEmail(email, token);
+            await _emailProducer.QueuePasswordResetEmailAsync(email, token);
 
             return (true, "Password reset token sent.");
         }

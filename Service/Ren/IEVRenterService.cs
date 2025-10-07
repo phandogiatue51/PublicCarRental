@@ -8,7 +8,7 @@ namespace PublicCarRental.Service.Ren
         public IEnumerable<EVRenterDto> GetAll();
         public EVRenterDto? GetById(int id);
         public EVRenter? GetEntityById(int id);
-        public (bool Success, string Message) CreateRenter(int accountId, AccountDto dto);
+        Task<(bool Success, string Message)> CreateRenterAsync(int accountId, AccountDto dto);
         public (bool Success, string Message) UpdateRenter(int id, EVRenterUpdateDto renter);
         public bool DeleteRenter(int id);
         public bool ChangeStatus(int renterId);

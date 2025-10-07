@@ -98,5 +98,27 @@ namespace PublicCarRental.Service.Email
             client.Send(message);
             client.Disconnect(true);
         }
+
+        public void SendEmail(string toEmail, string subject, string body)
+        {
+            var senderName = _config["EmailSettings:SenderName"];
+            var senderEmail = _config["EmailSettings:SenderEmail"];
+            var smtpServer = _config["EmailSettings:SmtpServer"];
+            var port = int.Parse(_config["EmailSettings:Port"]);
+            var username = _config["EmailSettings:Username"];
+            var password = _config["EmailSettings:Password"];
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(senderName, senderEmail));
+            message.To.Add(new MailboxAddress("", toEmail));
+            message.Subject = subject;
+            message.Body = new TextPart("html") { Text = body };
+
+            using var client = new MailKit.Net.Smtp.SmtpClient();
+            client.Connect(smtpServer, port, false);
+            client.Authenticate(username, password);
+            client.Send(message);
+            client.Disconnect(true);
+        }
     }
 }

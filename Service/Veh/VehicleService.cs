@@ -2,6 +2,7 @@
 using PublicCarRental.DTOs.Veh;
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Vehi;
+using PublicCarRental.Service.Redis;
 
 namespace PublicCarRental.Service.Veh
 {

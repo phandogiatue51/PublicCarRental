@@ -13,10 +13,8 @@ namespace PublicCarRental.Service.Acc
         public (bool Success, string Message, string Token, AccountRole Role) Login(string identifier, string password);
         public (bool success, string message) ResetPassword(string token, string newPassword);
         public (bool success, string message) ChangePassword(int accountId, ChangePasswordDto dto);
-        public (bool success, string message) SendToken(string email);
-        public bool ValidatePasswordResetToken(string token);
         public bool VerifyEmail(string token);
-        public (bool success, string message) SendPasswordResetToken(string email);
+        Task<(bool success, string message)> SendPasswordResetTokenAsync(string email);
         public Account? GetAccountByIdentifier(string identifier);
         public int? GetRenterId(int accountId);
         public int? GetStaffId(int accountId);

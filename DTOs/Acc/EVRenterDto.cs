@@ -9,7 +9,8 @@ namespace PublicCarRental.DTOs.Acc
         public string Email { get; set; }
         public string PhoneNumber { get; set; }
         public string IdentityCardNumber { get; set; }
-        public string? LicenseNumber { get; set; }
+        public string LicenseNumber { get; set; }
+        public bool IsEmailVerified { get; set; }
         public AccountStatus Status { get; set; }
     }
 }

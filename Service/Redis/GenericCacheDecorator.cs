@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
 using System.Text.Json;
 
-namespace PublicCarRental.Service
+namespace PublicCarRental.Service.Redis
 {
     public class GenericCacheDecorator
     {

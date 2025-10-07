@@ -2,16 +2,10 @@ import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Box, Flex, Text, Icon, Button, useColorModeValue } from '@chakra-ui/react';
 import {
-    MdDashboard,
-    MdPerson,
-    MdDriveEta,
-    MdAssignment,
-    MdReceipt,
-    MdMenu,
-    MdLogout,
-    MdHome
+    MdDashboard,    MdPerson,    MdDriveEta,    MdAssignment,    MdReceipt,    MdMenu,    MdLogout,    MdHome
 } from 'react-icons/md';
 import StaffFooter from '../components/StaffFooter';
+import NotificationToast from '../../components/NotificationToast';
 
 const StaffLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -55,6 +49,8 @@ const StaffLayout = () => {
 
     return (
         <Box minH="100vh" bg={useColorModeValue('gray.50', 'gray.900')} display="flex" flexDirection="column">
+            <NotificationToast />
+
             <Flex flex="1" overflow="hidden">
                 {/* Sidebar */}
                 <Box

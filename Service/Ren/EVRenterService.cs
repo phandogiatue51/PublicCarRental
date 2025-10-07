@@ -2,9 +2,12 @@
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Acc;
 using PublicCarRental.Repository.Ren;
+using PublicCarRental.Repository.Token;
 using PublicCarRental.Service.Cont;
+using PublicCarRental.Service.Email;
 using PublicCarRental.Service.Fav;
 using PublicCarRental.Service.Inv;
+using System.Security.Principal;
 
 namespace PublicCarRental.Service.Ren
 {
@@ -12,11 +15,16 @@ namespace PublicCarRental.Service.Ren
     {
         private readonly IEVRenterRepository _renterRepo;
         private readonly IAccountRepository _accountRepo;
+        private readonly ITokenRepository _tokenRepository;
+        private readonly EmailProducerService _emailProducer;
 
-        public EVRenterService(IEVRenterRepository renterRepo, IAccountRepository accountRepository)
+        public EVRenterService(IEVRenterRepository renterRepo, IAccountRepository accountRepository,
+            ITokenRepository tokenRepository, EmailProducerService emailProducerService)
         {
             _renterRepo = renterRepo;
             _accountRepo = accountRepository;
+            _tokenRepository = tokenRepository;
+            _emailProducer = emailProducerService;
         }
 
         public IEnumerable<EVRenterDto> GetAll()
@@ -31,6 +39,7 @@ namespace PublicCarRental.Service.Ren
                     PhoneNumber = r.Account.PhoneNumber,
                     IdentityCardNumber = r.Account.IdentityCardNumber,
                     LicenseNumber = r.LicenseNumber,
+                    IsEmailVerified = r.Account.IsEmailVerified,
                     Status = r.Account.Status
                 }).ToList();
         }
@@ -117,7 +126,7 @@ namespace PublicCarRental.Service.Ren
             return true;
         }
 
-        public (bool Success, string Message) CreateRenter (int accountId, AccountDto dto)
+        public async Task<(bool Success, string Message)> CreateRenterAsync (int accountId, AccountDto dto)
         {
             try
             {
@@ -131,6 +140,9 @@ namespace PublicCarRental.Service.Ren
                 };
 
                 _renterRepo.Create(renter);
+                var token = _tokenRepository.GenerateToken(renter.Account, TokenPurpose.EmailVerification);
+                await _emailProducer.QueueVerificationEmailAsync(renter.Account.Email, token);
+
                 return (true, "Renter created successfully.");
             }
             catch (Exception ex)

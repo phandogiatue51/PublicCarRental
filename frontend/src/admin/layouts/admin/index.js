@@ -8,6 +8,7 @@ import Navbar from '@admin/components/navbar/NavbarAdmin';
 import Sidebar from '@admin/components/sidebar/Sidebar';
 import { SidebarContext } from '@admin/contexts/SidebarContext';
 import routes from '@admin/routes';
+import NotificationToast from '../../../components/NotificationToast'; 
 
 // Custom Chakra theme
 export default function Dashboard(props) {
@@ -105,6 +106,7 @@ export default function Dashboard(props) {
   document.documentElement.dir = 'ltr';
   return (
     <Box>
+        <NotificationToast />
       <Box>
         <SidebarContext.Provider
           value={{

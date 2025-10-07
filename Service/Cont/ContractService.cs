@@ -1,11 +1,14 @@
 ﻿using PublicCarRental.DTOs.Cont;
 using PublicCarRental.DTOs.Inv;
+using PublicCarRental.DTOs.Message;
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Cont;
 using PublicCarRental.Repository.Staf;
 using PublicCarRental.Repository.Trans;
 using PublicCarRental.Repository.Vehi;
+using PublicCarRental.Service.Azure;
 using PublicCarRental.Service.Inv;
+using PublicCarRental.Service.Rabbit;
 using PublicCarRental.Service.Ren;
 using System.Diagnostics.Contracts;
 
@@ -20,11 +23,14 @@ namespace PublicCarRental.Service.Cont
         private readonly ITransactionRepository _transactionRepository;
         private readonly IEVRenterService _renterService;
         private readonly AzureBlobService _blobService;
+        private readonly BookingEventProducerService _bookingEventProducer; 
+        private readonly ILogger<ContractService> _logger;
 
         public ContractService(IContractRepository repo, IVehicleRepository vehicleRepo, 
             IStaffRepository staffRepo, IHelperService contInvHelperService, 
             ITransactionRepository transactionRepository, IEVRenterService eVRenterService, 
-            AzureBlobService blobService)
+            AzureBlobService blobService, BookingEventProducerService bookingEventProducerService,
+            ILogger<ContractService> logger)
         {
             _contractRepo = repo;
             _vehicleRepo = vehicleRepo;
@@ -33,6 +39,8 @@ namespace PublicCarRental.Service.Cont
             _transactionRepository = transactionRepository;
             _renterService = eVRenterService;
             _blobService = blobService;
+            _bookingEventProducer = bookingEventProducerService;
+            _logger = logger;
         }
         public IEnumerable<ContractDto> GetAll()
         {
@@ -115,6 +123,33 @@ namespace PublicCarRental.Service.Cont
 
                 _contractRepo.Create(contract);
 
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var bookingEvent = new BookingCreatedEvent
+                        {
+                            BookingId = contract.ContractId,
+                            RenterId = renter.RenterId,
+                            RenterEmail = renter.Account?.Email,
+                            RenterName = renter.Account?.FullName,
+                            VehicleId = vehicle.VehicleId,
+                            VehicleLicensePlate = vehicle.LicensePlate,
+                            StationId = vehicle.StationId ?? 0,
+                            StationName = vehicle.Station?.Name,
+                            StartTime = contract.StartTime,
+                            EndTime = contract.EndTime,
+                            TotalCost = (decimal)contract.TotalCost
+                        };
+
+                        await _bookingEventProducer.PublishBookingCreatedAsync(bookingEvent);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to publish BookingCreated event for contract {ContractId}", contract.ContractId);
+                    }
+                });
+
                 return (true, "Please view your contract.", contract.ContractId);
             }
             catch (Exception ex)
@@ -195,6 +230,25 @@ namespace PublicCarRental.Service.Cont
             vehicle.Status = VehicleStatus.Renting;
             _vehicleRepo.Update(vehicle);
             _contractRepo.Update(contract);
+
+            try
+            {
+                var bookingEvent = new BookingConfirmedEvent
+                {
+                    BookingId = contract.ContractId,
+                    RenterEmail = contract.EVRenter?.Account?.Email,
+                    RenterName = contract.EVRenter?.Account?.FullName,
+                    StartTime = contract.StartTime,
+                    EndTime = contract.EndTime,
+                    TotalCost = (decimal)contract.TotalCost
+                };
+
+                await _bookingEventProducer.PublishBookingConfirmedAsync(bookingEvent);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to publish BookingConfirmed event for contract {ContractId}", contract.ContractId);
+            }
 
             return true;
         }

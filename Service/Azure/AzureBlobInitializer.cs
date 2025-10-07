@@ -1,6 +1,6 @@
 ﻿using Azure.Storage.Blobs;
 
-namespace PublicCarRental.Service
+namespace PublicCarRental.Service.Azure
 {
     // Create a service that runs on startup
     public class AzureBlobInitializer : IHostedService

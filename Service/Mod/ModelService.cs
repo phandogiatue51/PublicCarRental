@@ -4,6 +4,8 @@ using PublicCarRental.DTOs.Stat;
 using PublicCarRental.Models;
 using PublicCarRental.Repository.Model;
 using PublicCarRental.Service;
+using PublicCarRental.Service.Azure;
+using PublicCarRental.Service.Redis;
 
 public class ModelService : BaseCachedService, IModelService
 {
