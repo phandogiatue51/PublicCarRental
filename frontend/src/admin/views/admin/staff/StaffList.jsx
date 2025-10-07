@@ -12,7 +12,7 @@ import { staffAPI, stationAPI } from '../../../../services/api';
 import { MdEdit, MdDelete, MdAdd, MdChevronLeft, MdChevronRight, MdPerson, MdEmail, MdPhone, MdLocationOn, MdToggleOn, MdToggleOff } from 'react-icons/md';
 
 // Custom components
-import Card from '@components/card/Card';
+import Card from '../../../components/card/Card';
 
 const columnHelper = createColumnHelper();
 

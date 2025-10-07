@@ -14,7 +14,7 @@ import { MdEdit, MdDelete, MdAdd, MdVisibility, MdVisibilityOff, MdChevronLeft, 
 import ModelModal from '../../admin/views/admin/model/ModelModal';
 
 // Custom components
-import Card from '@components/card/Card';
+import Card from '../../admin/components/card/Card';
 
 const columnHelper = createColumnHelper();
 

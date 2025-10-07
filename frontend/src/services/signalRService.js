@@ -1,4 +1,8 @@
-import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import {
+  HubConnectionBuilder,
+  LogLevel,
+  HttpTransportType
+} from '@microsoft/signalr';
 
 class SignalRService {
   constructor() {
@@ -6,17 +10,16 @@ class SignalRService {
     this.onNotificationReceived = null;
   }
 
-  startConnection = async () => {
+  async startConnection() {
     try {
       this.connection = new HubConnectionBuilder()
         .withUrl('https://publiccarrental-production-b7c5.up.railway.app/notificationHub', {
-          withCredentials: false,
-          skipNegotiation: true,  
-          transport: signalR.HttpTransportType.WebSockets
+          transport: HttpTransportType.WebSockets,
+          skipNegotiation: true,
+          withCredentials: false
         })
         .configureLogging(LogLevel.Information)
         .build();
-
 
       this.connection.on('ReceiveBookingNotification', (notification) => {
         if (this.onNotificationReceived) {
@@ -25,59 +28,55 @@ class SignalRService {
       });
 
       await this.connection.start();
-      console.log('SignalR Connected');
-      
+      console.log('✅ SignalR connected');
+
       await this.joinGroups();
-      
       return true;
     } catch (error) {
-      console.error('SignalR Connection Error: ', error);
+      console.error('❌ SignalR connection error:', error);
       return false;
     }
-  };
-
-joinGroups = async () => {
-  if (!this.connection) {
-    console.log('❌ No connection available for joining groups');
-    return;
   }
 
-  try {
-    const user = JSON.parse(sessionStorage.getItem('user'));
-    console.log('👤 Current user for groups:', user);
-
-    if (user?.role === 'Admin') {
-      console.log('👑 Joining admin group...');
-      await this.connection.invoke('JoinAdminGroup');
-      console.log('✅ Joined admin group');
-    }
-    
-    if (user?.stationId) {
-      console.log(`🏢 Joining station group ${user.stationId}...`);
-      await this.connection.invoke('JoinStationGroup', user.stationId.toString());
-      console.log(`✅ Joined station group ${user.stationId}`);
+  async joinGroups() {
+    if (!this.connection) {
+      console.warn('⚠️ No active connection to join groups');
+      return;
     }
 
-    if (!user?.role && !user?.stationId) {
-      console.log('🔧 No user role found, joining admin group for testing...');
-      await this.connection.invoke('JoinAdminGroup');
-      console.log('✅ Joined admin group (fallback)');
-    }
+    try {
+      const user = JSON.parse(sessionStorage.getItem('user'));
+      console.log('👤 Joining groups for user:', user);
+
+      if (user?.role === 'Admin') {
+        await this.connection.invoke('JoinAdminGroup');
+        console.log('✅ Joined Admin group');
+      }
+
+      if (user?.stationId) {
+        await this.connection.invoke('JoinStationGroup', user.stationId.toString());
+        console.log(`✅ Joined Station group ${user.stationId}`);
+      }
+
+      if (!user?.role && !user?.stationId) {
+        await this.connection.invoke('JoinAdminGroup');
+        console.log('✅ Joined Admin group (fallback)');
+      }
     } catch (error) {
       console.error('❌ Error joining groups:', error);
     }
-  };
+  }
 
-  registerNotificationHandler = (callback) => {
+  registerNotificationHandler(callback) {
     this.onNotificationReceived = callback;
-  };
+  }
 
-  stopConnection = async () => {
+  async stopConnection() {
     if (this.connection) {
       await this.connection.stop();
-      console.log('SignalR Disconnected');
+      console.log('🛑 SignalR disconnected');
     }
-  };
+  }
 }
 
 export default new SignalRService();

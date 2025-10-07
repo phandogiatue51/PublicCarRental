@@ -13,8 +13,7 @@ import { MdEdit, MdDelete, MdAdd } from 'react-icons/md';
 import BrandModal from './BrandModal';
 
 // Custom components
-import Card from '@components/card/Card';
-import Menu from '@components/menu/MainMenu';
+import Card from '../../../components/card/Card';
 
 const columnHelper = createColumnHelper();
 

@@ -11,19 +11,15 @@ import {
 } from 'react-icons/md';
 
 // Admin Imports
-import MainDashboard from '@admin/views/admin/default';
-import NFTMarketplace from '@admin/views/admin/marketplace';
-import Profile from '@admin/views/admin/profile';
-import DataTables from '@admin/views/admin/dataTables';
-import RTL from '@admin/views/admin/rtl';
-import RenterList from '@admin/views/admin/renter/RenterList';
-import BrandList from '@admin/views/admin/brand/BrandList';
-import ModelList from '@admin/views/admin/model/ModelList';
-import VehicleList from '@admin/views/admin/vehicle/VehicleList';
-import ContractList from '@admin/views/admin/contract/ContractList';
-import InvoiceList from '@admin/views/admin/invoice/InvoiceList';
-import StaffList from '@admin/views/admin/staff/StaffList';
-import StationList from '@admin/views/admin/station/StationList';
+import MainDashboard from './../admin/views/admin/default';
+import RenterList from './../admin/views/admin/renter/RenterList';
+import BrandList from './../admin/views/admin/brand/BrandList';
+import ModelList from './../admin/views/admin/model/ModelList';
+import VehicleList from './../admin/views/admin/vehicle/VehicleList';
+import ContractList from './../admin/views/admin/contract/ContractList';
+import InvoiceList from './../admin/views/admin/invoice/InvoiceList';
+import StaffList from './../admin/views/admin/staff/StaffList';
+import StationList from './../admin/views/admin/station/StationList';
 
 import Home from 'Pages/Home';
 

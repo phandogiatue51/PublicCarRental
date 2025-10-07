@@ -12,7 +12,7 @@ import {
   useColorModeValue,
 } from "@chakra-ui/react";
 // Custom components
-import Card from "@components/card/Card.js";
+import Card from './Card';
 // Assets
 import React, { useState } from "react";
 import { IoHeart, IoHeartOutline } from "react-icons/io5";
