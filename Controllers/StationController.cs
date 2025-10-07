@@ -19,14 +19,14 @@ namespace PublicCarRental.Controllers
         [HttpGet("all-stations")]
         public IActionResult GetAll()
         {
-            var stations = _stationService.GetAllAsync();
+            var stations = _stationService.GetAllAsync().GetAwaiter().GetResult();
             return Ok(stations);
         }
 
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
-            var station = _stationService.GetByIdAsync(id);
+            var station = _stationService.GetByIdAsync(id).GetAwaiter().GetResult();
             if (station == null)
                 return NotFound(new { message = "Station not found" });
 

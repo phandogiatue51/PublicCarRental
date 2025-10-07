@@ -7,6 +7,7 @@ namespace PublicCarRental.Service.Inv
     {
         public IEnumerable<InvoiceDto> GetAll();
         public InvoiceDto GetById(int id);
+        public InvoiceDto GetByContractId(int contractId);
         public Invoice GetEntityById(int id);
         public (bool Success, string Message) CreateInvoice(int contractId);
         public bool UpdateInvoice(Invoice invoice);

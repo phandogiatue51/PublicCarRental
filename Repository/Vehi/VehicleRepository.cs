@@ -18,6 +18,9 @@ namespace PublicCarRental.Repository.Vehi
         {
             return _context.Vehicles
                 .Include(v => v.Model)
+                    .ThenInclude(m => m.Brand)
+                .Include(v => v.Model)
+                    .ThenInclude(m => m.Type)
                 .Include(v => v.Station)
                 .Include(v => v.RentalContracts);
         }
@@ -26,6 +29,9 @@ namespace PublicCarRental.Repository.Vehi
         {
             return _context.Vehicles
                 .Include(v => v.Model)
+                    .ThenInclude(m => m.Brand)
+                .Include(v => v.Model)
+                    .ThenInclude(m => m.Type)
                 .Include(v => v.Station)
                 .Include(v => v.RentalContracts)
                 .FirstOrDefault(v => v.VehicleId == id);

@@ -59,7 +59,7 @@ function PickCar() {
   const totalPages = Math.ceil((Array.isArray(models) ? models.length : 0) / modelsPerPage);
 
   const nextPage = () => {
-    if ((currentPage + 1) * modelsPerPage < models.length) {
+    if ((currentPage + 1) * modelsPerPage < models.length) { // FIXED: changed safeModels to models
       setCurrentPage(currentPage + 1);
       setActive(0);
       setColorBtn("btn0");
@@ -109,10 +109,10 @@ function PickCar() {
                 next adventure or business trip
               </p>
             </div>
-            
+
             {/* Page Navigation */}
             <div className="page-navigation">
-              <button 
+              <button
                 className="nav-btn prev-page-btn"
                 onClick={prevPage}
                 disabled={currentPage === 0}
@@ -120,15 +120,15 @@ function PickCar() {
                 <i className="fa-solid fa-chevron-left"></i>
                 Previous Page
               </button>
-              
+
               <span className="page-indicator">
                 Page {currentPage + 1} of {totalPages}
               </span>
-              
-              <button 
+
+              <button
                 className="nav-btn next-page-btn"
                 onClick={nextPage}
-                disabled={(currentPage + 1) * modelsPerPage >= models.length}
+                disabled={(currentPage + 1) * modelsPerPage >= models.length} // FIXED: changed safeModels to models
               >
                 Next Page
                 <i className="fa-solid fa-chevron-right"></i>
@@ -167,19 +167,19 @@ function PickCar() {
                 <div className="vertical-car-display">
                   {/* Model Navigation */}
                   <div className="vertical-model-navigation">
-                    <button 
+                    <button
                       className="vertical-nav-btn"
                       onClick={prevModel}
                       disabled={active === 0}
                     >
                       <i className="fa-solid fa-chevron-up"></i>
                     </button>
-                    
+
                     <span className="vertical-model-indicator">
                       {active + 1} / {currentModels.length}
                     </span>
-                    
-                    <button 
+
+                    <button
                       className="vertical-nav-btn"
                       onClick={nextModel}
                       disabled={active === currentModels.length - 1}
@@ -190,12 +190,12 @@ function PickCar() {
 
                   {/* Display CarBox with transformed data */}
                   <div className="vertical-car-showcase">
-                    <CarBox 
+                    <CarBox
                       data={transformedData.slice(
                         currentPage * modelsPerPage,
                         (currentPage + 1) * modelsPerPage
-                      )} 
-                      carID={active} 
+                      )}
+                      carID={active}
                     />
                   </div>
                 </div>
