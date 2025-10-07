@@ -9,14 +9,14 @@ class SignalRService {
   startConnection = async () => {
     try {
       this.connection = new HubConnectionBuilder()
-        // .withUrl('https://publiccarrental-production-b7c5.up.railway.app/notificationHub', {
-        //   withCredentials: false
-        // })
-        .withUrl('https://localhost:7230/notificationHub', { 
-          withCredentials: false 
+        .withUrl('https://publiccarrental-production-b7c5.up.railway.app/notificationHub', {
+          withCredentials: false,
+          skipNegotiation: true,  
+          transport: signalR.HttpTransportType.WebSockets
         })
         .configureLogging(LogLevel.Information)
         .build();
+
 
       this.connection.on('ReceiveBookingNotification', (notification) => {
         if (this.onNotificationReceived) {
