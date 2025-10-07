@@ -73,6 +73,22 @@ const apiRequest = async (endpoint, options = {}) => {
   }
 };
 
+// Normalize various backend list response shapes to an array
+const normalizeArrayResponse = (resp) => {
+  if (Array.isArray(resp)) return resp;
+  if (!resp || typeof resp !== 'object') return [];
+  // Common wrappers
+  if (Array.isArray(resp.data)) return resp.data;
+  if (Array.isArray(resp.result)) return resp.result;
+  if (Array.isArray(resp.items)) return resp.items;
+  if (Array.isArray(resp.records)) return resp.records;
+  if (resp.value && Array.isArray(resp.value)) return resp.value;
+  // Sometimes nested under payload or content
+  if (resp.payload && Array.isArray(resp.payload)) return resp.payload;
+  if (resp.content && Array.isArray(resp.content)) return resp.content;
+  return [];
+};
+
 // Account API services
 export const accountAPI = {
   // Login user
@@ -87,12 +103,12 @@ export const accountAPI = {
   register: (userData) => apiRequest('/Account/register', {
     method: 'POST',
     body: JSON.stringify({
-      FullName: userData.fullName,       
-      Email: userData.email,           
-      Password: userData.password,       
-      PhoneNumber: userData.phoneNumber, 
-      IdentityCardNumber: userData.identityCardNumber, 
-      LicenseNumber: userData.licenseNumber 
+      FullName: userData.fullName,
+      Email: userData.email,
+      Password: userData.password,
+      PhoneNumber: userData.phoneNumber,
+      IdentityCardNumber: userData.identityCardNumber,
+      LicenseNumber: userData.licenseNumber
     })
   }),
 
@@ -151,43 +167,62 @@ export const brandAPI = {
   }),
 };
 
-// Model API services
 export const modelAPI = {
-  // Get all models
-  getAll: () => apiRequest('/Model/get-all'),
+  // Get all models - FIXED
+  getAll: async () => {
+    try {
+      const response = await apiRequest('/Model/get-all');
+      // Extract the array from the response object
+      return response.result || response || [];
+    } catch (error) {
+      console.error('Error fetching models:', error);
+      return [];
+    }
+  },
 
   // Get model by ID
-  getById: (id) => apiRequest(`/Model/${id}`),
+  getById: async (id) => {
+    try {
+      const response = await apiRequest(`/Model/${id}`);
+      return response.result || response;
+    } catch (error) {
+      console.error('Error fetching model by ID:', error);
+      return null;
+    }
+  },
+
+  // Filter models by brand, type, and station - FIXED
+  filterModels: async (brandId, typeId, stationId) => {
+    try {
+      const params = new URLSearchParams();
+      if (brandId) params.append('brandId', brandId);
+      if (typeId) params.append('typeId', typeId);
+      if (stationId) params.append('stationId', stationId);
+      
+      const response = await apiRequest(`/Model/filter-models?${params.toString()}`);
+      return response.result || response || [];
+    } catch (error) {
+      console.error('Error filtering models:', error);
+      return [];
+    }
+  },
 
   // Create new model
   create: (modelData) => apiRequest('/Model/create-model', {
     method: 'POST',
-    body: modelData, // Send FormData directly, don't stringify
+    body: modelData,
   }),
 
   // Update model
   update: (id, modelData) => apiRequest(`/Model/update-model/${id}`, {
     method: 'PUT',
-    body: modelData, // Send FormData directly, don't stringify
+    body: modelData,
   }),
 
   // Delete model
   delete: (id) => apiRequest(`/Model/delete-model/${id}`, {
     method: 'DELETE',
   }),
-
-  // Get available images
-  getAvailableImages: () => apiRequest('/Model/available-images'),
-
-  // Filter models by brand, type, and station
-  filterModels: (brandId, typeId, stationId) => {
-    const params = new URLSearchParams();
-    if (brandId) params.append('brandId', brandId);
-    if (typeId) params.append('typeId', typeId);
-    if (stationId) params.append('stationId', stationId);
-    
-    return apiRequest(`/Model/filter-models?${params.toString()}`);
-  },
 };
 
 // Type API services
@@ -225,7 +260,10 @@ export const staffAPI = {
 // Station API services
 export const stationAPI = {
   // Get all stations
-  getAll: () => apiRequest('/Station/all-stations'),
+  getAll: async () => {
+    const resp = await apiRequest('/Station/all-stations');
+    return normalizeArrayResponse(resp);
+  },
 
   // Get station by ID
   getById: (id) => apiRequest(`/Station/${id}`),
@@ -270,13 +308,16 @@ export const contractAPI = {
   // Get contract by ID
   getById: (id) => apiRequest(`/Contract/${id}`),
 
+  // Get contracts by stationId
+  getByStation: (stationId) => apiRequest(`/Contract/get-by-station/${stationId}`),
+
   // Handover vehicle (active contract)
   handoverVehicle: (contractId, staffId, imageFile) => {
     const formData = new FormData();
     formData.append('ContractId', contractId);
     formData.append('StaffId', staffId);
     formData.append('ImageFile', imageFile);
-    
+
     return apiRequest('/Contract/active-contract', {
       method: 'POST',
       body: formData,
@@ -288,7 +329,7 @@ export const contractAPI = {
     const formData = new FormData();
     formData.append('ContractId', contractId);
     formData.append('imageFile', imageFile);
-    
+
     return apiRequest('/Contract/finish-contract', {
       method: 'POST',
       body: formData,
@@ -299,7 +340,10 @@ export const contractAPI = {
 // Vehicle API services
 export const vehicleAPI = {
   // Get all vehicles
-  getAll: () => apiRequest('/Vehicle/get-all'),
+  getAll: async () => {
+    const data = await apiRequest('/Vehicle/get-all');
+    return Array.isArray(data) ? data : [];
+  },
 
   // Get vehicle by ID
   getById: (id) => apiRequest(`/Vehicle/${id}`),
@@ -320,6 +364,19 @@ export const vehicleAPI = {
     method: 'PUT',
     body: JSON.stringify(vehicleData),
   }),
+
+  // Filter vehicles
+  filter: async ({ stationId, status, modelId, typeId, brandId } = {}) => {
+    const params = new URLSearchParams();
+    if (stationId != null) params.append('stationId', stationId);
+    if (status != null) params.append('status', status);
+    if (modelId != null) params.append('modelId', modelId);
+    if (typeId != null) params.append('typeId', typeId);
+    if (brandId != null) params.append('brandId', brandId);
+    const qs = params.toString();
+    const resp = await apiRequest(`/Vehicle/filter-vehicle${qs ? `?${qs}` : ''}`);
+    return normalizeArrayResponse(resp);
+  },
 };
 
 // Invoice API services
@@ -329,6 +386,17 @@ export const invoiceAPI = {
 
   // Get invoice by ID
   getById: (id) => apiRequest(`/Invoice/${id}`),
+
+  // Get invoice by contract ID
+  getByContractId: (contractId) => apiRequest(`/Invoice/by-contract/${contractId}`),
+
+  // Create invoice by contract ID
+  createByContractId: (contractId) => apiRequest(`/Invoice/create-invoice/${contractId}`, {
+    method: 'POST',
+  }),
+
+  // Get invoices by station
+  getByStation: (stationId) => apiRequest(`/Invoice/get-by-station/${stationId}`),
 };
 
 export default apiRequest;

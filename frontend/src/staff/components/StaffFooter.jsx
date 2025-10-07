@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Text, Flex, useColorModeValue, Spinner } from '@chakra-ui/react';
-import { staffAPI } from '../../services/api'; 
+import { staffAPI } from '../../services/api';
+import { useAuth } from '../../hooks/useAuth'; // Import the useAuth hook
 
 const StaffFooter = () => {
     const [staffInfo, setStaffInfo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { getCurrentUser, isAuthenticated } = useAuth(); // Use the auth hook
 
     const bgColor = useColorModeValue('gray.100', 'gray.700');
     const textColor = useColorModeValue('gray.600', 'gray.300');
@@ -13,15 +15,16 @@ const StaffFooter = () => {
     useEffect(() => {
         const fetchStaffInfo = async () => {
             try {
-                const staffId = sessionStorage.getItem('staffId');
+                // Use getCurrentUser instead of sessionStorage
+                const user = getCurrentUser();
                 
-                if (!staffId) {
-                    setError('No staff ID found');
+                if (!user || !user.staffId) {
+                    setError('No staff information found');
                     setLoading(false);
                     return;
                 }
 
-                const data = await staffAPI.getById(staffId);
+                const data = await staffAPI.getById(user.staffId);
                 setStaffInfo(data);
             } catch (err) {
                 setError(err.message || 'Failed to load staff information');
@@ -31,8 +34,14 @@ const StaffFooter = () => {
             }
         };
 
-        fetchStaffInfo();
-    }, []);
+        // Only fetch if user is authenticated and has staff role
+        if (isAuthenticated()) {
+            fetchStaffInfo();
+        } else {
+            setLoading(false);
+            setError('User not authenticated');
+        }
+    }, [getCurrentUser, isAuthenticated]);
 
     return (
         <Box

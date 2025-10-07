@@ -24,14 +24,14 @@ namespace PublicCarRental.Controllers
         [HttpGet("get-all")]
         public IActionResult GetAll()
         {
-            var vehicles = _service.GetAllVehiclesAsync();
+            var vehicles = _service.GetAllVehiclesAsync().GetAwaiter().GetResult();
             return Ok(vehicles);
         }
 
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
-            var vehicle = _service.GetByIdAsync(id);
+            var vehicle = _service.GetByIdAsync(id).GetAwaiter().GetResult();
             if (vehicle == null) return NotFound();
             return Ok(vehicle);
         }
@@ -86,7 +86,8 @@ namespace PublicCarRental.Controllers
             [FromQuery] int? typeId = null,
             [FromQuery] int? brandId = null)
         {
-            var vehicles = _service.GetVehiclesByFiltersAsync(modelId, status, stationId, typeId, brandId);
+            var vehicles = _service.GetVehiclesByFiltersAsync(modelId, status, stationId, typeId, brandId)
+                .GetAwaiter().GetResult();
             return Ok(vehicles);
         }
     }

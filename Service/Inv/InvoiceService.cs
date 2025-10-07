@@ -53,6 +53,22 @@ namespace PublicCarRental.Service.Inv
             };
         }
 
+        public InvoiceDto GetByContractId(int contractId)
+        {
+            var i = _repo.GetAll().FirstOrDefault(x => x.ContractId == contractId);
+            if (i == null) return null;
+            return new InvoiceDto
+            {
+                InvoiceId = i.InvoiceId,
+                ContractId = i.ContractId,
+                IssuedAt = i.IssuedAt,
+                AmountDue = i.AmountDue,
+                AmountPaid = i.AmountPaid,
+                PaidAt = i.PaidAt,
+                Status = i.Status,
+            };
+        }
+
         public Invoice GetEntityById(int id)
         {
             return _repo.GetById(id);

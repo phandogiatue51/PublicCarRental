@@ -37,6 +37,14 @@ namespace PublicCarRental.Controllers
             return Ok(invoice);
         }
 
+        [HttpGet("by-contract/{contractId}")]
+        public IActionResult GetByContractId(int contractId)
+        {
+            var invoice = _service.GetByContractId(contractId);
+            if (invoice == null) return NotFound();
+            return Ok(invoice);
+        }
+
         [HttpPost("create-invoice/{contractId}")]
         public IActionResult Create(int contractId) 
         {
