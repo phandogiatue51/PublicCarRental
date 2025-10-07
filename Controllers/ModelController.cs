@@ -26,7 +26,7 @@ namespace PublicCarRental.Controllers
         [HttpGet("get-all")]
         public IActionResult GetAll()
         {
-            var models = _service.GetAllModels();
+            var models = _service.GetAllModelsAsync();
             return Ok(models);
         }
 
