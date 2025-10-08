@@ -1,47 +1,44 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Exchange.WebServices.Data;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using PublicCarRental.Helpers;
-using PublicCarRental.Models;
-using PublicCarRental.Models.Configuration;
-using PublicCarRental.Repository.Acc;
-using PublicCarRental.Repository.Bran;
-using PublicCarRental.Repository.Cont;
-using PublicCarRental.Repository.Fav;
-using PublicCarRental.Repository.Inv;
-using PublicCarRental.Repository.Model;
-using PublicCarRental.Repository.Ren;
-using PublicCarRental.Repository.Staf;
-using PublicCarRental.Repository.Stat;
-using PublicCarRental.Repository.Token;
-using PublicCarRental.Repository.Trans;
-using PublicCarRental.Repository.Typ;
-using PublicCarRental.Repository.Vehi;
-using PublicCarRental.Service;
-using PublicCarRental.Service.Acc;
-using PublicCarRental.Service.Azure;
-using PublicCarRental.Service.Bran;
-using PublicCarRental.Service.Cont;
-using PublicCarRental.Service.Email;
-using PublicCarRental.Service.Fav;
-using PublicCarRental.Service.Inv;
-using PublicCarRental.Service.Rabbit;
-using PublicCarRental.Service.Redis;
-using PublicCarRental.Service.Ren;
-using PublicCarRental.Service.Staf;
-using PublicCarRental.Service.Stat;
-using PublicCarRental.Service.Trans;
-using PublicCarRental.Service.Typ;
-using PublicCarRental.Service.Veh;
-using PublicCarRental.Services;
-using PublicCarRental.Signal;
-using System.Configuration;
+using PublicCarRental.Application.Service;
+using PublicCarRental.Application.Service.Acc;
+using PublicCarRental.Application.Service.Bran;
+using PublicCarRental.Application.Service.Cont;
+using PublicCarRental.Application.Service.Email;
+using PublicCarRental.Application.Service.Fav;
+using PublicCarRental.Application.Service.Image;
+using PublicCarRental.Application.Service.Inv;
+using PublicCarRental.Application.Service.Mod;
+using PublicCarRental.Application.Service.Pay;
+using PublicCarRental.Application.Service.Rabbit;
+using PublicCarRental.Application.Service.Redis;
+using PublicCarRental.Application.Service.Ren;
+using PublicCarRental.Application.Service.Staf;
+using PublicCarRental.Application.Service.Stat;
+using PublicCarRental.Application.Service.Trans;
+using PublicCarRental.Application.Service.Typ;
+using PublicCarRental.Application.Service.Veh;
+using PublicCarRental.Infrastructure.Data.Models;
+using PublicCarRental.Infrastructure.Data.Models.Configuration;
+using PublicCarRental.Infrastructure.Data.Repository.Acc;
+using PublicCarRental.Infrastructure.Data.Repository.Bran;
+using PublicCarRental.Infrastructure.Data.Repository.Cont;
+using PublicCarRental.Infrastructure.Data.Repository.Fav;
+using PublicCarRental.Infrastructure.Data.Repository.Inv;
+using PublicCarRental.Infrastructure.Data.Repository.Mod;
+using PublicCarRental.Infrastructure.Data.Repository.Ren;
+using PublicCarRental.Infrastructure.Data.Repository.Staf;
+using PublicCarRental.Infrastructure.Data.Repository.Stat;
+using PublicCarRental.Infrastructure.Data.Repository.Token;
+using PublicCarRental.Infrastructure.Data.Repository.Trans;
+using PublicCarRental.Infrastructure.Data.Repository.Typ;
+using PublicCarRental.Infrastructure.Data.Repository.Vehi;
+using PublicCarRental.Infrastructure.Helpers;
+using PublicCarRental.Infrastructure.Signal;
 using System.IdentityModel.Tokens.Jwt;
-using System.Text;
 using System.Text.Json.Serialization;
 using Task = System.Threading.Tasks.Task;
 
@@ -54,13 +51,13 @@ builder.Services.AddStackExchangeRedisCache(options =>
 });
 
 
-    builder.Services.Configure<RabbitMQSettings>(builder.Configuration.GetSection("RabbitMQ"));
-    builder.Services.AddSingleton<IRabbitMQConnection>(provider =>
-    {
-        var settings = provider.GetRequiredService<IOptions<RabbitMQSettings>>().Value;
-        var logger = provider.GetRequiredService<ILogger<RabbitMQConnection>>();
-        return new RabbitMQConnection(settings.ConnectionString, logger);
-    });
+builder.Services.Configure<RabbitMQSettings>(builder.Configuration.GetSection("RabbitMQ"));
+builder.Services.AddSingleton<IRabbitMQConnection>(provider =>
+{
+    var settings = provider.GetRequiredService<IOptions<RabbitMQSettings>>().Value;
+    var logger = provider.GetRequiredService<ILogger<RabbitMQConnection>>();
+    return new RabbitMQConnection(settings.ConnectionString, logger);
+});
 
 builder.Services.AddControllers(options =>
 {
@@ -145,11 +142,9 @@ builder.Services.AddScoped<ITypeService, TypeService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ITokenRepository, TokenRepository>();
 builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
-builder.Services.AddScoped<ITransactionService,  TransactionService>();
+builder.Services.AddScoped<ITransactionService, TransactionService>();
 builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
-builder.Services.AddScoped<AzureBlobService>();
-builder.Services.AddHostedService<AzureBlobInitializer>();
 builder.Services.AddScoped<IPayOSService, PayOSService>();
 builder.Services.AddScoped<GenericCacheDecorator>();
 builder.Services.AddScoped<BaseMessageProducer>();
@@ -159,6 +154,9 @@ builder.Services.AddScoped<BookingEventProducerService>();
 builder.Services.AddHostedService<StaffNotificationConsumer>();
 builder.Services.AddScoped<StaffNotificationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IImageStorageService, CloudinaryService>();
+
+
 
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -199,21 +197,21 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(Convert.FromBase64String(key)),
         ClockSkew = TimeSpan.Zero
     };
-    
+
     // Ensure proper token extraction
     options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
     {
         OnMessageReceived = context =>
         {
             var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
-            
+
             if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
             {
                 var token = authHeader.Substring("Bearer ".Length).Trim();
                 Console.WriteLine($"Extracted token: {token}");
                 Console.WriteLine($"Token length: {token.Length}");
                 Console.WriteLine($"Token parts count: {token.Split('.').Length}");
-                
+
                 // Manual JWT validation test
                 try
                 {
@@ -225,7 +223,7 @@ builder.Services.AddAuthentication(options =>
                 {
                     Console.WriteLine($"Manual JWT validation failed: {ex.Message}");
                 }
-                
+
                 context.Token = token;
             }
             return Task.CompletedTask;

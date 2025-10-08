@@ -1,16 +1,15 @@
 import React from 'react';
 import {
     Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton,
-    Box, Text, VStack, HStack, Badge, Divider, Icon, Flex, useColorModeValue, Grid, GridItem
+    Box, Text, HStack, Badge, Icon, Flex, useColorModeValue, Grid, GridItem
 } from '@chakra-ui/react';
 import {
     MdPerson, MdDriveEta, MdLocationOn, MdSchedule, MdAttachMoney,
-    MdAssignment, MdReceipt, MdBusiness
+    MdAssignment, MdBusiness
 } from 'react-icons/md';
 
 const ContractDetailModal = ({ isOpen, onClose, contract }) => {
     const textColor = useColorModeValue('secondaryGray.900', 'white');
-    const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
     const cardBg = useColorModeValue('gray.50', 'gray.700');
     const greenBg = useColorModeValue('green.50', 'green.900');
     const greenBorder = useColorModeValue('green.200', 'green.700');

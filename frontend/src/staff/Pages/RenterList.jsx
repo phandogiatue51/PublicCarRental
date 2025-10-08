@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box,    Button,    Flex,    Icon,    Table,    Tbody,    Td,    Text,    Th,    Thead,    Tr,    useColorModeValue,    Spinner,    Alert,
-    AlertIcon,    AlertTitle,    AlertDescription,    Badge,    Select,    HStack,    useToast,    Tooltip,    Modal,    ModalOverlay,
+    AlertIcon,    AlertTitle,    AlertDescription,    Badge,    Select,    HStack,    Tooltip,    Modal,    ModalOverlay,
     ModalContent,    ModalHeader,    ModalBody,    ModalCloseButton,    VStack,    Divider
 } from '@chakra-ui/react';
 import {
@@ -21,7 +21,6 @@ const RenterList = () => {
     const [sorting, setSorting] = useState([]);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedRenter, setSelectedRenter] = useState(null);
-    const toast = useToast();
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);

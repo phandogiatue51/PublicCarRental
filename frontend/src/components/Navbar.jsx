@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "../images/logo/logo.png";
 import { useState } from "react";
-import { use } from "react";
 
 function Navbar() {
   const [nav, setNav] = useState(false);

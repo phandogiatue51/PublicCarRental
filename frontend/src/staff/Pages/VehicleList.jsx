@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue, Spinner, Alert,
-    AlertIcon, AlertTitle, AlertDescription, Badge, Select, HStack, useToast, Tooltip, Modal, ModalOverlay, ModalContent,
+    AlertIcon, AlertTitle, AlertDescription, Badge, Select, HStack, Modal, ModalOverlay, ModalContent,
     ModalHeader, ModalBody, ModalCloseButton, VStack, Divider, Progress
 } from '@chakra-ui/react';
 import {
     createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable
 } from '@tanstack/react-table';
 import {
-    MdChevronLeft, MdChevronRight, MdDriveEta, MdLocationOn, MdRefresh, MdVisibility, MdBattery6Bar
+    MdChevronLeft, MdChevronRight, MdDriveEta, MdLocationOn, MdRefresh, MdBattery6Bar
 } from 'react-icons/md';
 import { vehicleAPI, modelAPI, brandAPI, typeAPI, stationAPI } from '../../services/api';
 
@@ -21,7 +21,6 @@ const VehicleList = () => {
     const [sorting, setSorting] = useState([]);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedVehicle, setSelectedVehicle] = useState(null);
-    const toast = useToast();
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);

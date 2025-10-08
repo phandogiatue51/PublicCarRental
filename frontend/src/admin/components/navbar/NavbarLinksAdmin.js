@@ -1,19 +1,7 @@
 // Chakra Imports
 import {
-  Avatar,
-  Button,
-  Flex,
-  Icon,
-  Image,
-  Link,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-  Text,
-  useColorModeValue,
-  useColorMode,
-} from '@chakra-ui/react';
+  Avatar,  Button,  Flex,  Icon,  Menu,  MenuButton,  MenuItem,  MenuList,  Text,  useColorModeValue,
+  useColorMode,} from '@chakra-ui/react';
 // Custom Components
 import { ItemContent } from './../../components/menu/ItemContent';
 import { SearchBar } from './../navbar/searchBar/SearchBar';
@@ -21,7 +9,7 @@ import { SidebarResponsive } from './../sidebar/Sidebar';
 import PropTypes from 'prop-types';
 import React from 'react';
 // Assets
-import { MdNotificationsNone, MdInfoOutline } from 'react-icons/md';
+import { MdNotificationsNone} from 'react-icons/md';
 import { IoMdMoon, IoMdSunny } from 'react-icons/io';
 import { FaEthereum } from 'react-icons/fa';
 import routes from '../../routes.js';
@@ -41,7 +29,6 @@ export default function HeaderLinks(props) {
     '14px 17px 40px 4px rgba(112, 144, 176, 0.18)',
     '14px 17px 40px 4px rgba(112, 144, 176, 0.06)',
   );
-  const borderButton = useColorModeValue('secondaryGray.500', 'whiteAlpha.200');
   return (
     <Flex
       w={{ sm: '100%', md: 'auto' }}
