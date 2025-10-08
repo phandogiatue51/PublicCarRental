@@ -78,7 +78,6 @@ public class ModelService : BaseCachedService, IModelService
         if (imageFile != null && imageFile.Length > 0)
         {
             model.ImageUrl = await _imageStorageService.UploadImageAsync(imageFile);
-
         }
 
         _repo.Create(model);

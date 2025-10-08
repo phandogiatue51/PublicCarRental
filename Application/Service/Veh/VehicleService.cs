@@ -124,6 +124,14 @@ namespace PublicCarRental.Application.Service.Veh
             {
                 _repo.Create(vehicle);
 
+                await _cache.InvalidateAsync(
+                    CreateCacheKey("all_vehicles"),
+                    CreateCacheKey("vehicle", vehicle.VehicleId),
+                    CreateCacheKey("vehicles_filter_*"),
+                    CreateCacheKey("stations_by_model_*"),    
+                    CreateCacheKey("available_vehicle_*")     
+                );
+
                 return (true, "Vehicle created successfully.", vehicle.VehicleId);
             }
             catch (Exception ex)
@@ -154,6 +162,14 @@ namespace PublicCarRental.Application.Service.Veh
             {
                 _repo.Update(existing);
 
+                await _cache.InvalidateAsync(
+                    CreateCacheKey("all_vehicles"),
+                    CreateCacheKey("vehicle", id),
+                    CreateCacheKey("vehicles_filter_*"),
+                    CreateCacheKey("stations_by_model_*"),
+                    CreateCacheKey("available_vehicle_*")
+                );
+
                 return (true, "Vehicle updated successfully.");
             }
             catch (Exception ex)
@@ -170,26 +186,47 @@ namespace PublicCarRental.Application.Service.Veh
 
             _repo.Delete(id);
 
+            await _cache.InvalidateAsync(
+                CreateCacheKey("all_vehicles"),
+                CreateCacheKey("vehicle", id),
+                CreateCacheKey("vehicles_filter_*"),
+                CreateCacheKey("stations_by_model_*"),
+                CreateCacheKey("available_vehicle_*")
+            );
             return true;
         }
 
-        public Vehicle GetFirstAvailableVehicleByModel(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd)
-            => _repo.GetFirstAvailableVehicleByModel(modelId, stationId, requestedStart, requestedEnd);
+        public async Task<Vehicle> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd)
+        {
+            var cacheKey = CreateCacheKey("available_vehicle", modelId, stationId, requestedStart.Date, requestedEnd.Date);
+
+            return await _cache.GetOrSetAsync(cacheKey, async () =>
+            {
+                return _repo.GetFirstAvailableVehicleByModel(modelId, stationId, requestedStart, requestedEnd);
+            }, TimeSpan.FromMinutes(5)); 
+        }
 
         public Vehicle GetEntityById(int id) => _repo.GetById(id);
 
-        public IEnumerable<StationDtoForView> GetStationFromModel(int modelId)
-            => _repo.GetAll()
-                .Where(v => v.ModelId == modelId)
-                .Where(v => v.Station != null)
-                .Select(v => new StationDtoForView
-                {
-                    Name = v.Station.Name,
-                    Address = v.Station.Address,
-                    Latitude = v.Station.Latitude,
-                    Longitude = v.Station.Longitude
-                })
-                .Distinct()
-                .ToList();      
+        public async Task<IEnumerable<StationDtoForView>> GetStationFromModelAsync(int modelId)
+        {
+            var cacheKey = CreateCacheKey("stations_by_model", modelId);
+
+            return await _cache.GetOrSetAsync(cacheKey, async () =>
+            {
+                return _repo.GetAll()
+                    .Where(v => v.ModelId == modelId)
+                    .Where(v => v.Station != null)
+                    .Select(v => new StationDtoForView
+                    {
+                        Name = v.Station.Name,
+                        Address = v.Station.Address,
+                        Latitude = v.Station.Latitude,
+                        Longitude = v.Station.Longitude
+                    })
+                    .Distinct()
+                    .ToList();
+            }, TimeSpan.FromMinutes(15)); 
+        }
     }
 }

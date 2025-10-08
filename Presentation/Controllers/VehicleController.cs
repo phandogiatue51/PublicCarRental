@@ -61,13 +61,13 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("available-vehicles")]
-        public IActionResult GetAvailableVehicles(
+        public async Task<IActionResult> GetAvailableVehiclesAsync(
              [FromQuery] int modelId,
              [FromQuery] int stationId,
              [FromQuery] DateTime startTime,
              [FromQuery] DateTime endTime)
         {
-            var vehicles = _service.GetFirstAvailableVehicleByModel(modelId, stationId, startTime, endTime);
+            var vehicles = await _service.GetFirstAvailableVehicleByModelAsync(modelId, stationId, startTime, endTime);
             if (vehicles == null) return NotFound(new { message = "No available vehicles found" });
             return Ok("You can rent this vehicle!");
         }
