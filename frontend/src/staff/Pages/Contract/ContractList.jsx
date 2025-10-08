@@ -9,8 +9,8 @@ import {
 } from '@tanstack/react-table';
 import { contractAPI } from '../../../services/api';
 import {
-    MdChevronLeft, MdChevronRight, MdPerson, MdDriveEta, MdLocationOn, MdRefresh,
-    MdVisibility, MdAttachMoney, MdSchedule, MdAssignment, MdPhotoLibrary, MdDirectionsCar, MdExitToApp
+    MdChevronLeft, MdChevronRight, MdDriveEta, MdRefresh,
+    MdVisibility, MdSchedule, MdPhotoLibrary, MdDirectionsCar, MdExitToApp
 } from 'react-icons/md';
 
 // Custom components
@@ -43,7 +43,6 @@ const ContractList = () => {
     const textColor = useColorModeValue('secondaryGray.900', 'white');
     const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
     const brandColor = useColorModeValue('brand.500', 'white');
-    const cardBg = useColorModeValue('white', 'gray.800');
 
     // Fetch contracts from API
     const fetchContracts = async () => {
@@ -97,15 +96,6 @@ const ContractList = () => {
     const goToLastPage = useCallback(() => setCurrentPage(totalPages), [totalPages]);
     const goToPreviousPage = useCallback(() => setCurrentPage(prev => Math.max(prev - 1, 1)), []);
     const goToNextPage = useCallback(() => setCurrentPage(prev => Math.min(prev + 1, totalPages)), [totalPages]);
-
-    // Format currency helper function
-    const formatCurrency = (amount) => {
-        if (amount === null || amount === undefined) return 'N/A';
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND'
-        }).format(amount);
-    };
 
     // Handle refresh
     const handleRefresh = useCallback(() => {
