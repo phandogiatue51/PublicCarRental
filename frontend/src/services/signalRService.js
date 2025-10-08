@@ -1,7 +1,5 @@
 import {
-  HubConnectionBuilder,
-  LogLevel,
-  HttpTransportType
+  HubConnectionBuilder,  LogLevel,  HttpTransportType
 } from '@microsoft/signalr';
 
 class SignalRService {
@@ -79,4 +77,5 @@ class SignalRService {
   }
 }
 
-export default new SignalRService();
+const signalRService = new SignalRService();
+export default signalRService;
