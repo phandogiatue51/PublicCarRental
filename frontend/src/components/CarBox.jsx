@@ -18,8 +18,16 @@ function CarBox({ data, carID }) {
           </div>
           {/* description */}
           <div className="pick-description">
-            <div className="pick-description__price">
-              <span>${car.price}</span>/ rent per day
+                  <div className="pick-description__price "
+                      style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          width: "100%",
+                          textAlign: "center"
+                      }}
+                  >
+                      <span>${car.price} / Day</span>
             </div>
             <div className="pick-description__table">
               <div className="pick-description__table__col">
@@ -59,7 +67,7 @@ function CarBox({ data, carID }) {
             </div>
             {/* btn cta */}
             <a className="cta-btn" href="#booking-section">
-              Reserve Now
+              View Detail
             </a>
           </div>
         </div>
