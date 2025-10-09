@@ -35,7 +35,7 @@ namespace PublicCarRental.Application.Service.Stat
                         VehicleCount = s.Vehicles != null ? s.Vehicles.Count : 0,
                         StaffCount = s.StaffMembers != null ? s.StaffMembers.Count : 0
                     }).ToList();
-            }, TimeSpan.FromMinutes(15)); // Stations change rarely
+            }, TimeSpan.FromMinutes(15)); 
         }
 
         public async Task<StationDto?> GetByIdAsync(int id)
@@ -75,6 +75,8 @@ namespace PublicCarRental.Application.Service.Stat
             };
             _repo.Create(station);
 
+            await _cache.InvalidateAsync(CreateCacheKey("all_stations"));
+
             return station.StationId;
         }
 
@@ -105,7 +107,6 @@ namespace PublicCarRental.Application.Service.Stat
             if (existing == null) return (false, "Station does not exist");
             try
             {
-
                 _repo.Delete(id);
 
                 await _cache.InvalidateAsync(

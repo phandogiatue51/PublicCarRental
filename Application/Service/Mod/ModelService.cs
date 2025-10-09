@@ -40,24 +40,26 @@ public class ModelService : BaseCachedService, IModelService
         }, TimeSpan.FromMinutes(30));
     }
 
-    public IEnumerable<ModelDto> GetAllModels()
-        => GetAllModelsAsync().GetAwaiter().GetResult();
-
-    public ModelDto GetById(int id)
+    public async Task<ModelDto> GetByIdAsync(int id)
     {
-        var m = _repo.GetById(id);
-        if (m == null) return null;
-        return new ModelDto
+        var cacheKey = CreateCacheKey("model", id);
+        return await _cache.GetOrSetAsync(cacheKey, async () =>
         {
-            ModelId = m.ModelId,
-            Name = m.Name,
-            BrandId = m.BrandId,
-            BrandName = m.Brand?.Name,
-            TypeId = m.TypeId,
-            TypeName = m.Type?.Name,
-            PricePerHour = m.PricePerHour,
-            ImageUrl = m.ImageUrl
-        };
+            var m = _repo.GetById(id);
+            if (m == null) return null;
+
+            return new ModelDto
+            {
+                ModelId = m.ModelId,
+                Name = m.Name,
+                BrandId = m.BrandId,
+                BrandName = m.Brand?.Name,
+                TypeId = m.TypeId,
+                TypeName = m.Type?.Name,
+                PricePerHour = m.PricePerHour,
+                ImageUrl = m.ImageUrl
+            };
+        }, TimeSpan.FromMinutes(30)); 
     }
 
     public VehicleModel GetEntityById(int id)
@@ -78,11 +80,14 @@ public class ModelService : BaseCachedService, IModelService
         if (imageFile != null && imageFile.Length > 0)
         {
             model.ImageUrl = await _imageStorageService.UploadImageAsync(imageFile);
-
         }
 
         _repo.Create(model);
 
+        await _cache.InvalidateAsync(
+           CreateCacheKey("all_models"),
+           CreateCacheKey("models_filter_*")
+       );
         return model.ModelId;
     }
 
@@ -105,6 +110,11 @@ public class ModelService : BaseCachedService, IModelService
 
         _repo.Update(existing);
 
+        await _cache.InvalidateAsync(
+            CreateCacheKey("all_models"),
+            CreateCacheKey("models_filter_*")
+        );
+
         return true;
     }
 
@@ -114,6 +124,11 @@ public class ModelService : BaseCachedService, IModelService
         if (existing == null) return false;
 
         _repo.Delete(id);
+
+        await _cache.InvalidateAsync(
+        CreateCacheKey("all_models"),
+        CreateCacheKey("models_filter_*")
+        );
 
         return true;
     }
@@ -149,25 +164,29 @@ public class ModelService : BaseCachedService, IModelService
     public IEnumerable<ModelDto> GetModelsByFilters(int? brandId, int? typeId, int? stationId)
         => GetModelsByFiltersAsync(brandId, typeId, stationId).GetAwaiter().GetResult();
 
-    public IEnumerable<StationDtoForView> GetStationsByModel(int modelId)
+    public async Task<IEnumerable<StationDtoForView>> GetStationsByModelAsync(int modelId)
     {
-        var model = _repo.GetAll()
-            .Include(m => m.Vehicles)
-            .ThenInclude(v => v.Station)
-            .FirstOrDefault(m => m.ModelId == modelId);
+        var cacheKey = CreateCacheKey("stations_by_model", modelId);
+        return await _cache.GetOrSetAsync(cacheKey, async () =>
+        {
+            var model = _repo.GetAll()
+                .Include(m => m.Vehicles)
+                .ThenInclude(v => v.Station)
+                .FirstOrDefault(m => m.ModelId == modelId);
 
-        if (model == null)
-            return Enumerable.Empty<StationDtoForView>();
+            if (model == null)
+                return Enumerable.Empty<StationDtoForView>();
 
-        return model.Vehicles
-            .Where(v => v.Status == VehicleStatus.Available)
-            .GroupBy(v => v.Station)
-            .Select(g => new StationDtoForView
-            {
-                Name = g.Key.Name,
-                Address = g.Key.Address,
-                Latitude = g.Key.Latitude,
-                Longitude = g.Key.Longitude,
-            }).ToList();
+            return model.Vehicles
+                .Where(v => v.Status == VehicleStatus.Available)
+                .GroupBy(v => v.Station)
+                .Select(g => new StationDtoForView
+                {
+                    Name = g.Key.Name,
+                    Address = g.Key.Address,
+                    Latitude = g.Key.Latitude,
+                    Longitude = g.Key.Longitude,
+                }).ToList();
+        }, TimeSpan.FromMinutes(15));
     }
 }

@@ -16,39 +16,39 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("get-all")]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAllAsync()
         {
-            var brands = _service.GetAll(); 
+            var brands = await _service.GetAllAsync(); 
             return Ok(brands);
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetByIdAsync(int id)
         {
-            var brand = _service.GetById(id);
+            var brand = await _service.GetByIdAsync(id);
             if (brand == null) return NotFound();
             return Ok(brand);
         }
 
         [HttpPost("create-brand")]
-        public IActionResult Create([FromBody] BrandUpdateDto dto)
+        public async Task<IActionResult> CreateAsync([FromBody] BrandUpdateDto dto)
         {
-            var brand = _service.CreateBrand(dto);
+            var brand = await _service.CreateBrandAsync(dto);
             return Ok(new { message = "Brand created", brandId = brand});
         }
 
         [HttpPut("update-brand/{id}")]
-        public IActionResult Update(int id, [FromBody] BrandUpdateDto dto)
+        public async Task<IActionResult> UpdateAsync(int id, [FromBody] BrandUpdateDto dto)
         {
-            var success = _service.UpdateBrand(id, dto);
+            var success = await _service.UpdateBrandAsync(id, dto);
             if (!success) return NotFound(new { message = "Brand not found" });
             return Ok(new { message = "Brand updated" });
         }
 
         [HttpDelete("delete-brand/{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> DeleteAsync(int id)
         {
-            var success = _service.DeleteBrand(id);
+            var success = await _service.DeleteBrandAsync(id);
             if (!success) return NotFound();
             return Ok(new { message = "Brand deleted" });
         }

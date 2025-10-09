@@ -20,16 +20,16 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("get-all")]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
-            var models = _service.GetAllModelsAsync();
+            var models = await _service.GetAllModelsAsync();
             return Ok(models);
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetByIdAsync(int id)
         {
-            var model = _service.GetById(id);
+            var model = await _service.GetByIdAsync(id);
             if (model == null) return NotFound();
             return Ok(model);
         }
@@ -52,25 +52,24 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpDelete("delete-model/{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> DeleteAsync(int id)
         {
-            var success = _service.DeleteModel(id);
+            var success = await _service.DeleteModelAsync(id);
             if (!success) return NotFound();
             return Ok(new { message = "Model deleted" });
         }
 
         [HttpGet("filter-models")]
-        public IActionResult GetModelFromBrandAndType([FromQuery] int? brandId, [FromQuery] int? typeId, [FromQuery] int? stationId)
+        public async Task<IActionResult> GetModelFromBrandAndTypeAsync([FromQuery] int? brandId, [FromQuery] int? typeId, [FromQuery] int? stationId)
         {
-            var models = _service.GetModelsByFiltersAsync(brandId, typeId, stationId)
-                .GetAwaiter().GetResult();
+            var models = await _service.GetModelsByFiltersAsync(brandId, typeId, stationId);
             return Ok(models);
         }
 
         [HttpPost("check-available")]
-        public IActionResult CheckAvailability([FromBody] AvailableVehicle dto)
+        public async Task<IActionResult> CheckAvailabilityAsync([FromBody] AvailableVehicle dto)
         {
-            var vehicle = _vehicleService.GetFirstAvailableVehicleByModel(dto.ModelId, dto.StationId, dto.StartTime, dto.EndTime);
+            var vehicle = await _vehicleService.GetFirstAvailableVehicleByModelAsync(dto.ModelId, dto.StationId, dto.StartTime, dto.EndTime);
             if (vehicle == null)
             {
                 return NotFound($"No available vehicle found for model ID {dto.ModelId} at station ID {dto.StationId} between {dto.StartTime:g} and {dto.EndTime:g}.");
@@ -79,9 +78,9 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("get-station-from-model/{modelId}")]
-        public IActionResult GetStation(int modelId)
+        public async Task<IActionResult> GetStationAsync(int modelId)
         {
-            var models = _vehicleService.GetStationFromModel(modelId);
+            var models = await _vehicleService.GetStationFromModelAsync(modelId);
             return Ok(models);
         }
     }

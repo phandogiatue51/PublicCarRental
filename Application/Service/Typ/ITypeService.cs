@@ -4,7 +4,7 @@ namespace PublicCarRental.Application.Service.Typ
 {
     public interface ITypeService
     {
-        public IEnumerable<TypeDto> GetAllTypes();
-        public TypeDto GetById(int id);
+        Task<IEnumerable<TypeDto>> GetAllTypesAsync();
+        Task<TypeDto> GetByIdAsync(int id);
     }
 }

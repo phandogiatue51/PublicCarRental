@@ -13,7 +13,6 @@ namespace PublicCarRental.Application.Service.Redis
             _cache = cache;
             _logger = logger;
         }
-
         public async Task<T> GetOrSetAsync<T>(string cacheKey, Func<Task<T>> dataFetchFunction, TimeSpan? expiration = null)
         {
             try
@@ -21,11 +20,11 @@ namespace PublicCarRental.Application.Service.Redis
                 var cachedData = await _cache.GetStringAsync(cacheKey);
                 if (!string.IsNullOrEmpty(cachedData))
                 {
-                    _logger.LogDebug("Cache hit for {CacheKey}", cacheKey);
+                    _logger.LogInformation("CACHE HIT for {CacheKey}", cacheKey); 
                     return JsonSerializer.Deserialize<T>(cachedData);
                 }
 
-                _logger.LogDebug("Cache miss for {CacheKey}", cacheKey);
+                _logger.LogInformation("CACHE MISS for {CacheKey}", cacheKey);
                 var data = await dataFetchFunction();
 
                 if (data != null)
@@ -35,6 +34,7 @@ namespace PublicCarRental.Application.Service.Redis
                         AbsoluteExpirationRelativeToNow = expiration ?? TimeSpan.FromMinutes(5)
                     };
                     await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(data), options);
+                    _logger.LogInformation("CACHED data for {CacheKey}", cacheKey); // Added cache set log
                 }
 
                 return data;

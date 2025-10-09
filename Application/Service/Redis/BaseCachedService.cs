@@ -13,7 +13,14 @@
 
         protected virtual string CreateCacheKey(string prefix, params object[] parameters)
         {
-            var paramString = string.Join("_", parameters.Where(p => p != null));
+            var validParams = parameters.Where(p => p != null).ToArray();
+
+            if (validParams.Length == 0)
+            {
+                return prefix.ToLowerInvariant(); 
+            }
+
+            var paramString = string.Join("_", validParams);
             return $"{prefix}_{paramString}".ToLowerInvariant();
         }
     }

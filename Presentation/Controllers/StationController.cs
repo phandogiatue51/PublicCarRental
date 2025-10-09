@@ -16,16 +16,16 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("all-stations")]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAllAsync()
         {
-            var stations = _stationService.GetAllAsync().GetAwaiter().GetResult();
+            var stations = await _stationService.GetAllAsync();
             return Ok(stations);
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetByIdAsync(int id)
         {
-            var station = _stationService.GetByIdAsync(id).GetAwaiter().GetResult();
+            var station = await _stationService.GetByIdAsync(id);
             if (station == null)
                 return NotFound(new { message = "Station not found" });
 
@@ -33,16 +33,16 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpPost("create-station")]
-        public IActionResult CreateStation([FromBody] StationUpdateDto dto)
+        public async Task<IActionResult> CreateStationAsync([FromBody] StationUpdateDto dto)
         {
-            var station = _stationService.CreateStationAsync(dto);
+            var station = await _stationService.CreateStationAsync(dto);
             return Ok(new { message = "Station created", stationId = station });
         }
 
         [HttpPut("update-station/{id}")]
-        public IActionResult EditStation(int id, [FromBody] StationUpdateDto dto)
+        public async Task<IActionResult> EditStationAsync(int id, [FromBody] StationUpdateDto dto)
         {
-            var success = _stationService.UpdateStationAsync(id, dto);
+            var success = await _stationService.UpdateStationAsync(id, dto);
             return Ok(new { message = "Station updated", stationId = id });
         }
 
