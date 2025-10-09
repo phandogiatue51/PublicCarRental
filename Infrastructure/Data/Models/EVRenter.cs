@@ -9,8 +9,8 @@ namespace PublicCarRental.Infrastructure.Data.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int RenterId { get; set; }
         public int AccountId { get; set; }
+        public string? LicenseNumber { get; set; }
         public Account Account { get; set; }
-        public string LicenseNumber { get; set; }
 
         public ICollection<RentalContract> RentalContracts { get; set; }
     }

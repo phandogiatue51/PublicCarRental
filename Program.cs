@@ -23,6 +23,7 @@ using PublicCarRental.Application.Service.Typ;
 using PublicCarRental.Application.Service.Veh;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Models.Configuration;
+using PublicCarRental.Infrastructure.Data.Repository;
 using PublicCarRental.Infrastructure.Data.Repository.Acc;
 using PublicCarRental.Infrastructure.Data.Repository.Bran;
 using PublicCarRental.Infrastructure.Data.Repository.Cont;
@@ -181,8 +182,8 @@ builder.Services.AddHostedService<StaffNotificationConsumer>();
 builder.Services.AddScoped<StaffNotificationService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IImageStorageService, CloudinaryService>();
-
-
+builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
+builder.Services.AddScoped<IDocumentService,  DocumentService>();
 
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");

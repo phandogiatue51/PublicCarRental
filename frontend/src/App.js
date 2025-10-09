@@ -14,6 +14,7 @@ import SignUp from "./Pages/SignUp";
 import AccountTabs from "./Pages/Account/AccountTabs";
 import ForgotPassword from "./Pages/Account/ForgotPassword";
 import NotificationToast from './components/NotificationToast';
+import ModelDetail from './Pages/ModelDetail';
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
               <Route path="sign-up" element={<SignUp />} />
               <Route path="account" element={<AccountTabs />} />
               <Route path="forgot-password" element={<ForgotPassword />} />
+              <Route path="model-detail" element={<ModelDetail/>} />
             </Routes>
           </>
         } />

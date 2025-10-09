@@ -2,7 +2,7 @@
 
 namespace PublicCarRental.Application.DTOs.Acc
 {
-    public class AccountDto
+    public class EVRenterCreateDto
     {
         [Required]
         public string FullName { get; set; }
@@ -14,6 +14,7 @@ namespace PublicCarRental.Application.DTOs.Acc
         public string PhoneNumber { get; set; }
         [Required]
         public string IdentityCardNumber { get; set; }
+        [Required]
         public string LicenseNumber { get; set; }
     }
 }

@@ -1,16 +1,20 @@
 ﻿using PublicCarRental.Application.DTOs.Staf;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Staf;
+using PublicCarRental.Infrastructure.Helpers;
 
 namespace PublicCarRental.Application.Service.Staf
 {
     public class StaffService : IStaffService
     {
         private readonly IStaffRepository _staffRepo;
+        private readonly PasswordHelper _passwordHelper;
 
-        public StaffService(IStaffRepository staffRepo)
+
+        public StaffService(IStaffRepository staffRepo, PasswordHelper passwordHelper)
         {
             _staffRepo = staffRepo;
+            _passwordHelper = passwordHelper;
         }
 
         public IEnumerable<StaffReadDto> GetAllStaff()
@@ -23,9 +27,9 @@ namespace PublicCarRental.Application.Service.Staf
                     FullName = s.Account.FullName,
                     Email = s.Account.Email,
                     PhoneNumber = s.Account.PhoneNumber,
-                    IdentityCardNumber = s.Account.IdentityCardNumber,
                     StationId = s.StationId,
-                    Status = s.Account.Status
+                    Status = s.Account.Status,
+                    IdentityCardNumber = s.Account.IdentityCardNumber
                 }).ToList();
         }
 
@@ -40,9 +44,9 @@ namespace PublicCarRental.Application.Service.Staf
                 FullName = staff.Account.FullName,
                 Email = staff.Account.Email,
                 PhoneNumber = staff.Account.PhoneNumber,
-                IdentityCardNumber = staff.Account.IdentityCardNumber,
                 StationId = staff.StationId,
-                Status = staff.Account.Status
+                Status = staff.Account.Status,
+                IdentityCardNumber = staff.Account.IdentityCardNumber
             };
         }
 
@@ -61,12 +65,10 @@ namespace PublicCarRental.Application.Service.Staf
             staff.Account.PhoneNumber = updatedStaff.PhoneNumber;
             staff.Account.IdentityCardNumber = updatedStaff.IdentityCardNumber;
 
-            // Only update password if provided
             if (!string.IsNullOrEmpty(updatedStaff.Password))
             {
-                // You would need to hash the password here
-                // For now, we'll assume the AccountService has a method to update password
-                // staff.Account.PasswordHash = HashPassword(updatedStaff.Password);
+                staff.Account.PasswordHash = _passwordHelper.HashPassword(updatedStaff.Password);
+
             }
 
             staff.StationId = updatedStaff.StationId;

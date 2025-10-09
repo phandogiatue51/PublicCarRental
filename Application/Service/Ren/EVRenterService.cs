@@ -122,17 +122,17 @@ namespace PublicCarRental.Application.Service.Ren
             return true;
         }
 
-        public async Task<(bool Success, string Message)> CreateRenterAsync (int accountId, AccountDto dto)
+        public async Task<(bool Success, string Message)> CreateRenterAsync (int accountId, string license)
         {
             try
             {
-                if (_renterRepo.Exists(a => a.LicenseNumber == dto.LicenseNumber))
+                if (_renterRepo.Exists(a => a.LicenseNumber == license))
                     return (false, "License is already registered.");
 
                 var renter = new EVRenter
                 {
                     AccountId = accountId,
-                    LicenseNumber = dto.LicenseNumber
+                    LicenseNumber = license
                 };
 
                 _renterRepo.Create(renter);

@@ -49,7 +49,7 @@ namespace PublicCarRental.Application.Service.Acc
             _accountRepo.Delete(id);
         }
 
-        public (bool Success, string Message, int? AccountId) CreateAccount(AccountDto dto, AccountRole role)
+        public (bool Success, string Message, int? AccountId) CreateAccount(BaseAccountDto dto, AccountRole role)
         {
             try
             {
@@ -60,7 +60,7 @@ namespace PublicCarRental.Application.Service.Acc
                     return (false, "Phone number is already registered.", null);
 
                 if (_accountRepo.Exists(a => a.IdentityCardNumber == dto.IdentityCardNumber))
-                    return (false, "Identity card number is already registered.", null);
+                    return (false, "Identity card is already registered.", null);
 
                 var hashedPassword = _passwordHelper.HashPassword(dto.Password);
 
@@ -71,8 +71,8 @@ namespace PublicCarRental.Application.Service.Acc
                     PasswordHash = hashedPassword,
                     Role = role,
                     PhoneNumber = dto.PhoneNumber,
-                    IdentityCardNumber = dto.IdentityCardNumber,
                     RegisteredAt = DateTime.UtcNow,
+                    IdentityCardNumber = dto.IdentityCardNumber,
                     Status = AccountStatus.Active
                 };
 

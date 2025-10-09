@@ -24,16 +24,17 @@ namespace PublicCarRental.Infrastructure.Data.Models
         public string Email { get; set; }
         public string PasswordHash { get; set; }
         public string? PhoneNumber { get; set; }
-        public string? IdentityCardNumber { get; set; }
         public AccountStatus Status { get; set; } = AccountStatus.Active;
         public DateTime RegisteredAt { get; set; }
         public AccountRole Role { get; set; }
         public string? EmailVerificationToken { get; set; }
         public bool IsEmailVerified { get; set; } = false;
-
+        public string? IdentityCardNumber { get; set; }
         public string? PasswordResetToken { get; set; }
         public DateTime? PasswordResetRequestedAt { get; set; }
 
         public ICollection<Favorite> Favorites { get; set; }
+        public virtual ICollection<AccountDocument> AccountDocuments { get; set; }
+
     }
 }
