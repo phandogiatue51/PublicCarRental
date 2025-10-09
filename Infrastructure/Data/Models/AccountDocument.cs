@@ -9,7 +9,6 @@
 
         public DocumentType Type { get; set; }
         public string FileUrl { get; set; }
-        public string PublicId { get; set; } 
         public DocumentSide Side { get; set; }
         public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
         public bool IsVerified { get; set; } = false;

@@ -26,6 +26,21 @@ namespace PublicCarRental.Presentation.Controllers
             _documentSerivce = documentService;
         }
 
+        [HttpGet("get-all")]
+        public IActionResult GetAll()
+        {
+            var accounts = _accountService.GetAllAccounts();
+            return Ok(accounts);
+        }
+
+        [HttpGet("/{id}")]
+        public IActionResult GetById(int id)
+        {
+            var account = _accountService.GetAccountById(id);
+            return Ok(account);
+        }
+
+
         [HttpPost("register")]
         public async Task<IActionResult> RegisterRenterAsync(EVRenterCreateDto dto)
         {
@@ -187,13 +202,6 @@ namespace PublicCarRental.Presentation.Controllers
                 return Ok(new { result.message });
             else
                 return BadRequest(new { error = result.message });
-        }
-
-        [HttpPost("{accountId}/upload-documents")]
-        public async Task<IActionResult> UploadDocuments(int accountId, [FromForm] UploadRenterDocumentsDto documentsDto)
-        {
-            await _documentSerivce.UploadRenterDocumentsAsync(accountId, documentsDto);
-            return Ok(new { Message = "Documents uploaded for verification" });
         }
     }
 }

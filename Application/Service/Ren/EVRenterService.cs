@@ -30,6 +30,7 @@ namespace PublicCarRental.Application.Service.Ren
                 .Select(r => new EVRenterDto
                 {
                     RenterId = r.RenterId,
+                    AccountId = r.AccountId,
                     FullName = r.Account.FullName,
                     Email = r.Account.Email,
                     PhoneNumber = r.Account.PhoneNumber,
@@ -48,6 +49,7 @@ namespace PublicCarRental.Application.Service.Ren
             return new EVRenterDto
             {
                 RenterId = r.RenterId,
+                AccountId = r.AccountId,
                 FullName = r.Account.FullName,
                 Email = r.Account.Email,
                 PhoneNumber = r.Account.PhoneNumber,

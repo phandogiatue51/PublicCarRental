@@ -24,6 +24,7 @@ namespace PublicCarRental.Application.Service.Staf
                 .Select(s => new StaffReadDto
                 {
                     StaffId = s.StaffId,
+                    AccountId = s.AccountId,
                     FullName = s.Account.FullName,
                     Email = s.Account.Email,
                     PhoneNumber = s.Account.PhoneNumber,
@@ -41,6 +42,7 @@ namespace PublicCarRental.Application.Service.Staf
             return new StaffReadDto
             {
                 StaffId = staff.StaffId,
+                AccountId = staff.AccountId,
                 FullName = staff.Account.FullName,
                 Email = staff.Account.Email,
                 PhoneNumber = staff.Account.PhoneNumber,

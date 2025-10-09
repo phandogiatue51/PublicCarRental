@@ -1,30 +1,67 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using PublicCarRental.Infrastructure.Data.Models;
+using PublicCarRental.Application.DTOs.Docu;
 
-[ApiController]
-[Route("api/admin/[controller]")]
-[Authorize(Roles = "Admin,Staff")]
-public class DocumentVerificationController : ControllerBase
+namespace PublicCarRental.Presentation.Controllers
 {
-    private readonly IDocumentService _documentService;
-
-    public DocumentVerificationController(IDocumentService documentService)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class DocumentController : ControllerBase
     {
-        _documentService = documentService;
-    }
+        private readonly IDocumentService _documentService;
 
-    [HttpGet("pending-verifications")]
-    public async Task<IActionResult> GetPendingVerifications(DocumentType? documentType = null)
-    {
-        var allDocuments = await _documentService.GetAllUnverifiedDocumentsAsync(documentType);
-        return Ok(allDocuments);
-    }
+        public DocumentController(IDocumentService documentService)
+        {
+            _documentService = documentService;
+        }
 
-    [HttpPost("verify/{accountId}")]
-    public async Task<IActionResult> VerifyUserDocuments(int accountId, int staffId, DocumentType? documentType = null)
-    {
-        await _documentService.VerifyDocumentsAsync(accountId, staffId, documentType);
-        return Ok(new { message = "Documents verified successfully" });
+        [HttpGet("get-all")]
+        public async Task<IActionResult> GetAll()
+        {
+            var result = await _documentService.GetAllAsync();
+            return Ok(result);
+        }
+
+        [HttpGet("{accountId}")]
+        public async Task<IActionResult> GetByAccountId(int accountId)
+        {
+            var result = await _documentService.GetUserDocumentsAsync(accountId);
+            return Ok(result);
+        }
+
+        [HttpPost("upload-staff-id")]
+        public async Task<IActionResult> UploadStaffIdentityCard([FromQuery] int staffAccountId, [FromForm] UploadDocumentDto dto)
+        {
+            var result = await _documentService.UploadStaffIdentityCardAsync(staffAccountId, dto);
+            return Ok(new { success = result });
+        }
+
+        [HttpPost("upload-renter/{accountId}")]
+        public async Task<IActionResult> UploadDocument(int accountId, [FromForm] UploadDocumentDto dto)
+        {
+            var result = await _documentService.UploadDocumentAsync(accountId, dto);
+            return Ok(result);
+        }
+
+        [HttpPost("upload-renter-all/{accountId}")]
+        public async Task<IActionResult> UploadAllDocuments(int accountId, [FromForm] UploadRenterDocumentsDto dto)
+        {
+            var result = await _documentService.UploadRenterDocumentsAsync(accountId, dto);
+            return Ok(new { success = result });
+        }
+
+        [HttpPost("staff-verify-renter/{staffId}")]
+        public async Task<IActionResult> VerifyRenterDocuments(int staffId, [FromBody] VerifyDocumentsDto dto)
+        {
+            var result = await _documentService.VerifyDocumentsAsync(dto.AccountId, staffId, dto.DocumentType);
+            return Ok(new { success = result });
+        }
+
+        [HttpGet("filter-document")]
+        public async Task<IActionResult> GetDocuments([FromQuery] bool? isVerified = null)
+        {
+            var result = await _documentService.GetAllDocumentsByStatusAsync(isVerified);
+            return Ok(result);
+        }
     }
 }

@@ -29,14 +29,32 @@ namespace PublicCarRental.Application.Service.Acc
             _emailProducer = emailProducer;
         }
 
-        public Account GetAccountById(int id)
+        public AccountDto GetAccountById(int id)
         {
-            return _accountRepo.GetById(id);
+            var account = _accountRepo.GetById(id);
+            return new AccountDto
+            {
+                Id = account.AccountId,
+                FullName = account.FullName,
+                PhoneNumber = account.PhoneNumber,
+                Email = account.Email,
+                IdentityCardNumber = account.IdentityCardNumber,
+                Role = account.Role,
+            };
         }
 
-        public IEnumerable<Account> GetAllAccounts()
+        public IEnumerable<AccountDto> GetAllAccounts()
         {
-            return _accountRepo.GetAll().ToList();
+            return _accountRepo.GetAll()
+                 .Select(m => new AccountDto
+                 {
+                     Id = m.AccountId,
+                     FullName = m.FullName,
+                     Email = m.Email,
+                     PhoneNumber = m.PhoneNumber,
+                     IdentityCardNumber = m.IdentityCardNumber,
+                     Role = m.Role,
+                 }).ToList();
         }
 
         public void UpdateAccount(Account account)

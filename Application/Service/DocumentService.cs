@@ -2,26 +2,36 @@
 using PublicCarRental.Application.DTOs.Docu;
 using PublicCarRental.Application.Service.Image;
 using PublicCarRental.Infrastructure.Data.Models;
+using PublicCarRental.Infrastructure.Data.Repository.Ren;
+using PublicCarRental.Infrastructure.Data.Repository.Staf;
 
 public interface IDocumentService
 {
     Task<DocumentDto> UploadDocumentAsync(int accountId, UploadDocumentDto dto);
-    Task<List<DocumentDto>> GetUserDocumentsAsync(int accountId, DocumentType? type = null);
+    Task<List<DocumentDto>> GetUserDocumentsAsync(int accoundId);
     Task<bool> UploadRenterDocumentsAsync(int renterAccountId, UploadRenterDocumentsDto dto);
     Task<bool> VerifyDocumentsAsync(int accountId, int staffVerifierId, DocumentType? documentType = null);
     Task<bool> DeleteDocumentAsync(int documentId);
-    Task<List<DocumentDto>> GetAllUnverifiedDocumentsAsync(DocumentType? type = null);
+    Task<List<DocumentDto>> GetAllDocumentsByStatusAsync(bool? isVerified = null);
+    Task<IEnumerable<DocumentDto>> GetAllAsync();
+    Task<bool> UploadStaffIdentityCardAsync(int staffAccountId, UploadDocumentDto dto);
+
 }
 
 public class DocumentService : IDocumentService
 {
     private readonly IImageStorageService _imageService;
     private readonly IDocumentRepository _documentRepository;
+    private readonly IEVRenterRepository _eVRenterRepository;
+    private readonly IStaffRepository _staffRepository;
 
-    public DocumentService(IImageStorageService imageService, IDocumentRepository documentRepository)
+    public DocumentService(IImageStorageService imageService, IDocumentRepository documentRepository
+        , IEVRenterRepository eVRenterRepository, IStaffRepository staffRepository)
     {
         _imageService = imageService;
         _documentRepository = documentRepository;
+        _eVRenterRepository = eVRenterRepository;
+        _staffRepository = staffRepository;
     }
 
     public async Task<DocumentDto> UploadDocumentAsync(int accountId, UploadDocumentDto dto)
@@ -36,7 +46,8 @@ public class DocumentService : IDocumentService
             Side = dto.Side,
             DocumentNumber = dto.DocumentNumber,
             UploadedAt = DateTime.UtcNow,
-            IsVerified = false
+            IsVerified = false,
+            VerifiedByStaffId = null
         };
 
         _documentRepository.CreateDocument(document);
@@ -44,12 +55,9 @@ public class DocumentService : IDocumentService
         return MapToDto(document);
     }
 
-    public async Task<List<DocumentDto>> GetUserDocumentsAsync(int accountId, DocumentType? type = null)
+    public async Task<List<DocumentDto>> GetUserDocumentsAsync(int accountId)
     {
         var query = _documentRepository.GetAll().Where(d => d.AccountId == accountId);
-
-        if (type.HasValue)
-            query = query.Where(d => d.Type == type.Value);
 
         var documents = query.OrderByDescending(d => d.UploadedAt).ToList();
         return documents.Select(MapToDto).ToList();
@@ -124,40 +132,69 @@ public class DocumentService : IDocumentService
 
         return true;
     }
-    public async Task<List<DocumentDto>> GetAllUnverifiedDocumentsAsync(DocumentType? type = null)
+
+    public async Task<List<DocumentDto>> GetAllDocumentsByStatusAsync(bool? isVerified = null)
     {
-        var query = _documentRepository.GetAll()
-            .Where(d => !d.IsVerified)
-            .Include(d => d.Account)
-            .Where(d => !type.HasValue || d.Type == type.Value);
+        var query = _documentRepository.GetAll();
+        if (isVerified.HasValue)
+        {
+            query = query.Where(d => d.IsVerified == isVerified.Value);
+        }
 
         var documents = await query
             .OrderByDescending(d => d.UploadedAt)
             .ToListAsync();
 
-        return documents.Select(d => new DocumentDto
-        {
-            DocumentId = d.DocumentId,
-            Type = d.Type,
-            FileUrl = d.FileUrl,
-            Side = d.Side,
-            DocumentNumber = d.DocumentNumber,
-            UploadedAt = d.UploadedAt,
-            IsVerified = d.IsVerified,
-        }).ToList();
+        return documents.Select(MapToDto).ToList();
     }
+
+    public async Task<IEnumerable<DocumentDto>> GetAllAsync()
+    {
+        var documents = _documentRepository.GetAll()
+            .Select(MapToDto).ToList();
+        return documents;
+    }
+
     private DocumentDto MapToDto(AccountDocument document)
     {
+        string staffName = null;
+
+        if (document.VerifiedByStaffId.HasValue)
+        {
+            var staff = _staffRepository.GetById(document.VerifiedByStaffId.Value);
+            staffName = staff?.Account?.FullName;
+        }
         return new DocumentDto
         {
             DocumentId = document.DocumentId,
+            AccountId = document.AccountId,
             Type = document.Type,
             FileUrl = document.FileUrl,
             Side = document.Side,
             DocumentNumber = document.DocumentNumber,
-            UploadedAt = document.UploadedAt,
             IsVerified = document.IsVerified,
-            VerifiedAt = document.VerifiedAt
+            VerifiedByStaffId = document.VerifiedByStaffId,
+            StaffName = staffName,
         };
+    }
+
+    public async Task<bool> UploadStaffIdentityCardAsync(int staffAccountId, UploadDocumentDto dto)
+    {
+        var fileUrl = await _imageService.UploadImageAsync(dto.File);
+
+        var document = new AccountDocument
+        {
+            AccountId = staffAccountId,
+            Type = dto.Type,
+            FileUrl = fileUrl,
+            Side = dto.Side,
+            DocumentNumber = dto.DocumentNumber,
+            UploadedAt = DateTime.UtcNow,
+            IsVerified = true,
+            VerifiedAt = DateTime.UtcNow,
+        };
+
+        _documentRepository.CreateDocument(document);
+        return true;
     }
 }

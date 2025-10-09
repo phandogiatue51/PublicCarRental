@@ -5,8 +5,8 @@ namespace PublicCarRental.Application.Service.Acc
 {
     public interface IAccountService
     {
-        Account GetAccountById(int id);
-        IEnumerable<Account> GetAllAccounts();
+        public AccountDto GetAccountById(int id);
+        public IEnumerable<AccountDto> GetAllAccounts();
         void UpdateAccount(Account account);
         void DeleteAccount(int id);
         public (bool Success, string Message, int? AccountId) CreateAccount(BaseAccountDto dto, AccountRole role);
