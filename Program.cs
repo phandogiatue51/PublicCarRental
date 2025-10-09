@@ -44,37 +44,37 @@ using Task = System.Threading.Tasks.Task;
 
 var builder = WebApplication.CreateBuilder(args);
 
-//builder.Services.AddStackExchangeRedisCache(options =>
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "CarRental_";
+});
+
+//var redisConnString = builder.Configuration.GetConnectionString("Redis");
+
+//if (!string.IsNullOrEmpty(redisConnString))
 //{
-//    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-//    options.InstanceName = "CarRental_";
-//});
-
-var redisConnString = builder.Configuration.GetConnectionString("Redis");
-
-if (!string.IsNullOrEmpty(redisConnString))
-{
-    try
-    {
-        builder.Services.AddStackExchangeRedisCache(options =>
-        {
-            options.Configuration = redisConnString;
-            options.InstanceName = "CarRental_";
-        });
-        Console.WriteLine("✅ Redis cache configured successfully!");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ Redis connection failed: {ex.Message}");
-        Console.WriteLine("🔄 Falling back to memory cache...");
-        builder.Services.AddDistributedMemoryCache();
-    }
-}
-else
-{
-    Console.WriteLine("ℹ️ Redis connection string not found, using memory cache");
-    builder.Services.AddDistributedMemoryCache();
-}
+//    try
+//    {
+//        builder.Services.AddStackExchangeRedisCache(options =>
+//        {
+//            options.Configuration = redisConnString;
+//            options.InstanceName = "CarRental_";
+//        });
+//        Console.WriteLine("✅ Redis cache configured successfully!");
+//    }
+//    catch (Exception ex)
+//    {
+//        Console.WriteLine($"❌ Redis connection failed: {ex.Message}");
+//        Console.WriteLine("🔄 Falling back to memory cache...");
+//        builder.Services.AddDistributedMemoryCache();
+//    }
+//}
+//else
+//{
+//    Console.WriteLine("ℹ️ Redis connection string not found, using memory cache");
+//    builder.Services.AddDistributedMemoryCache();
+//}
 
 
 builder.Services.Configure<RabbitMQSettings>(builder.Configuration.GetSection("RabbitMQ"));

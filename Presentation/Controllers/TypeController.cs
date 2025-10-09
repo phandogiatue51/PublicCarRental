@@ -14,14 +14,14 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("get-all")]
-        public IActionResult GetAll() {
-            var types = _typeService.GetAllTypes();
+        public async Task<IActionResult> GetAllAsync() {
+            var types = await _typeService.GetAllTypesAsync();
             return Ok(types);
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id) {
-            var type = _typeService.GetById(id);
+        public async Task<IActionResult> GetByIdAsync(int id) {
+            var type = await _typeService.GetByIdAsync(id);
             if (type == null) return NotFound();
             return Ok(type);
         }

@@ -23,7 +23,6 @@ namespace PublicCarRental.Application.Service.Veh
             var cacheKey = CreateCacheKey("all_vehicles");
             return await _cache.GetOrSetAsync(cacheKey, async () =>
             {
-                _logger.LogInformation("Cache miss - fetching all vehicles from database");
                 return _repo.GetAll()
                     .Select(v => new VehicleDto
                     {

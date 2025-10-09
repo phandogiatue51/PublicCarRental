@@ -27,9 +27,9 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetByIdAsync(int id)
         {
-            var model = _service.GetById(id);
+            var model = await _service.GetByIdAsync(id);
             if (model == null) return NotFound();
             return Ok(model);
         }
@@ -52,9 +52,9 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpDelete("delete-model/{id}")]
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> DeleteAsync(int id)
         {
-            var success = _service.DeleteModel(id);
+            var success = await _service.DeleteModelAsync(id);
             if (!success) return NotFound();
             return Ok(new { message = "Model deleted" });
         }

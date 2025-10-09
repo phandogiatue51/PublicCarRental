@@ -16,16 +16,16 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("get-all")]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAllAsync()
         {
-            var vehicles = _service.GetAllVehiclesAsync().GetAwaiter().GetResult();
+            var vehicles = await _service.GetAllVehiclesAsync();
             return Ok(vehicles);
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetByIdAsync(int id)
         {
-            var vehicle = _service.GetByIdAsync(id).GetAwaiter().GetResult();
+            var vehicle = await _service.GetByIdAsync(id);
             if (vehicle == null) return NotFound();
             return Ok(vehicle);
         }
@@ -73,15 +73,14 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("filter-vehicle")]
-        public IActionResult FilterVehicle(
+        public async Task<IActionResult> FilterVehicleAsync(
             [FromQuery] int? stationId = null,
             [FromQuery] int? status = null,
             [FromQuery] int? modelId = null,
             [FromQuery] int? typeId = null,
             [FromQuery] int? brandId = null)
         {
-            var vehicles = _service.GetVehiclesByFiltersAsync(modelId, status, stationId, typeId, brandId)
-                .GetAwaiter().GetResult();
+            var vehicles = await _service.GetVehiclesByFiltersAsync(modelId, status, stationId, typeId, brandId);
             return Ok(vehicles);
         }
     }
