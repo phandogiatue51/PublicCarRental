@@ -188,7 +188,7 @@ namespace PublicCarRental.Infrastructure.Data.Models
 
                 entity.HasIndex(ar => ar.VehicleId);
                 entity.HasIndex(ar => ar.ContractId);
-                entity.HasIndex(ar => ar.ReportingUserId);
+                entity.HasIndex(ar => ar.StaffId);
                 entity.HasIndex(ar => ar.Status);
                 entity.HasIndex(ar => ar.ReportedAt);
 

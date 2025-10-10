@@ -184,6 +184,10 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IImageStorageService, CloudinaryService>();
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 builder.Services.AddScoped<IDocumentService,  DocumentService>();
+builder.Services.AddScoped<IAccidentRepository, AccidentRepository>();
+builder.Services.AddScoped<IAccidentService, AccidentService>();
+
+
 
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
