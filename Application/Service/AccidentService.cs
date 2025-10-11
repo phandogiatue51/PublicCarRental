@@ -37,6 +37,7 @@ namespace PublicCarRental.Application.Service
                      Description = m.Description,
                      Location = m.Vehicle.Station.Name,
                      ImageUrl = m.ImageUrl,
+                     Status = m.Status
                  }).ToList();
         }
 
@@ -56,6 +57,7 @@ namespace PublicCarRental.Application.Service
                 Description = acc.Description,
                 Location = acc.Vehicle.Station.Name,
                 ImageUrl = acc.ImageUrl,
+                Status = acc.Status
             };
         }
 
@@ -140,18 +142,18 @@ namespace PublicCarRental.Application.Service
                 return (false, ex.ToString());
             }
         }
+
         public async Task<(bool Success, string Message)> UpdateAccStatusAsync(int id, AccidentStatus newStatus)
         {
             try
             {
-                var acc = _accidentRepository.GetAll()
-                    .FirstOrDefault(a => a.AccidentId == id);
+                var acc = await _accidentRepository.GetAll()
+                    .FirstOrDefaultAsync(a => a.AccidentId == id);
 
                 if (acc == null)
                     return (false, "Accident report not found!");
-
-                if (!ValidTransitions.TryGetValue(acc.Status, out var allowedNext) || !allowedNext.Contains(newStatus))
-                    return (false, $"Invalid status transition from {acc.Status} to {newStatus}");
+                if (newStatus <= acc.Status)
+                    return (false, $"Cannot transition backwards from {acc.Status} to {newStatus}");
 
                 acc.Status = newStatus;
                 _accidentRepository.UpdateAcc(acc);
@@ -163,16 +165,6 @@ namespace PublicCarRental.Application.Service
                 return (false, ex.Message);
             }
         }
-
-
-        private static readonly Dictionary<AccidentStatus, AccidentStatus[]> ValidTransitions = new()
-        {
-            { AccidentStatus.Reported, new[] { AccidentStatus.UnderInvestigation } },
-            { AccidentStatus.UnderInvestigation, new[] { AccidentStatus.RepairApproved } },
-            { AccidentStatus.RepairApproved, new[] { AccidentStatus.UnderRepair } },
-            { AccidentStatus.UnderRepair, new[] { AccidentStatus.Repaired } },
-        };
-
     }
 
     public interface IAccidentService
