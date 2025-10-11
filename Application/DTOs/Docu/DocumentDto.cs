@@ -11,7 +11,7 @@ namespace PublicCarRental.Application.DTOs.Docu
         public DocumentSide Side { get; set; }
         public bool IsVerified { get; set; }
         public DateTime? VerifiedAt { get; set; }
-        public int? VerifiedByStaffId { get; set; }
+        public int? StaffId { get; set; }
         public string? StaffName { get; set; }
         public string DocumentNumber {  get; set; }
     }

@@ -159,9 +159,15 @@ namespace PublicCarRental.Infrastructure.Data.Models
                 entity.HasKey(e => e.DocumentId);
 
                 entity.HasOne(ud => ud.Account)
-                      .WithMany(a => a.AccountDocuments) 
+                      .WithMany(a => a.AccountDocuments)
                       .HasForeignKey(ud => ud.AccountId)
                       .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ad => ad.Staff)
+                      .WithMany() 
+                      .HasForeignKey(ad => ad.StaffId)
+                      .OnDelete(DeleteBehavior.Restrict)
+                      .IsRequired(false); 
 
                 entity.HasIndex(ud => ud.AccountId);
                 entity.HasIndex(ud => new { ud.AccountId, ud.Type });

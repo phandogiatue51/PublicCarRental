@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.Application.DTOs.Docu;
+using PublicCarRental.Infrastructure.Data.Models;
 
 namespace PublicCarRental.Presentation.Controllers
 {
@@ -22,38 +23,46 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(result);
         }
 
-        [HttpGet("{accountId}")]
-        public async Task<IActionResult> GetByAccountId(int accountId)
+        [HttpGet("get-by-renter-id/{renterId}")]
+        public async Task<IActionResult> GetByRenterId(int renterId)
         {
-            var result = await _documentService.GetUserDocumentsAsync(accountId);
+            var role = AccountRole.EVRenter;
+            var result = await _documentService.GetUserDocumentsAsync(renterId, role);
+            return Ok(result);
+        }
+
+        [HttpGet("get-by-staff-id/{staffId}")]
+        public async Task<IActionResult> GetByStaffId(int staffId)
+        {
+            var role = AccountRole.Staff;
+            var result = await _documentService.GetUserDocumentsAsync(staffId, role);
             return Ok(result);
         }
 
         [HttpPost("upload-staff-id")]
-        public async Task<IActionResult> UploadStaffIdentityCard([FromQuery] int staffAccountId, [FromForm] UploadDocumentDto dto)
+        public async Task<IActionResult> UploadStaffIdentityCard([FromQuery] int staffId, [FromForm] UploadStaffDocumentDto dto)
         {
-            var result = await _documentService.UploadStaffIdentityCardAsync(staffAccountId, dto);
-            return Ok(new { success = result });
+            var result = await _documentService.UploadStaffIdentityCardAsync(staffId, dto);
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
+
+            return Ok(new { message = result.Message });
         }
 
-        [HttpPost("upload-renter/{accountId}")]
-        public async Task<IActionResult> UploadDocument(int accountId, [FromForm] UploadDocumentDto dto)
+        [HttpPost("upload-renter-all/{renterId}")]
+        public async Task<IActionResult> UploadAllDocuments(int renterId, [FromForm] UploadRenterDocumentsDto dto)
         {
-            var result = await _documentService.UploadDocumentAsync(accountId, dto);
-            return Ok(result);
-        }
+            var result = await _documentService.UploadRenterDocumentsAsync(renterId, dto);
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
 
-        [HttpPost("upload-renter-all/{accountId}")]
-        public async Task<IActionResult> UploadAllDocuments(int accountId, [FromForm] UploadRenterDocumentsDto dto)
-        {
-            var result = await _documentService.UploadRenterDocumentsAsync(accountId, dto);
-            return Ok(new { success = result });
+            return Ok(new { message = result.Message });
         }
 
         [HttpPost("staff-verify-renter/{staffId}")]
         public async Task<IActionResult> VerifyRenterDocuments(int staffId, [FromBody] VerifyDocumentsDto dto)
         {
-            var result = await _documentService.VerifyDocumentsAsync(dto.AccountId, staffId, dto.DocumentType);
+            var result = await _documentService.VerifyDocumentsAsync(dto.RenterId, staffId, dto.DocumentType);
             return Ok(new { success = result });
         }
 

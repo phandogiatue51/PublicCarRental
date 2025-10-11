@@ -4,7 +4,7 @@ namespace PublicCarRental.Application.DTOs.Docu
 {
     public class VerifyDocumentsDto
     {
-        public int AccountId { get; set; }
+        public int RenterId { get; set; }
         public DocumentType? DocumentType { get; set; }
     }
 }

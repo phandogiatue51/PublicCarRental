@@ -2,22 +2,18 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PublicCarRental.Infrastructure.Data.Models;
-
 
 #nullable disable
 
 namespace PublicCarRental.Migrations
 {
     [DbContext(typeof(EVRentalDbContext))]
-    [Migration("20251004071618_FixInvoice")]
-    partial class FixInvoice
+    partial class EVRentalDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -26,7 +22,54 @@ namespace PublicCarRental.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("PublicCarRental.Models.Account", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.AccidentReport", b =>
+                {
+                    b.Property<int>("AccidentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AccidentId"));
+
+                    b.Property<int?>("ContractId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Location")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ReportedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("StaffId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("AccidentId");
+
+                    b.HasIndex("ContractId");
+
+                    b.HasIndex("ReportedAt");
+
+                    b.HasIndex("StaffId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("VehicleId");
+
+                    b.ToTable("AccidentReports");
+                });
+
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Account", b =>
                 {
                     b.Property<int>("AccountId")
                         .ValueGeneratedOnAdd()
@@ -86,7 +129,54 @@ namespace PublicCarRental.Migrations
                     b.ToTable("Accounts");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.EVRenter", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.AccountDocument", b =>
+                {
+                    b.Property<int>("DocumentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("DocumentId"));
+
+                    b.Property<int>("AccountId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("DocumentNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Side")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("StaffId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("VerifiedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("DocumentId");
+
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("StaffId");
+
+                    b.HasIndex("AccountId", "Type");
+
+                    b.ToTable("AccountDocuments");
+                });
+
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.EVRenter", b =>
                 {
                     b.Property<int>("RenterId")
                         .ValueGeneratedOnAdd()
@@ -98,7 +188,6 @@ namespace PublicCarRental.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("LicenseNumber")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("RenterId");
@@ -112,7 +201,7 @@ namespace PublicCarRental.Migrations
                     b.ToTable("EVRenters");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Favorite", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Favorite", b =>
                 {
                     b.Property<int>("FavoriteId")
                         .ValueGeneratedOnAdd()
@@ -138,7 +227,7 @@ namespace PublicCarRental.Migrations
                     b.ToTable("Favorites");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Invoice", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Invoice", b =>
                 {
                     b.Property<int>("InvoiceId")
                         .ValueGeneratedOnAdd()
@@ -175,7 +264,7 @@ namespace PublicCarRental.Migrations
                     b.ToTable("Invoices");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Rating", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Rating", b =>
                 {
                     b.Property<int>("RatingId")
                         .ValueGeneratedOnAdd()
@@ -204,7 +293,7 @@ namespace PublicCarRental.Migrations
                     b.ToTable("Ratings");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.RentalContract", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.RentalContract", b =>
                 {
                     b.Property<int>("ContractId")
                         .ValueGeneratedOnAdd()
@@ -258,7 +347,7 @@ namespace PublicCarRental.Migrations
                     b.ToTable("RentalContracts");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Staff", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Staff", b =>
                 {
                     b.Property<int>("StaffId")
                         .ValueGeneratedOnAdd()
@@ -282,7 +371,7 @@ namespace PublicCarRental.Migrations
                     b.ToTable("Staffs");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Station", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Station", b =>
                 {
                     b.Property<int>("StationId")
                         .ValueGeneratedOnAdd()
@@ -309,7 +398,7 @@ namespace PublicCarRental.Migrations
                     b.ToTable("Stations");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Transaction", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Transaction", b =>
                 {
                     b.Property<int>("TransactionId")
                         .ValueGeneratedOnAdd()
@@ -341,7 +430,7 @@ namespace PublicCarRental.Migrations
                     b.ToTable("Transactions", (string)null);
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Vehicle", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Vehicle", b =>
                 {
                     b.Property<int>("VehicleId")
                         .ValueGeneratedOnAdd()
@@ -377,7 +466,7 @@ namespace PublicCarRental.Migrations
                     b.ToTable("Vehicles");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.VehicleBrand", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.VehicleBrand", b =>
                 {
                     b.Property<int>("BrandId")
                         .ValueGeneratedOnAdd()
@@ -394,7 +483,7 @@ namespace PublicCarRental.Migrations
                     b.ToTable("VehicleBrands");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.VehicleModel", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.VehicleModel", b =>
                 {
                     b.Property<int>("ModelId")
                         .ValueGeneratedOnAdd()
@@ -427,7 +516,7 @@ namespace PublicCarRental.Migrations
                     b.ToTable("VehicleModels");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.VehicleType", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.VehicleType", b =>
                 {
                     b.Property<int>("TypeId")
                         .ValueGeneratedOnAdd()
@@ -444,26 +533,62 @@ namespace PublicCarRental.Migrations
                     b.ToTable("VehicleTypes");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.EVRenter", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.AccidentReport", b =>
                 {
-                    b.HasOne("PublicCarRental.Models.Account", "Account")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.RentalContract", "Contract")
+                        .WithMany()
+                        .HasForeignKey("ContractId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Vehicle", "Vehicle")
+                        .WithMany("AccidentReports")
+                        .HasForeignKey("VehicleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Contract");
+
+                    b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.AccountDocument", b =>
+                {
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Account", "Account")
+                        .WithMany("AccountDocuments")
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Staff", "Staff")
+                        .WithMany()
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Account");
+
+                    b.Navigation("Staff");
+                });
+
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.EVRenter", b =>
+                {
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Account", "Account")
                         .WithOne()
-                        .HasForeignKey("PublicCarRental.Models.EVRenter", "AccountId")
+                        .HasForeignKey("PublicCarRental.Infrastructure.Data.Models.EVRenter", "AccountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Account");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Favorite", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Favorite", b =>
                 {
-                    b.HasOne("PublicCarRental.Models.Account", "Account")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Account", "Account")
                         .WithMany("Favorites")
                         .HasForeignKey("AccountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PublicCarRental.Models.VehicleModel", "VehicleModel")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.VehicleModel", "VehicleModel")
                         .WithMany("FavoritedBy")
                         .HasForeignKey("ModelId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -474,45 +599,45 @@ namespace PublicCarRental.Migrations
                     b.Navigation("VehicleModel");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Invoice", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Invoice", b =>
                 {
-                    b.HasOne("PublicCarRental.Models.RentalContract", "Contract")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.RentalContract", "Contract")
                         .WithOne("Invoice")
-                        .HasForeignKey("PublicCarRental.Models.Invoice", "ContractId")
+                        .HasForeignKey("PublicCarRental.Infrastructure.Data.Models.Invoice", "ContractId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Contract");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Rating", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Rating", b =>
                 {
-                    b.HasOne("PublicCarRental.Models.RentalContract", "Contract")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.RentalContract", "Contract")
                         .WithOne("Rating")
-                        .HasForeignKey("PublicCarRental.Models.Rating", "ContractId")
+                        .HasForeignKey("PublicCarRental.Infrastructure.Data.Models.Rating", "ContractId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Contract");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.RentalContract", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.RentalContract", b =>
                 {
-                    b.HasOne("PublicCarRental.Models.EVRenter", "EVRenter")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.EVRenter", "EVRenter")
                         .WithMany("RentalContracts")
                         .HasForeignKey("EVRenterId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PublicCarRental.Models.Staff", "Staff")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Staff", "Staff")
                         .WithMany()
                         .HasForeignKey("StaffId");
 
-                    b.HasOne("PublicCarRental.Models.Station", "Station")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Station", "Station")
                         .WithMany("RentalContracts")
                         .HasForeignKey("StationId");
 
-                    b.HasOne("PublicCarRental.Models.Vehicle", "Vehicle")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Vehicle", "Vehicle")
                         .WithMany("RentalContracts")
                         .HasForeignKey("VehicleId");
 
@@ -525,15 +650,15 @@ namespace PublicCarRental.Migrations
                     b.Navigation("Vehicle");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Staff", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Staff", b =>
                 {
-                    b.HasOne("PublicCarRental.Models.Account", "Account")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Account", "Account")
                         .WithOne()
-                        .HasForeignKey("PublicCarRental.Models.Staff", "AccountId")
+                        .HasForeignKey("PublicCarRental.Infrastructure.Data.Models.Staff", "AccountId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PublicCarRental.Models.Station", "Station")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Station", "Station")
                         .WithMany("StaffMembers")
                         .HasForeignKey("StationId");
 
@@ -542,9 +667,9 @@ namespace PublicCarRental.Migrations
                     b.Navigation("Station");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Transaction", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Transaction", b =>
                 {
-                    b.HasOne("PublicCarRental.Models.RentalContract", "Contract")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.RentalContract", "Contract")
                         .WithMany()
                         .HasForeignKey("ContractId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -553,15 +678,15 @@ namespace PublicCarRental.Migrations
                     b.Navigation("Contract");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Vehicle", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Vehicle", b =>
                 {
-                    b.HasOne("PublicCarRental.Models.VehicleModel", "Model")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.VehicleModel", "Model")
                         .WithMany("Vehicles")
                         .HasForeignKey("ModelId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PublicCarRental.Models.Station", "Station")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Station", "Station")
                         .WithMany("Vehicles")
                         .HasForeignKey("StationId");
 
@@ -570,15 +695,15 @@ namespace PublicCarRental.Migrations
                     b.Navigation("Station");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.VehicleModel", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.VehicleModel", b =>
                 {
-                    b.HasOne("PublicCarRental.Models.VehicleBrand", "Brand")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.VehicleBrand", "Brand")
                         .WithMany("Models")
                         .HasForeignKey("BrandId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PublicCarRental.Models.VehicleType", "Type")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.VehicleType", "Type")
                         .WithMany("Models")
                         .HasForeignKey("TypeId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -589,17 +714,19 @@ namespace PublicCarRental.Migrations
                     b.Navigation("Type");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Account", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Account", b =>
                 {
+                    b.Navigation("AccountDocuments");
+
                     b.Navigation("Favorites");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.EVRenter", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.EVRenter", b =>
                 {
                     b.Navigation("RentalContracts");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.RentalContract", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.RentalContract", b =>
                 {
                     b.Navigation("Invoice")
                         .IsRequired();
@@ -608,7 +735,7 @@ namespace PublicCarRental.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Station", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Station", b =>
                 {
                     b.Navigation("RentalContracts");
 
@@ -617,24 +744,26 @@ namespace PublicCarRental.Migrations
                     b.Navigation("Vehicles");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.Vehicle", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Vehicle", b =>
                 {
+                    b.Navigation("AccidentReports");
+
                     b.Navigation("RentalContracts");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.VehicleBrand", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.VehicleBrand", b =>
                 {
                     b.Navigation("Models");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.VehicleModel", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.VehicleModel", b =>
                 {
                     b.Navigation("FavoritedBy");
 
                     b.Navigation("Vehicles");
                 });
 
-            modelBuilder.Entity("PublicCarRental.Models.VehicleType", b =>
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.VehicleType", b =>
                 {
                     b.Navigation("Models");
                 });

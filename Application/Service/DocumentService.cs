@@ -7,14 +7,14 @@ using PublicCarRental.Infrastructure.Data.Repository.Staf;
 
 public interface IDocumentService
 {
-    Task<DocumentDto> UploadDocumentAsync(int accountId, UploadDocumentDto dto);
-    Task<List<DocumentDto>> GetUserDocumentsAsync(int accoundId);
-    Task<bool> UploadRenterDocumentsAsync(int renterAccountId, UploadRenterDocumentsDto dto);
+    Task<(bool Success, string Message)> UploadDocumentAsync(int accountId, UploadDocumentDto dto);
+    Task<List<DocumentDto>> GetUserDocumentsAsync(int id, AccountRole role);
+    Task<(bool Success, string Message)> UploadRenterDocumentsAsync(int renterAccountId, UploadRenterDocumentsDto dto);
     Task<bool> VerifyDocumentsAsync(int accountId, int staffVerifierId, DocumentType? documentType = null);
     Task<bool> DeleteDocumentAsync(int documentId);
     Task<List<DocumentDto>> GetAllDocumentsByStatusAsync(bool? isVerified = null);
     Task<IEnumerable<DocumentDto>> GetAllAsync();
-    Task<bool> UploadStaffIdentityCardAsync(int staffAccountId, UploadDocumentDto dto);
+    Task<(bool Success, string Message)> UploadStaffIdentityCardAsync(int staffId, UploadStaffDocumentDto dto);
 
 }
 
@@ -34,87 +34,115 @@ public class DocumentService : IDocumentService
         _staffRepository = staffRepository;
     }
 
-    public async Task<DocumentDto> UploadDocumentAsync(int accountId, UploadDocumentDto dto)
+    public async Task<(bool Success, string Message)> UploadDocumentAsync(int accountId, UploadDocumentDto dto)
     {
-        var fileUrl = await _imageService.UploadImageAsync(dto.File);
-
-        var document = new AccountDocument
+        try
         {
-            AccountId = accountId,
-            Type = dto.Type,
-            FileUrl = fileUrl,
-            Side = dto.Side,
-            DocumentNumber = dto.DocumentNumber,
-            UploadedAt = DateTime.UtcNow,
-            IsVerified = false,
-            VerifiedByStaffId = null
-        };
+            var fileUrl = await _imageService.UploadImageAsync(dto.File);
 
-        _documentRepository.CreateDocument(document);
+            var document = new AccountDocument
+            {
+                AccountId = accountId,
+                Type = dto.Type,
+                FileUrl = fileUrl,
+                Side = dto.Side,
+                DocumentNumber = dto.DocumentNumber,
+                UploadedAt = DateTime.UtcNow,
+                IsVerified = false,
+                StaffId = null
+            };
 
-        return MapToDto(document);
+            _documentRepository.CreateDocument(document);
+            return (true, "Uploaded successfully!");
+        } catch (Exception ex)
+        {
+            return (false, ex.ToString());
+        }
     }
 
-    public async Task<List<DocumentDto>> GetUserDocumentsAsync(int accountId)
+    public async Task<List<DocumentDto>> GetUserDocumentsAsync(int id, AccountRole role)
     {
+        var accountId = 0;
+        if (role == AccountRole.EVRenter)
+        {
+            var renter = _eVRenterRepository.GetById(id);
+            accountId = renter.AccountId;
+        }
+        else if (role == AccountRole.Staff)
+        {
+            var staff = _staffRepository.GetById(id);
+            accountId = staff.AccountId;
+        }
+
         var query = _documentRepository.GetAll().Where(d => d.AccountId == accountId);
 
         var documents = query.OrderByDescending(d => d.UploadedAt).ToList();
         return documents.Select(MapToDto).ToList();
     }
 
-    public async Task<bool> UploadRenterDocumentsAsync(int renterAccountId, UploadRenterDocumentsDto dto)
+    public async Task<(bool Success, string Message)> UploadRenterDocumentsAsync(int renterId, UploadRenterDocumentsDto dto)
     {
-        await UploadDocumentAsync(renterAccountId, new UploadDocumentDto
+        try
         {
-            File = dto.DriverLicenseFront,
-            Type = DocumentType.DriverLicense,
-            Side = DocumentSide.Front,
-            DocumentNumber = dto.LicenseNumber
-        });
+            var renter = _eVRenterRepository.GetById(renterId);
+            var renterAccountId = renter.AccountId;
 
-        await UploadDocumentAsync(renterAccountId, new UploadDocumentDto
+            await UploadDocumentAsync(renterAccountId, new UploadDocumentDto
+            {
+                File = dto.DriverLicenseFront,
+                Type = DocumentType.DriverLicense,
+                Side = DocumentSide.Front,
+                DocumentNumber = renter.LicenseNumber
+            });
+
+            await UploadDocumentAsync(renterAccountId, new UploadDocumentDto
+            {
+                File = dto.DriverLicenseBack,
+                Type = DocumentType.DriverLicense,
+                Side = DocumentSide.Back,
+                DocumentNumber = renter.LicenseNumber
+            });
+
+            await UploadDocumentAsync(renterAccountId, new UploadDocumentDto
+            {
+                File = dto.IdentityCardFront,
+                Type = DocumentType.IdentityCard,
+                Side = DocumentSide.Front,
+                DocumentNumber = renter.Account.IdentityCardNumber
+            });
+
+            await UploadDocumentAsync(renterAccountId, new UploadDocumentDto
+            {
+                File = dto.IdentityCardBack,
+                Type = DocumentType.IdentityCard,
+                Side = DocumentSide.Back,
+                DocumentNumber = renter.Account.IdentityCardNumber
+            });
+            return (true, "Uploaded Renter ID successfully!");
+        } catch (Exception ex)
         {
-            File = dto.DriverLicenseBack,
-            Type = DocumentType.DriverLicense,
-            Side = DocumentSide.Back,
-            DocumentNumber = dto.LicenseNumber
-        });
-
-        await UploadDocumentAsync(renterAccountId, new UploadDocumentDto
-        {
-            File = dto.IdentityCardFront,
-            Type = DocumentType.IdentityCard,
-            Side = DocumentSide.Front,
-            DocumentNumber = dto.IdentityCardNumber
-        });
-
-        await UploadDocumentAsync(renterAccountId, new UploadDocumentDto
-        {
-            File = dto.IdentityCardBack,
-            Type = DocumentType.IdentityCard,
-            Side = DocumentSide.Back,
-            DocumentNumber = dto.IdentityCardNumber
-        });
-
-        return true;
+            return (false,  ex.ToString());
+        }
     }
 
-    public async Task<bool> VerifyDocumentsAsync(int accountId, int staffVerifierId, DocumentType? documentType = null)
+    public async Task<bool> VerifyDocumentsAsync(int renterId, int staffVerifierId, DocumentType? documentType = null)
     {
+        var renter = _eVRenterRepository.GetById(renterId);
+        var accountId = renter.AccountId;
+
         var documents = _documentRepository.GetAll()
             .Where(d => d.AccountId == accountId && !d.IsVerified);
 
         if (documentType.HasValue)
             documents = documents.Where(d => d.Type == documentType.Value);
 
-        var documentList = documents.ToList(); // Materialize the query
+        var documentList = documents.ToList(); 
 
         foreach (var doc in documentList)
         {
             doc.IsVerified = true;
             doc.VerifiedAt = DateTime.UtcNow;
-            doc.VerifiedByStaffId = staffVerifierId;
+            doc.StaffId = staffVerifierId;
         }
 
         _documentRepository.UpdateRange(documentList);
@@ -157,13 +185,6 @@ public class DocumentService : IDocumentService
 
     private DocumentDto MapToDto(AccountDocument document)
     {
-        string staffName = null;
-
-        if (document.VerifiedByStaffId.HasValue)
-        {
-            var staff = _staffRepository.GetById(document.VerifiedByStaffId.Value);
-            staffName = staff?.Account?.FullName;
-        }
         return new DocumentDto
         {
             DocumentId = document.DocumentId,
@@ -173,28 +194,39 @@ public class DocumentService : IDocumentService
             Side = document.Side,
             DocumentNumber = document.DocumentNumber,
             IsVerified = document.IsVerified,
-            VerifiedByStaffId = document.VerifiedByStaffId,
-            StaffName = staffName,
+            StaffId = document.StaffId,
+            StaffName = document.Staff?.Account?.FullName
         };
     }
 
-    public async Task<bool> UploadStaffIdentityCardAsync(int staffAccountId, UploadDocumentDto dto)
+    public async Task<(bool Success, string Message)> UploadStaffIdentityCardAsync(int staffId, UploadStaffDocumentDto dto)
     {
-        var fileUrl = await _imageService.UploadImageAsync(dto.File);
-
-        var document = new AccountDocument
+        try
         {
-            AccountId = staffAccountId,
-            Type = dto.Type,
-            FileUrl = fileUrl,
-            Side = dto.Side,
-            DocumentNumber = dto.DocumentNumber,
-            UploadedAt = DateTime.UtcNow,
-            IsVerified = true,
-            VerifiedAt = DateTime.UtcNow,
-        };
+            var staff = _staffRepository.GetById(staffId);
 
-        _documentRepository.CreateDocument(document);
-        return true;
+            await UploadDocumentAsync(staff.AccountId, new UploadDocumentDto
+            {
+                File = dto.IdentityCardFront,
+                Type = DocumentType.IdentityCard,
+                Side = DocumentSide.Front,
+                DocumentNumber = staff.Account.IdentityCardNumber
+            });
+
+            await UploadDocumentAsync(staff.AccountId, new UploadDocumentDto
+            {
+                File = dto.IdentityCardBack,
+                Type = DocumentType.IdentityCard,
+                Side = DocumentSide.Back,
+                DocumentNumber = staff.Account.IdentityCardNumber
+            });
+            return (true, "Uploaded Staff ID successfully!");
+        } catch (Exception ex)
+        {
+            return (false, ex.ToString());
+        }
     }
+
+
+
 }

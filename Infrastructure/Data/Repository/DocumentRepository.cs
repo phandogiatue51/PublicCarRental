@@ -22,7 +22,8 @@ public class DocumentRepository : IDocumentRepository
     public IQueryable<AccountDocument> GetAll()
     {
         return _context.AccountDocuments
-            .Include(a => a.Account);
+            .Include(a => a.Account)
+            .Include(a => a.Staff);
     }
 
     public void CreateDocument (AccountDocument document)
