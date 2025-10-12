@@ -118,8 +118,6 @@ function PickCar() {
     };
   }, [active, models.length]);
 
-
-
   // Function to check if a button should be highlighted based on active state
   const isButtonActive = (displayIndex) => {
     // Use forceUpdate to ensure re-render after loop transitions
@@ -182,8 +180,6 @@ function PickCar() {
     }, 300);
   };
 
-  // Function to force re-center and re-highlight after loop transition
-
   // Function to handle infinite navigation with true infinite scroll
   const navigateToNext = () => {
     const nextIndex = (active + 1) % models.length;
@@ -227,19 +223,22 @@ function PickCar() {
   const loopedModels = createLoopedModels();
 
   // Transform all models to match CarBox expected format
-  const transformedData = models.map(model => ([{
-    name: model.name,
-    price: model.pricePerHour,
-    mark: model.brandName,
-    model: model.name,
-    year: "2023",
-    doors: "4",
-    air: "Yes",
-    transmission: "Automatic",
-    fuel: "Electric",
-    img: model.imageUrl
-  }]));
-
+  const transformedData = models.map(model => {
+    console.log('Model data:', model); // Debug log
+    return [{
+      name: model.name,
+      price: model.pricePerHour,
+      mark: model.brandName,
+      model: model.name,
+      year: "2023",
+      doors: "4",
+      air: "Yes",
+      transmission: "Automatic",
+      fuel: "Electric",
+      img: model.imageUrl,
+      modelId: model.modelId // Add modelId here
+    }];
+  });
 
   if (loading) {
     return <div className="loading">Loading vehicles...</div>;
@@ -251,7 +250,6 @@ function PickCar() {
 
   return (
     <>
-
       <section className="pick-section">
         <div className="container">
           <div className="pick-container">
@@ -264,7 +262,6 @@ function PickCar() {
               </p>
             </div>
             
-
             <div className="pick-container__car-content">
               {/* Vertical Carousel Container */}
               <div className="vertical-carousel-container">
@@ -314,7 +311,6 @@ function PickCar() {
                     overflowY: 'auto'
                   }}
                 >
-
                   {/* Display CarBox with transformed data */}
                   <div className="vertical-car-showcase">
                     <CarBox 
