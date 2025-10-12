@@ -4,7 +4,8 @@ import { Box, useColorModeValue } from "@chakra-ui/react";
 import HeroPages from "../components/HeroPages";
 import Footer from "../components/Footer";
 import { modelAPI } from "../services/api";
-import "../styles/ModelDetail.css";
+import '../styles/ModelDetail.css';
+
 
 function ModelDetail() {
   const { id } = useParams();

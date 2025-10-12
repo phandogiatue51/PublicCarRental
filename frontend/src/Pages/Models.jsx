@@ -154,9 +154,13 @@ function Models() {
                       </div>
                     </div>
                     <div className="models-div__box__descr__name-price__btn">
-                      <Link onClick={() => window.scrollTo(0, 0)} to="/">
-                        Book Ride
+                      <Link
+                        onClick={() => window.scrollTo(0, 0)}
+                        to={`/models/${model.modelId}`}
+                      >
+                        View Model
                       </Link>
+
                     </div>
                   </div>
                 </div>
