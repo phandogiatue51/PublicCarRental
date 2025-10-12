@@ -118,18 +118,11 @@ function PickCar() {
     };
   }, [active, models.length]);
 
-  const btnID = (id) => {
-    setColorBtn(colorBtn === id ? "" : id);
-  };
 
-  const coloringButton = (id) => {
-    return colorBtn === id ? "colored-button" : "";
-  };
 
   // Function to check if a button should be highlighted based on active state
   const isButtonActive = (displayIndex) => {
     // Use forceUpdate to ensure re-render after loop transitions
-    const _ = forceUpdate; // This ensures the function re-runs when forceUpdate changes
     return active === displayIndex;
   };
 
@@ -190,14 +183,6 @@ function PickCar() {
   };
 
   // Function to force re-center and re-highlight after loop transition
-  const forceRecenter = (index) => {
-    setTimeout(() => {
-      if (scrollContainerRef.current) {
-        scrollToCar(index);
-        setForceUpdate(prev => prev + 1);
-      }
-    }, 100);
-  };
 
   // Function to handle infinite navigation with true infinite scroll
   const navigateToNext = () => {
@@ -240,7 +225,6 @@ function PickCar() {
   };
 
   const loopedModels = createLoopedModels();
-  const offset = models.length; // Offset for first copy (middle position)
 
   // Transform all models to match CarBox expected format
   const transformedData = models.map(model => ([{
@@ -267,15 +251,7 @@ function PickCar() {
 
   return (
     <>
-      <style jsx>{`
-        .infinite-carousel::-webkit-scrollbar {
-          display: none;
-        }
-        .infinite-carousel {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
+
       <section className="pick-section">
         <div className="container">
           <div className="pick-container">

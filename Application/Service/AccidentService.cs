@@ -122,6 +122,7 @@ namespace PublicCarRental.Application.Service
                 return (false, ex.ToString());
             }
         }
+
         public async Task<(bool Success, string Message)> DeleteAccAsync(int id)
         {
             try

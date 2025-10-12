@@ -139,10 +139,13 @@ namespace PublicCarRental.Application.Service.Acc
         {
             var claims = new List<Claim>
             {
+                new Claim("AccountId", user.AccountId.ToString()),
+                new Claim("Email", user.Email),
+                new Claim("Role", user.Role.ToString()),
+                // Keep the standard claims for compatibility
                 new Claim(ClaimTypes.NameIdentifier, user.AccountId.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Role, user.Role.ToString()),
-                new Claim("AccountId", user.AccountId.ToString())
             };
 
             switch (user.Role)

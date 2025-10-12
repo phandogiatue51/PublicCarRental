@@ -10,5 +10,6 @@
         public string EmailQueue { get; set; }
         public string PdfQueue { get; set; }
         public string NotificationQueue { get; set; }
+        public string AccidentQueue { get; set; } = "accidents"; 
     }
 }

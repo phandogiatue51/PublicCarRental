@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { accountAPI } from "../services/api";
 
@@ -52,7 +52,7 @@ export function useAuth() {
     };
 
     // Get current user data by decoding JWT token
-    const getCurrentUser = () => {
+    const getCurrentUser = useCallback(() => {
         const token = localStorage.getItem("jwtToken");
         if (!token) return null;
         
@@ -60,8 +60,8 @@ export function useAuth() {
             const userData = decodeJWT(token);
             return {
                 accountId: userData.AccountId,
-                email: userData["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress"],
-                role: userData["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role"],
+                email: userData.Email,
+                role: userData.Role,
                 renterId: userData.RenterId,
                 staffId: userData.StaffId,
                 stationId: userData.StationId,
@@ -71,7 +71,7 @@ export function useAuth() {
             console.error("Error decoding token:", error);
             return null;
         }
-    };
+    }, []);
 
     // Simple JWT decoding
     const decodeJWT = (token) => {
@@ -91,7 +91,7 @@ export function useAuth() {
     };
 
     // Check if user is authenticated
-    const isAuthenticated = () => {
+    const isAuthenticated = useCallback(() => {
         const token = localStorage.getItem("jwtToken");
         if (!token) return false;
 
@@ -107,7 +107,7 @@ export function useAuth() {
         } catch (error) {
             return false;
         }
-    };
+    }, []);
 
     // Get authorization header for API calls
     const getAuthHeader = () => {

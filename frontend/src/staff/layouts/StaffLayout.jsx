@@ -4,7 +4,6 @@ import { Box, Flex, Text, Icon, Button, useColorModeValue } from '@chakra-ui/rea
 import {
     MdDashboard,    MdPerson,    MdDriveEta,    MdAssignment,    MdReceipt,    MdMenu,    MdLogout,    MdHome
 } from 'react-icons/md';
-import StaffFooter from '../components/StaffFooter';
 import NotificationToast from '../../components/NotificationToast';
 
 const StaffLayout = () => {
@@ -142,7 +141,7 @@ const StaffLayout = () => {
                         </Text>
                     </Box>
 
-                    {/* Page Content - This should grow and push footer down */}
+                    {/* Page Content */}
                     <Box 
                         p={6} 
                         flex="1" 
@@ -152,9 +151,6 @@ const StaffLayout = () => {
                     >
                         <Outlet />
                     </Box>
-
-                    {/* Footer - This will always be at the bottom */}
-                    <StaffFooter />
                 </Box>
             </Flex>
         </Box>

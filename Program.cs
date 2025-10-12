@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Exchange.WebServices.Data;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -125,14 +126,14 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.SetIsOriginAllowed(origin =>
-        {
-            // Allow all localhost ports and your Railway domain
-            return origin.StartsWith("http://localhost:") ||
-                   origin.StartsWith("https://localhost:") ||
-                   origin.Contains("publiccarrental-production") ||
-                   origin.Contains("railway.app");
-        })
+        policy.WithOrigins(
+            "https://sweet-essence-production.up.railway.app", 
+            "https://publiccarrental-production-b7c5.up.railway.app",
+            "http://localhost:3000", 
+            "https://localhost:3000",
+            "http://localhost:5173", 
+            "https://localhost:5173"
+        )
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials();
@@ -186,7 +187,7 @@ builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 builder.Services.AddScoped<IDocumentService,  DocumentService>();
 builder.Services.AddScoped<IAccidentRepository, AccidentRepository>();
 builder.Services.AddScoped<IAccidentService, AccidentService>();
-
+builder.Services.AddScoped<AccidentEventProducerService>();
 
 
 
