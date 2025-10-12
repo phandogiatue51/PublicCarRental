@@ -10,6 +10,9 @@ function Contract() {
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedContract, setSelectedContract] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -82,6 +85,37 @@ function Contract() {
         {statusInfo.text}
       </span>
     );
+  };
+
+  const handleViewDetails = async (contractId) => {
+    setDetailLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/Contract/${contractId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const contractDetail = await response.json();
+      setSelectedContract(contractDetail);
+      setShowDetailModal(true);
+    } catch (e) {
+      setError(e.message || "Failed to load contract details");
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const closeDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedContract(null);
   };
 
   if (loading) {
@@ -175,8 +209,12 @@ function Contract() {
               </div>
 
               <div className="contract-actions">
-                <button className="view-details-btn">
-                  View Details
+                <button 
+                  className="view-details-btn"
+                  onClick={() => handleViewDetails(contract.contractId)}
+                  disabled={detailLoading}
+                >
+                  {detailLoading ? 'Loading...' : 'View Details'}
                 </button>
                 {contract.status === 0 && (
                   <button className="cancel-contract-btn">
@@ -186,6 +224,132 @@ function Contract() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Contract Detail Modal */}
+      {showDetailModal && selectedContract && (
+        <div className="modal-overlay" onClick={closeDetailModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Contract Details #{selectedContract.contractId}</h3>
+              <button className="close-btn" onClick={closeDetailModal}>×</button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="detail-section">
+                <h4>Contract Information</h4>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="label">Contract ID:</span>
+                    <span className="value">{selectedContract.contractId}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Status:</span>
+                    <span className="value">{getStatusBadge(selectedContract.status)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Invoice ID:</span>
+                    <span className="value">{selectedContract.invoiceId || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h4>Renter Information</h4>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="label">Renter ID:</span>
+                    <span className="value">{selectedContract.evRenterId}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Renter Name:</span>
+                    <span className="value">{selectedContract.evRenterName}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h4>Vehicle Information</h4>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="label">Vehicle ID:</span>
+                    <span className="value">{selectedContract.vehicleId}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">License Plate:</span>
+                    <span className="value">{selectedContract.vehicleLicensePlate}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h4>Rental Information</h4>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="label">Start Time:</span>
+                    <span className="value">{formatDate(selectedContract.startTime)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">End Time:</span>
+                    <span className="value">{formatDate(selectedContract.endTime)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Total Cost:</span>
+                    <span className="value">₫{selectedContract.totalCost?.toLocaleString() || '0'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h4>Station Information</h4>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="label">Station ID:</span>
+                    <span className="value">{selectedContract.stationId}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Station Name:</span>
+                    <span className="value">{selectedContract.stationName}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h4>Staff Information</h4>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="label">Staff ID:</span>
+                    <span className="value">{selectedContract.staffId || 'Not assigned'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Staff Name:</span>
+                    <span className="value">{selectedContract.staffName || 'Not assigned'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <h4>Images</h4>
+                <div className="detail-grid">
+                  <div className="detail-item">
+                    <span className="label">Image In:</span>
+                    <span className="value">{selectedContract.imageIn ? 'Available' : 'Not available'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Image Out:</span>
+                    <span className="value">{selectedContract.imageOut ? 'Available' : 'Not available'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer">
+              <button className="close-modal-btn" onClick={closeDetailModal}>
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
