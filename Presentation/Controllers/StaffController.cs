@@ -37,14 +37,15 @@ namespace PublicCarRental.Presentation.Controllers
         [HttpPost("register-staff")]
         public IActionResult RegisterStaff([FromBody] StaffDto dto)
         {
-            var accountResult = _accountService.CreateAccount(new AccountDto
+            var account = new BaseAccountDto
             {
                 FullName = dto.FullName,
                 Email = dto.Email,
                 Password = dto.Password,
                 PhoneNumber = dto.PhoneNumber,
-                IdentityCardNumber = dto.IdentityCardNumber
-            }, AccountRole.Staff);
+                IdentityCardNumber = dto.IdentityCardNumber,
+            };
+            var accountResult = _accountService.CreateAccount(account, AccountRole.Staff);
 
             if (!accountResult.Success)
                 return BadRequest(new { message = accountResult.Message });

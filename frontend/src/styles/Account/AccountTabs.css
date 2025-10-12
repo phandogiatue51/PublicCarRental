@@ -1,4 +1,7 @@
 /* AccountTabs.css - Admin-style layout */
+:root {
+  --navbar-height: 80px; /* keep content below fixed Navbar.jsx */
+}
 .account-layout {
   display: flex;
   min-height: 100vh;
@@ -123,6 +126,7 @@
   padding: 30px;
   max-width: 1200px;
   margin: 0 auto;
+  margin-top: var(--navbar-height); /* push content below Navbar */
 }
 
 /* Loading states */
@@ -166,12 +170,17 @@
     width: 100%;
     position: relative;
     height: auto;
+    top: 0;
   }
   
   .account-main {
     margin-left: 0;
   }
   
+  .main-content {
+    margin-top: 20px; /* smaller spacing on mobile */
+  }
+
   .sidebar-nav {
     display: flex;
     overflow-x: auto;

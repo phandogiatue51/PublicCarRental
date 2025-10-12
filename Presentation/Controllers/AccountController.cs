@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.Application.DTOs.Acc;
+using PublicCarRental.Application.DTOs.Docu;
 using PublicCarRental.Application.Service.Acc;
 using PublicCarRental.Application.Service.Ren;
 using PublicCarRental.Infrastructure.Data.Models;
@@ -15,29 +16,49 @@ namespace PublicCarRental.Presentation.Controllers
         private readonly IAccountService _accountService;
         private readonly IEVRenterService _renterService;
         private readonly ILogger<AccountController> _logger;
-        public AccountController(IAccountService accountService, 
+        private readonly IDocumentService _documentSerivce;
+        public AccountController(IAccountService accountService, IDocumentService documentService,
             IEVRenterService renterService, ILogger<AccountController> logger) 
         {
             _accountService = accountService;
             _renterService = renterService;
             _logger = logger;
+            _documentSerivce = documentService;
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> RegisterRenterAsync(AccountDto dto)
+        [HttpGet("get-all")]
+        public IActionResult GetAll()
         {
-            if (string.IsNullOrWhiteSpace(dto.LicenseNumber))
-                return BadRequest(new { message = "License number is required." });
+            var accounts = _accountService.GetAllAccounts();
+            return Ok(accounts);
+        }
 
-            if (string.IsNullOrWhiteSpace(dto.IdentityCardNumber))
-                return BadRequest(new { message = "Identity card number is required." });
+        [HttpGet("/{id}")]
+        public IActionResult GetById(int id)
+        {
+            var account = _accountService.GetAccountById(id);
+            return Ok(account);
+        }
 
-            var accountResult = _accountService.CreateAccount(dto, AccountRole.EVRenter);
+
+        [HttpPost("register")]
+        public async Task<IActionResult> RegisterRenterAsync(EVRenterCreateDto dto)
+        {
+            var account = new BaseAccountDto
+            {
+                Email = dto.Email,
+                FullName = dto.FullName,
+                PhoneNumber = dto.PhoneNumber,
+                Password = dto.Password,
+                IdentityCardNumber = dto.IdentityCardNumber,
+            };
+
+            var accountResult = _accountService.CreateAccount(account, AccountRole.EVRenter);
 
             if (!accountResult.Success)
                 return BadRequest(new { message = accountResult.Message });
 
-            var renterResult = await _renterService.CreateRenterAsync((int)accountResult.AccountId, dto);
+            var renterResult = await _renterService.CreateRenterAsync((int)accountResult.AccountId, dto.LicenseNumber);
 
             if (!renterResult.Success)
                 return BadRequest(new { message = renterResult.Message });
@@ -182,6 +203,5 @@ namespace PublicCarRental.Presentation.Controllers
             else
                 return BadRequest(new { error = result.message });
         }
-
     }
 }

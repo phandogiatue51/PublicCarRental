@@ -21,6 +21,8 @@ namespace PublicCarRental.Infrastructure.Data.Models
         public DbSet<Favorite> Favorites { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<Rating> Ratings { get; set; }
+        public DbSet<AccountDocument> AccountDocuments { get; set; }
+        public DbSet<AccidentReport> AccidentReports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -45,14 +47,14 @@ namespace PublicCarRental.Infrastructure.Data.Models
                 .HasConversion<int>();
 
             modelBuilder.Entity<EVRenter>()
-                .HasIndex(r => r.LicenseNumber)
-                .IsUnique();
-
-            modelBuilder.Entity<EVRenter>()
                .HasOne(r => r.Account)
                .WithOne()
                .HasForeignKey<EVRenter>(r => r.AccountId)
                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<EVRenter>()
+               .HasIndex(a => a.LicenseNumber)
+               .IsUnique();
 
             modelBuilder.Entity<Staff>()
                 .HasOne(s => s.Account)
@@ -152,6 +154,53 @@ namespace PublicCarRental.Infrastructure.Data.Models
                     .HasIndex(r => r.ContractId)
                     .IsUnique();
 
+            modelBuilder.Entity<AccountDocument>(entity =>
+            {
+                entity.HasKey(e => e.DocumentId);
+
+                entity.HasOne(ud => ud.Account)
+                      .WithMany(a => a.AccountDocuments)
+                      .HasForeignKey(ud => ud.AccountId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(ad => ad.Staff)
+                      .WithMany() 
+                      .HasForeignKey(ad => ad.StaffId)
+                      .OnDelete(DeleteBehavior.Restrict)
+                      .IsRequired(false); 
+
+                entity.HasIndex(ud => ud.AccountId);
+                entity.HasIndex(ud => new { ud.AccountId, ud.Type });
+
+                entity.Property(ud => ud.Type)
+                      .HasConversion<int>();
+                entity.Property(ud => ud.Side)
+                      .HasConversion<int>();
+            });
+
+            modelBuilder.Entity<AccidentReport>(entity =>
+            {
+                entity.HasKey(e => e.AccidentId);
+
+                entity.HasOne(ar => ar.Vehicle)
+                      .WithMany(v => v.AccidentReports) 
+                      .HasForeignKey(ar => ar.VehicleId)
+                      .OnDelete(DeleteBehavior.Restrict); 
+
+                entity.HasOne(ar => ar.Contract)
+                      .WithMany() 
+                      .HasForeignKey(ar => ar.ContractId)
+                      .OnDelete(DeleteBehavior.SetNull); 
+
+                entity.HasIndex(ar => ar.VehicleId);
+                entity.HasIndex(ar => ar.ContractId);
+                entity.HasIndex(ar => ar.StaffId);
+                entity.HasIndex(ar => ar.Status);
+                entity.HasIndex(ar => ar.ReportedAt);
+
+                entity.Property(ar => ar.Status)
+                      .HasConversion<int>();
+            });
         }
     }
 }

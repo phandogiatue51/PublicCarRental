@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react';
-import signalRService from '../services/signalRService';
+import signalRService from './../services/signalRService';
+import { useAuth } from '../hooks/useAuth'; // Import your auth hook
 import '../styles/NotificationToast.css';
 
 const NotificationToast = () => {
   const [notifications, setNotifications] = useState([]);
+  const { isAuthenticated } = useAuth(); // Use your auth hook
 
   useEffect(() => {
+    // Only connect if user is authenticated
+    if (!isAuthenticated()) {
+      return;
+    }
+
     signalRService.registerNotificationHandler((notification) => {
       setNotifications(prev => [notification, ...prev.slice(0, 4)]);
       
@@ -19,7 +26,7 @@ const NotificationToast = () => {
     return () => {
       signalRService.stopConnection();
     };
-  }, []);
+  }, [isAuthenticated]); // Re-run when auth status changes
 
   const removeNotification = (notification) => {
     setNotifications(prev => prev.filter(n => n !== notification));
@@ -43,7 +50,12 @@ const NotificationToast = () => {
           </div>
           {notification.booking && (
             <div className="notification-details">
-              <small>Booking #{notification.booking.bookingId}</small>
+              <small>Booking #{notification.booking.BookingId}</small>
+            </div>
+          )}
+          {notification.stationId && (
+            <div className="notification-details">
+              <small>Station #{notification.stationId}</small>
             </div>
           )}
         </div>

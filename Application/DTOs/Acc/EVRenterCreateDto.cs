@@ -1,17 +1,20 @@
-﻿using PublicCarRental.Infrastructure.Data.Models;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace PublicCarRental.Application.DTOs.Acc
 {
-    public class EVRenterDto
+    public class EVRenterCreateDto
     {
-        public int RenterId { get; set; }
-        public int AccountId { get; set; }
+        [Required]
         public string FullName { get; set; }
+        [Required]
         public string Email { get; set; }
+        [Required]
+        public string Password { get; set; }
+        [Required]
         public string PhoneNumber { get; set; }
+        [Required]
         public string IdentityCardNumber { get; set; }
+        [Required]
         public string LicenseNumber { get; set; }
-        public bool IsEmailVerified { get; set; }
-        public AccountStatus Status { get; set; }
     }
 }

@@ -29,14 +29,32 @@ namespace PublicCarRental.Application.Service.Acc
             _emailProducer = emailProducer;
         }
 
-        public Account GetAccountById(int id)
+        public AccountDto GetAccountById(int id)
         {
-            return _accountRepo.GetById(id);
+            var account = _accountRepo.GetById(id);
+            return new AccountDto
+            {
+                Id = account.AccountId,
+                FullName = account.FullName,
+                PhoneNumber = account.PhoneNumber,
+                Email = account.Email,
+                IdentityCardNumber = account.IdentityCardNumber,
+                Role = account.Role,
+            };
         }
 
-        public IEnumerable<Account> GetAllAccounts()
+        public IEnumerable<AccountDto> GetAllAccounts()
         {
-            return _accountRepo.GetAll().ToList();
+            return _accountRepo.GetAll()
+                 .Select(m => new AccountDto
+                 {
+                     Id = m.AccountId,
+                     FullName = m.FullName,
+                     Email = m.Email,
+                     PhoneNumber = m.PhoneNumber,
+                     IdentityCardNumber = m.IdentityCardNumber,
+                     Role = m.Role,
+                 }).ToList();
         }
 
         public void UpdateAccount(Account account)
@@ -49,7 +67,7 @@ namespace PublicCarRental.Application.Service.Acc
             _accountRepo.Delete(id);
         }
 
-        public (bool Success, string Message, int? AccountId) CreateAccount(AccountDto dto, AccountRole role)
+        public (bool Success, string Message, int? AccountId) CreateAccount(BaseAccountDto dto, AccountRole role)
         {
             try
             {
@@ -60,7 +78,7 @@ namespace PublicCarRental.Application.Service.Acc
                     return (false, "Phone number is already registered.", null);
 
                 if (_accountRepo.Exists(a => a.IdentityCardNumber == dto.IdentityCardNumber))
-                    return (false, "Identity card number is already registered.", null);
+                    return (false, "Identity card is already registered.", null);
 
                 var hashedPassword = _passwordHelper.HashPassword(dto.Password);
 
@@ -71,8 +89,8 @@ namespace PublicCarRental.Application.Service.Acc
                     PasswordHash = hashedPassword,
                     Role = role,
                     PhoneNumber = dto.PhoneNumber,
-                    IdentityCardNumber = dto.IdentityCardNumber,
                     RegisteredAt = DateTime.UtcNow,
+                    IdentityCardNumber = dto.IdentityCardNumber,
                     Status = AccountStatus.Active
                 };
 
@@ -121,10 +139,13 @@ namespace PublicCarRental.Application.Service.Acc
         {
             var claims = new List<Claim>
             {
+                new Claim("AccountId", user.AccountId.ToString()),
+                new Claim("Email", user.Email),
+                new Claim("Role", user.Role.ToString()),
+                // Keep the standard claims for compatibility
                 new Claim(ClaimTypes.NameIdentifier, user.AccountId.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(ClaimTypes.Role, user.Role.ToString()),
-                new Claim("AccountId", user.AccountId.ToString())
             };
 
             switch (user.Role)

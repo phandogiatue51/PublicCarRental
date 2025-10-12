@@ -26,5 +26,7 @@ namespace PublicCarRental.Infrastructure.Data.Models
         public int ModelId { get; set; }
         public VehicleModel Model { get; set; }
         public ICollection<RentalContract> RentalContracts { get; set; }
+        public virtual ICollection<AccidentReport> AccidentReports { get; set; }
+
     }
 }
