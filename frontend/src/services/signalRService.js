@@ -66,6 +66,7 @@ class SignalRService {
             });
 
             this.connection.on('ReceiveAccidentNotification', (notification) => {
+                console.log('🚨 Received accident notification:', notification);
                 this.notifyHandlers({
                     type: 'AccidentReported',
                     message: notification.Message,
@@ -89,11 +90,17 @@ class SignalRService {
             await this.joinUserGroup();
             
             console.log('✅ Connected to SignalR via service');
+            
+            // Test notification to verify connection works
+            this.connection.on('JoinedGroup', (groupName) => {
+                console.log(`Successfully joined group: ${groupName}`);
+            });
         } catch (err) {
-            console.error('❌ SignalR connection failed: ', err);
+            console.error('SignalR connection failed: ', err);
         }
     }
 
+    // FIXED: Join correct group based on user role
     async joinUserGroup() {
         const user = this.getCurrentUser();
         
@@ -102,19 +109,23 @@ class SignalRService {
             return;
         }
 
-        console.log('Current user for SignalR:', user); // Debug log
+        console.log('Current user for SignalR:', user);
 
         try {
-            // Convert role to string for comparison, handle both string and number
-            const userRole = user.role?.toString();
+            // Handle both string and numeric roles
+            const userRole = user.role?.toString().toLowerCase();
+            
+            console.log('Processing role:', userRole);
             
             switch (userRole) {
-                case "2": // Admin
+                case "2":
+                case "admin":
                     await this.connection.invoke('JoinAdminGroup');
                     console.log('✅ Joined admin group');
                     break;
                     
-                case "1": // Staff
+                case "1":
+                case "staff":
                     if (user.stationId) {
                         await this.connection.invoke('JoinStationGroup', parseInt(user.stationId));
                         console.log(`✅ Joined station group: ${user.stationId}`);
@@ -123,7 +134,9 @@ class SignalRService {
                     }
                     break;
                     
-                case "0": // EVRenter
+                case "0":
+                case "evrenter":
+                case "renter":
                     if (user.renterId) {
                         await this.connection.invoke('JoinUserGroup', parseInt(user.renterId));
                         console.log(`✅ Joined user group: ${user.renterId}`);

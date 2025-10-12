@@ -40,12 +40,14 @@ public class AccidentEventProducerService
             VehicleLicensePlate = vehicle?.LicensePlate ?? "Unknown"
         };
 
+        _logger.LogInformation("Publishing accident event to queue: {QueueName}", _rabbitMqSettings.QueueNames.NotificationQueue);
+        
         await _messageProducer.PublishMessageAsync(
             accidentEvent,
-            _rabbitMqSettings.QueueNames.AccidentQueue
+            _rabbitMqSettings.QueueNames.NotificationQueue
         );
 
         _logger.LogInformation("AccidentReported event published to {QueueName} for accident {AccidentId}",
-            _rabbitMqSettings.QueueNames.AccidentQueue, accident.AccidentId);
+        _rabbitMqSettings.QueueNames.NotificationQueue, accident.AccidentId);
     }
 }

@@ -9,7 +9,6 @@ using PublicCarRental.Application.Service.Acc;
 using PublicCarRental.Application.Service.Bran;
 using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Application.Service.Email;
-using PublicCarRental.Application.Service.Fav;
 using PublicCarRental.Application.Service.Image;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Mod;
@@ -52,44 +51,20 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.InstanceName = "CarRental_";
 });
 
-//var redisConnString = builder.Configuration.GetConnectionString("Redis");
-
-//if (!string.IsNullOrEmpty(redisConnString))
-//{
-//    try
-//    {
-//        builder.Services.AddStackExchangeRedisCache(options =>
-//        {
-//            options.Configuration = redisConnString;
-//            options.InstanceName = "CarRental_";
-//        });
-//        Console.WriteLine("✅ Redis cache configured successfully!");
-//    }
-//    catch (Exception ex)
-//    {
-//        Console.WriteLine($"❌ Redis connection failed: {ex.Message}");
-//        Console.WriteLine("🔄 Falling back to memory cache...");
-//        builder.Services.AddDistributedMemoryCache();
-//    }
-//}
-//else
-//{
-//    Console.WriteLine("ℹ️ Redis connection string not found, using memory cache");
-//    builder.Services.AddDistributedMemoryCache();
-//}
-
-
 builder.Services.Configure<RabbitMQSettings>(builder.Configuration.GetSection("RabbitMQ"));
 builder.Services.AddSingleton<IRabbitMQConnection>(provider =>
 {
     var settings = provider.GetRequiredService<IOptions<RabbitMQSettings>>().Value;
     var logger = provider.GetRequiredService<ILogger<RabbitMQConnection>>();
+
+    logger.LogInformation("Creating RabbitMQConnection with: {Connection}",
+        settings.ConnectionString?.Substring(0, Math.Min(20, settings.ConnectionString?.Length ?? 0)) + "...");
+
     return new RabbitMQConnection(settings.ConnectionString, logger);
 });
 
 builder.Services.AddControllers(options =>
 {
-    // Enable form binding
     options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
 })
     .AddJsonOptions(options =>
@@ -188,6 +163,7 @@ builder.Services.AddScoped<IDocumentService,  DocumentService>();
 builder.Services.AddScoped<IAccidentRepository, AccidentRepository>();
 builder.Services.AddScoped<IAccidentService, AccidentService>();
 builder.Services.AddScoped<AccidentEventProducerService>();
+builder.Services.AddHostedService<NotificationConsumerService>();
 
 
 
@@ -307,6 +283,13 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+var hostedServices = app.Services.GetServices<IHostedService>();
+logger.LogInformation("Found {Count} hosted services:", hostedServices.Count());
+foreach (var service in hostedServices)
+{
+    logger.LogInformation("   - {ServiceType}", service.GetType().Name);
+}
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();

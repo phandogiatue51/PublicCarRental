@@ -15,14 +15,16 @@ namespace PublicCarRental.Application.Service
         private readonly IImageStorageService _imageStorageService;
         private readonly IVehicleRepository _vehicleRepository;
         private readonly IContractRepository _contractRepository;
+        private readonly AccidentEventProducerService _accidentEventProducerService;
 
         public AccidentService(IAccidentRepository accidentRepository, IImageStorageService imageStorageService,
-            IVehicleRepository vehicleRepository, IContractRepository contractRepository)
+            IVehicleRepository vehicleRepository, IContractRepository contractRepository, AccidentEventProducerService accidentEventProducerService)
         {
             _accidentRepository = accidentRepository;
             _imageStorageService = imageStorageService;
             _vehicleRepository = vehicleRepository;
             _contractRepository = contractRepository;
+            _accidentEventProducerService = accidentEventProducerService;
         }
 
         public async Task<IEnumerable<AccidentDto>> GetAllAsync()
@@ -84,13 +86,16 @@ namespace PublicCarRental.Application.Service
                 }
 
                 _accidentRepository.CreateAcc(acc);
-                return (true, $"Accident report for contract {dto.ContractId} created successfully!");
-            } catch (Exception ex)
+
+                await _accidentEventProducerService.PublishAccidentReportedAsync(acc);
+
+                return (true, $"Fixing report for contract {dto.ContractId} created successfully!");
+            }
+            catch (Exception ex)
             {
                 return (false, ex.ToString());
             }
         }
-
 
         public async Task<(bool Success, string Message)> CreateVehicleAccAsync(VehicleAcc dto)
         {
@@ -114,8 +119,10 @@ namespace PublicCarRental.Application.Service
                 }
 
                 _accidentRepository.CreateAcc(acc);
-                return (true, $"Accident report for vehicle {dto.VehicleId} created successfully!");
 
+                await _accidentEventProducerService.PublishAccidentReportedAsync(acc);
+
+                return (true, $"Fixing report for vehicle {dto.VehicleId} created successfully!");
             }
             catch (Exception ex)
             {

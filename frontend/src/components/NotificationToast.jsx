@@ -14,11 +14,12 @@ const NotificationToast = () => {
     }
 
     signalRService.registerNotificationHandler((notification) => {
+      console.log('🔔 NotificationToast received notification:', notification);
       setNotifications(prev => [notification, ...prev.slice(0, 4)]);
       
       setTimeout(() => {
         setNotifications(prev => prev.filter(n => n !== notification));
-      }, 5000);
+      }, 10000);
     });
 
     signalRService.startConnection();

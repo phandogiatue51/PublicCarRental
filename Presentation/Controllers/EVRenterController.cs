@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.Application.DTOs.Acc;
+using PublicCarRental.Application.Service;
 using PublicCarRental.Application.Service.Cont;
-using PublicCarRental.Application.Service.Fav;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Ren;
+using PublicCarRental.Infrastructure.Data.Models;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -14,7 +15,7 @@ public class EVRenterController : ControllerBase
     private readonly IInvoiceService _invoiceService;
     private readonly IFavoriteService _favoriteService;
 
-    public EVRenterController(IEVRenterService eVRenterService, IContractService contractService, 
+    public EVRenterController(IEVRenterService eVRenterService, IContractService contractService,
         IInvoiceService invoiceService, IFavoriteService favoriteService)
     {
         _eVRenterService = eVRenterService;
@@ -26,7 +27,7 @@ public class EVRenterController : ControllerBase
     [HttpGet("all-renters")]
     public IActionResult GetAll()
     {
-        var renters = _eVRenterService.GetAll(); 
+        var renters = _eVRenterService.GetAll();
         return Ok(renters);
     }
 
@@ -68,40 +69,42 @@ public class EVRenterController : ControllerBase
         return Ok($"Renter status changed");
     }
 
-    [HttpGet("{userId}/favorites")]
-    public IActionResult GetFavorites(int userId)
+    [HttpGet("{renterId}/favorites")]
+    public IActionResult GetFavorites(int renterId)
     {
-        var favorites = _favoriteService.GetFavorite(userId);
+        var favorites = _favoriteService.GetFavorite(renterId);
+        if (favorites == null)
+            return NotFound(new { message = "Renter not found!" });
         return Ok(favorites);
     }
 
-    [HttpDelete("{userId}/favorites/{modelId}")]
-    public IActionResult RemoveFavorite(int userId, int modelId)
+    [HttpDelete("{renterId}/favorites/{modelId}")]
+    public IActionResult RemoveFavorite(int renterId, int modelId)
     {
-        var success = _favoriteService.RemoveFavorites(userId, modelId);
-        if (!success) return NotFound("Favorite not found");
-        return Ok("Favorite removed");
+        var success = _favoriteService.RemoveFavorites(renterId, modelId);
+        if (!success) return BadRequest("Couldn't remove favorite!");
+        return Ok("Model removed from favorite successfully!");
     }
 
-    [HttpPost("{userId}/favorites/{modelId}")]
-    public IActionResult AddFavorite(int userId, int modelId)
+    [HttpPost("{renterId}/favorites/{modelId}")]
+    public IActionResult AddFavorite(int renterId, int modelId)
     {
-        var success = _favoriteService.AddFavorites(userId, modelId);
-        if (!success) return BadRequest("Already favorited");
-        return Ok("Favorite added");
+        var success = _favoriteService.AddFavorites(renterId, modelId);
+        if (!success) return BadRequest("Couldn't add favorite!");
+        return Ok("Model added to favorite successfully!");
     }
 
-    [HttpGet("{userId}/contracts")]
-    public IActionResult GetUserContracts(int userId)
+    [HttpGet("{renterId}/contracts")]
+    public IActionResult GetUserContracts(int renterId)
     {
-        var contracts = _contractService.GetContractByRenterId(userId);
+        var contracts = _contractService.GetContractByRenterId(renterId);
         return Ok(contracts);
     }
 
-    [HttpGet("{userId}/invoices")]
-    public IActionResult GetUserInvoices(int userId)
+    [HttpGet("{renterId}/invoices")]
+    public IActionResult GetUserInvoices(int renterId)
     {
-        var invoices = _invoiceService.GetInvoiceByRenterId(userId);
+        var invoices = _invoiceService.GetInvoiceByRenterId(renterId);
         return Ok(invoices);
     }
 }
