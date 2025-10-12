@@ -13,10 +13,11 @@ function Favorite() {
   const [selectedFavorite, setSelectedFavorite] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [rentLoading, setRentLoading] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [favoritesPerPage] = useState(3); // Show 3 favorites per page
+  const [favoritesPerPage] = useState(4); // Show 4 favorites per page
 
   useEffect(() => {
     const controller = new AbortController();
@@ -86,11 +87,12 @@ function Favorite() {
     );
   };
 
-  const handleViewDetails = async (vehicleId) => {
-    setDetailLoading(true);
+  const handleRentVehicle = async (vehicleId) => {
+    setRentLoading(true);
     setError("");
     try {
-      const response = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/Vehicle/${vehicleId}`, {
+      // First, get vehicle details
+      const vehicleResponse = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/Vehicle/${vehicleId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -98,17 +100,48 @@ function Favorite() {
         }
       });
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (!vehicleResponse.ok) {
+        throw new Error(`Failed to get vehicle details: ${vehicleResponse.status}`);
       }
       
-      const vehicleDetail = await response.json();
-      setSelectedFavorite(vehicleDetail);
-      setShowDetailModal(true);
+      const vehicleDetail = await vehicleResponse.json();
+      
+      // Create rental contract
+      const contractData = {
+        evRenterId: parseInt(renterId),
+        vehicleId: vehicleId,
+        startTime: new Date().toISOString(),
+        endTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
+        stationId: vehicleDetail.stationId || 1, // Default station
+        totalCost: vehicleDetail.pricePerHour * 2 // 2 hours rental
+      };
+      
+      const contractResponse = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/Contract`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+        },
+        body: JSON.stringify(contractData)
+      });
+      
+      if (!contractResponse.ok) {
+        throw new Error(`Failed to create rental contract: ${contractResponse.status}`);
+      }
+      
+      const contract = await contractResponse.json();
+      
+      // Show success message and redirect
+      alert(`Rental successful! Contract ID: ${contract.contractId}`);
+      
+      // Redirect to contracts page or refresh favorites
+      window.location.href = '/account/contracts';
+      
     } catch (e) {
-      setError(e.message || "Failed to load vehicle details");
+      setError(e.message || "Failed to rent vehicle");
+      alert(`Error: ${e.message}`);
     } finally {
-      setDetailLoading(false);
+      setRentLoading(false);
     }
   };
 
@@ -212,47 +245,49 @@ function Favorite() {
         </div>
       ) : (
         <>
-          <div className="favorites-list">
+          <div className="favorites-grid">
             {currentFavorites.map((favorite) => (
             <div key={favorite.favoriteId} className="favorite-card">
-              <div className="favorite-header-card">
-                <h3>{favorite.vehicle?.brand} {favorite.vehicle?.model}</h3>
-                {getStatusBadge(favorite.vehicle?.status)}
+              <div className="favorite-image-container">
+                <img 
+                  src={favorite.imageUrl} 
+                  alt={`${favorite.brandName} ${favorite.name}`}
+                  className="favorite-image"
+                  onError={(e) => {
+                    e.target.src = '/placeholder-car.png';
+                  }}
+                />
+                <div className="favorite-overlay">
+                  <button 
+                    className="remove-favorite-btn-overlay"
+                    onClick={() => handleRemoveFavorite(favorite.favoriteId)}
+                    title="Remove from favorites"
+                  >
+                    ❤️
+                  </button>
+                </div>
               </div>
               
-              <div className="favorite-details">
-                <div className="detail-row">
-                  <span className="label">License Plate:</span>
-                  <span className="value">{favorite.vehicle?.licensePlate}</span>
+              <div className="favorite-content">
+                <div className="favorite-header">
+                  <h3 className="favorite-title">{favorite.brandName} {favorite.name}</h3>
+                  <span className="favorite-type">{favorite.typeName}</span>
                 </div>
-                <div className="detail-row">
-                  <span className="label">Type:</span>
-                  <span className="value">{favorite.vehicle?.type?.name}</span>
+                
+                <div className="favorite-price">
+                  <span className="price-label">Price per hour</span>
+                  <span className="price-value">₫{favorite.pricePerHour?.toLocaleString() || '0'}</span>
                 </div>
-                <div className="detail-row">
-                  <span className="label">Daily Rate:</span>
-                  <span className="value">₫{favorite.vehicle?.dailyRate?.toLocaleString() || '0'}</span>
+                
+                <div className="favorite-actions">
+                  <button 
+                    className="rent-btn"
+                    onClick={() => handleRentVehicle(favorite.vehicleId || favorite.id)}
+                    disabled={rentLoading}
+                  >
+                    {rentLoading ? 'Renting...' : 'Rent Now'}
+                  </button>
                 </div>
-                <div className="detail-row">
-                  <span className="label">Added Date:</span>
-                  <span className="value">{formatDate(favorite.addedDate)}</span>
-                </div>
-              </div>
-
-              <div className="favorite-actions">
-                <button 
-                  className="view-details-btn"
-                  onClick={() => handleViewDetails(favorite.vehicleId)}
-                  disabled={detailLoading}
-                >
-                  {detailLoading ? 'Loading...' : 'View Details'}
-                </button>
-                <button 
-                  className="remove-favorite-btn"
-                  onClick={() => handleRemoveFavorite(favorite.favoriteId)}
-                >
-                  Remove
-                </button>
               </div>
             </div>
           ))}
@@ -339,7 +374,7 @@ function Favorite() {
               borderRadius: '30px 30px 0 0'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <h3 style={{ margin: 0, color: '#333', fontSize: '1.5rem' }}>{selectedFavorite.brand} {selectedFavorite.model}</h3>
+                <h3 style={{ margin: 0, color: '#333', fontSize: '1.5rem' }}>{selectedFavorite.brandName} {selectedFavorite.name}</h3>
                 {getStatusBadge(selectedFavorite.status)}
               </div>
               <button 
@@ -358,30 +393,86 @@ function Favorite() {
               </button>
             </div>
             
-            <div style={{ padding: '25px' }}>
-              <div>
-                <div style={{ marginBottom: '30px' }}>
-                  <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Vehicle Information</h4>
-                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>License Plate:</strong> {selectedFavorite.licensePlate}</p>
-                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Type:</strong> {selectedFavorite.type?.name}</p>
+            <div style={{ padding: '0' }}>
+              {/* Hero Image Section */}
+              <div style={{
+                height: '250px',
+                backgroundImage: `url(${selectedFavorite.imageUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                position: 'relative',
+                borderRadius: '0'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  bottom: '0',
+                  left: '0',
+                  right: '0',
+                  background: 'linear-gradient(transparent, rgba(0,0,0,0.7))',
+                  padding: '20px',
+                  color: 'white'
+                }}>
+                  <h2 style={{ margin: '0', fontSize: '1.8rem', fontWeight: 'bold' }}>
+                    {selectedFavorite.brandName} {selectedFavorite.name}
+                  </h2>
+                  <p style={{ margin: '5px 0 0 0', fontSize: '1.1rem', opacity: '0.9' }}>
+                    {selectedFavorite.typeName}
+                  </p>
                 </div>
+              </div>
 
-                <div style={{ marginBottom: '30px' }}>
-                  <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Pricing Information</h4>
-                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Daily Rate:</strong> ₫{selectedFavorite.dailyRate?.toLocaleString() || '0'}</p>
-                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Hourly Rate:</strong> ₫{selectedFavorite.hourlyRate?.toLocaleString() || '0'}</p>
-                </div>
+              {/* Content Section */}
+              <div style={{ padding: '25px' }}>
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: '1fr 1fr', 
+                  gap: '30px',
+                  marginBottom: '25px'
+                }}>
+                  <div>
+                    <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.2rem' }}>Vehicle Details</h4>
+                    <div style={{ 
+                      background: '#f8f9fa', 
+                      padding: '15px', 
+                      borderRadius: '8px',
+                      border: '1px solid #e9ecef'
+                    }}>
+                      <p style={{ margin: '0 0 8px 0', fontSize: '1rem' }}>
+                        <strong>Brand:</strong> {selectedFavorite.brandName}
+                      </p>
+                      <p style={{ margin: '0 0 8px 0', fontSize: '1rem' }}>
+                        <strong>Model:</strong> {selectedFavorite.name}
+                      </p>
+                      <p style={{ margin: '0', fontSize: '1rem' }}>
+                        <strong>Type:</strong> {selectedFavorite.typeName}
+                      </p>
+                    </div>
+                  </div>
 
-                <div>
-                  <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Location Information</h4>
-                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Station:</strong> {selectedFavorite.station?.name || 'N/A'}</p>
-                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Address:</strong> {selectedFavorite.station?.address || 'N/A'}</p>
+                  <div>
+                    <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.2rem' }}>Pricing</h4>
+                    <div style={{ 
+                      background: 'linear-gradient(135deg, #28a745, #20c997)', 
+                      padding: '20px', 
+                      borderRadius: '8px',
+                      color: 'white',
+                      textAlign: 'center'
+                    }}>
+                      <p style={{ margin: '0 0 5px 0', fontSize: '0.9rem', opacity: '0.9' }}>
+                        Price per hour
+                      </p>
+                      <p style={{ margin: '0', fontSize: '1.8rem', fontWeight: 'bold' }}>
+                        ₫{selectedFavorite.pricePerHour?.toLocaleString() || '0'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
             <div style={{
-              padding: '25px',
+              padding: '20px 25px',
               borderTop: '1px solid #e0e0e0',
               backgroundColor: '#f8f9fa',
               display: 'flex',
@@ -389,23 +480,27 @@ function Favorite() {
               alignItems: 'center',
               borderRadius: '0 0 30px 30px'
             }}>
-              <div style={{
-                fontSize: '1.4rem',
-                fontWeight: 'bold',
-                color: '#28a745'
-              }}>
-                Daily Rate: ₫{selectedFavorite.dailyRate?.toLocaleString() || '0'} 🚗
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.2rem' }}>🚗</span>
+                <span style={{ fontSize: '1rem', color: '#666' }}>
+                  Ready to rent this vehicle?
+                </span>
               </div>
               <button 
                 onClick={closeDetailModal}
                 style={{
-                  backgroundColor: '#6c757d',
+                  backgroundColor: '#007bff',
                   color: 'white',
                   border: 'none',
                   padding: '10px 20px',
-                  borderRadius: '5px',
-                  cursor: 'pointer'
+                  borderRadius: '25px',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  transition: 'all 0.3s'
                 }}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#0056b3'}
+                onMouseOut={(e) => e.target.style.backgroundColor = '#007bff'}
               >
                 Close
               </button>
