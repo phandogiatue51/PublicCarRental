@@ -13,11 +13,10 @@ function Favorite() {
   const [selectedFavorite, setSelectedFavorite] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [rentLoading, setRentLoading] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [favoritesPerPage] = useState(4); // Show 4 favorites per page
+  const [favoritesPerPage] = useState(4); // Show 3 favorites per page
 
   useEffect(() => {
     const controller = new AbortController();
@@ -87,12 +86,11 @@ function Favorite() {
     );
   };
 
-  const handleRentVehicle = async (vehicleId) => {
-    setRentLoading(true);
+  const handleViewDetails = async (vehicleId) => {
+    setDetailLoading(true);
     setError("");
     try {
-      // First, get vehicle details
-      const vehicleResponse = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/Vehicle/${vehicleId}`, {
+      const response = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/Vehicle/${vehicleId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -100,48 +98,17 @@ function Favorite() {
         }
       });
       
-      if (!vehicleResponse.ok) {
-        throw new Error(`Failed to get vehicle details: ${vehicleResponse.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const vehicleDetail = await vehicleResponse.json();
-      
-      // Create rental contract
-      const contractData = {
-        evRenterId: parseInt(renterId),
-        vehicleId: vehicleId,
-        startTime: new Date().toISOString(),
-        endTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
-        stationId: vehicleDetail.stationId || 1, // Default station
-        totalCost: vehicleDetail.pricePerHour * 2 // 2 hours rental
-      };
-      
-      const contractResponse = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/Contract`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
-        },
-        body: JSON.stringify(contractData)
-      });
-      
-      if (!contractResponse.ok) {
-        throw new Error(`Failed to create rental contract: ${contractResponse.status}`);
-      }
-      
-      const contract = await contractResponse.json();
-      
-      // Show success message and redirect
-      alert(`Rental successful! Contract ID: ${contract.contractId}`);
-      
-      // Redirect to contracts page or refresh favorites
-      window.location.href = '/account/contracts';
-      
+      const vehicleDetail = await response.json();
+      setSelectedFavorite(vehicleDetail);
+      setShowDetailModal(true);
     } catch (e) {
-      setError(e.message || "Failed to rent vehicle");
-      alert(`Error: ${e.message}`);
+      setError(e.message || "Failed to load vehicle details");
     } finally {
-      setRentLoading(false);
+      setDetailLoading(false);
     }
   };
 
@@ -281,11 +248,11 @@ function Favorite() {
                 
                 <div className="favorite-actions">
                   <button 
-                    className="rent-btn"
-                    onClick={() => handleRentVehicle(favorite.vehicleId || favorite.id)}
-                    disabled={rentLoading}
+                    className="view-details-btn"
+                    onClick={() => handleViewDetails(favorite.vehicleId || favorite.id)}
+                    disabled={detailLoading}
                   >
-                    {rentLoading ? 'Renting...' : 'Rent Now'}
+                    {detailLoading ? 'Loading...' : 'View Details'}
                   </button>
                 </div>
               </div>

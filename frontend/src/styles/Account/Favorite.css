@@ -291,8 +291,8 @@
   justify-content: center;
 }
 
-.rent-btn {
-  background: linear-gradient(135deg, #28a745, #20c997);
+.view-details-btn {
+  background: linear-gradient(135deg, #007bff, #0056b3);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -306,13 +306,13 @@
   letter-spacing: 0.5px;
 }
 
-.rent-btn:hover {
-  background: linear-gradient(135deg, #20c997, #17a2b8);
+.view-details-btn:hover {
+  background: linear-gradient(135deg, #0056b3, #004085);
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
 }
 
-.rent-btn:disabled {
+.view-details-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none;
