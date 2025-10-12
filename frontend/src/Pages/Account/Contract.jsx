@@ -13,6 +13,10 @@ function Contract() {
   const [selectedContract, setSelectedContract] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [contractsPerPage] = useState(3); // Show 3 contracts per page
 
   useEffect(() => {
     const controller = new AbortController();
@@ -24,8 +28,8 @@ function Contract() {
       setLoading(true);
       setError("");
       try {
-        // Fetch all contracts and filter by renter ID
-        const response = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/Contract/all`, {
+        // Fetch contracts for the specific renter
+        const response = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/EVRenter/${renterId}/contracts`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -39,11 +43,7 @@ function Contract() {
         }
         
         const data = await response.json();
-        // Filter contracts for the current renter
-        const renterContracts = Array.isArray(data) 
-          ? data.filter(contract => contract.evRenterId === parseInt(renterId))
-          : [];
-        setContracts(renterContracts);
+        setContracts(Array.isArray(data) ? data : []);
       } catch (e) {
         if (e.name !== "AbortError") {
           setError(e.message || "Failed to load contracts");
@@ -118,6 +118,34 @@ function Contract() {
     setSelectedContract(null);
   };
 
+  // Pagination logic
+  const indexOfLastContract = currentPage * contractsPerPage;
+  const indexOfFirstContract = indexOfLastContract - contractsPerPage;
+  const currentContracts = contracts.slice(indexOfFirstContract, indexOfLastContract);
+  const totalPages = Math.ceil(contracts.length / contractsPerPage);
+
+  // Change page
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  // Go to previous page
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Go to next page
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  // Reset to first page when contracts change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [contracts]);
+
   if (loading) {
     return (
       <div className="loading">
@@ -165,8 +193,9 @@ function Contract() {
           </button>
         </div>
       ) : (
-        <div className="contracts-list">
-          {contracts.map((contract) => (
+        <>
+          <div className="contracts-list">
+            {currentContracts.map((contract) => (
             <div key={contract.contractId} className="contract-card">
               <div className="contract-header-card">
                 <h3>Contract #{contract.contractId}</h3>
@@ -175,20 +204,12 @@ function Contract() {
               
               <div className="contract-details">
                 <div className="detail-row">
-                  <span className="label">Renter:</span>
-                  <span className="value">{contract.evRenterName}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Vehicle License:</span>
+                  <span className="label">Vehicle:</span>
                   <span className="value">{contract.vehicleLicensePlate}</span>
                 </div>
                 <div className="detail-row">
-                  <span className="label">Start Time:</span>
-                  <span className="value">{formatDate(contract.startTime)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">End Time:</span>
-                  <span className="value">{formatDate(contract.endTime)}</span>
+                  <span className="label">Rental Period:</span>
+                  <span className="value">{formatDate(contract.startTime)} - {formatDate(contract.endTime)}</span>
                 </div>
                 <div className="detail-row">
                   <span className="label">Total Cost:</span>
@@ -197,14 +218,6 @@ function Contract() {
                 <div className="detail-row">
                   <span className="label">Station:</span>
                   <span className="value">{contract.stationName || 'N/A'}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Staff:</span>
-                  <span className="value">{contract.staffName || 'Not assigned'}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Invoice ID:</span>
-                  <span className="value">{contract.invoiceId || 'N/A'}</span>
                 </div>
               </div>
 
@@ -224,128 +237,156 @@ function Contract() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="pagination-container">
+              <div className="pagination-info">
+                Showing {indexOfFirstContract + 1} to {Math.min(indexOfLastContract, contracts.length)} of {contracts.length} contracts
+              </div>
+              
+              <div className="pagination">
+                <button 
+                  className="pagination-btn"
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+                
+                <div className="pagination-numbers">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+                    <button
+                      key={number}
+                      className={`pagination-number ${currentPage === number ? 'active' : ''}`}
+                      onClick={() => paginate(number)}
+                    >
+                      {number}
+                    </button>
+                  ))}
+                </div>
+                
+                <button 
+                  className="pagination-btn"
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Contract Detail Modal */}
       {showDetailModal && selectedContract && (
-        <div className="modal-overlay" onClick={closeDetailModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Contract Details #{selectedContract.contractId}</h3>
-              <button className="close-btn" onClick={closeDetailModal}>×</button>
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px'
+          }}
+          onClick={closeDetailModal}
+        >
+          <div 
+            style={{
+              background: 'white',
+              borderRadius: '30px',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '20px',
+              borderBottom: '1px solid #e0e0e0',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '100px 100px 0 0'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <h3 style={{ margin: 0, color: '#333', fontSize: '1.5rem' }}>Contract Details #{selectedContract.contractId}</h3>
+                {getStatusBadge(selectedContract.status)}
+              </div>
+              <button 
+                onClick={closeDetailModal}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#666',
+                  padding: '5px',
+                  borderRadius: '50%'
+                }}
+              >
+                ×
+              </button>
             </div>
             
-            <div className="modal-body">
-              <div className="detail-section">
-                <h4>Contract Information</h4>
-                <div className="detail-grid">
-                  <div className="detail-item">
-                    <span className="label">Contract ID:</span>
-                    <span className="value">{selectedContract.contractId}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Status:</span>
-                    <span className="value">{getStatusBadge(selectedContract.status)}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Invoice ID:</span>
-                    <span className="value">{selectedContract.invoiceId || 'N/A'}</span>
-                  </div>
+            <div style={{ padding: '25px' }}>
+              <div>
+                <div style={{ marginBottom: '30px' }}>
+                  <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Contract Information</h4>
+                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Invoice ID:</strong> {selectedContract.invoiceId || 'N/A'}</p>
+                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Station:</strong> {selectedContract.stationName}</p>
                 </div>
-              </div>
 
-              <div className="detail-section">
-                <h4>Renter Information</h4>
-                <div className="detail-grid">
-                  <div className="detail-item">
-                    <span className="label">Renter ID:</span>
-                    <span className="value">{selectedContract.evRenterId}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Renter Name:</span>
-                    <span className="value">{selectedContract.evRenterName}</span>
-                  </div>
+                <div style={{ marginBottom: '30px' }}>
+                  <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Rental Information</h4>
+                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Start Time:</strong> {formatDate(selectedContract.startTime)}</p>
+                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>End Time:</strong> {formatDate(selectedContract.endTime)}</p>
                 </div>
-              </div>
 
-              <div className="detail-section">
-                <h4>Vehicle Information</h4>
-                <div className="detail-grid">
-                  <div className="detail-item">
-                    <span className="label">Vehicle ID:</span>
-                    <span className="value">{selectedContract.vehicleId}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">License Plate:</span>
-                    <span className="value">{selectedContract.vehicleLicensePlate}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="detail-section">
-                <h4>Rental Information</h4>
-                <div className="detail-grid">
-                  <div className="detail-item">
-                    <span className="label">Start Time:</span>
-                    <span className="value">{formatDate(selectedContract.startTime)}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">End Time:</span>
-                    <span className="value">{formatDate(selectedContract.endTime)}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Total Cost:</span>
-                    <span className="value">₫{selectedContract.totalCost?.toLocaleString() || '0'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="detail-section">
-                <h4>Station Information</h4>
-                <div className="detail-grid">
-                  <div className="detail-item">
-                    <span className="label">Station ID:</span>
-                    <span className="value">{selectedContract.stationId}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Station Name:</span>
-                    <span className="value">{selectedContract.stationName}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="detail-section">
-                <h4>Staff Information</h4>
-                <div className="detail-grid">
-                  <div className="detail-item">
-                    <span className="label">Staff ID:</span>
-                    <span className="value">{selectedContract.staffId || 'Not assigned'}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Staff Name:</span>
-                    <span className="value">{selectedContract.staffName || 'Not assigned'}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="detail-section">
-                <h4>Images</h4>
-                <div className="detail-grid">
-                  <div className="detail-item">
-                    <span className="label">Image In:</span>
-                    <span className="value">{selectedContract.imageIn ? 'Available' : 'Not available'}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Image Out:</span>
-                    <span className="value">{selectedContract.imageOut ? 'Available' : 'Not available'}</span>
-                  </div>
+                <div>
+                  <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Staff Information</h4>
+                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Staff Name:</strong> {selectedContract.staffName || 'Not assigned'}</p>
                 </div>
               </div>
             </div>
 
-            <div className="modal-footer">
-              <button className="close-modal-btn" onClick={closeDetailModal}>
+            <div style={{
+              padding: '25px',
+              borderTop: '1px solid #e0e0e0',
+              backgroundColor: '#f8f9fa',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderRadius: '0 0 100px 100px'
+            }}>
+              <div style={{
+                fontSize: '1.4rem',
+                fontWeight: 'bold',
+                color: '#28a745'
+              }}>
+                Total Cost: ₫{selectedContract.totalCost?.toLocaleString() || '0'} 🤑
+              </div>
+              <button 
+                onClick={closeDetailModal}
+                style={{
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
                 Close
               </button>
             </div>
