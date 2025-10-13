@@ -37,12 +37,21 @@ const StaffLayout = () => {
     };
 
     const handleLogout = () => {
-        sessionStorage.removeItem("userRole");
-        sessionStorage.removeItem("accountId");
-        sessionStorage.removeItem("fullName");
-        sessionStorage.removeItem("email");
-        sessionStorage.removeItem("staffId");
-        sessionStorage.removeItem("stationId");
+        // Clear all auth-related data from localStorage
+        localStorage.removeItem("jwtToken");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("accountId");
+        localStorage.removeItem("fullName");
+        localStorage.removeItem("email");
+        localStorage.removeItem("staffId");
+        localStorage.removeItem("stationId");
+        localStorage.removeItem("renterId");
+        localStorage.removeItem("isAdmin");
+        localStorage.removeItem("phoneNumber");
+        
+        // Dispatch custom event to notify components of auth state change
+        window.dispatchEvent(new CustomEvent('authStateChanged'));
+        
         navigate('/');
     };
 

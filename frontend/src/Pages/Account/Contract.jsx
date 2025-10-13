@@ -4,8 +4,8 @@ import { renterAPI } from "../../services/api";
 import "../../styles/Account/Contract.css";
 
 function Contract() {
-  const role = sessionStorage.getItem("userRole");
-  const renterId = sessionStorage.getItem("renterId");
+  const role = localStorage.getItem("userRole");
+  const renterId = localStorage.getItem("renterId");
   
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +33,7 @@ function Contract() {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
           },
           signal: controller.signal
         });

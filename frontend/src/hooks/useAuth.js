@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+ import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { accountAPI } from "../services/api";
 
@@ -19,10 +19,27 @@ export function useAuth() {
             
             console.log('✅ Login successful:', data);
             
-            // Store ONLY the JWT token - that's all we need
+            // Store JWT token and basic user info for compatibility
             localStorage.setItem("jwtToken", data.token);
             
-            console.log("✅ JWT token stored, user data available from token");
+            // Store user info for backward compatibility with existing components
+            const userInfo = decodeJWT(data.token);
+            if (userInfo) {
+                localStorage.setItem("userRole", userInfo.Role);
+                localStorage.setItem("accountId", userInfo.AccountId);
+                localStorage.setItem("email", userInfo.Email);
+                localStorage.setItem("renterId", userInfo.RenterId || "");
+                localStorage.setItem("staffId", userInfo.StaffId || "");
+                localStorage.setItem("stationId", userInfo.StationId || "");
+                localStorage.setItem("isAdmin", userInfo.IsAdmin || "false");
+                localStorage.setItem("fullName", userInfo.FullName || "");
+                localStorage.setItem("phoneNumber", userInfo.PhoneNumber || "");
+            }
+            
+            console.log("✅ JWT token and user data stored");
+            
+            // Dispatch custom event to notify components of auth state change
+            window.dispatchEvent(new CustomEvent('authStateChanged'));
 
             // Handle navigation based on role
             switch (data.role.toString()) {
@@ -59,6 +76,7 @@ export function useAuth() {
         try {
             const userData = decodeJWT(token);
             return {
+            
                 accountId: userData.AccountId,
                 email: userData.Email,
                 role: userData.Role,
@@ -100,11 +118,15 @@ export function useAuth() {
             // Optional: Check token expiration
             const expiration = userData.exp;
             if (expiration && Date.now() >= expiration * 1000) {
-                logout();
+                // Clear expired token
+                localStorage.removeItem("jwtToken");
+                window.dispatchEvent(new CustomEvent('authStateChanged'));
                 return false;
             }
             return true;
         } catch (error) {
+            // Clear invalid token
+            localStorage.removeItem("jwtToken");
             return false;
         }
     }, []);
@@ -116,8 +138,21 @@ export function useAuth() {
     };
 
     const logout = () => {
-        // Clear ONLY the token
+        // Clear all auth-related data
         localStorage.removeItem("jwtToken");
+        localStorage.removeItem("userRole");
+        localStorage.removeItem("accountId");
+        localStorage.removeItem("email");
+        localStorage.removeItem("renterId");
+        localStorage.removeItem("staffId");
+        localStorage.removeItem("stationId");
+        localStorage.removeItem("isAdmin");
+        localStorage.removeItem("fullName");
+        localStorage.removeItem("phoneNumber");
+        
+        // Dispatch custom event to notify components of auth state change
+        window.dispatchEvent(new CustomEvent('authStateChanged'));
+        
         navigate("/login");
     };
 

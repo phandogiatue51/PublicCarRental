@@ -12,15 +12,20 @@ function SidebarContent(props) {
   const { routes } = props;
 
   const handleLogout = () => {
-    sessionStorage.removeItem("userRole");
-    sessionStorage.removeItem("accountId");
-    sessionStorage.removeItem("fullName");
-    sessionStorage.removeItem("email");
-    sessionStorage.removeItem("isAdmin");
-    sessionStorage.removeItem("staffId");
-    sessionStorage.removeItem("stationId");
-    sessionStorage.removeItem("renterId");
-    sessionStorage.removeItem("phoneNumber");
+    // Clear all auth-related data from localStorage
+    localStorage.removeItem("jwtToken");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("accountId");
+    localStorage.removeItem("fullName");
+    localStorage.removeItem("email");
+    localStorage.removeItem("isAdmin");
+    localStorage.removeItem("staffId");
+    localStorage.removeItem("stationId");
+    localStorage.removeItem("renterId");
+    localStorage.removeItem("phoneNumber");
+    
+    // Dispatch custom event to notify components of auth state change
+    window.dispatchEvent(new CustomEvent('authStateChanged'));
     
     window.location.href = '/';
   };

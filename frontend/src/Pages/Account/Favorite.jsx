@@ -6,8 +6,8 @@ import "../../styles/Account/Favorite.css";
 
 function Favorite() {
   const navigate = useNavigate();
-  const role = sessionStorage.getItem("userRole");
-  const renterId = sessionStorage.getItem("renterId");
+  const role = localStorage.getItem("userRole");
+  const renterId = localStorage.getItem("renterId");
   
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +35,7 @@ function Favorite() {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
           },
           signal: controller.signal
         });

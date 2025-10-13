@@ -4,11 +4,11 @@ import { renterAPI } from "../../services/api";
 import "../../styles/Account/Profile.css";
 
 function Profile() {
-  const role = sessionStorage.getItem("userRole");
-  const storedFullName = sessionStorage.getItem("fullName");
-  const storedEmail = sessionStorage.getItem("email");
-  const storedPhoneNumber = sessionStorage.getItem("phoneNumber");
-  const renterId = sessionStorage.getItem("renterId");
+  const role = localStorage.getItem("userRole");
+  const storedFullName = localStorage.getItem("fullName");
+  const storedEmail = localStorage.getItem("email");
+  const storedPhoneNumber = localStorage.getItem("phoneNumber");
+  const renterId = localStorage.getItem("renterId");
 
   const [profileData, setProfileData] = useState({
     fullName: storedFullName || "",
@@ -41,9 +41,9 @@ function Profile() {
           status: data.status !== undefined ? data.status : 0
         });
         // cache for later sessions
-        if (data.fullName) sessionStorage.setItem("fullName", data.fullName);
-        if (data.email) sessionStorage.setItem("email", data.email);
-        if (data.phoneNumber) sessionStorage.setItem("phoneNumber", data.phoneNumber);
+        if (data.fullName) localStorage.setItem("fullName", data.fullName);
+        if (data.email) localStorage.setItem("email", data.email);
+        if (data.phoneNumber) localStorage.setItem("phoneNumber", data.phoneNumber);
       } catch (e) {
         if (e.name !== "AbortError") setError(e.message || "Failed to load profile");
       } finally {

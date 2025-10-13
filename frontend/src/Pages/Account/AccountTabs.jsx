@@ -38,16 +38,25 @@ function AccountTabs() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
   
-  const role = sessionStorage.getItem("userRole");
-  const fullName = sessionStorage.getItem("fullName");
-  const email = sessionStorage.getItem("email");
+  const role = localStorage.getItem("userRole");
+  const fullName = localStorage.getItem("fullName");
+  const email = localStorage.getItem("email");
 
   const handleLogout = () => {
-    sessionStorage.removeItem("userRole");
-    sessionStorage.removeItem("renterId");
-    sessionStorage.removeItem("fullName");
-    sessionStorage.removeItem("email");
-    sessionStorage.removeItem("phoneNumber");
+    localStorage.removeItem("jwtToken");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("renterId");
+    localStorage.removeItem("fullName");
+    localStorage.removeItem("email");
+    localStorage.removeItem("phoneNumber");
+    localStorage.removeItem("accountId");
+    localStorage.removeItem("isAdmin");
+    localStorage.removeItem("staffId");
+    localStorage.removeItem("stationId");
+    
+    // Dispatch custom event to notify components of auth state change
+    window.dispatchEvent(new CustomEvent('authStateChanged'));
+    
     navigate("/");
   };
 
