@@ -1,14 +1,25 @@
 @use "../global" as *;
 
+/* Ensure all form elements are clickable */
+.book-section * {
+  pointer-events: auto;
+}
+
+.book-section .modal-overlay {
+  pointer-events: auto;
+}
+
 .book-section {
   position: relative;
-
   background: linear-gradient(to bottom, $bg-gray 20%, $bg-white 80%);
+  z-index: 1;
 }
 
 .book-content {
   margin: 0 auto;
   margin-bottom: 10rem;
+  position: relative;
+  z-index: 50;
 
   &__box {
     background-color: $bg-white;
@@ -17,16 +28,18 @@
     box-shadow: 0 10px 20px 0 rgb(0 0 0 / 10%);
     height: auto;
     position: relative;
-    z-index: 4;
+    z-index: 100;
     color: white;
     border-radius: 5px;
     background-image: url("/src/images/book-car/book-bg.png");
     background-position: center center;
     background-repeat: no-repeat;
     background-size: cover;
+    background-attachment: scroll;
     display: flex;
     flex-direction: column;
     color: $text-black;
+    pointer-events: auto;
 
     @media (max-width: 400px) {
       padding: 4rem 2.5rem 5rem 2.5rem;
@@ -43,6 +56,9 @@
       grid-template-columns: 1fr 1fr 1fr;
       grid-template-rows: auto auto auto;
       gap: 2rem;
+      position: relative;
+      z-index: 101;
+      pointer-events: auto;
 
       b {
         color: $text-orange;
@@ -59,6 +75,8 @@
       &__car-type {
         display: flex;
         flex-direction: column;
+        position: relative;
+        z-index: 102;
 
         label {
           font-size: $p-size;
@@ -79,6 +97,10 @@
           font-weight: 400;
           padding: 1.2rem 1.3rem;
           outline: none;
+          cursor: pointer;
+          pointer-events: auto;
+          background-color: white;
+          z-index: 102;
         }
       }
 
@@ -86,12 +108,18 @@
         display: flex;
         flex-direction: column;
         position: relative;
+        z-index: 102;
 
         input {
           outline: none;
           color: #878585;
           padding-right: 3rem;
           border: 1px solid #ccd7e6;
+          cursor: pointer;
+          pointer-events: auto;
+          background-color: white;
+          z-index: 102;
+          position: relative;
         }
 
         label {
@@ -128,6 +156,9 @@
       box-shadow: 0 10px 15px rgb(255 83 48 / 35%);
       cursor: pointer;
       transition: all 0.3s;
+      position: relative;
+      z-index: 103;
+      pointer-events: auto;
 
       &:hover {
         box-shadow: 0 10px 15px rgb(255 83 48 / 55%);
@@ -183,12 +214,10 @@
 .active-modal {
   opacity: 1 !important;
   display: flex !important;
+  pointer-events: auto !important;
 }
 
 .modal-overlay {
-  opacity: 0;
-  display: none;
-
   position: fixed;
   width: 100%;
   height: 100%;
@@ -196,6 +225,7 @@
   z-index: 999999999;
   top: 0;
   right: 0;
+  pointer-events: auto;
 }
 
 .booking-modal {
