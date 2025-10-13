@@ -68,38 +68,27 @@ function AccountTabs() {
 
   return (
     <div className="account-layout">
-      {/* Sidebar */}
-      <div className="account-sidebar">
-        <div className="sidebar-header">
-          <h2>My Account</h2>
-          <p>Welcome back, {fullName || email || 'User'}</p>
-        </div>
-        
-        <div className="sidebar-nav">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`sidebar-nav-item ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              <span className="nav-icon">{tab.icon}</span>
-              <span className="nav-label">{tab.label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="sidebar-footer">
-          <button onClick={handleLogout} className="logout-btn">
-            <span className="logout-icon">🚪</span>
-            Logout
-          </button>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="account-main">
         <div className="main-content">
-          {renderTabContent()}
+          {/* Tab Navigation */}
+          <div className="tab-navigation">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <span className="tab-icon">{tab.icon}</span>
+                <span className="tab-label">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Tab Content */}
+          <div className="tab-content">
+            {renderTabContent()}
+          </div>
         </div>
       </div>
     </div>

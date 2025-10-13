@@ -1,7 +1,6 @@
-/* Additional styles for Profile and other components */
+/* Additional styles for Profile and other account components */
 .profile-content {
-  max-width: 800px;
-  margin: 0 auto;
+  padding: 30px;
 }
 
 .profile-header {
@@ -213,4 +212,35 @@
     width: 100%;
     max-width: 300px;
   }
+}
+
+/* Styles for other account pages */
+.contract-content,
+.invoice-content,
+.favorite-content {
+  padding: 30px;
+}
+
+.contract-header,
+.invoice-header,
+.favorite-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.contract-header h2,
+.invoice-header h2,
+.favorite-header h2 {
+  font-size: 1.8rem;
+  color: #2d3748;
+  margin-bottom: 0.5rem;
+}
+
+.contract-header p,
+.invoice-header p,
+.favorite-header p {
+  color: #718096;
+  margin: 0;
 }

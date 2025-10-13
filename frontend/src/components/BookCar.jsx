@@ -63,6 +63,7 @@ function BookCar() {
   // open modal when all inputs are fulfilled
   const openModal = (e) => {
     e.preventDefault();
+    e.stopPropagation();
     const errorMsg = document.querySelector(".error-message");
     if (
       pickUp === "" ||
@@ -75,7 +76,9 @@ function BookCar() {
     } else {
       setModal(!modal);
       const modalDiv = document.querySelector(".booking-modal");
-      modalDiv.scroll(0, 0);
+      if (modalDiv) {
+        modalDiv.scroll(0, 0);
+      }
       errorMsg.style.display = "none";
     }
   };
@@ -99,23 +102,28 @@ function BookCar() {
 
   // taking value of booking inputs
   const handleCar = (e) => {
+    e.stopPropagation();
     setCarType(e.target.value);
     setCarImg(e.target.value);
   };
 
   const handlePick = (e) => {
+    e.stopPropagation();
     setPickUp(e.target.value);
   };
 
   const handleDrop = (e) => {
+    e.stopPropagation();
     setDropOff(e.target.value);
   };
 
   const handlePickTime = (e) => {
+    e.stopPropagation();
     setPickTime(e.target.value);
   };
 
   const handleDropTime = (e) => {
+    e.stopPropagation();
     setDropTime(e.target.value);
   };
 
@@ -153,11 +161,13 @@ function BookCar() {
   return (
     <>
       <section id="booking-section" className="book-section">
-        {/* overlay */}
-        <div
-          onClick={openModal}
-          className={`modal-overlay ${modal ? "active-modal" : ""}`}
-        ></div>
+        {/* overlay - only render when modal is active */}
+        {modal && (
+          <div
+            onClick={openModal}
+            className="modal-overlay active-modal"
+          ></div>
+        )}
 
         <div className="container">
           <div className="book-content">
