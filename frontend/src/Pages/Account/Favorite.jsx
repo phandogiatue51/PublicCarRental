@@ -1,9 +1,11 @@
 // Favorite.jsx
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { renterAPI } from "../../services/api";
 import "../../styles/Account/Favorite.css";
 
 function Favorite() {
+  const navigate = useNavigate();
   const role = sessionStorage.getItem("userRole");
   const renterId = sessionStorage.getItem("renterId");
   
@@ -235,7 +237,7 @@ function Favorite() {
                 </div>
               </div>
               
-              <div className="favorite-content">
+                <div className="favorite-content">
                 <div className="favorite-header">
                   <h3 className="favorite-title">{favorite.brandName} {favorite.name}</h3>
                   <span className="favorite-type">{favorite.typeName}</span>
@@ -249,10 +251,9 @@ function Favorite() {
                 <div className="favorite-actions">
                   <button 
                     className="view-details-btn"
-                    onClick={() => handleViewDetails(favorite.vehicleId || favorite.id)}
-                    disabled={detailLoading}
+                    onClick={() => navigate(`/models?vehicleId=${favorite.vehicleId || favorite.id}`)}
                   >
-                    {detailLoading ? 'Loading...' : 'View Details'}
+                    Rent Now
                   </button>
                 </div>
               </div>
