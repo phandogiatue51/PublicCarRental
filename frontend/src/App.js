@@ -14,6 +14,7 @@ import SignUp from "./Pages/SignUp";
 import AccountTabs from "./Pages/Account/AccountTabs";
 import ForgotPassword from "./Pages/Account/ForgotPassword";
 import NotificationToast from './components/NotificationToast';
+import ModelDetail from "./Pages/ModelDetail";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
               <Route index path="/" element={<Home />} />
               <Route path="about" element={<About />} />
               <Route path="models" element={<Models />} />
+              <Route path="models/:id" element={<ModelDetail />} />
               <Route path="testimonials" element={<TestimonialsPage />} />
               <Route path="team" element={<Team />} />
               <Route path="contact" element={<Contact />} />

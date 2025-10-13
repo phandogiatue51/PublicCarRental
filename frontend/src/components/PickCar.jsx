@@ -228,6 +228,7 @@ function PickCar() {
 
   // Transform all models to match CarBox expected format
   const transformedData = models.map(model => ([{
+    modelId: model.modelId,
     name: model.name,
     price: model.pricePerHour,
     mark: model.brandName,
