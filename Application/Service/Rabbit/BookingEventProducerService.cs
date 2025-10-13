@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Options;
 using PublicCarRental.Application.DTOs.Message;
 using PublicCarRental.Infrastructure.Data.Models.Configuration;
 namespace PublicCarRental.Application.Service.Rabbit

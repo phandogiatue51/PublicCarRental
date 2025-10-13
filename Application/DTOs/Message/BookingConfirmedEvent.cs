@@ -3,6 +3,7 @@
     public class BookingConfirmedEvent
     {
         public int BookingId { get; set; }
+        public int RenterId { get; set; }
         public string RenterEmail { get; set; }
         public string RenterName { get; set; }
         public DateTime StartTime { get; set; }

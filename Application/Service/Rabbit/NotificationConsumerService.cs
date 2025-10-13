@@ -44,7 +44,6 @@ namespace PublicCarRental.Application.Service.Rabbit
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            // CRITICAL: Log that the service is starting
             _logger.LogInformation("🚀 NOTIFICATION CONSUMER ExecuteAsync STARTED");
 
             if (string.IsNullOrEmpty(_connectionString))
@@ -65,7 +64,9 @@ namespace PublicCarRental.Application.Service.Rabbit
                 _logger.LogInformation("✅ RabbitMQ connection established");
 
                 using var channel = await connection.CreateChannelAsync();
-                _logger.LogInformation("✅ RabbitMQ channel created");
+
+                await channel.BasicQosAsync(0, 1, false);
+                _logger.LogInformation("✅ QoS set (prefetch=1)");
 
                 await channel.QueueDeclareAsync(
                     queue: _queueName,
@@ -82,7 +83,7 @@ namespace PublicCarRental.Application.Service.Rabbit
                 {
                     try
                     {
-                        _logger.LogInformation("📨 📨 📨 MESSAGE RECEIVED - Processing started");
+                        _logger.LogInformation("📨 MESSAGE RECEIVED - Processing started | DeliveryTag={DeliveryTag} Redelivered={Redelivered}", ea.DeliveryTag, ea.Redelivered);
 
                         var body = ea.Body.ToArray();
                         var messageJson = Encoding.UTF8.GetString(body);
@@ -92,44 +93,63 @@ namespace PublicCarRental.Application.Service.Rabbit
 
                         _logger.LogInformation("Processing message: {MessageJson}", messageJson);
 
-                        if (messageJson.Contains("BookingId"))
+                        try
                         {
-                            var bookingEvent = JsonSerializer.Deserialize<BookingCreatedEvent>(messageJson);
-                            await ProcessBookingNotificationAsync(hubContext, bookingEvent);
+                            using var doc = JsonDocument.Parse(messageJson);
+                            if (doc.RootElement.TryGetProperty("EventType", out var eventTypeProp))
+                            {
+                                var eventType = eventTypeProp.GetString();
+                                switch (eventType)
+                                {
+                                    case "BookingCreated":
+                                        var bookingCreated = JsonSerializer.Deserialize<BookingCreatedEvent>(messageJson);
+                                        await ProcessBookingNotificationAsync(hubContext, bookingCreated);
+                                        break;
+                                    case "BookingConfirmed":
+                                        var bookingConfirmed = JsonSerializer.Deserialize<BookingConfirmedEvent>(messageJson);
+                                        await ProcessBookingConfirmedNotificationAsync(hubContext, bookingConfirmed);
+                                        break;
+                                    default:
+                                        _logger.LogWarning("Unhandled EventType: {EventType}", eventType);
+                                        break;
+                                }
+                            }
+                            else if (messageJson.Contains("AccidentId"))
+                            {
+                                _logger.LogInformation("Processing fixing request notification");
+                                var accidentEvent = JsonSerializer.Deserialize<AccidentReportedEvent>(messageJson);
+                                await ProcessAccidentNotificationAsync(hubContext, accidentEvent);
+                            }
+                            else if (messageJson.Contains("BookingId"))
+                            {
+                                var bookingCreated = JsonSerializer.Deserialize<BookingCreatedEvent>(messageJson);
+                                await ProcessBookingNotificationAsync(hubContext, bookingCreated);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Unknown message type received: {MessageJson}", messageJson);
+                            }
                         }
-                        else if (messageJson.Contains("AccidentId"))
+                        catch (JsonException ex)
                         {
-                            _logger.LogInformation("Processing fixing request notification");
-                            var accidentEvent = JsonSerializer.Deserialize<AccidentReportedEvent>(messageJson);
-                            await ProcessAccidentNotificationAsync(hubContext, accidentEvent);
-                        }
-                        else
-                        {
-                            _logger.LogWarning("Unknown message type received: {MessageJson}", messageJson);
+                            _logger.LogError(ex, "Failed to parse message JSON");
                         }
 
                         await channel.BasicAckAsync(ea.DeliveryTag, false);
-                        _logger.LogInformation("✅ Notification processed and sent via SignalR");
+                        _logger.LogInformation("Notification processed and sent via SignalR");
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "❌ Error processing notification message");
+                        _logger.LogError(ex, "Error processing notification message");
                     }
                 };
 
-                await channel.BasicConsumeAsync(queue: _queueName, autoAck: false, consumer: consumer);
-                _logger.LogInformation("🎉 NOTIFICATION CONSUMER SUCCESSFULLY STARTED listening on {QueueName}", _queueName);
-
-                // Keep the service alive - IMPORTANT FIX
-                while (!stoppingToken.IsCancellationRequested)
-                {
-                    await Task.Delay(10000, stoppingToken);
-                    _logger.LogInformation("💓 NotificationConsumerService heartbeat - still running at {Time}", DateTime.Now);
-                }
+                var consumerTag = await channel.BasicConsumeAsync(queue: _queueName, autoAck: false, consumer: consumer);
+                _logger.LogInformation("NOTIFICATION CONSUMER SUCCESSFULLY STARTED listening on {QueueName} with tag {Tag}", _queueName, consumerTag);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ CRITICAL ERROR in NotificationConsumerService");
+                _logger.LogError(ex, "CRITICAL ERROR in NotificationConsumerService");
                 throw;
             }
         }
@@ -175,6 +195,30 @@ namespace PublicCarRental.Application.Service.Rabbit
             });
 
             _logger.LogWarning("Fixing Request notification sent to admins for vehicle {VehicleId}", accidentEvent.VehicleId);
+        }
+
+        private async Task ProcessBookingConfirmedNotificationAsync(IHubContext<NotificationHub> hubContext, BookingConfirmedEvent bookingEvent)
+        {
+            if (bookingEvent == null)
+            {
+                _logger.LogWarning("BookingConfirmedEvent is null");
+                return;
+            }
+
+            if (bookingEvent.RenterId > 0)
+            {
+                await hubContext.Clients.Group($"user-{bookingEvent.RenterId}").SendAsync("ReceiveBookingConfirmed", new
+                {
+                    Type = "BookingConfirmed",
+                    BookingId = bookingEvent.BookingId,
+                    StartTime = bookingEvent.StartTime,
+                    EndTime = bookingEvent.EndTime,
+                    TotalCost = bookingEvent.TotalCost,
+                    Message = "Your booking has been confirmed and the rental has started."
+                });
+            }
+
+            _logger.LogInformation("Booking confirmed notification sent for booking {BookingId}", bookingEvent.BookingId);
         }
     }
 }

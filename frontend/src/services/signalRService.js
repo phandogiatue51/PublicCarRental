@@ -6,12 +6,16 @@ class SignalRService {
         this.notificationHandlers = [];
     }
 
+    // getBackendUrl() {
+    //     if (window.location.hostname === 'localhost') {
+    //         return 'https://localhost:7230';
+    //     } else {
+    //         return 'https://publiccarrental-production-b7c5.up.railway.app';
+    //     }
+    // }
+
     getBackendUrl() {
-        if (window.location.hostname === 'localhost') {
-            return 'https://localhost:7230';
-        } else {
-            return 'https://publiccarrental-production-b7c5.up.railway.app';
-        }
+        return 'https://publiccarrental-production-b7c5.up.railway.app';
     }
 
     // NEW: Get user data from JWT token (same as your useAuth hook)
@@ -46,6 +50,12 @@ class SignalRService {
 
     async startConnection() {
         try {
+            if (this.connection && (this.connection.state === 'Connected' || this.connection.state === 'Connecting')) {
+                await this.joinUserGroup();
+                console.log('ℹ️ SignalR connection already active');
+                return;
+            }
+
             this.connection = new HubConnectionBuilder()
                 .withUrl(`${this.getBackendUrl()}/notificationHub`, {
                     skipNegotiation: true,
@@ -55,6 +65,7 @@ class SignalRService {
                 .build();
 
             // Setup handlers
+            this.connection.off('ReceiveBookingNotification');
             this.connection.on('ReceiveBookingNotification', (notification) => {
                 this.notifyHandlers({
                     type: 'NewBooking',
@@ -65,6 +76,7 @@ class SignalRService {
                 });
             });
 
+            this.connection.off('ReceiveAccidentNotification');
             this.connection.on('ReceiveAccidentNotification', (notification) => {
                 console.log('🚨 Received accident notification:', notification);
                 this.notifyHandlers({
@@ -75,6 +87,7 @@ class SignalRService {
                 });
             });
 
+            this.connection.off('ReceiveBookingConfirmation');
             this.connection.on('ReceiveBookingConfirmation', (notification) => {
                 this.notifyHandlers({
                     type: 'BookingConfirmed',
@@ -156,6 +169,10 @@ class SignalRService {
 
     registerNotificationHandler(handler) {
         this.notificationHandlers.push(handler);
+    }
+
+    unregisterNotificationHandler(handler) {
+        this.notificationHandlers = this.notificationHandlers.filter(h => h !== handler);
     }
 
     notifyHandlers(notification) {

@@ -1,14 +1,14 @@
 // Chakra imports
 import { Portal, Box, useDisclosure } from '@chakra-ui/react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 import Footer from '../../components/footer/FooterAdmin';
 import Navbar from '../../components/navbar/NavbarAdmin';
 import Sidebar from '../../components/sidebar/Sidebar';
 import { SidebarContext } from '../../contexts/SidebarContext';
 import routes from '../../routes';
-import NotificationToast from '../../../components/NotificationToast'; 
+import signalRService from '../../../services/signalRService';
 
 // Custom Chakra theme
 export default function Dashboard(props) {
@@ -104,9 +104,25 @@ export default function Dashboard(props) {
   document.documentElement.dir = 'ltr';
   const { onOpen } = useDisclosure();
   document.documentElement.dir = 'ltr';
+  useEffect(() => {
+    // Start SignalR connection for admin to receive accident notifications
+    signalRService.startConnection();
+
+    const handler = (notification) => {
+      if (notification?.type === 'AccidentReported') {
+        console.log('Admin received accident notification:', notification);
+        // TODO: Optionally trigger a UI update or toast here
+      }
+    };
+    signalRService.registerNotificationHandler(handler);
+
+    return () => {
+      signalRService.unregisterNotificationHandler(handler);
+      signalRService.stopConnection();
+    };
+  }, []);
   return (
     <Box>
-        <NotificationToast />
       <Box>
         <SidebarContext.Provider
           value={{

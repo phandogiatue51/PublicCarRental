@@ -13,14 +13,11 @@ import Login from "./Pages/Login";
 import SignUp from "./Pages/SignUp";
 import AccountTabs from "./Pages/Account/AccountTabs";
 import ForgotPassword from "./Pages/Account/ForgotPassword";
-import NotificationToast from './components/NotificationToast';
 import ModelDetail from "./Pages/ModelDetail";
 
 function App() {
   return (
-    <>
-      <NotificationToast />
-      
+    <>      
       <Routes>
         <Route path="admin/*" element={<Main />} />
         <Route path="staff/*" element={<StaffApp />} />

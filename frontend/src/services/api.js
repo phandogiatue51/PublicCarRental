@@ -1,7 +1,5 @@
-// API configuration and service functions
-// Use direct backend URL for now to avoid proxy issues
 const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'  // Updated backend URL
+  ? 'https://localhost:7230/api'  
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
 
 // Generic API request function

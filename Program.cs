@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Exchange.WebServices.Data;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -23,7 +22,6 @@ using PublicCarRental.Application.Service.Typ;
 using PublicCarRental.Application.Service.Veh;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Models.Configuration;
-using PublicCarRental.Infrastructure.Data.Repository;
 using PublicCarRental.Infrastructure.Data.Repository.Acc;
 using PublicCarRental.Infrastructure.Data.Repository.Bran;
 using PublicCarRental.Infrastructure.Data.Repository.Cont;
@@ -56,10 +54,6 @@ builder.Services.AddSingleton<IRabbitMQConnection>(provider =>
 {
     var settings = provider.GetRequiredService<IOptions<RabbitMQSettings>>().Value;
     var logger = provider.GetRequiredService<ILogger<RabbitMQConnection>>();
-
-    logger.LogInformation("Creating RabbitMQConnection with: {Connection}",
-        settings.ConnectionString?.Substring(0, Math.Min(20, settings.ConnectionString?.Length ?? 0)) + "...");
-
     return new RabbitMQConnection(settings.ConnectionString, logger);
 });
 
@@ -72,7 +66,6 @@ builder.Services.AddControllers(options =>
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 
-// Configure form options for file uploads
 builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
 {
     options.MultipartBodyLengthLimit = 10485760; // 10MB limit
@@ -81,19 +74,16 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(optio
     options.KeyLengthLimit = int.MaxValue;
 });
 
-// Configure request size limits
 builder.Services.Configure<Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerOptions>(options =>
 {
     options.Limits.MaxRequestBodySize = 10485760; // 10MB
 });
 
-// Configure IIS options
 builder.Services.Configure<IISServerOptions>(options =>
 {
     options.MaxRequestBodySize = 10485760; // 10MB
 });
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -135,8 +125,6 @@ builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IContractRepository, ContractRepository>();
 builder.Services.AddScoped<IContractService, ContractService>();
-builder.Services.AddScoped<IStaffRepository, StaffRepository>();
-builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IStationService, StationService>();
 builder.Services.AddScoped<IStationRepository, StationRepository>();
 builder.Services.AddScoped<IHelperService, HelperService>();
@@ -164,8 +152,6 @@ builder.Services.AddScoped<IAccidentRepository, AccidentRepository>();
 builder.Services.AddScoped<IAccidentService, AccidentService>();
 builder.Services.AddScoped<AccidentEventProducerService>();
 builder.Services.AddHostedService<NotificationConsumerService>();
-
-
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = jwtSettings["Key"];
@@ -206,7 +192,6 @@ builder.Services.AddAuthentication(options =>
         ClockSkew = TimeSpan.Zero
     };
 
-    // Ensure proper token extraction
     options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
     {
         OnMessageReceived = context =>
@@ -220,7 +205,6 @@ builder.Services.AddAuthentication(options =>
                 Console.WriteLine($"Token length: {token.Length}");
                 Console.WriteLine($"Token parts count: {token.Split('.').Length}");
 
-                // Manual JWT validation test
                 try
                 {
                     var handler = new JwtSecurityTokenHandler();
@@ -253,7 +237,6 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddSignalR();
 
-
 builder.Services.AddSwaggerGen(c =>
 {
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -280,28 +263,20 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-
 var app = builder.Build();
 
-var logger = app.Services.GetRequiredService<ILogger<Program>>();
-var hostedServices = app.Services.GetServices<IHostedService>();
-logger.LogInformation("Found {Count} hosted services:", hostedServices.Count());
-foreach (var service in hostedServices)
-{
-    logger.LogInformation("   - {ServiceType}", service.GetType().Name);
-}
-app.UseSwagger();
-app.UseSwaggerUI();
-app.UseHttpsRedirection();
-
+app.UseRouting();
 app.UseCors("AllowReactApp");
-
-app.MapHub<NotificationHub>("/notificationHub");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHub<NotificationHub>("/notificationHub");
 
 app.MapControllers();
+
+app.UseSwagger();
+app.UseSwaggerUI();
+app.UseHttpsRedirection();
 
 app.Run();

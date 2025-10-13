@@ -4,12 +4,21 @@ import { Box, Flex, Text, Icon, Button, useColorModeValue } from '@chakra-ui/rea
 import {
     MdDashboard,    MdPerson,    MdDriveEta,    MdAssignment,    MdReceipt,    MdMenu,    MdLogout,    MdHome
 } from 'react-icons/md';
-import NotificationToast from '../../components/NotificationToast';
+import signalRService from '../../services/signalRService';
+import { useEffect } from 'react';
 
 const StaffLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        // Ensure SignalR connection is started for staff layout
+        signalRService.startConnection();
+        return () => {
+            signalRService.stopConnection();
+        };
+    }, []);
 
     const bgColor = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.200', 'gray.700');
@@ -57,7 +66,6 @@ const StaffLayout = () => {
 
     return (
         <Box minH="100vh" bg={useColorModeValue('gray.50', 'gray.900')} display="flex" flexDirection="column">
-            <NotificationToast />
 
             <Flex flex="1" overflow="hidden">
                 {/* Sidebar */}

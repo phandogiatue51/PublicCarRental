@@ -122,7 +122,7 @@ namespace PublicCarRental.Application.Service.Cont
                             RenterName = renter.Account?.FullName,
                             VehicleId = vehicle.VehicleId,
                             VehicleLicensePlate = vehicle.LicensePlate,
-                            StationId = vehicle.StationId ?? 0,
+                            StationId = contract.StationId ?? 0,
                             StationName = vehicle.Station?.Name,
                             StartTime = contract.StartTime,
                             EndTime = contract.EndTime,
@@ -223,6 +223,7 @@ namespace PublicCarRental.Application.Service.Cont
                 var bookingEvent = new BookingConfirmedEvent
                 {
                     BookingId = contract.ContractId,
+                    RenterId = contract.EVRenterId,
                     RenterEmail = contract.EVRenter?.Account?.Email,
                     RenterName = contract.EVRenter?.Account?.FullName,
                     StartTime = contract.StartTime,
