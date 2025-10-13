@@ -205,7 +205,18 @@ export const modelAPI = {
       console.error('Error filtering models:', error);
       return [];
     }
-  },
+    },
+    getStationFromModel: async (modelId) => {
+
+        try {
+            const response = await apiRequest(`/Model/get-station-from-model/${modelId}`);
+            return response.result || response || [];
+        } catch (error) {
+            console.error('Error fetching stations from model:', error);
+            return [];
+        }
+    },
+
 
   // Create new model
   create: (modelData) => apiRequest('/Model/create-model', {
@@ -284,6 +295,7 @@ export const stationAPI = {
   delete: (id) => apiRequest(`/Station/delete-station/${id}`, {
     method: 'DELETE',
   }),
+
 };
 
 // Renter API services
