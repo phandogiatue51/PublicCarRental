@@ -112,7 +112,8 @@ public class ModelService : BaseCachedService, IModelService
 
         await _cache.InvalidateAsync(
             CreateCacheKey("all_models"),
-            CreateCacheKey("models_filter_*")
+            CreateCacheKey("models_filter_*"),
+            CreateCacheKey("model", id)
         );
 
         return true;
@@ -127,7 +128,8 @@ public class ModelService : BaseCachedService, IModelService
 
         await _cache.InvalidateAsync(
         CreateCacheKey("all_models"),
-        CreateCacheKey("models_filter_*")
+        CreateCacheKey("models_filter_*"),
+        CreateCacheKey("model", id)
         );
 
         return true;

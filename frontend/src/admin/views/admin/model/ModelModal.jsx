@@ -2,7 +2,7 @@
 
 import {
   Modal,  ModalOverlay,  ModalContent,  ModalHeader,  ModalFooter,  ModalBody,  ModalCloseButton,  Button,  FormControl,  FormLabel,  Input,  Select,
-  useToast,  Text,  VStack,  FormHelperText,  Box,  Image,  InputGroup,  InputRightElement,
+  useToast,  Text,  VStack,  Box,  Image,  InputGroup,  Flex
 } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
 import { modelAPI, brandAPI, typeAPI } from '../../../../services/api';
@@ -18,7 +18,7 @@ export default function ModelModal({ isOpen, onClose, onSuccess, model = null, i
   const [fetchingModel, setFetchingModel] = useState(false);
   const [brands, setBrands] = useState([]);
   const [types, setTypes] = useState([]);
-  const [availableImages, setAvailableImages] = useState([]);
+  const [setAvailableImages] = useState([]);
   const toast = useToast();
 
   // Fetch model data when editing
@@ -43,6 +43,7 @@ export default function ModelModal({ isOpen, onClose, onSuccess, model = null, i
       setName(modelData.name || '');
       setBrandId(modelData.brandId || '');
       setTypeId(modelData.typeId || '');
+      
       setPricePerHour(modelData.pricePerHour || '');
       
       // Set image preview for existing model (for display only)
@@ -77,25 +78,33 @@ export default function ModelModal({ isOpen, onClose, onSuccess, model = null, i
   };
 
   const fetchBrandsAndTypes = async () => {
-    try {
-      const [brandsData, typesData, imagesData] = await Promise.all([
-        brandAPI.getAll(),
-        typeAPI.getAll(),
-        modelAPI.getAvailableImages()
-      ]);
-      setBrands(brandsData || []);
-      setTypes(typesData || []);
-      setAvailableImages(imagesData || []);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch brands, types, and images',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-  };
+  try {
+    const brandsData = await brandAPI.getAll();
+    setBrands(Array.isArray(brandsData) ? brandsData : []);
+  } catch (error) {
+    console.error("❌ Failed to fetch brands:", error);
+    toast({
+      title: 'Error',
+      description: 'Failed to fetch brands',
+      status: 'error',
+      duration: 3000,
+      isClosable: true,
+    });
+  }
+
+  try {
+    const typesData = await typeAPI.getAll();
+    setTypes(Array.isArray(typesData) ? typesData : []);
+  } catch (error) {
+    console.error("❌ Failed to fetch types:", error);
+    toast({
+      title: 'Error',
+      description: 'Failed to fetch types',
+      status: 'error',
+      duration: 3000,
+      isClosable: true,
+    });
+  }};
 
   const resetForm = () => {
     setName('');
@@ -229,139 +238,147 @@ export default function ModelModal({ isOpen, onClose, onSuccess, model = null, i
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} isCentered size="lg">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>{isEdit ? 'Edit Model' : 'Add New Model'}</ModalHeader>
-        <ModalCloseButton />
-        
-        <form onSubmit={handleSubmit}>
-          <ModalBody>
-            <FormControl isRequired mb={4}>
-              <FormLabel>Model Name</FormLabel>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={fetchingModel ? "Loading model data..." : "Enter model name"}
-                maxLength={100}
-                isDisabled={fetchingModel}
-              />
-            </FormControl>
+  <Modal isOpen={isOpen} onClose={handleClose} isCentered size="lg">
+    <ModalOverlay />
+    <ModalContent>
+      <ModalHeader>{isEdit ? 'Edit Model' : 'Add New Model'}</ModalHeader>
+      <ModalCloseButton />
 
-            <FormControl isRequired mb={4}>
-              <FormLabel>Brand</FormLabel>
-              <Select
-                value={brandId}
-                onChange={(e) => setBrandId(e.target.value)}
-                placeholder="Select brand"
-                isDisabled={fetchingModel}
-              >
-                {brands.map((brand) => (
-                  <option key={brand.brandId} value={brand.brandId}>
-                    {brand.name}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
+      <form onSubmit={handleSubmit}>
+        <ModalBody>
+          <Flex direction={{ base: "column", md: "row" }} gap={6}>
+            {/* Left Column: Form Fields */}
+            <Box flex="1">
+              <FormControl isRequired mb={4}>
+                <FormLabel>Model Name</FormLabel>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={fetchingModel ? "Loading model data..." : "Enter model name"}
+                  maxLength={100}
+                  isDisabled={fetchingModel}
+                />
+              </FormControl>
 
-            <FormControl isRequired mb={4}>
-              <FormLabel>Type</FormLabel>
-              <Select
-                value={typeId}
-                onChange={(e) => setTypeId(e.target.value)}
-                placeholder="Select type"
-                isDisabled={fetchingModel}
-              >
-                {types.map((type) => (
-                  <option key={type.typeId} value={type.typeId}>
-                    {type.name}
-                  </option>
-                ))}
-              </Select>
-            </FormControl>
+              <FormControl isRequired mb={4}>
+                <FormLabel>Brand</FormLabel>
+                <Select
+                  value={brandId}
+                  onChange={(e) => setBrandId(e.target.value)}
+                  placeholder="Select brand"
+                  isDisabled={fetchingModel}
+                >
+                  {brands.map((brand) => (
+                    <option key={brand.brandId} value={brand.brandId}>
+                      {brand.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
 
-            <FormControl isRequired mb={4}>
-              <FormLabel>Price per Hour</FormLabel>
-              <Input
-                type="number"
-                value={pricePerHour}
-                onChange={(e) => setPricePerHour(e.target.value)}
-                placeholder="Enter price per hour"
-                min="1"
-                isDisabled={fetchingModel}
-              />
-            </FormControl>
+              <FormControl isRequired mb={4}>
+                <FormLabel>Type</FormLabel>
+                <Select
+                  value={typeId}
+                  onChange={(e) => setTypeId(e.target.value)}
+                  placeholder="Select type"
+                  isDisabled={fetchingModel}
+                >
+                  {types.map((type) => (
+                    <option key={type.typeId} value={type.typeId}>
+                      {type.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
 
-            <FormControl mb={4}>
-              <FormLabel>Image (Optional)</FormLabel>
-              
-              <VStack spacing={3}>
-                {/* File input for selecting images */}
-                <InputGroup>
-                  <Input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageFileSelect}
-                    isDisabled={fetchingModel}
-                    size="sm"
-                    sx={{
-                      '::file-selector-button': {
-                        height: '32px',
-                        padding: '0 12px',
-                        marginRight: '12px',
-                        background: 'blue.500',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: 'md',
-                        cursor: 'pointer',
-                        fontSize: 'sm',
-                        fontWeight: 'medium',
-                      },
-                    }}
-                  />
-                </InputGroup>
+              <FormControl isRequired mb={4}>
+                <FormLabel>Price per Hour</FormLabel>
+                <Input
+                  type="number"
+                  value={pricePerHour}
+                  onChange={(e) => setPricePerHour(e.target.value)}
+                  placeholder="Enter price per hour"
+                  min="1"
+                  isDisabled={fetchingModel}
+                />
+              </FormControl>
+            </Box>
 
-                {/* Image preview */}
-                {imagePreview && (
-                  <Box width="100%">
-                    <Text fontSize="sm" color="gray.600" mb={2}>
-                      Preview:
-                    </Text>
-                    <Image
-                      src={imagePreview}
-                      alt="Preview"
-                      maxH="150px"
-                      objectFit="contain"
-                      borderRadius="md"
-                      border="1px solid"
-                      borderColor="gray.200"
+            {/* Right Column: Image Upload & Preview */}
+            <Box flex="1">
+              <FormControl mb={4}>
+                <FormLabel>Image (Optional)</FormLabel>
+                <VStack spacing={3} align="stretch">
+                  <InputGroup>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileSelect}
+                      isDisabled={fetchingModel}
+                      size="sm"
+                      sx={{
+                        '::file-selector-button': {
+                          height: '32px',
+                          padding: '0 12px',
+                          marginRight: '12px',
+                          background: 'blue.500',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 'md',
+                          cursor: 'pointer',
+                          fontSize: 'sm',
+                          fontWeight: 'medium',
+                        },
+                      }}
                     />
-                  </Box>
-                )}
-              </VStack>
-              
-              <FormHelperText>
-                Choose an image file from your computer. The image will be saved with the same filename in the image/models directory.
-              </FormHelperText>
-            </FormControl>
-          </ModalBody>
+                  </InputGroup>
 
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={handleClose} disabled={loading || fetchingModel}>
-              Cancel
-            </Button>
-            <Button 
-              colorScheme="blue" 
-              type="submit" 
-              isLoading={loading}
-              loadingText={isEdit ? 'Updating...' : 'Creating...'}
-              isDisabled={fetchingModel}
-            >
-              {fetchingModel ? 'Loading...' : (isEdit ? 'Update' : 'Create')} Model
-            </Button>
-          </ModalFooter>
-        </form>
-      </ModalContent>
-    </Modal>
-  );
+                  {imagePreview && (
+                    <Box>
+                      <Text fontSize="sm" color="gray.600" mb={2}>
+                        Preview:
+                      </Text>
+                      <Image
+                        src={imagePreview}
+                        alt="Preview"
+                        maxH="200px"
+                        objectFit="contain"
+                        borderRadius="md"
+                        border="1px solid"
+                        borderColor="gray.200"
+                        width="100%"
+                      />
+                    </Box>
+                  )}
+                </VStack>
+              </FormControl>
+            </Box>
+          </Flex>
+        </ModalBody>
+
+        <ModalFooter>
+          <Button
+            variant="ghost"
+            mr={3}
+            onClick={handleClose}
+            disabled={loading || fetchingModel}
+          >
+            Cancel
+          </Button>
+          <Button
+            colorScheme="blue"
+            type="submit"
+            isLoading={loading}
+            loadingText={isEdit ? 'Updating...' : 'Creating...'}
+            isDisabled={fetchingModel}
+          >
+            {fetchingModel ? 'Loading...' : (isEdit ? 'Update' : 'Create')} Model
+          </Button>
+        </ModalFooter>
+      </form>
+    </ModalContent>
+  </Modal>
+);
+
 }
