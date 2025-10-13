@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Box, Flex, Text, Icon, Button, useColorModeValue } from '@chakra-ui/react';
+import { Box, Flex, Text, Icon, Button, useColorModeValue, useToast } from '@chakra-ui/react';
 import {
     MdDashboard,    MdPerson,    MdDriveEta,    MdAssignment,    MdReceipt,    MdMenu,    MdLogout,    MdHome
 } from 'react-icons/md';
@@ -11,14 +11,44 @@ const StaffLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const location = useLocation();
     const navigate = useNavigate();
+    const toast = useToast();
 
     useEffect(() => {
-        // Ensure SignalR connection is started for staff layout
-        signalRService.startConnection();
-        return () => {
-            signalRService.stopConnection();
-        };
-    }, []);
+    signalRService.startConnection();
+    
+    const handleNotification = (notification) => {
+      console.log('Staff received notification:', notification);
+      
+      if (notification?.type === 'NewBooking') {
+        toast({
+          title: "🎉 New Booking!",
+          description: `${notification.booking?.RenterName} booked ${notification.booking?.VehicleLicensePlate}`,
+          status: "success",
+          duration: 6000,
+          isClosable: true,
+          position: "top-right"
+        });
+      }
+      
+      if (notification?.type === 'BookingConfirmed') {
+        toast({
+          title: "✅ Booking Confirmed",
+          description: notification.message || "A booking has been confirmed",
+          status: "info",
+          duration: 6000,
+          isClosable: true,
+          position: "top-right"
+        });
+      }
+    };
+
+    signalRService.registerNotificationHandler(handleNotification);
+
+    return () => {
+      signalRService.unregisterNotificationHandler(handleNotification);
+      signalRService.stopConnection();
+    };
+  }, [toast]);
 
     const bgColor = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.200', 'gray.700');

@@ -1,5 +1,5 @@
 // Chakra imports
-import { Portal, Box, useDisclosure } from '@chakra-ui/react';
+import { Portal, Box, useDisclosure, useToast } from '@chakra-ui/react'; 
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
 
@@ -16,6 +16,7 @@ export default function Dashboard(props) {
   const location = useLocation();
   // states and functions
   const [fixed] = useState(false);
+  const toast = useToast(); 
   const [toggleSidebar, setToggleSidebar] = useState(false);
   // functions for changing the states from components
   const getRoute = () => {
@@ -109,11 +110,32 @@ export default function Dashboard(props) {
     signalRService.startConnection();
 
     const handler = (notification) => {
+      console.log('Admin received notification:', notification);
+      
       if (notification?.type === 'AccidentReported') {
-        console.log('Admin received accident notification:', notification);
-        // TODO: Optionally trigger a UI update or toast here
+        toast({
+          title: "🚨 Fixing Request",
+          description: `Vehicle ${notification.accident?.VehicleLicensePlate} at ${notification.accident?.Location}`,
+          status: "error",
+          duration: 8000,
+          isClosable: true,
+          position: "top-right"
+        });
+      }
+      
+      // You can also handle other notification types
+      if (notification?.type === 'NewBooking') {
+        toast({
+          title: "📋 New Booking",
+          description: `New booking at station ${notification.stationId}`,
+          status: "info",
+          duration: 5000,
+          isClosable: true,
+          position: "top-right"
+        });
       }
     };
+    
     signalRService.registerNotificationHandler(handler);
 
     return () => {
