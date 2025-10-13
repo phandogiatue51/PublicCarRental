@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import Profile from './Profile';
 import Contract from './Contract';
 import Invoice from './Invoice';
@@ -37,21 +38,21 @@ const tabs = [
 function AccountTabs() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
+  const { isAuthenticated, getCurrentUser, logout } = useAuth();
   
-  const role = sessionStorage.getItem("userRole");
-  const fullName = sessionStorage.getItem("fullName");
-  const email = sessionStorage.getItem("email");
+  const role = getCurrentUser()?.role;
 
   const handleLogout = () => {
+    // Backward-compat cleanup
     sessionStorage.removeItem("userRole");
     sessionStorage.removeItem("renterId");
     sessionStorage.removeItem("fullName");
     sessionStorage.removeItem("email");
     sessionStorage.removeItem("phoneNumber");
-    navigate("/");
+    logout();
   };
 
-  if (!role) {
+  if (!isAuthenticated()) {
     navigate("/login");
     return null;
   }

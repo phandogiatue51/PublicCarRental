@@ -1,13 +1,16 @@
 // Favorite.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 import { renterAPI } from "../../services/api";
 import "../../styles/Account/Favorite.css";
 
 function Favorite() {
   const navigate = useNavigate();
-  const role = sessionStorage.getItem("userRole");
-  const renterId = sessionStorage.getItem("renterId");
+  const { isAuthenticated, getCurrentUser } = useAuth();
+  const currentUser = getCurrentUser();
+  const role = currentUser?.role;
+  const renterId = currentUser?.renterId;
   
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +38,7 @@ function Favorite() {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
           },
           signal: controller.signal
         });
@@ -96,7 +99,7 @@ function Favorite() {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
         }
       });
       
@@ -125,7 +128,7 @@ function Favorite() {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
         }
       });
       
@@ -187,7 +190,7 @@ function Favorite() {
     );
   }
 
-  if (!role) {
+  if (!isAuthenticated()) {
     return (
       <div className="empty-state">
         <h3>Access Denied</h3>

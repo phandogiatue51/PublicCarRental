@@ -1,14 +1,17 @@
 // Profile.jsx
 import { useState, useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
 import { renterAPI } from "../../services/api";
 import "../../styles/Account/Profile.css";
 
 function Profile() {
-  const role = sessionStorage.getItem("userRole");
-  const storedFullName = sessionStorage.getItem("fullName");
-  const storedEmail = sessionStorage.getItem("email");
-  const storedPhoneNumber = sessionStorage.getItem("phoneNumber");
-  const renterId = sessionStorage.getItem("renterId");
+  const { isAuthenticated, getCurrentUser } = useAuth();
+  const currentUser = getCurrentUser();
+  const role = currentUser?.role;
+  const renterId = currentUser?.renterId;
+  const storedFullName = typeof window !== 'undefined' ? sessionStorage.getItem("fullName") : null;
+  const storedEmail = typeof window !== 'undefined' ? sessionStorage.getItem("email") : null;
+  const storedPhoneNumber = typeof window !== 'undefined' ? sessionStorage.getItem("phoneNumber") : null;
 
   const [profileData, setProfileData] = useState({
     fullName: storedFullName || "",
@@ -72,7 +75,7 @@ function Profile() {
     );
   }
 
-  if (!role) {
+  if (!isAuthenticated()) {
     return (
       <div className="empty-state">
         <h3>Access Denied</h3>

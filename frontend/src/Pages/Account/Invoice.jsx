@@ -1,11 +1,14 @@
 // Invoice.jsx
 import { useState, useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
 import { renterAPI } from "../../services/api";
 import "../../styles/Account/Invoice.css";
 
 function Invoice() {
-  const role = sessionStorage.getItem("userRole");
-  const renterId = sessionStorage.getItem("renterId");
+  const { isAuthenticated, getCurrentUser } = useAuth();
+  const currentUser = getCurrentUser();
+  const role = currentUser?.role;
+  const renterId = currentUser?.renterId;
   
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +36,7 @@ function Invoice() {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
           },
           signal: controller.signal
         });
@@ -94,7 +97,7 @@ function Invoice() {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
         }
       });
       
@@ -166,7 +169,7 @@ function Invoice() {
     );
   }
 
-  if (!role) {
+  if (!isAuthenticated()) {
     return (
       <div className="empty-state">
         <h3>Access Denied</h3>

@@ -1,24 +1,28 @@
 import { Link, useNavigate } from "react-router-dom";
 import Logo from "../images/logo/logo.png";
 import { useState } from "react";
+import { useAuth } from "../hooks/useAuth";
 
 function Navbar() {
   const [nav, setNav] = useState(false);
   const navigate = useNavigate();
+  const { getCurrentUser, isAuthenticated, logout } = useAuth();
 
   const openNav = () => {
     setNav(!nav);
   };
-  const userRole = sessionStorage.getItem("userRole");
-  const staffId = sessionStorage.getItem("staffId");
-  const stationId = sessionStorage.getItem("stationId");
-  const isLoggedIn = !!sessionStorage.getItem("userRole");
+  // Derive auth state from JWT (set by Login via useAuth)
+  const isLoggedIn = isAuthenticated();
+  const currentUser = getCurrentUser();
+  const userRole = currentUser?.role?.toString();
+  const staffId = currentUser?.staffId;
+  const stationId = currentUser?.stationId;
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
  const handleLogout = () => {
   setIsLoggingOut(true);
-  
   setTimeout(() => {
+    // Clear any legacy session flags (backward-compat) and JWT via hook
     sessionStorage.removeItem("userRole");
     sessionStorage.removeItem("accountId");
     sessionStorage.removeItem("fullName");
@@ -28,7 +32,7 @@ function Navbar() {
     sessionStorage.removeItem("stationId");
     sessionStorage.removeItem("renterId");
     sessionStorage.removeItem("phoneNumber");
-    navigate('/');
+    logout();
   }, 2000);
 };
 
@@ -136,13 +140,13 @@ function Navbar() {
           {/* hide auth buttons when logged in */}
           {isLoggedIn ? (
             <div className="navbar__buttons">
-              {userRole === "0" && (
+              {(userRole === "0" || userRole === "EVRenter") && (
               <Link className="navbar__buttons__sign-in" to="/account">
                 Profile
               </Link>
               )}
                 
-              {userRole === "1" && (
+              {(userRole === "1" || userRole === "Staff") && (
                 <button 
                   className="navbar__buttons__register"
                   onClick={handleStaffNavigation}
@@ -158,7 +162,7 @@ function Navbar() {
                 </button>
               )}
 
-              {userRole === "2" && (
+              {(userRole === "2" || userRole === "Admin") && (
                 <button
                   className="navbar__buttons__register"
                   onClick={handleAdminLogin}
