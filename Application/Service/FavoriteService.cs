@@ -17,11 +17,11 @@ namespace PublicCarRental.Application.Service
             _eVRenterRepository = eVRenterRepository;
         }
 
-        public List<ModelViewDto> GetFavorite(int renterId)
+        public async Task<List<ModelViewDto>> GetFavoriteAsync(int renterId)
         {
             try
             {
-                var renter = _eVRenterRepository.GetById(renterId);
+                var renter = await _eVRenterRepository.GetByIdAsync(renterId);
                 if (renter == null || renter.AccountId == 0)
                     return null;
                 var accountId = renter.AccountId;
@@ -42,11 +42,11 @@ namespace PublicCarRental.Application.Service
             }
         }
 
-        public bool AddFavorites(int renterId, int modelId)
+        public async Task<bool> AddFavoritesAsync(int renterId, int modelId)
         {
             try
             {
-                var renter = _eVRenterRepository.GetById(renterId);
+                var renter = await _eVRenterRepository.GetByIdAsync(renterId);
                 if (renter == null || renter.AccountId == 0)
                     return false;
                 var accountId = renter.AccountId;
@@ -70,11 +70,11 @@ namespace PublicCarRental.Application.Service
             }
         }
 
-        public bool RemoveFavorites(int renterId, int modelId)
+        public async Task<bool> RemoveFavoritesAsync(int renterId, int modelId)
         {
             try
             {
-                var renter = _eVRenterRepository.GetById(renterId);
+                var renter = await _eVRenterRepository.GetByIdAsync(renterId);
                 if (renter == null || renter.AccountId == 0)
                     return false;
                 var accountId = renter.AccountId;
@@ -94,8 +94,8 @@ namespace PublicCarRental.Application.Service
 
     public interface IFavoriteService
     {
-        public List<ModelViewDto> GetFavorite(int renterId);
-        public bool AddFavorites(int renterId, int modelId);
-        public bool RemoveFavorites(int renterId, int modelId);
+        Task<List<ModelViewDto>> GetFavoriteAsync(int renterId);
+        Task<bool> AddFavoritesAsync(int renterId, int modelId);
+        Task<bool> RemoveFavoritesAsync(int renterId, int modelId);
     }
 }

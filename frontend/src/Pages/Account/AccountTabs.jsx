@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import Profile from './Profile';
 import Contract from './Contract';
 import Invoice from './Invoice';
@@ -37,30 +38,11 @@ const tabs = [
 function AccountTabs() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
+  const { isAuthenticated } = useAuth();
   
-  const role = localStorage.getItem("userRole");
-  const fullName = localStorage.getItem("fullName");
-  const email = localStorage.getItem("email");
 
-  const handleLogout = () => {
-    localStorage.removeItem("jwtToken");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("renterId");
-    localStorage.removeItem("fullName");
-    localStorage.removeItem("email");
-    localStorage.removeItem("phoneNumber");
-    localStorage.removeItem("accountId");
-    localStorage.removeItem("isAdmin");
-    localStorage.removeItem("staffId");
-    localStorage.removeItem("stationId");
-    
-    // Dispatch custom event to notify components of auth state change
-    window.dispatchEvent(new CustomEvent('authStateChanged'));
-    
-    navigate("/");
-  };
 
-  if (!role) {
+  if (!isAuthenticated()) {
     navigate("/login");
     return null;
   }

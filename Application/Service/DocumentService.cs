@@ -65,7 +65,7 @@ public class DocumentService : IDocumentService
         var accountId = 0;
         if (role == AccountRole.EVRenter)
         {
-            var renter = _eVRenterRepository.GetById(id);
+            var renter = await _eVRenterRepository.GetByIdAsync(id);
             accountId = renter.AccountId;
         }
         else if (role == AccountRole.Staff)
@@ -84,7 +84,7 @@ public class DocumentService : IDocumentService
     {
         try
         {
-            var renter = _eVRenterRepository.GetById(renterId);
+            var renter = await _eVRenterRepository.GetByIdAsync(renterId);
             var renterAccountId = renter.AccountId;
 
             await UploadDocumentAsync(renterAccountId, new UploadDocumentDto
@@ -127,7 +127,7 @@ public class DocumentService : IDocumentService
 
     public async Task<bool> VerifyDocumentsAsync(int renterId, int staffVerifierId, DocumentType? documentType = null)
     {
-        var renter = _eVRenterRepository.GetById(renterId);
+        var renter = await _eVRenterRepository.GetByIdAsync(renterId);
         var accountId = renter.AccountId;
 
         var documents = _documentRepository.GetAll()
@@ -226,7 +226,4 @@ public class DocumentService : IDocumentService
             return (false, ex.ToString());
         }
     }
-
-
-
 }

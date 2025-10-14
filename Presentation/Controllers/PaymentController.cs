@@ -53,10 +53,8 @@ namespace PublicCarRental.Presentation.Controllers
 
                 _logger.LogInformation($"Webhook received: {webhookBody}");
 
-                // Get signature from header
                 var signature = HttpContext.Request.Headers["x-payos-signature"].FirstOrDefault();
 
-                // Verify webhook signature
                 var isValid = _payOSService.VerifyWebhook(webhookBody, signature);
                 if (!isValid)
                 {
@@ -64,7 +62,6 @@ namespace PublicCarRental.Presentation.Controllers
                     return BadRequest(new { error = "Invalid signature" });
                 }
 
-                // Parse webhook data manually
                 var webhookData = JsonSerializer.Deserialize<JsonElement>(webhookBody);
 
                 if (webhookData.TryGetProperty("data", out var dataElement) &&
@@ -76,7 +73,6 @@ namespace PublicCarRental.Presentation.Controllers
 
                     _logger.LogInformation($"Webhook processed: Order {orderCode} - Status {status}");
 
-                    // Update invoice based on status
                     var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
                     _logger.LogInformation($"Invoice lookup result: {(invoice != null ? $"Found invoice {invoice.InvoiceId} with status {invoice.Status}" : "No invoice found")}");
                     
@@ -88,7 +84,6 @@ namespace PublicCarRental.Presentation.Controllers
                         {
                             _logger.LogInformation($"Attempting to update invoice {invoice.InvoiceId} to PAID status with amount {invoice.AmountDue}");
                             
-                            // Use your service method instead of updating directly
                             var success = _invoiceService.UpdateInvoiceStatus(
                                 invoice.InvoiceId,
                                 InvoiceStatus.Paid,
@@ -121,7 +116,6 @@ namespace PublicCarRental.Presentation.Controllers
                             {
                                 _logger.LogInformation($"Webhook: Invoice {invoice.InvoiceId} marked as UNPAID and contract updated");
                                 
-                                // Verify the update by fetching the invoice again
                                 var updatedInvoice = _invoiceService.GetEntityById(invoice.InvoiceId);
                                 _logger.LogInformation($"Webhook: Verification - Updated invoice status: {updatedInvoice?.Status}, Contract status: {updatedInvoice?.Contract?.Status}");
                             }
@@ -135,7 +129,6 @@ namespace PublicCarRental.Presentation.Controllers
                     {
                         _logger.LogWarning($"No invoice found for order code: {orderCode}");
                         
-                        // Let's also log all invoices with their order codes for debugging
                         var allInvoices = _invoiceService.GetAll();
                         _logger.LogInformation($"Available invoices with order codes: {string.Join(", ", allInvoices.Select(i => $"ID:{i.InvoiceId} OrderCode:{(i as dynamic)?.OrderCode ?? "null"}"))}");
                     }
@@ -271,108 +264,21 @@ namespace PublicCarRental.Presentation.Controllers
             }
         }
 
-        [HttpGet("test")]
-        public IActionResult Test()
-        {
-            return Ok(new { message = "Payment controller is working" });
-        }
-
 
         [AllowAnonymous]
         [HttpGet("success")]
-        public async Task<IActionResult> PaymentSuccess([FromQuery] string orderCode)
+        public IActionResult PaymentSuccess([FromQuery] string orderCode)
         {
-            // Log the successful payment
-            _logger.LogInformation($"Payment successful for order: {orderCode}");
-
-            string statusMessage = "Thank you for your payment. Your rental has been confirmed.";
-            string additionalInfo = "";
-
-            // Try to automatically check and update the payment status
-            if (!string.IsNullOrEmpty(orderCode) && int.TryParse(orderCode, out int orderCodeInt))
-            {
-                try
-                {
-                    _logger.LogInformation($"Auto-checking payment status for order: {orderCodeInt}");
-                    
-                    // Get payment status from PayOS
-                    var paymentStatus = await _payOSService.GetPaymentStatus(orderCodeInt);
-                    _logger.LogInformation($"PayOS payment status: {paymentStatus.status}");
-
-                    // Find and update the invoice if needed
-                    var invoice = _invoiceService.GetInvoiceByOrderCode(orderCodeInt);
-                    if (invoice != null)
-                    {
-                        if (paymentStatus.status == "PAID" && invoice.Status != InvoiceStatus.Paid)
-                        {
-                            _logger.LogInformation($"Auto-updating invoice {invoice.InvoiceId} to PAID status");
-                            
-                            var success = _invoiceService.UpdateInvoiceStatus(
-                                invoice.InvoiceId,
-                                InvoiceStatus.Paid,
-                                invoice.AmountDue
-                            );
-
-                            if (success)
-                            {
-                                statusMessage = "✅ Payment confirmed! Your rental has been confirmed and invoice updated.";
-                                additionalInfo = $"Invoice #{invoice.InvoiceId} has been marked as PAID.";
-                            }
-                            else
-                            {
-                                statusMessage = "Payment received but there was an issue updating the invoice. Please contact support.";
-                                additionalInfo = $"Invoice #{invoice.InvoiceId} needs manual review.";
-                            }
-                        }
-                        else if (invoice.Status == InvoiceStatus.Paid)
-                        {
-                            statusMessage = "✅ Payment already confirmed! Your rental is ready.";
-                            additionalInfo = $"Invoice #{invoice.InvoiceId} is already marked as PAID.";
-                        }
-                        else
-                        {
-                            statusMessage = "Payment received. Processing your rental confirmation...";
-                            additionalInfo = $"Payment status: {paymentStatus.status}. Invoice status: {invoice.Status}";
-                        }
-                    }
-                    else
-                    {
-                        statusMessage = "Payment received but invoice not found. Please contact support.";
-                        additionalInfo = $"Order code: {orderCode}";
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error auto-checking payment status");
-                    statusMessage = "Payment received. We're processing your rental confirmation...";
-                    additionalInfo = "If you don't receive confirmation within 24 hours, please contact support.";
-                }
-            }
-
-            return Content(@"
-            <html>
-                <body style='text-align: center; padding: 50px; font-family: Arial;'>
-                    <h1>✅ Payment Successful!</h1>
-                    <p>" + statusMessage + @"</p>
-                    <p>Order Code: " + orderCode + @"</p>
-                    " + (!string.IsNullOrEmpty(additionalInfo) ? "<p style='color: #666; font-size: 14px;'>" + additionalInfo + "</p>" : "") + @"
-                    <a href='/'>Return to Home</a>
-                </body>
-            </html>", "text/html");
+            var frontendUrl = $"https://sweet-essence-production.up.railway.app/payment/success?orderCode={orderCode}";
+            return Redirect(frontendUrl);
         }
 
         [AllowAnonymous]
         [HttpGet("cancel")]
         public IActionResult PaymentCancel()
         {
-            return Content(@"
-            <html>
-                <body style='text-align: center; padding: 50px; font-family: Arial;'>
-                    <h1>❌ Payment Cancelled</h1>
-                    <p>Your payment was cancelled. You can try again anytime.</p>
-                    <a href='/'>Return to Home</a>
-                </body>
-            </html>", "text/html");
+            var frontendUrl = "https://sweet-essence-production.up.railway.app/payment/cancel";
+            return Redirect(frontendUrl);
         }
     }
 

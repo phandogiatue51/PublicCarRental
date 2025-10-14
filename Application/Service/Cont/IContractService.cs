@@ -8,8 +8,8 @@ namespace PublicCarRental.Application.Service.Cont
         public IEnumerable<ContractDto> GetAll();
         public ContractDto GetById(int id);
         RentalContract? GetEntityById(int id);
-        public (bool Success, string Message) UpdateContract(int id, UpdateContractDto updatedContract);
-        public (bool Success, string Message, int contractId) CreateContract(CreateContractDto dto);
+        Task<(bool Success, string Message)> UpdateContractAsync(int id, UpdateContractDto updatedContract);
+        Task<(bool Success, string Message, int contractId)> CreateContractAsync(CreateContractDto dto);
         Task<bool> StartRentalAsync(ConfirmContractDto dto);
         Task<bool> ReturnVehicleAsync(FinishContractDto dto);
         public IEnumerable<ContractDto> GetContractByRenterId(int renterId);

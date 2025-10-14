@@ -18,10 +18,11 @@ export default function Dashboard(props) {
   const [fixed] = useState(false);
   const toast = useToast(); 
   const [toggleSidebar, setToggleSidebar] = useState(false);
-  // functions for changing the states from components
+
   const getRoute = () => {
     return location.pathname !== '/admin/full-screen-maps';
   };
+
   const getActiveRoute = (routes) => {
     let activeRoute = 'Main Dashboard';
     const currentPath = location.pathname;
@@ -44,6 +45,7 @@ export default function Dashboard(props) {
     }
     return activeRoute;
   };
+
   const getActiveNavbar = (routes) => {
     let activeNavbar = false;
     const currentPath = location.pathname;
@@ -66,6 +68,7 @@ export default function Dashboard(props) {
     }
     return activeNavbar;
   };
+
   const getActiveNavbarText = (routes) => {
     let activeNavbar = false;
     const currentPath = location.pathname;
@@ -88,6 +91,7 @@ export default function Dashboard(props) {
     }
     return activeNavbar;
   };
+
   const getRoutes = (routes) => {
     return routes.map((route, key) => {
       if (route.layout === '/admin') {
@@ -102,20 +106,21 @@ export default function Dashboard(props) {
       }
     });
   };
+
   document.documentElement.dir = 'ltr';
   const { onOpen } = useDisclosure();
   document.documentElement.dir = 'ltr';
+
   useEffect(() => {
-    // Start SignalR connection for admin to receive accident notifications
     signalRService.startConnection();
 
     const handler = (notification) => {
       console.log('Admin received notification:', notification);
       
-      if (notification?.type === 'AccidentReported') {
+        if (notification?.type === 'AccidentReported') {
         toast({
           title: "🚨 Fixing Request",
-          description: `Vehicle ${notification.accident?.VehicleLicensePlate} at ${notification.accident?.Location}`,
+          description: `Vehicle ${notification.VehicleLicensePlate} at ${notification.Location}`,
           status: "error",
           duration: 8000,
           isClosable: true,
@@ -123,11 +128,10 @@ export default function Dashboard(props) {
         });
       }
       
-      // You can also handle other notification types
       if (notification?.type === 'NewBooking') {
         toast({
           title: "📋 New Booking",
-          description: `New booking at station ${notification.stationId}`,
+          description: `New booking at station ${notification.StationId}`,
           status: "info",
           duration: 5000,
           isClosable: true,
@@ -142,7 +146,9 @@ export default function Dashboard(props) {
       signalRService.unregisterNotificationHandler(handler);
       signalRService.stopConnection();
     };
-  }, []);
+  }, [toast]);
+
+
   return (
     <Box>
       <Box>

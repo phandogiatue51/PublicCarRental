@@ -4,12 +4,14 @@ import { renterAPI } from "../../services/api";
 import "../../styles/Account/Profile.css";
 
 function Profile() {
-  const role = localStorage.getItem("userRole");
   const storedFullName = localStorage.getItem("fullName");
   const storedEmail = localStorage.getItem("email");
   const storedPhoneNumber = localStorage.getItem("phoneNumber");
   const renterId = localStorage.getItem("renterId");
-
+  const isAuthenticated = () => {
+    return !!localStorage.getItem("jwtToken"); 
+  };
+  
   const [profileData, setProfileData] = useState({
     fullName: storedFullName || "",
     email: storedEmail || "",
@@ -72,7 +74,7 @@ function Profile() {
     );
   }
 
-  if (!role) {
+  if (!isAuthenticated()) {
     return (
       <div className="empty-state">
         <h3>Access Denied</h3>

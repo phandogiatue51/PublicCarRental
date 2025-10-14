@@ -2,6 +2,7 @@
 using Net.payOS.Types;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Ren;
+using System.Text;
 using System.Text.Json;
 
 namespace PublicCarRental.Application.Service.Pay
@@ -46,7 +47,7 @@ namespace PublicCarRental.Application.Service.Pay
                 if (invoice == null)
                     throw new ArgumentException("Invoice not found");
 
-                var renter = _renterService.GetEntityById(renterId);
+                var renter = await _renterService.GetEntityByIdAsync(renterId);
                 if (renter == null)
                     throw new ArgumentException("Renter not found");
 
@@ -114,17 +115,37 @@ namespace PublicCarRental.Application.Service.Pay
             try
             {
                 _logger.LogInformation("Webhook verification called");
-                
+
                 if (string.IsNullOrEmpty(signature))
                 {
                     _logger.LogWarning("Webhook signature is missing");
                     return false;
                 }
 
-                // For production, you should implement proper signature verification
-                // using the checksum key from PayOS
-                // For now, we'll do basic validation
-                return !string.IsNullOrEmpty(webhookBody) && !string.IsNullOrEmpty(signature);
+                var checksumKey = _configuration["PayOS:ChecksumKey"];
+                if (string.IsNullOrEmpty(checksumKey))
+                {
+                    _logger.LogError("ChecksumKey is not configured");
+                    return false;
+                }
+
+                using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(checksumKey));
+                var computedSignature = BitConverter.ToString(hmac.ComputeHash(Encoding.UTF8.GetBytes(webhookBody)))
+                    .Replace("-", "")
+                    .ToLower();
+
+                var isValid = computedSignature == signature.ToLower();
+
+                if (!isValid)
+                {
+                    _logger.LogWarning($"Webhook signature mismatch. Computed: {computedSignature}, Received: {signature}");
+                }
+                else
+                {
+                    _logger.LogInformation("Webhook signature verified successfully");
+                }
+
+                return isValid;
             }
             catch (Exception ex)
             {

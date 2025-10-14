@@ -7,7 +7,7 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Vehi
     {
         IQueryable<Vehicle> GetAll();
         Vehicle GetById(int id);
-        public Vehicle GetFirstAvailableVehicleByModel(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd);
+        Task<Vehicle?> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd);
         void Create(Vehicle vehicle);
         void Update(Vehicle vehicle);
         void Delete(int id);

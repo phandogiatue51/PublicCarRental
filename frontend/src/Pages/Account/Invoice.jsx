@@ -1,10 +1,8 @@
 // Invoice.jsx
 import { useState, useEffect } from "react";
-import { renterAPI } from "../../services/api";
 import "../../styles/Account/Invoice.css";
 
 function Invoice() {
-  const role = localStorage.getItem("userRole");
   const renterId = localStorage.getItem("renterId");
   
   const [invoices, setInvoices] = useState([]);
@@ -13,7 +11,9 @@ function Invoice() {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  
+  const isAuthenticated = () => {
+    return !!localStorage.getItem("jwtToken"); 
+  };
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [invoicesPerPage] = useState(3); // Show 3 invoices per page
@@ -94,7 +94,7 @@ function Invoice() {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
         }
       });
       
@@ -166,7 +166,7 @@ function Invoice() {
     );
   }
 
-  if (!role) {
+  if (!isAuthenticated()) {
     return (
       <div className="empty-state">
         <h3>Access Denied</h3>

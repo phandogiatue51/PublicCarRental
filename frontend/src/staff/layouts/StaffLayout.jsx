@@ -17,29 +17,29 @@ const StaffLayout = () => {
     signalRService.startConnection();
     
     const handleNotification = (notification) => {
-      console.log('Staff received notification:', notification);
+        console.log('Staff received notification:', notification);
       
-      if (notification?.type === 'NewBooking') {
-        toast({
-          title: "🎉 New Booking!",
-          description: `${notification.booking?.RenterName} booked ${notification.booking?.VehicleLicensePlate}`,
-          status: "success",
-          duration: 6000,
-          isClosable: true,
-          position: "top-right"
-        });
-      }
+        if (notification?.type === 'NewBooking') {
+            toast({
+            title: "🎉 New Booking!",
+            description: `${notification.RenterName} booked ${notification.VehicleLicensePlate} at ${notification.StationName}`,
+            status: "success",
+            duration: 6000,
+            isClosable: true,
+            position: "top-right"
+            });
+        }
       
-      if (notification?.type === 'BookingConfirmed') {
-        toast({
-          title: "✅ Booking Confirmed",
-          description: notification.message || "A booking has been confirmed",
-          status: "info",
-          duration: 6000,
-          isClosable: true,
-          position: "top-right"
-        });
-      }
+        if (notification?.type === 'BookingConfirmed') {
+            toast({
+            title: "✅ Booking Confirmed",
+            description: notification.message || "A booking has been confirmed",
+            status: "info",
+            duration: 6000,
+            isClosable: true,
+            position: "top-right"
+            });
+        }
     };
 
     signalRService.registerNotificationHandler(handleNotification);
@@ -49,6 +49,8 @@ const StaffLayout = () => {
       signalRService.stopConnection();
     };
   }, [toast]);
+
+
 
     const bgColor = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.200', 'gray.700');

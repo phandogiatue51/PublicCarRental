@@ -201,7 +201,7 @@ namespace PublicCarRental.Application.Service.Veh
 
             return await _cache.GetOrSetAsync(cacheKey, async () =>
             {
-                return _repo.GetFirstAvailableVehicleByModel(modelId, stationId, requestedStart, requestedEnd);
+                return await _repo.GetFirstAvailableVehicleByModelAsync(modelId, stationId, requestedStart, requestedEnd);
             }, TimeSpan.FromMinutes(5)); 
         }
 

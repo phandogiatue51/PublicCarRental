@@ -6,11 +6,11 @@ namespace PublicCarRental.Application.Service.Ren
     public interface IEVRenterService
     {
         public IEnumerable<EVRenterDto> GetAll();
-        public EVRenterDto? GetById(int id);
-        public EVRenter? GetEntityById(int id);
+        Task<EVRenterDto?> GetByIdAsync(int id);
+        Task<EVRenter?> GetEntityByIdAsync(int id);
         Task<(bool Success, string Message)> CreateRenterAsync(int accountId, string license);
-        public (bool Success, string Message) UpdateRenter(int id, EVRenterUpdateDto renter);
-        public bool DeleteRenter(int id);
+        Task<(bool Success, string Message)> UpdateRenterAsync(int id, EVRenterUpdateDto renter);
+        Task<bool> DeleteRenterAsync(int id);
         public bool ChangeStatus(int renterId);
     }
 }
