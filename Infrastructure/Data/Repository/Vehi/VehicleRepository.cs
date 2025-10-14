@@ -37,20 +37,22 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Vehi
                 .FirstOrDefault(v => v.VehicleId == id);
         }
 
-        public Vehicle GetFirstAvailableVehicleByModel(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd)
+        public async Task<Vehicle?> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd)
         {
-            var vehicles = _context.Vehicles
+            var vehicles = await _context.Vehicles
                 .Include(v => v.RentalContracts)
                 .Include(v => v.Model)
                 .Where(v => v.ModelId == modelId && v.StationId == stationId)
-                .ToList();
+                .ToListAsync();
 
             foreach (var vehicle in vehicles)
             {
                 bool isAvailable = true;
 
                 foreach (var contract in vehicle.RentalContracts
-                         .Where(c => c.Status == RentalStatus.Active || c.Status == RentalStatus.ToBeConfirmed))
+                         .Where(c => c.Status == RentalStatus.Active || 
+                         c.Status == RentalStatus.ToBeConfirmed ||
+                         c.Status == RentalStatus.Confirmed))
                 {
                     bool overlaps = requestedStart < contract.ChargingEndTime && requestedEnd > contract.StartTime;
                     if (overlaps)
@@ -59,11 +61,9 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Vehi
                         break;
                     }
                 }
-
                 if (isAvailable)
                     return vehicle;
             }
-
             return null;
         }
 

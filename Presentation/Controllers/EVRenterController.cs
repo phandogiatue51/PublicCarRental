@@ -32,9 +32,9 @@ public class EVRenterController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public IActionResult GetById(int id)
+    public async Task<IActionResult> GetByIdAsync(int id)
     {
-        var renter = _eVRenterService.GetById(id);
+        var renter =  await _eVRenterService.GetByIdAsync(id);
         if (renter == null)
             return NotFound(new { message = "Renter not found" });
 
@@ -42,9 +42,9 @@ public class EVRenterController : ControllerBase
     }
 
     [HttpPut("update-renter/{id}")]
-    public IActionResult UpdateRenter(int id, [FromBody] EVRenterUpdateDto dto)
+    public async Task<IActionResult> UpdateRenterAsync(int id, [FromBody] EVRenterUpdateDto dto)
     {
-        var result = _eVRenterService.UpdateRenter(id, dto);
+        var result = await _eVRenterService.UpdateRenterAsync(id, dto);
         if (!result.Success)
             return BadRequest(new { message = result.Message });
 
@@ -52,9 +52,9 @@ public class EVRenterController : ControllerBase
     }
 
     [HttpDelete("delete-renter/{id}")]
-    public IActionResult DeleteRenter(int id)
+    public async Task<IActionResult> DeleteRenterAsync(int id)
     {
-        var success = _eVRenterService.DeleteRenter(id);
+        var success = await _eVRenterService.DeleteRenterAsync(id);
         if (!success)
             return NotFound(new { message = "Renter not found" });
 
@@ -72,24 +72,24 @@ public class EVRenterController : ControllerBase
     [HttpGet("{renterId}/favorites")]
     public IActionResult GetFavorites(int renterId)
     {
-        var favorites = _favoriteService.GetFavorite(renterId);
+        var favorites = _favoriteService.GetFavoriteAsync(renterId);
         if (favorites == null)
             return NotFound(new { message = "Renter not found!" });
         return Ok(favorites);
     }
 
     [HttpDelete("{renterId}/favorites/{modelId}")]
-    public IActionResult RemoveFavorite(int renterId, int modelId)
+    public async Task<IActionResult> RemoveFavoriteAsync(int renterId, int modelId)
     {
-        var success = _favoriteService.RemoveFavorites(renterId, modelId);
+        var success = await _favoriteService.RemoveFavoritesAsync(renterId, modelId);
         if (!success) return BadRequest("Couldn't remove favorite!");
         return Ok("Model removed from favorite successfully!");
     }
 
     [HttpPost("{renterId}/favorites/{modelId}")]
-    public IActionResult AddFavorite(int renterId, int modelId)
+    public async Task<IActionResult> AddFavoriteAsync(int renterId, int modelId)
     {
-        var success = _favoriteService.AddFavorites(renterId, modelId);
+        var success = await _favoriteService.AddFavoritesAsync(renterId, modelId);
         if (!success) return BadRequest("Couldn't add favorite!");
         return Ok("Model added to favorite successfully!");
     }

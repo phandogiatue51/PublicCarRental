@@ -41,9 +41,9 @@ namespace PublicCarRental.Application.Service.Ren
                 }).ToList();
         }
 
-        public EVRenterDto? GetById(int id)
+        public async Task<EVRenterDto?> GetByIdAsync(int id)
         {
-            var r = _renterRepo.GetById(id);
+            var r = await _renterRepo.GetByIdAsync(id); 
             if (r == null || r.Account == null) return null;
 
             return new EVRenterDto
@@ -59,11 +59,11 @@ namespace PublicCarRental.Application.Service.Ren
             };
         }
 
-        public EVRenter? GetEntityById(int id) => _renterRepo.GetById(id);
+        public async Task<EVRenter?> GetEntityByIdAsync(int id) => await _renterRepo.GetByIdAsync(id);
 
-        public (bool Success, string Message) UpdateRenter(int id, EVRenterUpdateDto renter)
+        public async Task<(bool Success, string Message)> UpdateRenterAsync(int id, EVRenterUpdateDto renter)
         {
-            var existingRenter = _renterRepo.GetById(id);
+            var existingRenter = await _renterRepo.GetByIdAsync(id);
             if (existingRenter == null || existingRenter.Account == null)
                 return (false, "Renter not found");
 
@@ -113,10 +113,10 @@ namespace PublicCarRental.Application.Service.Ren
             }
         }
 
-        public bool DeleteRenter(int id)
+        public async Task<bool> DeleteRenterAsync(int id)
         {
         
-            var renter = _renterRepo.GetById(id);
+            var renter = await _renterRepo.GetByIdAsync(id);
             if (renter == null) return false;
 
             renter.Account.Status = AccountStatus.Inactive;
@@ -154,7 +154,5 @@ namespace PublicCarRental.Application.Service.Ren
             _renterRepo.ChangeStatus(renterId);
             return true;
         }
-
-
     }
 }

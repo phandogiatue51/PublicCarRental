@@ -14,6 +14,8 @@ import SignUp from "./Pages/SignUp";
 import AccountTabs from "./Pages/Account/AccountTabs";
 import ForgotPassword from "./Pages/Account/ForgotPassword";
 import ModelDetail from "./Pages/ModelDetail";
+import Success from './Pages/Payment/Success';
+import Cancel from './Pages/Payment/Cancel';
 
 function App() {
   return (
@@ -36,6 +38,11 @@ function App() {
               <Route path="sign-up" element={<SignUp />} />
               <Route path="account" element={<AccountTabs />} />
               <Route path="forgot-password" element={<ForgotPassword />} />
+              <Route path="/payment/success" element={<Success />} />
+              <Route path="/payment/cancel" element={<Cancel />} />
+
+
+              
             </Routes>
           </>
         } />

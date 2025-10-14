@@ -152,6 +152,14 @@ builder.Services.AddScoped<IAccidentRepository, AccidentRepository>();
 builder.Services.AddScoped<IAccidentService, AccidentService>();
 builder.Services.AddScoped<AccidentEventProducerService>();
 builder.Services.AddHostedService<NotificationConsumerService>();
+builder.Services.AddSingleton<DistributedLockService>();
+builder.Services.AddScoped<PdfContractService>();
+builder.Services.AddScoped<PdfGenerationProducerService>();
+builder.Services.AddHostedService<PdfGenerationConsumerService>();
+builder.Services.AddScoped<IPdfStorageService, PdfStorageService>();
+builder.Services.AddScoped<PdfContractService>();
+
+
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = jwtSettings["Key"];

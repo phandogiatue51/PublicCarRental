@@ -5,7 +5,7 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Ren
 {
     public interface IEVRenterRepository
     {
-        EVRenter GetById(int id);
+        Task<EVRenter?> GetByIdAsync(int id);
         IQueryable<EVRenter> GetAll();
         void Create(EVRenter renter);
         void Update(EVRenter renter);

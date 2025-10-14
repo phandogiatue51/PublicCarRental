@@ -8,6 +8,7 @@ namespace PublicCarRental.Application.Service.Inv
         public IEnumerable<InvoiceDto> GetAll();
         public InvoiceDto GetById(int id);
         public InvoiceDto GetByContractId(int contractId);
+        public InvoiceDto GetByOrderCode(int orderCode);
         public Invoice GetEntityById(int id);
         public (bool Success, string Message) CreateInvoice(int contractId);
         public bool UpdateInvoice(Invoice invoice);

@@ -64,47 +64,42 @@ class SignalRService {
                 .withAutomaticReconnect()
                 .build();
 
-            // Setup handlers
             this.connection.off('ReceiveBookingNotification');
             this.connection.on('ReceiveBookingNotification', (notification) => {
+                console.log('📨 Raw booking notification from server:', notification);
+                
                 this.notifyHandlers({
                     type: 'NewBooking',
-                    message: notification.Message,
-                    timestamp: new Date(),
-                    booking: notification,
-                    stationId: notification.StationId
+                    ...notification 
                 });
             });
 
             this.connection.off('ReceiveAccidentNotification');
             this.connection.on('ReceiveAccidentNotification', (notification) => {
-                console.log('🚨 Received accident notification:', notification);
+                console.log('🚨 Raw accident notification from server:', notification);
+                
                 this.notifyHandlers({
                     type: 'AccidentReported',
-                    message: notification.Message,
-                    timestamp: new Date(),
-                    accident: notification
+                    ...notification 
                 });
             });
 
             this.connection.off('ReceiveBookingConfirmation');
             this.connection.on('ReceiveBookingConfirmation', (notification) => {
+                console.log('✅ Raw booking confirmation from server:', notification);
+                
                 this.notifyHandlers({
                     type: 'BookingConfirmed',
-                    message: notification.Message,
-                    timestamp: new Date(),
-                    booking: notification
+                    ...notification 
                 });
             });
 
             await this.connection.start();
             
-            // FIXED: Join correct group based on user role from JWT
             await this.joinUserGroup();
             
             console.log('✅ Connected to SignalR via service');
             
-            // Test notification to verify connection works
             this.connection.on('JoinedGroup', (groupName) => {
                 console.log(`Successfully joined group: ${groupName}`);
             });
@@ -113,7 +108,6 @@ class SignalRService {
         }
     }
 
-    // FIXED: Join correct group based on user role
     async joinUserGroup() {
         const user = this.getCurrentUser();
         
@@ -125,7 +119,6 @@ class SignalRService {
         console.log('Current user for SignalR:', user);
 
         try {
-            // Handle both string and numeric roles
             const userRole = user.role?.toString().toLowerCase();
             
             console.log('Processing role:', userRole);

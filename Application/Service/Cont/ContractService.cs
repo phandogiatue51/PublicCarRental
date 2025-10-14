@@ -11,16 +11,17 @@ namespace PublicCarRental.Application.Service.Cont
 {
     public class ContractService : IContractService
     {
-        private readonly IVehicleRepository _vehicleRepo;
         private readonly IContractRepository _contractRepo;
         private readonly IEVRenterService _renterService;
         private readonly BookingEventProducerService _bookingEventProducer; 
         private readonly ILogger<ContractService> _logger;
         private readonly IImageStorageService _imageStorageService;
+        private readonly IDistributedLockService _distributedLock;
+        private readonly IVehicleRepository _vehicleRepo;
 
         public ContractService(IContractRepository repo, IVehicleRepository vehicleRepo, IEVRenterService eVRenterService, 
             BookingEventProducerService bookingEventProducerService, IImageStorageService imageStorageService,
-            ILogger<ContractService> logger)
+            ILogger<ContractService> logger, IDistributedLockService distributedLock)
         {
             _contractRepo = repo;
             _vehicleRepo = vehicleRepo;
@@ -28,7 +29,9 @@ namespace PublicCarRental.Application.Service.Cont
             _imageStorageService = imageStorageService;
             _bookingEventProducer = bookingEventProducerService;
             _logger = logger;
+            _distributedLock = distributedLock;
         }
+
         public IEnumerable<ContractDto> GetAll()
         {
             return _contractRepo.GetAll()
@@ -84,14 +87,18 @@ namespace PublicCarRental.Application.Service.Cont
             return _contractRepo.GetById(id);
         }
 
-        public (bool Success, string Message, int contractId) CreateContract(CreateContractDto dto)
+        public async Task<(bool Success, string Message, int contractId)> CreateContractAsync(CreateContractDto dto)
         {
+            var lockKey = $"contract_create:{dto.ModelId}:{dto.StationId}:{dto.StartTime:yyyyMMddHHmm}";
             try
             {
-                var vehicle = _vehicleRepo.GetFirstAvailableVehicleByModel(dto.ModelId, dto.StationId, dto.StartTime, dto.EndTime);
+                if (!await _distributedLock.AcquireLockAsync(lockKey, TimeSpan.FromSeconds(5)))
+                    return (false, "Please try again. Someone is booking the same vehicle.", 0);
+
+                var vehicle = await _vehicleRepo.GetFirstAvailableVehicleByModelAsync(dto.ModelId, dto.StationId, dto.StartTime, dto.EndTime);
                 if (vehicle == null)
                     return (false, "Model not available. Choose another time, station, or model.", 0);
-                var renter = _renterService.GetEntityById(dto.EVRenterId);
+                var renter = await _renterService.GetByIdAsync(dto.EVRenterId);
                 if (renter == null)
                     return (false, "Renter not found!", 0);
 
@@ -118,8 +125,8 @@ namespace PublicCarRental.Application.Service.Cont
                         {
                             BookingId = contract.ContractId,
                             RenterId = renter.RenterId,
-                            RenterEmail = renter.Account?.Email,
-                            RenterName = renter.Account?.FullName,
+                            RenterEmail = renter.Email,
+                            RenterName = renter.FullName,
                             VehicleId = vehicle.VehicleId,
                             VehicleLicensePlate = vehicle.LicensePlate,
                             StationId = contract.StationId ?? 0,
@@ -143,16 +150,20 @@ namespace PublicCarRental.Application.Service.Cont
             {
                 return (false, "Please enter the existing station ID or model ID.", 0);
             }
+            finally
+            {
+                await _distributedLock.ReleaseLockAsync(lockKey);
+            }
         }
 
-        public (bool Success, string Message) UpdateContract(int id, UpdateContractDto updatedContract)
+        public async Task<(bool Success, string Message)> UpdateContractAsync(int id, UpdateContractDto updatedContract)
         {
             var existing = _contractRepo.GetById(id);
             if (existing == null) return (false, "Vehicle not found!");
             if (existing.Status != RentalStatus.ToBeConfirmed)
                 return (false, "Couldn't change contract. Refund or start a new contract instead.");
 
-            var vehicle = _vehicleRepo.GetFirstAvailableVehicleByModel(updatedContract.ModelId, updatedContract.StationId, updatedContract.StartTime, updatedContract.EndTime);
+            var vehicle = await _vehicleRepo.GetFirstAvailableVehicleByModelAsync(updatedContract.ModelId, updatedContract.StationId, updatedContract.StartTime, updatedContract.EndTime);
             if (vehicle == null)
                 return (false, "Model not available. Choose another time, station, or model.");
 

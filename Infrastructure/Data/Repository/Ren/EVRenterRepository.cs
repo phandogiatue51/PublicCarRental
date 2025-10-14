@@ -19,12 +19,11 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Ren
             return _context.EVRenters
                 .Include(r => r.Account);
         }
-
-        public EVRenter? GetById(int id)
+        public async Task<EVRenter?> GetByIdAsync(int id)
         {
-            return _context.EVRenters
+            return await _context.EVRenters
                 .Include(r => r.Account)
-                .FirstOrDefault(r => r.RenterId == id);
+                .FirstOrDefaultAsync(r => r.RenterId == id); 
         }
 
         public void Create(EVRenter renter)

@@ -42,6 +42,14 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(invoice);
         }
 
+        [HttpGet("by-order-code/{orderCode}")]
+        public IActionResult GetByOrderCode(int orderCode)
+        {
+            var invoice = _service.GetByOrderCode(orderCode);
+            if (invoice == null) return NotFound();
+            return Ok(invoice);
+        }
+
         [HttpPost("create-invoice/{contractId}")]
         public IActionResult Create(int contractId) 
         {
