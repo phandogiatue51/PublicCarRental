@@ -37,6 +37,7 @@ using PublicCarRental.Infrastructure.Data.Repository.Typ;
 using PublicCarRental.Infrastructure.Data.Repository.Vehi;
 using PublicCarRental.Infrastructure.Helpers;
 using PublicCarRental.Infrastructure.Signal;
+using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text.Json.Serialization;
 using Task = System.Threading.Tasks.Task;
@@ -47,6 +48,12 @@ builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
     options.InstanceName = "CarRental_";
+});
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+    return ConnectionMultiplexer.Connect(redisConnectionString);
 });
 
 builder.Services.Configure<RabbitMQSettings>(builder.Configuration.GetSection("RabbitMQ"));
@@ -152,7 +159,7 @@ builder.Services.AddScoped<IAccidentRepository, AccidentRepository>();
 builder.Services.AddScoped<IAccidentService, AccidentService>();
 builder.Services.AddScoped<AccidentEventProducerService>();
 builder.Services.AddHostedService<NotificationConsumerService>();
-builder.Services.AddSingleton<DistributedLockService>();
+builder.Services.AddScoped<IDistributedLockService, DistributedLockService>();
 builder.Services.AddScoped<PdfContractService>();
 builder.Services.AddScoped<PdfGenerationProducerService>();
 builder.Services.AddHostedService<PdfGenerationConsumerService>();

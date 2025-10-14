@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'https://localhost:7230/api'  
+  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'  
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
 
 // Generic API request function

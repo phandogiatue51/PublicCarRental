@@ -1,13 +1,10 @@
 // Favorite.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
-import { renterAPI } from "../../services/api";
 import "../../styles/Account/Favorite.css";
 
 function Favorite() {
   const navigate = useNavigate();
-  const role = localStorage.getItem("userRole");
   const renterId = localStorage.getItem("renterId");
   
   const [favorites, setFavorites] = useState([]);
@@ -16,7 +13,9 @@ function Favorite() {
   const [selectedFavorite, setSelectedFavorite] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  
+  const isAuthenticated = () => {
+    return !!localStorage.getItem("jwtToken"); 
+  };
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [favoritesPerPage] = useState(4); // Show 3 favorites per page
@@ -59,20 +58,6 @@ function Favorite() {
     return () => controller.abort();
   }, [renterId]);
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (error) {
-      return 'Invalid Date';
-    }
-  };
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -89,31 +74,6 @@ function Favorite() {
     );
   };
 
-  const handleViewDetails = async (vehicleId) => {
-    setDetailLoading(true);
-    setError("");
-    try {
-      const response = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/Vehicle/${vehicleId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const vehicleDetail = await response.json();
-      setSelectedFavorite(vehicleDetail);
-      setShowDetailModal(true);
-    } catch (e) {
-      setError(e.message || "Failed to load vehicle details");
-    } finally {
-      setDetailLoading(false);
-    }
-  };
 
   const closeDetailModal = () => {
     setShowDetailModal(false);

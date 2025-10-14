@@ -1,11 +1,8 @@
 // Contract.jsx
 import { useState, useEffect } from "react";
-import { useAuth } from "../../hooks/useAuth";
-import { renterAPI } from "../../services/api";
 import "../../styles/Account/Contract.css";
 
 function Contract() {
-  const role = localStorage.getItem("userRole");
   const renterId = localStorage.getItem("renterId");
   
   const [contracts, setContracts] = useState([]);
@@ -14,7 +11,9 @@ function Contract() {
   const [selectedContract, setSelectedContract] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  
+  const isAuthenticated = () => {
+    return !!localStorage.getItem("jwtToken"); 
+  };
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [contractsPerPage] = useState(3); // Show 3 contracts per page

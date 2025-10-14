@@ -1,16 +1,17 @@
 // Profile.jsx
 import { useState, useEffect } from "react";
-import { useAuth } from "../../hooks/useAuth";
 import { renterAPI } from "../../services/api";
 import "../../styles/Account/Profile.css";
 
 function Profile() {
-  const role = localStorage.getItem("userRole");
   const storedFullName = localStorage.getItem("fullName");
   const storedEmail = localStorage.getItem("email");
   const storedPhoneNumber = localStorage.getItem("phoneNumber");
   const renterId = localStorage.getItem("renterId");
-
+  const isAuthenticated = () => {
+    return !!localStorage.getItem("jwtToken"); 
+  };
+  
   const [profileData, setProfileData] = useState({
     fullName: storedFullName || "",
     email: storedEmail || "",
