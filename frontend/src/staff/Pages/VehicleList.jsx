@@ -41,7 +41,7 @@ const VehicleList = () => {
     const [stations, setStations] = useState([]);
 
     // Detect staff stationId from localStorage/sessionStorage (hide station selector if present)
-    const presetStationId = (typeof window !== 'undefined') ? (localStorage.getItem('staffStationId') || sessionStorage.getItem('staffStationId')) : '';
+    const presetStationId = (typeof window !== 'undefined') ? (localStorage.getItem('stationId') || sessionStorage.getItem('stationId')) : '';
 
     // Fetch vehicles from API
     const fetchVehicles = async () => {

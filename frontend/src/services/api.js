@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'  
+  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
 
 // Generic API request function
@@ -128,6 +128,17 @@ export const modelAPI = {
 
   // Get available images
   getAvailableImages: () => apiRequest('/Model/available-images'),
+
+  // Filter models
+  filterModels: (brandId, typeId, stationId) => {
+    const queryParams = new URLSearchParams();
+    if (brandId) queryParams.append('brandId', brandId);
+    if (typeId) queryParams.append('typeId', typeId);
+    if (stationId) queryParams.append('stationId', stationId);
+
+    const queryString = queryParams.toString();
+    return apiRequest(`/Model/filter-models${queryString ? `?${queryString}` : ''}`);
+  },
 };
 
 // Type API services
@@ -263,6 +274,19 @@ export const vehicleAPI = {
     method: 'PUT',
     body: JSON.stringify(vehicleData),
   }),
+
+  // Filter vehicles
+  filter: (filters) => {
+    const queryParams = new URLSearchParams();
+    if (filters.stationId) queryParams.append('stationId', filters.stationId);
+    if (filters.status !== undefined) queryParams.append('status', filters.status);
+    if (filters.modelId) queryParams.append('modelId', filters.modelId);
+    if (filters.typeId) queryParams.append('typeId', filters.typeId);
+    if (filters.brandId) queryParams.append('brandId', filters.brandId);
+
+    const queryString = queryParams.toString();
+    return apiRequest(`/Vehicle/filter-vehicle${queryString ? `?${queryString}` : ''}`);
+  },
 };
 
 // Invoice API services

@@ -1,60 +1,102 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Box, Flex, Text, Icon, Button, useColorModeValue, useToast } from '@chakra-ui/react';
+import { Box, Flex, Text, Icon, Button, useColorModeValue, useToast, Spinner } from '@chakra-ui/react';
 import {
-    MdDashboard,    MdPerson,    MdDriveEta,    MdAssignment,    MdReceipt,    MdMenu,    MdLogout,    MdHome
+    MdDashboard, MdPerson, MdDriveEta, MdAssignment, MdReceipt, MdMenu, MdLogout, MdHome
 } from 'react-icons/md';
 import signalRService from '../../services/signalRService';
-import { useEffect } from 'react';
 
 const StaffLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const location = useLocation();
     const navigate = useNavigate();
     const toast = useToast();
 
-    useEffect(() => {
-    signalRService.startConnection();
-    
-    const handleNotification = (notification) => {
-        console.log('Staff received notification:', notification);
-      
-        if (notification?.type === 'NewBooking') {
-            toast({
-            title: "🎉 New Booking!",
-            description: `${notification.RenterName} booked ${notification.VehicleLicensePlate} at ${notification.StationName}`,
-            status: "success",
-            duration: 6000,
-            isClosable: true,
-            position: "top-right"
-            });
-        }
-      
-        if (notification?.type === 'BookingConfirmed') {
-            toast({
-            title: "✅ Booking Confirmed",
-            description: notification.message || "A booking has been confirmed",
-            status: "info",
-            duration: 6000,
-            isClosable: true,
-            position: "top-right"
-            });
-        }
-    };
-
-    signalRService.registerNotificationHandler(handleNotification);
-
-    return () => {
-      signalRService.unregisterNotificationHandler(handleNotification);
-      signalRService.stopConnection();
-    };
-  }, [toast]);
-
-
-
+    // All hooks must be called at the top level
     const bgColor = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.200', 'gray.700');
     const textColor = useColorModeValue('gray.600', 'white');
+    const pageBgColor = useColorModeValue('gray.50', 'gray.900');
+    const loadingTextColor = useColorModeValue('gray.600', 'white');
+
+    // Authentication check - TEMPORARILY DISABLED FOR TESTING
+    useEffect(() => {
+        const checkAuth = () => {
+            const token = localStorage.getItem('jwtToken');
+            const userRole = localStorage.getItem('userRole');
+            const staffId = localStorage.getItem('staffId');
+            
+            console.log('Staff Auth Check:', { token: !!token, userRole, staffId });
+            
+            // TEMPORARILY DISABLE AUTH FOR TESTING
+            // TODO: Re-enable authentication in production
+            console.log('⚠️ Authentication temporarily disabled for testing');
+            setIsAuthenticated(true);
+            setIsCheckingAuth(false);
+            
+            // Original auth check (commented out for testing)
+            /*
+            if (!token || userRole !== 'Staff' || !staffId) {
+                console.log('Staff authentication failed, redirecting to login');
+                toast({
+                    title: 'Authentication Required',
+                    description: 'Please log in as staff to access this area',
+                    status: 'warning',
+                    duration: 3000,
+                    isClosable: true,
+                });
+                navigate('/');
+                return;
+            }
+            
+            setIsAuthenticated(true);
+            setIsCheckingAuth(false);
+            */
+        };
+
+        checkAuth();
+    }, [navigate, toast]);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+
+        signalRService.startConnection();
+
+        const handleNotification = (notification) => {
+            console.log('Staff received notification:', notification);
+
+            if (notification?.type === 'NewBooking') {
+                toast({
+                    title: "🎉 New Booking!",
+                    description: `${notification.RenterName} booked ${notification.VehicleLicensePlate} at ${notification.StationName}`,
+                    status: "success",
+                    duration: 6000,
+                    isClosable: true,
+                    position: "top-right"
+                });
+            }
+
+            if (notification?.type === 'BookingConfirmed') {
+                toast({
+                    title: "✅ Booking Confirmed",
+                    description: notification.message || "A booking has been confirmed",
+                    status: "info",
+                    duration: 6000,
+                    isClosable: true,
+                    position: "top-right"
+                });
+            }
+        };
+
+        signalRService.registerNotificationHandler(handleNotification);
+
+        return () => {
+            signalRService.unregisterNotificationHandler(handleNotification);
+            signalRService.stopConnection();
+        };
+    }, [toast, isAuthenticated]);
 
     const menuItems = [
         { path: '/dashboard', label: 'Dashboard', icon: MdDashboard },
@@ -89,15 +131,32 @@ const StaffLayout = () => {
         localStorage.removeItem("renterId");
         localStorage.removeItem("isAdmin");
         localStorage.removeItem("phoneNumber");
-        
+
         // Dispatch custom event to notify components of auth state change
         window.dispatchEvent(new CustomEvent('authStateChanged'));
-        
+
         navigate('/');
     };
 
+    // Show loading spinner while checking authentication
+    if (isCheckingAuth) {
+        return (
+            <Box minH="100vh" bg={pageBgColor} display="flex" alignItems="center" justifyContent="center">
+                <Flex direction="column" align="center" gap={4}>
+                    <Spinner size="xl" color="blue.500" />
+                    <Text color={loadingTextColor}>Checking authentication...</Text>
+                </Flex>
+            </Box>
+        );
+    }
+
+    // Don't render if not authenticated
+    if (!isAuthenticated) {
+        return null;
+    }
+
     return (
-        <Box minH="100vh" bg={useColorModeValue('gray.50', 'gray.900')} display="flex" flexDirection="column">
+        <Box minH="100vh" bg={pageBgColor} display="flex" flexDirection="column">
 
             <Flex flex="1" overflow="hidden">
                 {/* Sidebar */}
@@ -161,10 +220,10 @@ const StaffLayout = () => {
                 </Box>
 
                 {/* Main Content Area */}
-                <Box 
-                    flex="1" 
-                    display="flex" 
-                    flexDirection="column" 
+                <Box
+                    flex="1"
+                    display="flex"
+                    flexDirection="column"
                     minH="100vh"
                     ml={{ base: 0, md: 0 }}
                 >
@@ -191,10 +250,10 @@ const StaffLayout = () => {
                     </Box>
 
                     {/* Page Content */}
-                    <Box 
-                        p={6} 
-                        flex="1" 
-                        display="flex" 
+                    <Box
+                        p={6}
+                        flex="1"
+                        display="flex"
                         flexDirection="column"
                         overflow="auto"
                     >
