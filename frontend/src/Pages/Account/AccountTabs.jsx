@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import Profile from './Profile';
 import Contract from './Contract';
 import Invoice from './Invoice';
@@ -37,6 +38,7 @@ const tabs = [
 function AccountTabs() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
+  const { isAuthenticated, getCurrentUser, logout } = useAuth();
   
   const role = localStorage.getItem("userRole");
   const fullName = localStorage.getItem("fullName");
@@ -60,7 +62,7 @@ function AccountTabs() {
     navigate("/");
   };
 
-  if (!role) {
+  if (!isAuthenticated()) {
     navigate("/login");
     return null;
   }

@@ -1,5 +1,6 @@
 // Contract.jsx
 import { useState, useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
 import { renterAPI } from "../../services/api";
 import "../../styles/Account/Contract.css";
 
@@ -95,7 +96,7 @@ function Contract() {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
         }
       });
       
@@ -167,7 +168,7 @@ function Contract() {
     );
   }
 
-  if (!role) {
+  if (!isAuthenticated()) {
     return (
       <div className="empty-state">
         <h3>Access Denied</h3>

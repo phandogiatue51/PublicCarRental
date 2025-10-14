@@ -1,5 +1,6 @@
 // Profile.jsx
 import { useState, useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
 import { renterAPI } from "../../services/api";
 import "../../styles/Account/Profile.css";
 
@@ -72,7 +73,7 @@ function Profile() {
     );
   }
 
-  if (!role) {
+  if (!isAuthenticated()) {
     return (
       <div className="empty-state">
         <h3>Access Denied</h3>
