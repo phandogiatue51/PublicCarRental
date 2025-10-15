@@ -6,6 +6,7 @@ namespace PublicCarRental.Application.Service.Ren
     public interface IEVRenterService
     {
         public IEnumerable<EVRenterDto> GetAll();
+        public IEnumerable<EVRenterDto> FilterByParam(string param);
         Task<EVRenterDto?> GetByIdAsync(int id);
         Task<EVRenter?> GetEntityByIdAsync(int id);
         Task<(bool Success, string Message)> CreateRenterAsync(int accountId, string license);

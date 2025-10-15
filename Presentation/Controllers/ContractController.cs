@@ -130,6 +130,13 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(contracts);
         }
 
+        [HttpGet("filter-by-status/{status}")]
+        public IActionResult FilterStatus(RentalStatus status)
+        {
+            var contracts = _contractService.FilterByStatus(status);
+            return Ok(contracts);
+        }
+
         [HttpGet("contracts/{contractId}/summary")]
         public IActionResult GetContractSummary(int contractId)
         {
