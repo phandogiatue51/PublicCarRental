@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'  
+  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
 
 // Generic API request function
@@ -107,7 +107,42 @@ export const modelAPI = {
   getAll: () => apiRequest('/Model/get-all'),
 
   // Get model by ID
-  getById: (id) => apiRequest(`/Model/${id}`),
+  getById: async (id) => {
+    try {
+      const response = await apiRequest(`/Model/${id}`);
+      return response.result || response;
+    } catch (error) {
+      console.error('Error fetching model by ID:', error);
+      return null;
+    }
+  },
+
+  // Filter models by brand, type, and station - FIXED
+  filterModels: async (brandId, typeId, stationId) => {
+    try {
+      const params = new URLSearchParams();
+      if (brandId) params.append('brandId', brandId);
+      if (typeId) params.append('typeId', typeId);
+      if (stationId) params.append('stationId', stationId);
+      
+      const response = await apiRequest(`/Model/filter-models?${params.toString()}`);
+      return response.result || response || [];
+    } catch (error) {
+      console.error('Error filtering models:', error);
+      return [];
+    }
+    },
+    getStationFromModel: async (modelId) => {
+
+        try {
+            const response = await apiRequest(`/Model/get-station-from-model/${modelId}`);
+            return response.result || response || [];
+        } catch (error) {
+            console.error('Error fetching stations from model:', error);
+            return [];
+        }
+    },
+
 
   // Create new model
   create: (modelData) => apiRequest('/Model/create-model', {
@@ -128,6 +163,17 @@ export const modelAPI = {
 
   // Get available images
   getAvailableImages: () => apiRequest('/Model/available-images'),
+
+  // Filter models
+  filterModels: (brandId, typeId, stationId) => {
+    const queryParams = new URLSearchParams();
+    if (brandId) queryParams.append('brandId', brandId);
+    if (typeId) queryParams.append('typeId', typeId);
+    if (stationId) queryParams.append('stationId', stationId);
+
+    const queryString = queryParams.toString();
+    return apiRequest(`/Model/filter-models${queryString ? `?${queryString}` : ''}`);
+  },
 };
 
 // Type API services
@@ -186,6 +232,7 @@ export const stationAPI = {
   delete: (id) => apiRequest(`/Station/delete-station/${id}`, {
     method: 'DELETE',
   }),
+
 };
 
 // Renter API services
@@ -263,6 +310,19 @@ export const vehicleAPI = {
     method: 'PUT',
     body: JSON.stringify(vehicleData),
   }),
+
+  // Filter vehicles
+  filter: (filters) => {
+    const queryParams = new URLSearchParams();
+    if (filters.stationId) queryParams.append('stationId', filters.stationId);
+    if (filters.status !== undefined) queryParams.append('status', filters.status);
+    if (filters.modelId) queryParams.append('modelId', filters.modelId);
+    if (filters.typeId) queryParams.append('typeId', filters.typeId);
+    if (filters.brandId) queryParams.append('brandId', filters.brandId);
+
+    const queryString = queryParams.toString();
+    return apiRequest(`/Vehicle/filter-vehicle${queryString ? `?${queryString}` : ''}`);
+  },
 };
 
 // Invoice API services

@@ -49,10 +49,43 @@ const ContractList = () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await contractAPI.getAll();
+
+            // TEMPORARILY DISABLE AUTHENTICATED API CALLS FOR TESTING
+            // TODO: Re-enable when authentication is properly set up
+            console.log('⚠️ Using mock data for testing - authentication required for real data');
+
+            // Mock data for testing
+            const mockContracts = [
+                {
+                    contractId: 1,
+                    vehicleLicensePlate: "ABC-123",
+                    startTime: "2024-01-15T10:00:00Z",
+                    endTime: "2024-01-15T18:00:00Z",
+                    status: 1, // Active
+                    imageIn: null,
+                    imageOut: null
+                },
+                {
+                    contractId: 2,
+                    vehicleLicensePlate: "XYZ-789",
+                    startTime: "2024-01-16T09:00:00Z",
+                    endTime: "2024-01-16T17:00:00Z",
+                    status: 4, // Confirmed
+                    imageIn: null,
+                    imageOut: null
+                }
+            ];
+
+            setContracts(mockContracts);
+            setTotalItems(mockContracts.length);
+
+            // Original API call (commented out for testing)
+            /*
+            const response = await contractAPI.getAll(); // This requires authentication
             console.log('Contracts response:', response);
             setContracts(response || []);
             setTotalItems(response?.length || 0);
+            */
         } catch (err) {
             console.error('Error fetching contracts:', err);
             setError(err.message || 'Failed to fetch contracts');
@@ -184,7 +217,7 @@ const ContractList = () => {
             case 1: return 'green'; // Active - màu xanh lá cho đang hoạt động
             case 2: return 'purple'; // Completed - màu tím cho hoàn thành
             case 3: return 'red'; // Cancelled - màu đỏ cho đã hủy
-            case 4: return 'teal'; 
+            case 4: return 'teal';
             default: return 'gray';
         }
     };
@@ -379,11 +412,11 @@ const ContractList = () => {
             cell: (info) => {
                 const contract = info.row.original;
                 const status = contract.status;
-                
+
                 // Determine which actions are available based on contract status
                 const canHandover = status === 4; // Confirmed status
                 const canReturn = status === 1; // Active status
-                
+
                 return (
                     <Flex align="center" gap={2} wrap="wrap">
                         <Tooltip label="View Details">
@@ -397,7 +430,7 @@ const ContractList = () => {
                                 View
                             </Button>
                         </Tooltip>
-                        
+
                         {canHandover && (
                             <Tooltip label="Hand Over Vehicle">
                                 <Button
@@ -411,7 +444,7 @@ const ContractList = () => {
                                 </Button>
                             </Tooltip>
                         )}
-                        
+
                         {canReturn && (
                             <Tooltip label="Return Vehicle">
                                 <Button
@@ -425,7 +458,7 @@ const ContractList = () => {
                                 </Button>
                             </Tooltip>
                         )}
-                        
+
                         {!canHandover && !canReturn && status !== 2 && status !== 3 && (
                             <Text fontSize="sm" color="gray.500">
                                 No actions available
