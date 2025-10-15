@@ -2,7 +2,7 @@
 
 import {
   Box, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue, Spinner, Alert, AlertIcon,
-  AlertTitle, AlertDescription, Badge, Select, HStack, VStack, useToast, Tooltip,
+  AlertTitle, AlertDescription, Badge, Select, HStack, useToast, Tooltip,
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Image, Grid
 } from '@chakra-ui/react';
 import {
@@ -11,8 +11,8 @@ import {
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { contractAPI } from '../../../../services/api';
 import {
-  MdChevronLeft, MdChevronRight, MdPerson, MdDriveEta, MdLocationOn, MdRefresh,
-  MdVisibility, MdAttachMoney, MdSchedule, MdAssignment, MdPhotoLibrary
+  MdChevronLeft, MdChevronRight, MdDriveEta, MdRefresh,
+  MdVisibility, MdSchedule, MdPhotoLibrary
 } from 'react-icons/md';
 
 // Custom components

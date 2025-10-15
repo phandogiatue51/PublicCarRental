@@ -8,7 +8,6 @@ using PublicCarRental.Infrastructure.Data.Models;
 
 namespace PublicCarRental.Presentation.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ContractController : ControllerBase
@@ -16,10 +15,9 @@ namespace PublicCarRental.Presentation.Controllers
         private readonly IContractService _contractService;
         private readonly ITransactionService _transactionService;
         private readonly PdfContractService _pdfService;
-        private readonly PdfStorageService _pdfStorageService;
-
-        public ContractController(IContractService contractService, ITransactionService transactionService, 
-            PdfContractService pdfService, PdfStorageService pdfStorageService)
+        private readonly IPdfStorageService _pdfStorageService;
+        public ContractController(IContractService contractService, ITransactionService transactionService,
+        PdfContractService pdfService, IPdfStorageService pdfStorageService)
         {
             _contractService = contractService;
             _transactionService = transactionService;
