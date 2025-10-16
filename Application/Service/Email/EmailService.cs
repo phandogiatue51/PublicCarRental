@@ -1,165 +1,231 @@
 ﻿using MailKit.Net.Smtp;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MimeKit;
 using PublicCarRental.Application.DTOs.Message;
+using System.Net;
 
 namespace PublicCarRental.Application.Service.Email
 {
     public class EmailService : IEmailService
     {
         private readonly IConfiguration _config;
+        private readonly ILogger<EmailService> _logger;
 
-        public EmailService(IConfiguration config)
+        public EmailService(IConfiguration config, ILogger<EmailService> logger)
         {
             _config = config;
+            _logger = logger;
         }
 
-        public void SendVerificationEmail(string toEmail, string token)
+        private async Task<bool> SendEmailAsync(Func<MimeMessage> createMessage, int maxRetries = 3)
         {
-            var senderName = _config["EmailSettings:SenderName"];
-            var senderEmail = _config["EmailSettings:SenderEmail"];
             var smtpServer = _config["EmailSettings:SmtpServer"];
-            var port = int.Parse(_config["EmailSettings:Port"]);
+            var port = int.Parse(_config["EmailSettings:Port"] ?? "587");
             var username = _config["EmailSettings:Username"];
             var password = _config["EmailSettings:Password"];
+            var useSsl = bool.Parse(_config["EmailSettings:UseSsl"] ?? "false");
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(senderName, senderEmail));
-            message.To.Add(new MailboxAddress("", toEmail));
-            message.Subject = "Verify your email";
+            // For SendGrid specific settings
+            var isSendGrid = smtpServer?.Contains("sendgrid", StringComparison.OrdinalIgnoreCase) == true;
 
-
-            var verificationLink = $"https://publiccarrental-production-b7c5.up.railway.app/api/Account/verify-email?token={token}";
-
-            message.Body = new TextPart("html")
+            for (int attempt = 0; attempt < maxRetries; attempt++)
             {
-                Text = $@"
-                <html>
-                  <body style='font-family: Arial, sans-serif; color: #333;'>
-                    <div style='max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>
-                      <h2 style='color: #007bff;'>Welcome to PublicCarRental!</h2>
-                      <p>Hi {toEmail},</p>
-                      <p>Thanks for registering. Please verify your email by clicking the button below:</p>
-                      <a href='{verificationLink}' 
-                         style='display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;'>
-                         Verify Email
-                      </a>
-                      <p style='margin-top: 20px;'>If you didn’t request this, you can safely ignore it.</p>
-                      <p>— PublicCarRental Team</p>
-                    </div>
-                  </body>
-                </html>"
-            };
-
-            using var client = new SmtpClient();
-            client.Connect(smtpServer, port, false);
-            client.Authenticate(username, password);
-            client.Send(message);
-            client.Disconnect(true);
+                using var client = new SmtpClient();
+                
+                try
+                {
+                    // Configure timeout and SSL
+                    client.Timeout = 30000; // 30 seconds
+                    
+                    // SendGrid specific configuration
+                    if (isSendGrid)
+                    {
+                        _logger.LogInformation($"Attempt {attempt + 1} to connect to SendGrid SMTP: {smtpServer}:{port}");
+                        // SendGrid uses STARTTLS on port 587
+                        await client.ConnectAsync(smtpServer, port, MailKit.Security.SecureSocketOptions.StartTls);
+                    }
+                    else
+                    {
+                        var secureSocketOptions = useSsl ? MailKit.Security.SecureSocketOptions.StartTls : MailKit.Security.SecureSocketOptions.None;
+                        await client.ConnectAsync(smtpServer, port, secureSocketOptions);
+                    }
+                    
+                    // Disable server certificate validation for development (be careful in production)
+                    client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+                    
+                    await client.AuthenticateAsync(username, password);
+                    
+                    var message = createMessage();
+                    await client.SendAsync(message);
+                    await client.DisconnectAsync(true);
+                    
+                    _logger.LogInformation($"Email sent successfully on attempt {attempt + 1}");
+                    return true;
+                }
+                catch (TimeoutException ex)
+                {
+                    _logger.LogWarning(ex, $"SMTP timeout on attempt {attempt + 1} to {smtpServer}:{port}");
+                    if (attempt == maxRetries - 1) 
+                    {
+                        _logger.LogError($"All {maxRetries} attempts failed due to timeout");
+                        throw;
+                    }
+                    
+                    var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+                    _logger.LogInformation($"Retrying in {delay.TotalSeconds} seconds...");
+                    await Task.Delay(delay);
+                }
+              
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to send email on attempt {attempt + 1}");
+                    if (attempt == maxRetries - 1) throw;
+                    
+                    var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+                    await Task.Delay(delay);
+                }
+                finally
+                {
+                    if (client.IsConnected)
+                    {
+                        await client.DisconnectAsync(true);
+                    }
+                }
+            }
+            return false;
         }
 
-        public void SendPasswordResetEmail(string toEmail, string token)
+        public async Task SendVerificationEmail(string toEmail, string token)
         {
             var senderName = _config["EmailSettings:SenderName"];
             var senderEmail = _config["EmailSettings:SenderEmail"];
-            var smtpServer = _config["EmailSettings:SmtpServer"];
-            var port = int.Parse(_config["EmailSettings:Port"]);
-            var username = _config["EmailSettings:Username"];
-            var password = _config["EmailSettings:Password"];
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(senderName, senderEmail));
-            message.To.Add(new MailboxAddress("", toEmail));
-            message.Subject = "Reset your password";
-            var resetLink = $"https://publiccarrental-production-b7c5.up.railway.app/api/Account/reset-password?token={token}";
-
-            message.Body = new TextPart("html")
+            MimeMessage CreateMessage()
             {
-                Text = $@"
-                <html>
-                  <body style='font-family: Arial, sans-serif; color: #333;'>
-                    <div style='max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>
-                      <h2 style='color: #dc3545;'>Password Reset Request</h2>
-                      <p>Hi {toEmail},</p>
-                      <p>We received a request to reset your password. Click the button below to proceed:</p>
-                      <a href='{resetLink}' 
-                         style='display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px;'>
-                         Reset Password
-                      </a>
-                      <p style='margin-top: 20px;'>If you didn’t request this, you can safely ignore it.</p>
-                      <p>— PublicCarRental Team</p>
-                    </div>
-                  </body>
-                </html>"
-            };
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress(senderName, senderEmail));
+                message.To.Add(new MailboxAddress("", toEmail));
+                message.Subject = "Verify your email";
 
-            using var client = new SmtpClient();
-            client.Connect(smtpServer, port, false);
-            client.Authenticate(username, password);
-            client.Send(message);
-            client.Disconnect(true);
+                var verificationLink = $"https://publiccarrental-production-b7c5.up.railway.app/api/Account/verify-email?token={token}";
+
+                message.Body = new TextPart("html")
+                {
+                    Text = $@"
+                    <html>
+                      <body style='font-family: Arial, sans-serif; color: #333;'>
+                        <div style='max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>
+                          <h2 style='color: #007bff;'>Welcome to PublicCarRental!</h2>
+                          <p>Hi {toEmail},</p>
+                          <p>Thanks for registering. Please verify your email by clicking the button below:</p>
+                          <a href='{verificationLink}' 
+                             style='display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;'>
+                             Verify Email
+                          </a>
+                          <p style='margin-top: 20px;'>If you didn't request this, you can safely ignore it.</p>
+                          <p>— PublicCarRental Team</p>
+                        </div>
+                      </body>
+                    </html>"
+                };
+                return message;
+            }
+
+            await SendEmailAsync(CreateMessage);
         }
 
-        public void SendEmail(string toEmail, string subject, string body)
+        public async Task SendPasswordResetEmail(string toEmail, string token)
         {
             var senderName = _config["EmailSettings:SenderName"];
             var senderEmail = _config["EmailSettings:SenderEmail"];
-            var smtpServer = _config["EmailSettings:SmtpServer"];
-            var port = int.Parse(_config["EmailSettings:Port"]);
-            var username = _config["EmailSettings:Username"];
-            var password = _config["EmailSettings:Password"];
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(senderName, senderEmail));
-            message.To.Add(new MailboxAddress("", toEmail));
-            message.Subject = subject;
-            message.Body = new TextPart("html") { Text = body };
+            MimeMessage CreateMessage()
+            {
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress(senderName, senderEmail));
+                message.To.Add(new MailboxAddress("", toEmail));
+                message.Subject = "Reset your password";
 
-            using var client = new SmtpClient();
-            client.Connect(smtpServer, port, false);
-            client.Authenticate(username, password);
-            client.Send(message);
-            client.Disconnect(true);
+                var resetLink = $"https://publiccarrental-production-b7c5.up.railway.app/api/Account/reset-password?token={token}";
+
+                message.Body = new TextPart("html")
+                {
+                    Text = $@"
+            <html>
+              <body style='font-family: Arial, sans-serif; color: #333;'>
+                <div style='max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>
+                  <h2 style='color: #dc3545;'>Password Reset Request</h2>
+                  <p>Hi {toEmail},</p>
+                  <p>We received a request to reset your password. Click the button below to proceed:</p>
+                  <a href='{resetLink}' 
+                     style='display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px;'>
+                     Reset Password
+                  </a>
+                  <p style='margin-top: 20px;'>If you didn't request this, you can safely ignore it.</p>
+                  <p>— PublicCarRental Team</p>
+                </div>
+              </body>
+            </html>"
+                };
+                return message;
+            }
+
+            await SendEmailAsync(CreateMessage); 
+        }
+
+        public async Task SendEmail(string toEmail, string subject, string body)
+        {
+            var senderName = _config["EmailSettings:SenderName"];
+            var senderEmail = _config["EmailSettings:SenderEmail"];
+
+            MimeMessage CreateMessage()
+            {
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress(senderName, senderEmail));
+                message.To.Add(new MailboxAddress("", toEmail));
+                message.Subject = subject;
+                message.Body = new TextPart("html") { Text = body };
+                return message;
+            }
+
+            await SendEmailAsync(CreateMessage); 
         }
 
         public async Task SendAttachment(EmailMessage emailMessage)
         {
             var senderName = _config["EmailSettings:SenderName"];
             var senderEmail = _config["EmailSettings:SenderEmail"];
-            var smtpServer = _config["EmailSettings:SmtpServer"];
-            var port = int.Parse(_config["EmailSettings:Port"]);
-            var username = _config["EmailSettings:Username"];
-            var password = _config["EmailSettings:Password"];
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(senderName, senderEmail));
-            message.To.Add(new MailboxAddress("", emailMessage.ToEmail));
-            message.Subject = emailMessage.Subject;
-
-            var bodyBuilder = new BodyBuilder();
-
-            if (emailMessage.IsHtml)
+            MimeMessage CreateMessage()
             {
-                bodyBuilder.HtmlBody = emailMessage.Body;
-            }
-            else
-            {
-                bodyBuilder.TextBody = emailMessage.Body;
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress(senderName, senderEmail));
+                message.To.Add(new MailboxAddress("", emailMessage.ToEmail));
+                message.Subject = emailMessage.Subject;
+
+                var bodyBuilder = new BodyBuilder();
+
+                if (emailMessage.IsHtml)
+                {
+                    bodyBuilder.HtmlBody = emailMessage.Body;
+                }
+                else
+                {
+                    bodyBuilder.TextBody = emailMessage.Body;
+                }
+
+                foreach (var attachment in emailMessage.Attachments)
+                {
+                    bodyBuilder.Attachments.Add(attachment.FileName, attachment.Content,
+                        ContentType.Parse(attachment.ContentType));
+                }
+
+                message.Body = bodyBuilder.ToMessageBody();
+                return message;
             }
 
-            foreach (var attachment in emailMessage.Attachments)
-            {
-                bodyBuilder.Attachments.Add(attachment.FileName, attachment.Content,
-                    ContentType.Parse(attachment.ContentType));
-            }
-
-            message.Body = bodyBuilder.ToMessageBody();
-
-            using var client = new SmtpClient();
-            await client.ConnectAsync(smtpServer, port, false);
-            await client.AuthenticateAsync(username, password);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
+            await SendEmailAsync(CreateMessage);
         }
 
         public async Task SendContractPdfAsync(string toEmail, string renterName, byte[] pdfBytes, int contractId)
@@ -179,6 +245,7 @@ namespace PublicCarRental.Application.Service.Email
                 ToEmail = toEmail,
                 Subject = subject,
                 Body = body,
+                IsHtml = true,
                 Attachments = new List<EmailAttachment>
                 {
                     new EmailAttachment
@@ -211,6 +278,7 @@ namespace PublicCarRental.Application.Service.Email
                 ToEmail = toEmail,
                 Subject = subject,
                 Body = body,
+                IsHtml = true,
                 Attachments = new List<EmailAttachment>
                 {
                     new EmailAttachment
@@ -225,13 +293,13 @@ namespace PublicCarRental.Application.Service.Email
             await SendAttachment(emailMessage);
         }
     }
+
     public interface IEmailService
     {
-        public void SendVerificationEmail(string toEmail, string token);
-        public void SendPasswordResetEmail(string toEmail, string token);
-        void SendEmail(string toEmail, string subject, string body);
+        Task SendVerificationEmail(string toEmail, string token);
+        Task SendPasswordResetEmail(string toEmail, string token);
+        Task SendEmail(string toEmail, string subject, string body);
         Task SendContractPdfAsync(string toEmail, string renterName, byte[] pdfBytes, int contractId);
         Task SendReceiptPdfAsync(string toEmail, string renterName, byte[] pdfBytes, int invoiceId);
-
     }
 }

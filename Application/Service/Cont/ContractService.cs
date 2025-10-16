@@ -8,6 +8,7 @@ using PublicCarRental.Application.Service.Rabbit;
 using PublicCarRental.Application.Service.Redis;
 using PublicCarRental.Application.Service.Ren;
 using PublicCarRental.Application.Service.Staf;
+using PublicCarRental.Application.Service.Trans;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Cont;
 using PublicCarRental.Infrastructure.Data.Repository.Inv;
@@ -29,13 +30,14 @@ namespace PublicCarRental.Application.Service.Cont
         private readonly IStaffService _staffService;
         private readonly IPdfService _pdfService;
         private readonly IReceiptGenerationProducerService _receiptGenerationProducerService;
-        private readonly IContractGenerationProducerService _contractGenerationProducer; 
-
+        private readonly IContractGenerationProducerService _contractGenerationProducer;
+        private readonly ITransactionService _transactionService;
 
         public ContractService(IContractRepository repo, IVehicleRepository vehicleRepo, IEVRenterService eVRenterService, 
             BookingEventProducerService bookingEventProducerService, IImageStorageService imageStorageService,
             ILogger<ContractService> logger, IDistributedLockService distributedLock, IStaffService staffService, IPdfService pdfService,
-            IInvoiceRepository invoiceRepository, IBookingService bookingService, IReceiptGenerationProducerService receiptGenerationProducerService, IContractGenerationProducerService contractGenerationProducer)
+            IInvoiceRepository invoiceRepository, IBookingService bookingService, IReceiptGenerationProducerService receiptGenerationProducerService, 
+            IContractGenerationProducerService contractGenerationProducer, ITransactionService transactionService)
         {
             _contractRepo = repo;
             _vehicleRepo = vehicleRepo;
@@ -50,6 +52,7 @@ namespace PublicCarRental.Application.Service.Cont
             _pdfService = pdfService;
             _receiptGenerationProducerService = receiptGenerationProducerService;
             _contractGenerationProducer = contractGenerationProducer;
+            _transactionService = transactionService;
         }
 
         public IEnumerable<ContractDto> GetAll()
@@ -111,7 +114,7 @@ namespace PublicCarRental.Application.Service.Cont
         {
             var invoice = _invoiceRepository.GetById(invoiceId);
             if (invoice?.Status != InvoiceStatus.Paid)
-                return (false, "Invoice not found or not paid", 0);
+                return (false, "You must pay your invoice first!", 0);
 
             var bookingRequest = await _bookingService.GetBookingRequest(invoice.BookingToken);
             if (bookingRequest == null)
@@ -131,8 +134,18 @@ namespace PublicCarRental.Application.Service.Cont
             };
 
             _contractRepo.Create(contract);
+
             invoice.ContractId = contract.ContractId;
             _invoiceRepository.Update(invoice);
+
+            try
+            {
+                _transactionService.CreateTransaction(contract.ContractId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create transaction for contract {ContractId}", contract.ContractId);
+            }
 
             _bookingService.RemoveBookingRequest(invoice.BookingToken);
 

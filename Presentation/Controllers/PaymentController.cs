@@ -81,7 +81,6 @@ namespace PublicCarRental.Presentation.Controllers
                     _logger.LogInformation($"Webhook processed: Order {orderCode} - Status {status}");
 
                     var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
-                    _logger.LogInformation($"Invoice lookup result: {(invoice != null ? $"Found invoice {invoice.InvoiceId} with status {invoice.Status}" : "No invoice found")}");
 
                     if (invoice != null)
                     {
@@ -89,12 +88,7 @@ namespace PublicCarRental.Presentation.Controllers
 
                         if (status == "PAID")
                         {
-                            decimal amount = invoice.AmountDue;
-
-                            _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, amount);
-
                             var bookingToken = invoice.BookingToken;
-
                             var bookingRequest = await _bookingService.GetBookingRequest(bookingToken);
 
                             if (bookingRequest != null)
@@ -102,7 +96,19 @@ namespace PublicCarRental.Presentation.Controllers
                                 var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
                                 if (result.Success)
                                 {
-                                    await _bookingService.RemoveBookingRequest(bookingToken);
+                                    _logger.LogInformation($"Contract {result.contractId} created successfully");
+
+                                    var updateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
+
+                                    if (updateSuccess)
+                                    {
+                                        await _bookingService.RemoveBookingRequest(bookingToken);
+                                        _logger.LogInformation($"Payment completed: Invoice {invoice.InvoiceId} paid, Contract {result.contractId} created");
+                                    }
+                                    else
+                                    {
+                                        _logger.LogError($"Invoice status update failed after contract creation");
+                                    }
                                 }
                                 else
                                 {
@@ -124,7 +130,6 @@ namespace PublicCarRental.Presentation.Controllers
                             {
                                 var bookingToken = invoice.BookingToken;
                                 await _bookingService.RemoveBookingRequest(bookingToken);
-
                                 _logger.LogInformation($"Invoice {invoice.InvoiceId} marked as CANCELLED and booking request cleaned up");
                             }
                         }
@@ -132,14 +137,7 @@ namespace PublicCarRental.Presentation.Controllers
                     else
                     {
                         _logger.LogWarning($"No invoice found for order code: {orderCode}");
-
-                        var allInvoices = _invoiceService.GetAll();
-                        _logger.LogInformation($"Available invoices with order codes: {string.Join(", ", allInvoices.Select(i => $"ID:{i.InvoiceId} OrderCode:{i.OrderCode ?? null}"))}");
                     }
-                }
-                else
-                {
-                    _logger.LogWarning("Webhook data missing required fields (data, orderCode, or status)");
                 }
 
                 return Ok(new { success = true });

@@ -49,18 +49,23 @@ namespace PublicCarRental.Application.Service.Email
 
                     if (message.MessageType == "Verification")
                     {
-                        emailService.SendVerificationEmail(message.ToEmail, message.Token);
+                        await emailService.SendVerificationEmail(message.ToEmail, message.Token);
                         _logger.LogInformation("Verification email sent to {Email}", message.ToEmail);
                     }
                     else if (message.MessageType == "PasswordReset")
                     {
-                        emailService.SendPasswordResetEmail(message.ToEmail, message.Token);
+                        await emailService.SendPasswordResetEmail(message.ToEmail, message.Token);
                         _logger.LogInformation("Password reset email sent to {Email}", message.ToEmail);
                     }
                     else if (message.MessageType == "StaffNotification")
                     {
-                        emailService.SendEmail(message.ToEmail, message.Subject, message.Body);
+                        await emailService.SendEmail(message.ToEmail, message.Subject, message.Body);
                         _logger.LogInformation("Staff notification email sent to {Email}", message.ToEmail);
+                    }
+                    else
+                    {
+                        await emailService.SendEmail(message.ToEmail, message.Subject, message.Body);
+                        _logger.LogInformation("General email sent to {Email}", message.ToEmail);
                     }
 
                     await channel.BasicAckAsync(ea.DeliveryTag, false);
@@ -68,6 +73,8 @@ namespace PublicCarRental.Application.Service.Email
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error processing email message");
+
+                    await channel.BasicNackAsync(ea.DeliveryTag, false, false);
                 }
             };
 
@@ -77,7 +84,10 @@ namespace PublicCarRental.Application.Service.Email
 
             _logger.LogInformation("Email consumer started listening on {QueueName}", _queueName);
 
-            await Task.Delay(Timeout.Infinite, stoppingToken);
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                await Task.Delay(1000, stoppingToken);
+            }
         }
     }
 }

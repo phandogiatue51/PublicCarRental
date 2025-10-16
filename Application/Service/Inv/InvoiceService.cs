@@ -1,6 +1,7 @@
 ﻿using PublicCarRental.Application.DTOs.Inv;
 using PublicCarRental.Application.Service;
 using PublicCarRental.Application.Service.Cont;
+using PublicCarRental.Application.Service.Email;
 using PublicCarRental.Application.Service.Trans;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Inv;
@@ -13,14 +14,17 @@ namespace PublicCarRental.Application.Service.Inv
         private readonly IHelperService _contInvHelperService;
         private readonly IContractService _contractService;
         private readonly ITransactionService _transactionService;
+        private readonly ILogger<InvoiceService> _logger;
+
 
         public InvoiceService(IInvoiceRepository repo, IHelperService contInvHelperService,
-            IContractService contractService, ITransactionService transactionService)
+            IContractService contractService, ITransactionService transactionService, ILogger<InvoiceService> logger)
         {
             _repo = repo;
             _contInvHelperService = contInvHelperService;
             _contractService = contractService;
             _transactionService = transactionService;
+            _logger = logger;
         }
 
         public IEnumerable<InvoiceDto> GetAll()
@@ -124,32 +128,59 @@ namespace PublicCarRental.Application.Service.Inv
             try
             {
                 var invoice = _repo.GetById(invoiceId);
-                if (invoice == null) 
+                if (invoice == null)
                 {
+                    _logger.LogWarning("Invoice {InvoiceId} not found for status update", invoiceId);
                     return false;
                 }
-                
+
+                _logger.LogInformation("Updating invoice {InvoiceId} from status {OldStatus} to {NewStatus}",
+                    invoiceId, invoice.Status, status);
+
                 invoice.Status = status;
+
                 if (status == InvoiceStatus.Paid)
                 {
                     invoice.PaidAt = DateTime.UtcNow;
                     invoice.AmountPaid = amountPaid > 0 ? amountPaid : invoice.AmountDue;
-                    
-                    var contractUpdateResult = _contractService.UpdateContractStatus((int)invoice.ContractId, RentalStatus.Confirmed);
-                    _transactionService.CreateTransaction((int)invoice.ContractId);                   
-                    
+
+                    _logger.LogInformation("Invoice {InvoiceId} - AmountPaid: {AmountPaid}, ContractId: {ContractId}",
+                        invoiceId, invoice.AmountPaid, invoice.ContractId);
+
+                    if (invoice.ContractId.HasValue)
+                    {
+                        try
+                        {
+                            _transactionService.CreateTransaction(invoice.ContractId.Value);
+                            _logger.LogInformation("Transaction created for contract {ContractId}",
+                                invoice.ContractId.Value);
+                        }
+                        catch (Exception transEx)
+                        {
+                            _logger.LogError(transEx, "Failed to create transaction for contract {ContractId}",
+                                invoice.ContractId.Value);
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Invoice {InvoiceId} has no ContractId associated", invoiceId);
+                    }
                 }
-                else if (status == InvoiceStatus.Cancelled && invoice.Contract.Status != RentalStatus.Cancelled)
+                else if (status == InvoiceStatus.Cancelled)
                 {
-                    var contractUpdateResult = _contractService.UpdateContractStatus((int)invoice.ContractId, RentalStatus.Cancelled);
+                    _logger.LogInformation("Invoice {InvoiceId} marked as cancelled", invoiceId);
                 }
-                
+
                 _repo.Update(invoice);
+                _logger.LogInformation("Successfully updated invoice {InvoiceId} to status {NewStatus}",
+                    invoiceId, status);
 
                 return true;
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error updating invoice {InvoiceId} status to {NewStatus}",
+                    invoiceId, status);
                 return false;
             }
         }
