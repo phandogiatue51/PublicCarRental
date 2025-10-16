@@ -118,7 +118,7 @@ namespace PublicCarRental.Application.Service.Pay
         {
             try
             {
-                _logger.LogInformation("Webhook verification called");
+                _logger.LogInformation("Webhook verification started");
 
                 if (string.IsNullOrEmpty(signature))
                 {
@@ -133,43 +133,31 @@ namespace PublicCarRental.Application.Service.Pay
                     return false;
                 }
 
-                bool isValid;
-                string computedSignature;
+                _logger.LogInformation($"Using ChecksumKey: {checksumKey.Substring(0, 10)}...");
 
-                // Handle empty webhook body (PayOS test request)
-                if (string.IsNullOrEmpty(webhookBody))
-                {
-                    _logger.LogInformation("Empty webhook body detected - likely PayOS test request");
+                var dataToHash = webhookBody ?? "";
 
-                    // For empty body, signature should be of empty string
-                    using var hmacEmpty = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(checksumKey));
-                    byte[] hashBytesEmpty = hmacEmpty.ComputeHash(Encoding.UTF8.GetBytes(""));
-                    computedSignature = BitConverter.ToString(hashBytesEmpty).Replace("-", "").ToLower();
+                _logger.LogInformation($"Data to hash length: {dataToHash.Length}");
+                _logger.LogInformation($"Data to hash: '{dataToHash}'");
 
-                    isValid = computedSignature == signature.ToLower();
-                    _logger.LogInformation($"Empty body verification: {isValid}");
-                }
-                else
-                {
-                    // Normal webhook verification
-                    using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(checksumKey));
-                    byte[] hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(webhookBody));
+                using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(checksumKey));
+                byte[] hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(dataToHash));
 
-                    computedSignature = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-                    var receivedSignature = signature.ToLower();
+                var computedSignature = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+                var receivedSignature = signature.ToLower();
 
-                    isValid = computedSignature == receivedSignature;
+                _logger.LogInformation($"Computed signature: {computedSignature}");
+                _logger.LogInformation($"Received signature: {receivedSignature}");
 
-                    _logger.LogInformation($"Webhook signature verification: {isValid}");
-                    _logger.LogInformation($"Computed: {computedSignature}");
-                    _logger.LogInformation($"Received: {receivedSignature}");
-                }
+                var isValid = computedSignature == receivedSignature;
+
+                _logger.LogInformation(isValid ? "Signature verification PASSED" : "Signature verification FAILED");
 
                 return isValid;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error verifying webhook signature");
+                _logger.LogError(ex, "💥 Error verifying webhook signature");
                 return false;
             }
         }
