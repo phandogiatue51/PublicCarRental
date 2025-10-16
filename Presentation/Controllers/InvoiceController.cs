@@ -50,14 +50,6 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(invoice);
         }
 
-        [HttpPost("create-invoice/{contractId}")]
-        public IActionResult Create(int contractId) 
-        {
-            var result = _service.CreateInvoice(contractId);
-            if (result.Success) return Ok( result.Message);
-            return BadRequest(result.Message);
-        }
-
         [HttpGet("get-by-station/{stationId}")]
         public IActionResult GetByStation(int stationId)
         {

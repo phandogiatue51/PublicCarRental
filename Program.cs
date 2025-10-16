@@ -12,6 +12,7 @@ using PublicCarRental.Application.Service.Image;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Mod;
 using PublicCarRental.Application.Service.Pay;
+using PublicCarRental.Application.Service.PDF;
 using PublicCarRental.Application.Service.Rabbit;
 using PublicCarRental.Application.Service.Redis;
 using PublicCarRental.Application.Service.Ren;
@@ -160,11 +161,19 @@ builder.Services.AddScoped<IAccidentService, AccidentService>();
 builder.Services.AddScoped<AccidentEventProducerService>();
 builder.Services.AddHostedService<NotificationConsumerService>();
 builder.Services.AddScoped<IDistributedLockService, DistributedLockService>();
-builder.Services.AddScoped<PdfContractService>();
-builder.Services.AddScoped<PdfGenerationProducerService>();
-builder.Services.AddHostedService<PdfGenerationConsumerService>();
+
 builder.Services.AddScoped<IPdfStorageService, PdfStorageService>();
-builder.Services.AddScoped<PdfContractService>();
+builder.Services.AddScoped<IPdfService, PdfService>();
+builder.Services.AddScoped<IBookingService, BookingService>();
+
+builder.Services.AddScoped<IReceiptGenerationProducerService, ReceiptGenerationProducerService>();
+builder.Services.AddScoped<IContractGenerationProducerService, ContractGenerationProducerService>();
+
+builder.Services.AddHostedService<ReceiptGenerationConsumerService>();
+builder.Services.AddHostedService<ContractGenerationConsumerService>();
+
+
+
 
 
 

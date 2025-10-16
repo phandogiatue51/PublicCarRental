@@ -58,8 +58,8 @@ namespace PublicCarRental.Application.Service.Pay
                 var orderCode = new Random().Next(100000, 999999);
 
                 // Get URLs from configuration
-                var returnUrl = _configuration["PayOS:ReturnUrl"] ?? "https://google.com";
-                var cancelUrl = _configuration["PayOS:CancelUrl"] ?? "https://google.com";
+                var returnUrl = _configuration["PayOS:ReturnUrl"];
+                var cancelUrl = _configuration["PayOS:CancelUrl"];
                 
                 _logger.LogInformation($"Using ReturnUrl: {returnUrl}, CancelUrl: {cancelUrl}");
 

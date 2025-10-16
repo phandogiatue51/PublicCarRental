@@ -192,6 +192,38 @@ namespace PublicCarRental.Application.Service.Email
 
             await SendAttachment(emailMessage);
         }
+
+        public async Task SendReceiptPdfAsync(string toEmail, string renterName, byte[] pdfBytes, int invoiceId)
+        {
+            var subject = $"Payment Receipt - Invoice #{invoiceId}";
+            var body = $"""
+            <h2>Dear {renterName},</h2>
+            <p>Thank you for your payment! Your booking has been confirmed.</p>
+            <p>Invoice ID: <strong>#{invoiceId}</strong></p>
+            <p>Please find your payment receipt attached.</p>
+            <p><strong>Important:</strong> Please bring this receipt when picking up your vehicle.</p>
+            <br>
+            <p>Best regards,<br>Public Car Rental Team</p>
+            """;
+
+            var emailMessage = new EmailMessage
+            {
+                ToEmail = toEmail,
+                Subject = subject,
+                Body = body,
+                Attachments = new List<EmailAttachment>
+                {
+                    new EmailAttachment
+                    {
+                        FileName = $"receipt-{invoiceId}.pdf",
+                        Content = pdfBytes,
+                        ContentType = "application/pdf"
+                    }
+                }
+            };
+
+            await SendAttachment(emailMessage);
+        }
     }
     public interface IEmailService
     {
@@ -199,6 +231,7 @@ namespace PublicCarRental.Application.Service.Email
         public void SendPasswordResetEmail(string toEmail, string token);
         void SendEmail(string toEmail, string subject, string body);
         Task SendContractPdfAsync(string toEmail, string renterName, byte[] pdfBytes, int contractId);
+        Task SendReceiptPdfAsync(string toEmail, string renterName, byte[] pdfBytes, int invoiceId);
 
     }
 }

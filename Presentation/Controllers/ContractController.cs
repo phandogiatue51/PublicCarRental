@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.Application.DTOs.Cont;
-using PublicCarRental.Application.Service;
 using PublicCarRental.Application.Service.Cont;
+using PublicCarRental.Application.Service.PDF;
 using PublicCarRental.Application.Service.Trans;
 using PublicCarRental.Infrastructure.Data.Models;
 
@@ -14,10 +14,10 @@ namespace PublicCarRental.Presentation.Controllers
     {
         private readonly IContractService _contractService;
         private readonly ITransactionService _transactionService;
-        private readonly PdfContractService _pdfService;
+        private readonly PdfService _pdfService;
         private readonly IPdfStorageService _pdfStorageService;
         public ContractController(IContractService contractService, ITransactionService transactionService,
-        PdfContractService pdfService, IPdfStorageService pdfStorageService)
+        PdfService pdfService, IPdfStorageService pdfStorageService)
         {
             _contractService = contractService;
             _transactionService = transactionService;
@@ -38,25 +38,6 @@ namespace PublicCarRental.Presentation.Controllers
             var contract = _contractService.GetById(id);
             if (contract == null) return NotFound();
             return Ok(contract);
-        }
-
-        [HttpPost("create-contract")]
-        public async Task<IActionResult> CreateContractAsync([FromBody] CreateContractDto dto)
-        {
-            var result = await _contractService.CreateContractAsync(dto);
-
-            if (result.Success)
-            {
-                return Ok(new
-                {
-                    message = result.Message,
-                    result.contractId
-                });
-            }
-            else
-            {
-                return BadRequest(new { error = result.Message });
-            }
         }
 
         [HttpPost("update-contract/{id}")]
@@ -126,28 +107,6 @@ namespace PublicCarRental.Presentation.Controllers
         {
             var contracts = _contractService.GetContractByStationId(stationId);
             return Ok(contracts);
-        }
-
-        [HttpGet("contracts/{contractId}/summary")]
-        public IActionResult GetContractSummary(int contractId)
-        {
-            var contract = _contractService.GetEntityById(contractId);
-
-            return Ok(new
-            {
-                contractId = contract.ContractId,
-                renterName = contract.EVRenter.Account.FullName,
-                vehicle = contract.Vehicle.LicensePlate,
-                station = contract.Station.Name,
-                period = $"{contract.StartTime:dd/MM/yyyy HH:mm} - {contract.EndTime:dd/MM/yyyy HH:mm}",
-                totalCost = contract.TotalCost,
-                terms = new[] {
-                    "The renter is responsible for the vehicle during the rental period.",
-                    "Any damages must be reported immediately.",
-                    "Late returns will incur additional charges.",
-                    "Electricity is the responsibility of the renter."
-                }
-            });
         }
 
         [HttpGet("contracts/{contractId}/pdf")]

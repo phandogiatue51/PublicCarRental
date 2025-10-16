@@ -37,7 +37,7 @@ public class HelperService : IHelperService
             invoice.Status = InvoiceStatus.Overdue;
             _invoiceRepo.Update(invoice);
 
-            var contract = _contractRepo.GetById(invoice.ContractId);
+            var contract = _contractRepo.GetById((int)invoice.ContractId);
             if (contract != null && contract.Status == RentalStatus.ToBeConfirmed)
             {
                 contract.Status = RentalStatus.Cancelled;

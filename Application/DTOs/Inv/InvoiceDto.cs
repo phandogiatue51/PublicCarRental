@@ -7,7 +7,7 @@ namespace PublicCarRental.Application.DTOs.Inv
     public class InvoiceDto
     {
         public int InvoiceId { get; set; }
-        public int ContractId { get; set; }
+        public int? ContractId { get; set; }
         public DateTime IssuedAt { get; set; }
 
         public decimal AmountDue { get; set; }
@@ -16,6 +16,7 @@ namespace PublicCarRental.Application.DTOs.Inv
 
         public DateTime PaymentDeadline => IssuedAt.AddMinutes(30);
         public bool IsExpired => DateTime.UtcNow > PaymentDeadline;
+        public int? OrderCode { get; set; }
 
         public InvoiceStatus Status { get; set; }
     }

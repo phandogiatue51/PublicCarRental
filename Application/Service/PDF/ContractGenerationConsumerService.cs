@@ -1,6 +1,7 @@
 ﻿using PublicCarRental.Application.DTOs.Message;
 using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Application.Service.Email;
+using PublicCarRental.Application.Service.PDF;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
@@ -8,13 +9,13 @@ using System.Text.Json;
 
 namespace PublicCarRental.Application.Service.Rabbit
 {
-    public class PdfGenerationConsumerService : BackgroundService
+    public class ContractGenerationConsumerService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<PdfGenerationConsumerService> _logger;
-        private readonly string _queueName = "pdf_generation_queue";
+        private readonly ILogger<ContractGenerationConsumerService> _logger;
+        private readonly string _queueName = "contract_generation_queue";
 
-        public PdfGenerationConsumerService(IServiceProvider serviceProvider, ILogger<PdfGenerationConsumerService> logger)
+        public ContractGenerationConsumerService(IServiceProvider serviceProvider, ILogger<ContractGenerationConsumerService> logger)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
@@ -22,7 +23,7 @@ namespace PublicCarRental.Application.Service.Rabbit
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("📄 PDF Generation Consumer started");
+            _logger.LogInformation("📄 Contract Generation Consumer started");
 
             using var scope = _serviceProvider.CreateScope();
             var connection = scope.ServiceProvider.GetRequiredService<IRabbitMQConnection>();
@@ -30,10 +31,10 @@ namespace PublicCarRental.Application.Service.Rabbit
             using var channel = await connection.CreateChannelAsync();
 
             var dlqArgs = new Dictionary<string, object>
-        {
-            { "x-dead-letter-exchange", "" },
-            { "x-dead-letter-routing-key", "pdf_generation_dlq" }
-        };
+            {
+                { "x-dead-letter-exchange", "" },
+                { "x-dead-letter-routing-key", "contract_generation_dlq" }
+            };
 
             await channel.QueueDeclareAsync(
                 queue: _queueName,
@@ -44,7 +45,7 @@ namespace PublicCarRental.Application.Service.Rabbit
             );
 
             await channel.QueueDeclareAsync(
-                queue: "pdf_generation_dlq",
+                queue: "contract_generation_dlq",
                 durable: true,
                 exclusive: false,
                 autoDelete: false,
@@ -60,62 +61,66 @@ namespace PublicCarRental.Application.Service.Rabbit
                 {
                     var body = ea.Body.ToArray();
                     var messageJson = Encoding.UTF8.GetString(body);
-                    var pdfEvent = JsonSerializer.Deserialize<PdfGenerationEvent>(messageJson);
+                    var contractEvent = JsonSerializer.Deserialize<ContractGenerationEvent>(messageJson);
 
-                    _logger.LogInformation("Processing PDF generation for contract {ContractId}", pdfEvent.ContractId);
+                    _logger.LogInformation("Processing contract generation for contract {ContractId}", contractEvent.ContractId);
 
-                    await ProcessPdfGenerationAsync(pdfEvent);
+                    await ProcessContractGenerationAsync(contractEvent);
 
                     await channel.BasicAckAsync(ea.DeliveryTag, false);
-                    _logger.LogInformation("PDF generated for contract {ContractId}", pdfEvent.ContractId);
+                    _logger.LogInformation("Contract generated for contract {ContractId}", contractEvent.ContractId);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error processing PDF generation for delivery tag {DeliveryTag}", ea.DeliveryTag);
-
+                    _logger.LogError(ex, "Error processing contract generation for delivery tag {DeliveryTag}", ea.DeliveryTag);
                     await channel.BasicNackAsync(ea.DeliveryTag, false, false);
                 }
             };
 
             await channel.BasicConsumeAsync(queue: _queueName, autoAck: false, consumer: consumer);
-
-            _logger.LogInformation("✅ PDF Generation Consumer listening on {QueueName}", _queueName);
+            _logger.LogInformation("✅ Contract Generation Consumer listening on {QueueName}", _queueName);
         }
 
-        private async Task ProcessPdfGenerationAsync(PdfGenerationEvent pdfEvent)
+        private async Task ProcessContractGenerationAsync(ContractGenerationEvent contractEvent)
         {
             using var scope = _serviceProvider.CreateScope();
-            var pdfService = scope.ServiceProvider.GetRequiredService<PdfContractService>();
+            var pdfContractService = scope.ServiceProvider.GetRequiredService<IPdfService>();
             var contractService = scope.ServiceProvider.GetRequiredService<IContractService>();
             var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
             var pdfStorageService = scope.ServiceProvider.GetRequiredService<IPdfStorageService>();
 
             try
             {
-                var contract = contractService.GetEntityById(pdfEvent.ContractId);
+                var contract = contractService.GetEntityById(contractEvent.ContractId);
                 if (contract == null)
                 {
-                    _logger.LogWarning("Contract {ContractId} not found for PDF generation", pdfEvent.ContractId);
+                    _logger.LogWarning("Contract {ContractId} not found for contract generation", contractEvent.ContractId);
                     return;
                 }
 
-                var pdfBytes = pdfService.GenerateRentalContract(contract);
-
-                await pdfStorageService.SaveContractPdfAsync(contract.ContractId, pdfBytes);
-
-                await emailService.SendContractPdfAsync(
-                    pdfEvent.RenterEmail,
-                    pdfEvent.RenterName,
-                    pdfBytes,
-                    pdfEvent.ContractId
+                // Generate contract PDF using the staff name from the event
+                var contractBytes = pdfContractService.GenerateRentalContract(
+                    contract,
+                    contractEvent.StaffName
                 );
 
-                _logger.LogInformation("PDF emailed to {Email} for contract {ContractId}",
-                    pdfEvent.RenterEmail, pdfEvent.ContractId);
+                // Save to storage
+                await pdfStorageService.SaveContractPdfAsync(contract.ContractId, contractBytes);
+
+                // Send email with contract
+                await emailService.SendContractPdfAsync(
+                    contractEvent.RenterEmail,
+                    contractEvent.RenterName,
+                    contractBytes,
+                    contractEvent.ContractId
+                );
+
+                _logger.LogInformation("Contract emailed to {Email} for contract {ContractId}",
+                    contractEvent.RenterEmail, contractEvent.ContractId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to generate PDF for contract {ContractId}", pdfEvent.ContractId);
+                _logger.LogError(ex, "Failed to generate contract for contract {ContractId}", contractEvent.ContractId);
                 throw;
             }
         }

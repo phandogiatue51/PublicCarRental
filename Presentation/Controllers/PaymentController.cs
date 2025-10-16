@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using CloudinaryDotNet;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Pay;
+using PublicCarRental.Application.Service.PDF;
 using PublicCarRental.Infrastructure.Data.Models;
 using System.Text.Json;
 
@@ -14,15 +17,19 @@ namespace PublicCarRental.Presentation.Controllers
         private readonly IPayOSService _payOSService;
         private readonly ILogger<PaymentController> _logger;
         private readonly IInvoiceService _invoiceService;
+        private readonly IContractService _contractService;
+        private readonly IBookingService _bookingService;
 
         public PaymentController(
-            IPayOSService payOSService,
-            ILogger<PaymentController> logger,
-            IInvoiceService invoiceService)
+            IPayOSService payOSService, 
+            ILogger<PaymentController> logger, IContractService contractService,
+            IInvoiceService invoiceService, IBookingService bookingService)
         {
             _payOSService = payOSService;
             _logger = logger;
             _invoiceService = invoiceService;
+            _contractService = contractService;
+            _bookingService = bookingService;
         }
 
         [HttpPost("create-payment")]
@@ -75,62 +82,66 @@ namespace PublicCarRental.Presentation.Controllers
 
                     var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
                     _logger.LogInformation($"Invoice lookup result: {(invoice != null ? $"Found invoice {invoice.InvoiceId} with status {invoice.Status}" : "No invoice found")}");
-                    
+
                     if (invoice != null)
                     {
-                        _logger.LogInformation($"Current invoice status: {invoice.Status}, Contract status: {invoice.Contract?.Status}");
-                        
+                        _logger.LogInformation($"Current invoice status: {invoice.Status}");
+
                         if (status == "PAID")
                         {
-                            _logger.LogInformation($"Attempting to update invoice {invoice.InvoiceId} to PAID status with amount {invoice.AmountDue}");
-                            
-                            var success = _invoiceService.UpdateInvoiceStatus(
-                                invoice.InvoiceId,
-                                InvoiceStatus.Paid,
-                                invoice.AmountDue
-                            );
+                            decimal amount = invoice.AmountDue; 
+                            //if (dataElement.TryGetProperty("amount", out var amountElement) &&
+                            //    amountElement.TryGetInt64(out long webhookAmount))
+                            //{
+                            //    amount = webhookAmount / 100m; // Convert from cents if needed
+                            //}
 
-                            if (success)
+                            _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, amount);
+
+                            var bookingToken = invoice.BookingToken;
+
+                            var bookingRequest = _bookingService.GetBookingRequest(bookingToken);
+
+                            if (bookingRequest != null)
                             {
-                                _logger.LogInformation($"Invoice {invoice.InvoiceId} marked as PAID and contract status updated");
-                                
-                                // Verify the update by fetching the invoice again
-                                var updatedInvoice = _invoiceService.GetEntityById(invoice.InvoiceId);
-                                _logger.LogInformation($"Verification - Updated invoice status: {updatedInvoice?.Status}, Contract status: {updatedInvoice?.Contract?.Status}");
+                                var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
+
+                                if (result.Success)
+                                {
+                                    _bookingService.RemoveBookingRequest(bookingToken);
+                                }
+                                else
+                                {
+                                    _logger.LogError($"Failed to create contract: {result.Message}");
+                                }
                             }
                             else
                             {
-                                _logger.LogError($"Failed to update invoice status for invoice {invoice.InvoiceId}");
+                                _logger.LogWarning($"No booking request found for paid invoice {invoice.InvoiceId}");
                             }
                         }
                         else if (status == "CANCELLED" || status == "EXPIRED")
                         {
-                            _logger.LogInformation($"Webhook: Payment {status} for invoice {invoice.InvoiceId}, updating to UNPAID status");
-                            
-                            var success = _invoiceService.UpdateInvoiceStatus(
-                                invoice.InvoiceId,
-                                InvoiceStatus.Cancelled
-                            );
-                            
+                            _logger.LogInformation($"Payment {status} for invoice {invoice.InvoiceId}");
+
+                            var success = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Cancelled);
+
                             if (success)
                             {
-                                _logger.LogInformation($"Webhook: Invoice {invoice.InvoiceId} marked as UNPAID and contract updated");
-                                
-                                var updatedInvoice = _invoiceService.GetEntityById(invoice.InvoiceId);
-                                _logger.LogInformation($"Webhook: Verification - Updated invoice status: {updatedInvoice?.Status}, Contract status: {updatedInvoice?.Contract?.Status}");
-                            }
-                            else
-                            {
-                                _logger.LogError($"Webhook: Failed to update invoice {invoice.InvoiceId} to UNPAID status");
+                                // Clean up in-memory booking request
+                                var bookingToken = invoice.BookingToken;
+                                _bookingService.RemoveBookingRequest(bookingToken);
+
+                                _logger.LogInformation($"Invoice {invoice.InvoiceId} marked as CANCELLED and booking request cleaned up");
                             }
                         }
                     }
                     else
                     {
                         _logger.LogWarning($"No invoice found for order code: {orderCode}");
-                        
+
                         var allInvoices = _invoiceService.GetAll();
-                        _logger.LogInformation($"Available invoices with order codes: {string.Join(", ", allInvoices.Select(i => $"ID:{i.InvoiceId} OrderCode:{(i as dynamic)?.OrderCode ?? "null"}"))}");
+                        _logger.LogInformation($"Available invoices with order codes: {string.Join(", ", allInvoices.Select(i => $"ID:{i.InvoiceId} OrderCode:{i.OrderCode ?? null}"))}");
                     }
                 }
                 else

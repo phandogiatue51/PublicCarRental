@@ -66,6 +66,7 @@ namespace PublicCarRental.Application.Service.Inv
                 AmountDue = i.AmountDue,
                 AmountPaid = i.AmountPaid,
                 PaidAt = i.PaidAt,
+                OrderCode = i.OrderCode,
                 Status = i.Status,
             };
         }
@@ -89,27 +90,6 @@ namespace PublicCarRental.Application.Service.Inv
         public Invoice GetEntityById(int id)
         {
             return _repo.GetById(id);
-        }
-
-        public (bool Success, string Message) CreateInvoice(int contractId)
-        {
-            try
-            {
-                var contract = _contInvHelperService.GetContractById(contractId);
-                if (contract == null) return (false, "Contract does not exist");
-                var invoice = new Invoice
-                {
-                    ContractId = contract.ContractId,
-                    IssuedAt = DateTime.UtcNow,
-                    AmountDue = (decimal)contract.TotalCost
-                };
-                _repo.Create(invoice);
-                return (true, $"Invoice {invoice.InvoiceId} created successfully!");
-            }
-            catch (Exception)
-            {
-                return (false, "You can only create one invoice per contract");
-            }
         }
 
         public bool UpdateInvoice(Invoice invoice)
@@ -155,13 +135,13 @@ namespace PublicCarRental.Application.Service.Inv
                     invoice.PaidAt = DateTime.UtcNow;
                     invoice.AmountPaid = amountPaid > 0 ? amountPaid : invoice.AmountDue;
                     
-                    var contractUpdateResult = _contractService.UpdateContractStatus(invoice.ContractId, RentalStatus.Confirmed);
-                    _transactionService.CreateTransaction(invoice.ContractId);                   
+                    var contractUpdateResult = _contractService.UpdateContractStatus((int)invoice.ContractId, RentalStatus.Confirmed);
+                    _transactionService.CreateTransaction((int)invoice.ContractId);                   
                     
                 }
                 else if (status == InvoiceStatus.Cancelled && invoice.Contract.Status != RentalStatus.Cancelled)
                 {
-                    var contractUpdateResult = _contractService.UpdateContractStatus(invoice.ContractId, RentalStatus.Cancelled);
+                    var contractUpdateResult = _contractService.UpdateContractStatus((int)invoice.ContractId, RentalStatus.Cancelled);
                 }
                 
                 _repo.Update(invoice);

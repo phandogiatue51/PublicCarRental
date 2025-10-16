@@ -37,11 +37,12 @@ namespace PublicCarRental.Infrastructure.Data.Models
         public Invoice Invoice { get; set; }
 
         [NotMapped]
-        public DateTime ChargingEndTime => EndTime.AddHours(6);
+        public DateTime ChargingEndTime => EndTime.AddHours(3);
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public string? ImageUrlIn { get; set; }
         public string? ImageUrlOut { get; set; }
+        public string? Note {  get; set; }
         public Rating Rating { get; set; }
     }
 }

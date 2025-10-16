@@ -1,10 +1,16 @@
-﻿using PublicCarRental.Application.DTOs.Cont;
+﻿using PublicCarRental.Application.DTOs;
+using PublicCarRental.Application.DTOs.Cont;
 using PublicCarRental.Application.DTOs.Message;
 using PublicCarRental.Application.Service.Image;
+using PublicCarRental.Application.Service.Inv;
+using PublicCarRental.Application.Service.PDF;
 using PublicCarRental.Application.Service.Rabbit;
+using PublicCarRental.Application.Service.Redis;
 using PublicCarRental.Application.Service.Ren;
+using PublicCarRental.Application.Service.Staf;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Cont;
+using PublicCarRental.Infrastructure.Data.Repository.Inv;
 using PublicCarRental.Infrastructure.Data.Repository.Vehi;
 
 namespace PublicCarRental.Application.Service.Cont
@@ -18,10 +24,18 @@ namespace PublicCarRental.Application.Service.Cont
         private readonly IImageStorageService _imageStorageService;
         private readonly IDistributedLockService _distributedLock;
         private readonly IVehicleRepository _vehicleRepo;
+        private readonly IInvoiceRepository _invoiceRepository;
+        private readonly IBookingService _bookingService;
+        private readonly IStaffService _staffService;
+        private readonly IPdfService _pdfService;
+        private readonly IReceiptGenerationProducerService _receiptGenerationProducerService;
+        private readonly IContractGenerationProducerService _contractGenerationProducer; 
+
 
         public ContractService(IContractRepository repo, IVehicleRepository vehicleRepo, IEVRenterService eVRenterService, 
             BookingEventProducerService bookingEventProducerService, IImageStorageService imageStorageService,
-            ILogger<ContractService> logger, IDistributedLockService distributedLock)
+            ILogger<ContractService> logger, IDistributedLockService distributedLock, IStaffService staffService, IPdfService pdfService,
+            IInvoiceRepository invoiceRepository, IBookingService bookingService, IReceiptGenerationProducerService receiptGenerationProducerService, IContractGenerationProducerService contractGenerationProducer)
         {
             _contractRepo = repo;
             _vehicleRepo = vehicleRepo;
@@ -30,6 +44,12 @@ namespace PublicCarRental.Application.Service.Cont
             _bookingEventProducer = bookingEventProducerService;
             _logger = logger;
             _distributedLock = distributedLock;
+            _invoiceRepository = invoiceRepository;
+            _bookingService = bookingService;
+            _staffService = staffService;
+            _pdfService = pdfService;
+            _receiptGenerationProducerService = receiptGenerationProducerService;
+            _contractGenerationProducer = contractGenerationProducer;
         }
 
         public IEnumerable<ContractDto> GetAll()
@@ -87,73 +107,75 @@ namespace PublicCarRental.Application.Service.Cont
             return _contractRepo.GetById(id);
         }
 
-        public async Task<(bool Success, string Message, int contractId)> CreateContractAsync(CreateContractDto dto)
+        public async Task<(bool Success, string Message, int contractId)> ConfirmBookingAfterPaymentAsync(int invoiceId)
         {
-            var lockKey = $"contract_create:{dto.ModelId}:{dto.StationId}:{dto.StartTime:yyyyMMddHHmm}";
-            try
+            var invoice = _invoiceRepository.GetById(invoiceId);
+            if (invoice?.Status != InvoiceStatus.Paid)
+                return (false, "Invoice not found or not paid", 0);
+
+            var bookingRequest = _bookingService.GetBookingRequest(invoice.BookingToken);
+            if (bookingRequest == null)
+                return (false, "Booking request not found or expired", 0);
+
+            var vehicle = _vehicleRepo.GetById(bookingRequest.VehicleId);
+
+            var contract = new RentalContract
             {
-                if (!await _distributedLock.AcquireLockAsync(lockKey, TimeSpan.FromSeconds(5)))
-                    return (false, "Please try again. Someone is booking the same vehicle.", 0);
+                EVRenterId = bookingRequest.EVRenterId,
+                VehicleId = bookingRequest.VehicleId, 
+                StationId = bookingRequest.StationId,
+                StartTime = bookingRequest.StartTime,
+                EndTime = bookingRequest.EndTime,
+                TotalCost = bookingRequest.TotalCost,
+                Status = RentalStatus.Confirmed
+            };
 
-                var vehicle = await _vehicleRepo.GetFirstAvailableVehicleByModelAsync(dto.ModelId, dto.StationId, dto.StartTime, dto.EndTime);
-                if (vehicle == null)
-                    return (false, "Model not available. Choose another time, station, or model.", 0);
-                var renter = await _renterService.GetByIdAsync(dto.EVRenterId);
-                if (renter == null)
-                    return (false, "Renter not found!", 0);
+            _contractRepo.Create(contract);
+            invoice.ContractId = contract.ContractId;
+            _invoiceRepository.Update(invoice);
 
-                var contract = new RentalContract
+            _bookingService.RemoveBookingRequest(invoice.BookingToken);
+
+            var lockKey = $"vehicle_booking:{bookingRequest.VehicleId}:{bookingRequest.StartTime:yyyyMMddHHmm}";
+            _distributedLock.ReleaseLock(lockKey);
+
+            _ = Task.Run(async () =>
+            {
+                try
                 {
-                    EVRenterId = dto.EVRenterId,
-                    VehicleId = vehicle.VehicleId,
-                    StationId = dto.StationId,
-                    StartTime = dto.StartTime,
-                    EndTime = dto.EndTime,
-                    Status = RentalStatus.ToBeConfirmed,
-                };
+                    var renter = await _renterService.GetByIdAsync(bookingRequest.EVRenterId);
 
-                var duration = (contract.EndTime - contract.StartTime).TotalHours;
-                contract.TotalCost = (decimal)duration * vehicle.Model.PricePerHour;
+                    var bookingEvent = new BookingCreatedEvent
+                    {
+                        BookingId = contract.ContractId,
+                        RenterId = renter.RenterId,
+                        RenterEmail = renter.Email,
+                        RenterName = renter.FullName,
+                        VehicleId = vehicle.VehicleId,
+                        VehicleLicensePlate = vehicle.LicensePlate,
+                        StationId = contract.StationId ?? 0,
+                        StationName = vehicle.Station?.Name,
+                        StartTime = contract.StartTime,
+                        EndTime = contract.EndTime,
+                        TotalCost = contract.TotalCost.Value
+                    };
 
-                _contractRepo.Create(contract);
+                    await _bookingEventProducer.PublishBookingCreatedAsync(bookingEvent);
 
-                _ = Task.Run(async () =>
+                    await _receiptGenerationProducerService.PublishReceiptGenerationAsync(
+                        invoice.InvoiceId,
+                        contract.ContractId,
+                        renter.Email,
+                        renter.FullName
+                    );
+                }
+                catch (Exception ex)
                 {
-                    try
-                    {
-                        var bookingEvent = new BookingCreatedEvent
-                        {
-                            BookingId = contract.ContractId,
-                            RenterId = renter.RenterId,
-                            RenterEmail = renter.Email,
-                            RenterName = renter.FullName,
-                            VehicleId = vehicle.VehicleId,
-                            VehicleLicensePlate = vehicle.LicensePlate,
-                            StationId = contract.StationId ?? 0,
-                            StationName = vehicle.Station?.Name,
-                            StartTime = contract.StartTime,
-                            EndTime = contract.EndTime,
-                            TotalCost = (decimal)contract.TotalCost
-                        };
+                    _logger.LogError(ex, "Failed to publish events for contract {ContractId}", contract.ContractId);
+                }
+            });
 
-                        await _bookingEventProducer.PublishBookingCreatedAsync(bookingEvent);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to publish BookingCreated event for contract {ContractId}", contract.ContractId);
-                    }
-                });
-
-                return (true, "Please view your contract.", contract.ContractId);
-            }
-            catch (Exception ex)
-            {
-                return (false, "Please enter the existing station ID or model ID.", 0);
-            }
-            finally
-            {
-                await _distributedLock.ReleaseLockAsync(lockKey);
-            }
+            return (true, "Booking confirmed! Contract created.", contract.ContractId);
         }
 
         public async Task<(bool Success, string Message)> UpdateContractAsync(int id, UpdateContractDto updatedContract)
@@ -216,6 +238,15 @@ namespace PublicCarRental.Application.Service.Cont
             if (vehicle == null)
                 throw new InvalidOperationException("Vehicle not found");
 
+            // Get renter information
+            var renter = await _renterService.GetByIdAsync(contract.EVRenterId);
+            if (renter == null)
+                throw new InvalidOperationException("Renter not found");
+
+            var staff = _staffService.GetEntityById(dto.StaffId);
+            var staffName = staff?.Account?.FullName;
+
+            // Update contract status
             contract.Status = RentalStatus.Active;
             contract.StartTime = DateTime.UtcNow;
             contract.StaffId = dto.StaffId;
@@ -229,14 +260,23 @@ namespace PublicCarRental.Application.Service.Cont
             _vehicleRepo.Update(vehicle);
             _contractRepo.Update(contract);
 
+            // Queue contract generation (REMOVE direct PDF generation)
+            await _contractGenerationProducer.PublishContractGenerationAsync(
+                contract.ContractId,
+                renter.Email,
+                renter.FullName,
+                includeStaffSignature: true,
+                staffName: staffName
+            );
+
             try
             {
                 var bookingEvent = new BookingConfirmedEvent
                 {
                     BookingId = contract.ContractId,
                     RenterId = contract.EVRenterId,
-                    RenterEmail = contract.EVRenter?.Account?.Email,
-                    RenterName = contract.EVRenter?.Account?.FullName,
+                    RenterEmail = renter.Email,
+                    RenterName = renter.FullName,
                     StartTime = contract.StartTime,
                     EndTime = contract.EndTime,
                     TotalCost = (decimal)contract.TotalCost

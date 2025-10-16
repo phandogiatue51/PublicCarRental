@@ -1,5 +1,5 @@
 ﻿using StackExchange.Redis;
-namespace PublicCarRental.Application.Service
+namespace PublicCarRental.Application.Service.Redis
 {
     public interface IDistributedLockService
     {
