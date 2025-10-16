@@ -134,20 +134,16 @@ namespace PublicCarRental.Application.Service.Pay
                 }
 
                 using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(checksumKey));
-                var computedSignature = BitConverter.ToString(hmac.ComputeHash(Encoding.UTF8.GetBytes(webhookBody)))
-                    .Replace("-", "")
-                    .ToLower();
+                byte[] hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(webhookBody));
 
-                var isValid = computedSignature == signature.ToLower();
+                var computedSignature = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+                var receivedSignature = signature.ToLower();
 
-                if (!isValid)
-                {
-                    _logger.LogWarning($"Webhook signature mismatch. Computed: {computedSignature}, Received: {signature}");
-                }
-                else
-                {
-                    _logger.LogInformation("Webhook signature verified successfully");
-                }
+                var isValid = computedSignature == receivedSignature;
+
+                _logger.LogInformation($"Webhook signature verification: {isValid}");
+                _logger.LogInformation($"Computed: {computedSignature}");
+                _logger.LogInformation($"Received: {receivedSignature}");
 
                 return isValid;
             }
