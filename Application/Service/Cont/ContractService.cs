@@ -113,7 +113,7 @@ namespace PublicCarRental.Application.Service.Cont
             if (invoice?.Status != InvoiceStatus.Paid)
                 return (false, "Invoice not found or not paid", 0);
 
-            var bookingRequest = _bookingService.GetBookingRequest(invoice.BookingToken);
+            var bookingRequest = await _bookingService.GetBookingRequest(invoice.BookingToken);
             if (bookingRequest == null)
                 return (false, "Booking request not found or expired", 0);
 
@@ -122,7 +122,7 @@ namespace PublicCarRental.Application.Service.Cont
             var contract = new RentalContract
             {
                 EVRenterId = bookingRequest.EVRenterId,
-                VehicleId = bookingRequest.VehicleId, 
+                VehicleId = bookingRequest.VehicleId,
                 StationId = bookingRequest.StationId,
                 StartTime = bookingRequest.StartTime,
                 EndTime = bookingRequest.EndTime,

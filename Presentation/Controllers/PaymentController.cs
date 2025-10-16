@@ -89,26 +89,20 @@ namespace PublicCarRental.Presentation.Controllers
 
                         if (status == "PAID")
                         {
-                            decimal amount = invoice.AmountDue; 
-                            //if (dataElement.TryGetProperty("amount", out var amountElement) &&
-                            //    amountElement.TryGetInt64(out long webhookAmount))
-                            //{
-                            //    amount = webhookAmount / 100m; // Convert from cents if needed
-                            //}
+                            decimal amount = invoice.AmountDue;
 
                             _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, amount);
 
                             var bookingToken = invoice.BookingToken;
 
-                            var bookingRequest = _bookingService.GetBookingRequest(bookingToken);
+                            var bookingRequest = await _bookingService.GetBookingRequest(bookingToken);
 
                             if (bookingRequest != null)
                             {
                                 var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
-
                                 if (result.Success)
                                 {
-                                    _bookingService.RemoveBookingRequest(bookingToken);
+                                    await _bookingService.RemoveBookingRequest(bookingToken);
                                 }
                                 else
                                 {
@@ -128,9 +122,8 @@ namespace PublicCarRental.Presentation.Controllers
 
                             if (success)
                             {
-                                // Clean up in-memory booking request
                                 var bookingToken = invoice.BookingToken;
-                                _bookingService.RemoveBookingRequest(bookingToken);
+                                await _bookingService.RemoveBookingRequest(bookingToken);
 
                                 _logger.LogInformation($"Invoice {invoice.InvoiceId} marked as CANCELLED and booking request cleaned up");
                             }

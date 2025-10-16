@@ -6,11 +6,28 @@ function Success() {
     const orderCode = searchParams.get('orderCode');
 
     return (
-        <div style={{ textAlign: 'center', padding: '50px', fontFamily: 'Arial' }}>
-            <h1>✅ Payment Successful!</h1>
-            <p>Thank you for your payment. Your rental has been confirmed.</p>
-            {orderCode && <p>Order Code: {orderCode}</p>}
-            <a href="/">Return to Home</a>
+        <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+            fontSize: '18px',
+            fontFamily: 'Arial'
+        }}>
+            <div style={{ textAlign: 'center' }}>
+                <h1 style={{ marginBottom: '20px' }}>✅ Payment Successful!</h1>
+                <p style={{ marginBottom: '15px' }}>
+                    Thank you for your payment. Your rental has been confirmed.
+                </p>
+                {orderCode && (
+                    <p style={{ marginBottom: '15px' }}>
+                        Order Code: {orderCode}
+                    </p>
+                )}
+                <a href="/" style={{ marginBottom: '15px', display: 'inline-block' }}>
+                    Return to Home
+                </a>
+            </div>
         </div>
     );
 }

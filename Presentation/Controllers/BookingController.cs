@@ -43,9 +43,9 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("summary/{bookingToken}")]
-        public IActionResult GetBookingSummary(string bookingToken)
+        public async Task<IActionResult> GetBookingSummary(string bookingToken)
         {
-            var bookingRequest = _bookingService.GetBookingRequest(bookingToken);
+            var bookingRequest = await _bookingService.GetBookingRequest(bookingToken);
             if (bookingRequest == null)
                 return NotFound("Booking request not found or expired");
 

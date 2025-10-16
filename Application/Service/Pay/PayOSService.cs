@@ -19,14 +19,12 @@ namespace PublicCarRental.Application.Service.Pay
         private readonly PayOS _payOS;
         private readonly IInvoiceService _invoiceService;
         private readonly IEVRenterService _renterService;
+        private readonly IBookingService _bookingService; 
         private readonly ILogger<PayOSService> _logger;
         private readonly IConfiguration _configuration;
 
-        public PayOSService(
-            IConfiguration configuration,
-            IInvoiceService invoiceService,
-            IEVRenterService renterService,
-            ILogger<PayOSService> logger)
+        public PayOSService(IConfiguration configuration, IInvoiceService invoiceService, IEVRenterService renterService,
+            IBookingService bookingService, ILogger<PayOSService> logger)
         {
             var clientId = configuration["PayOS:ClientId"];
             var apiKey = configuration["PayOS:ApiKey"];
@@ -35,6 +33,7 @@ namespace PublicCarRental.Application.Service.Pay
             _payOS = new PayOS(clientId, apiKey, checksumKey);
             _invoiceService = invoiceService;
             _renterService = renterService;
+            _bookingService = bookingService;
             _logger = logger;
             _configuration = configuration;
         }
@@ -51,36 +50,41 @@ namespace PublicCarRental.Application.Service.Pay
                 if (renter == null)
                     throw new ArgumentException("Renter not found");
 
-                if (invoice.Contract.EVRenterId != renterId)
+                if (string.IsNullOrEmpty(invoice.BookingToken))
+                    throw new InvalidOperationException("Invoice is not associated with a valid booking");
+
+                var bookingRequest = await _bookingService.GetBookingRequest(invoice.BookingToken);
+                if (bookingRequest == null)
+                    throw new InvalidOperationException("Booking request not found or expired");
+
+                if (bookingRequest.EVRenterId != renterId)
                     throw new UnauthorizedAccessException("Invoice does not belong to this renter");
 
-                // Generate order code
                 var orderCode = new Random().Next(100000, 999999);
 
-                // Get URLs from configuration
                 var returnUrl = _configuration["PayOS:ReturnUrl"];
                 var cancelUrl = _configuration["PayOS:CancelUrl"];
-                
+
                 _logger.LogInformation($"Using ReturnUrl: {returnUrl}, CancelUrl: {cancelUrl}");
 
-                // Use minimal, guaranteed-to-work data
                 var paymentData = new PaymentData(
                     orderCode: orderCode,
                     amount: (int)invoice.AmountDue,
-                    description: "Car Rental Payment", 
+                    description: "Car Rental Payment",
                     items: new List<ItemData>
                     {
-                    new ItemData(
-                        name: "Car Rental",
-                        quantity: 1,
-                        price: (int)invoice.AmountDue)},
-                        cancelUrl: cancelUrl,
-                        returnUrl: returnUrl,
-                        buyerName: renter.Account.FullName,
-                        buyerEmail: renter.Account.Email, 
-                        buyerPhone: renter.Account.PhoneNumber, 
-                        expiredAt: (int)DateTimeOffset.UtcNow.AddMinutes(15).ToUnixTimeSeconds()
-                    );
+                new ItemData(
+                    name: "Car Rental",
+                    quantity: 1,
+                    price: (int)invoice.AmountDue)
+                    },
+                    cancelUrl: cancelUrl,
+                    returnUrl: returnUrl,
+                    buyerName: renter.Account.FullName,
+                    buyerEmail: renter.Account.Email,
+                    buyerPhone: renter.Account.PhoneNumber,
+                    expiredAt: (int)DateTimeOffset.UtcNow.AddMinutes(15).ToUnixTimeSeconds()
+                );
 
                 var result = await _payOS.createPaymentLink(paymentData);
 

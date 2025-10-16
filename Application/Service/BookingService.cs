@@ -1,6 +1,6 @@
-﻿using PublicCarRental.Application.DTOs;
+﻿using Microsoft.Extensions.Caching.Distributed;
+using PublicCarRental.Application.DTOs;
 using PublicCarRental.Application.DTOs.Cont;
-using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Mod;
 using PublicCarRental.Application.Service.Redis;
 using PublicCarRental.Application.Service.Ren;
@@ -8,36 +8,45 @@ using PublicCarRental.Application.Service.Stat;
 using PublicCarRental.Application.Service.Veh;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Inv;
-using System.Collections.Concurrent;
+using System.Text.Json;
 
 public interface IBookingService
 {
     Task<(bool Success, string Message, int InvoiceId, string BookingToken)> CreateBookingRequestAsync(CreateContractDto dto);
-    public BookingRequest? GetBookingRequest(string bookingToken);
-    public void RemoveBookingRequest(string bookingToken);
+    Task<BookingRequest?> GetBookingRequest(string bookingToken);
+    Task RemoveBookingRequest(string bookingToken);
     Task<BookingSummaryDto?> GetBookingSummaryAsync(string bookingToken);
-
 }
 
 public class BookingService : IBookingService
 {
-    private readonly ConcurrentDictionary<string, BookingRequest> _bookingRequests = new();
+    private readonly IDistributedCache _distributedCache;
     private readonly IInvoiceRepository _invoiceRepository;
     private readonly IVehicleService _vehicleService;
     private readonly IDistributedLockService _distributedLock;
     private readonly ILogger<BookingService> _logger;
-    private readonly IStationService _stationService; 
-    private readonly IEVRenterService _renterService; 
-    private readonly IModelService _modelService; 
+    private readonly IStationService _stationService;
+    private readonly IEVRenterService _renterService;
+    private readonly IModelService _modelService;
 
-    public BookingService(IInvoiceRepository invoiceRepository, IVehicleService vehicleService,
-        IDistributedLockService distributedLock, ILogger<BookingService> logger, IStationService stationService,   
-        IEVRenterService renterService, IModelService modelService)
+    public BookingService(
+        IDistributedCache distributedCache,
+        IInvoiceRepository invoiceRepository,
+        IVehicleService vehicleService,
+        IDistributedLockService distributedLock,
+        ILogger<BookingService> logger,
+        IStationService stationService,
+        IEVRenterService renterService,
+        IModelService modelService)
     {
+        _distributedCache = distributedCache;
         _invoiceRepository = invoiceRepository;
         _vehicleService = vehicleService;
         _distributedLock = distributedLock;
         _logger = logger;
+        _stationService = stationService;
+        _renterService = renterService;
+        _modelService = modelService;
     }
 
     public async Task<(bool Success, string Message, int InvoiceId, string BookingToken)> CreateBookingRequestAsync(CreateContractDto dto)
@@ -46,7 +55,7 @@ public class BookingService : IBookingService
         if (vehicle == null)
             return (false, "Model not available. Choose another time, station, or model.", 0, "");
 
-        var lockKey = $"vehicle_booking:{vehicle.VehicleId}:{dto.StartTime:yyyyMMddHHmm}"; // Lock specific vehicle
+        var lockKey = $"vehicle_booking:{vehicle.VehicleId}:{dto.StartTime:yyyyMMddHHmm}";
 
         try
         {
@@ -73,7 +82,7 @@ public class BookingService : IBookingService
                 EVRenterId = dto.EVRenterId,
                 ModelId = dto.ModelId,
                 StationId = dto.StationId,
-                VehicleId = vehicle.VehicleId, 
+                VehicleId = vehicle.VehicleId,
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
                 TotalCost = totalCost,
@@ -82,45 +91,55 @@ public class BookingService : IBookingService
                 ExpiresAt = DateTime.UtcNow.AddMinutes(10)
             };
 
-            _bookingRequests[bookingToken] = bookingRequest;
+            await SaveBookingRequestAsync(bookingRequest);
 
             _ = Task.Run(async () =>
             {
                 await Task.Delay(TimeSpan.FromMinutes(10));
-                _bookingRequests.TryRemove(bookingToken, out _);
-                _distributedLock.ReleaseLock(lockKey); 
+                await _distributedCache.RemoveAsync($"booking:{bookingToken}");
+                _distributedLock.ReleaseLock(lockKey);
             });
 
             return (true, "Please proceed to payment", invoice.InvoiceId, bookingToken);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             _distributedLock.ReleaseLock(lockKey);
+            _logger.LogError(ex, "Error creating booking request");
             throw;
         }
     }
 
-    public BookingRequest? GetBookingRequest(string bookingToken)
+    public async Task<BookingRequest?> GetBookingRequest(string bookingToken)
     {
-        _bookingRequests.TryGetValue(bookingToken, out var booking);
-        return booking;
+        try
+        {
+            var cachedData = await _distributedCache.GetStringAsync($"booking:{bookingToken}");
+            if (cachedData == null) return null;
+
+            return JsonSerializer.Deserialize<BookingRequest>(cachedData);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting booking request for token {BookingToken}", bookingToken);
+            return null;
+        }
     }
 
-    public void RemoveBookingRequest(string bookingToken)
+    public async Task RemoveBookingRequest(string bookingToken)
     {
-        _bookingRequests.TryRemove(bookingToken, out _);
+        _ = _distributedCache.RemoveAsync($"booking:{bookingToken}");
     }
 
     public async Task<BookingSummaryDto?> GetBookingSummaryAsync(string bookingToken)
     {
-        var bookingRequest = GetBookingRequest(bookingToken);
-        if (bookingRequest == null)
-            return null;
+        var bookingRequest = await GetBookingRequest(bookingToken);
+        if (bookingRequest == null) return null;
 
         try
         {
-            var model =  _modelService.GetEntityById(bookingRequest.ModelId);
-            var station =  _stationService.GetEntityById(bookingRequest.StationId);
+            var model = await _modelService.GetByIdAsync(bookingRequest.ModelId);
+            var station = await _stationService.GetByIdAsync(bookingRequest.StationId);
             var renter = await _renterService.GetEntityByIdAsync(bookingRequest.EVRenterId);
 
             return new BookingSummaryDto
@@ -128,7 +147,7 @@ public class BookingService : IBookingService
                 BookingToken = bookingRequest.BookingToken,
                 ModelName = model?.Name ?? "Unknown Model",
                 StationName = station?.Name ?? "Unknown Station",
-                RenterName = renter.Account.FullName ?? "Unknown Renter",
+                RenterName = renter?.Account?.FullName ?? "Unknown Renter",
                 StartTime = bookingRequest.StartTime,
                 EndTime = bookingRequest.EndTime,
                 TotalCost = bookingRequest.TotalCost,
@@ -149,4 +168,23 @@ public class BookingService : IBookingService
         }
     }
 
+    private async Task SaveBookingRequestAsync(BookingRequest request)
+    {
+        try
+        {
+            var data = JsonSerializer.Serialize(request);
+            await _distributedCache.SetStringAsync(
+                $"booking:{request.BookingToken}",
+                data,
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpiration = request.ExpiresAt
+                });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error saving booking request to cache");
+            throw;
+        }
+    }
 }
