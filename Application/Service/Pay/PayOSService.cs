@@ -133,17 +133,37 @@ namespace PublicCarRental.Application.Service.Pay
                     return false;
                 }
 
-                using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(checksumKey));
-                byte[] hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(webhookBody));
+                bool isValid;
+                string computedSignature;
 
-                var computedSignature = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-                var receivedSignature = signature.ToLower();
+                // Handle empty webhook body (PayOS test request)
+                if (string.IsNullOrEmpty(webhookBody))
+                {
+                    _logger.LogInformation("Empty webhook body detected - likely PayOS test request");
 
-                var isValid = computedSignature == receivedSignature;
+                    // For empty body, signature should be of empty string
+                    using var hmacEmpty = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(checksumKey));
+                    byte[] hashBytesEmpty = hmacEmpty.ComputeHash(Encoding.UTF8.GetBytes(""));
+                    computedSignature = BitConverter.ToString(hashBytesEmpty).Replace("-", "").ToLower();
 
-                _logger.LogInformation($"Webhook signature verification: {isValid}");
-                _logger.LogInformation($"Computed: {computedSignature}");
-                _logger.LogInformation($"Received: {receivedSignature}");
+                    isValid = computedSignature == signature.ToLower();
+                    _logger.LogInformation($"Empty body verification: {isValid}");
+                }
+                else
+                {
+                    // Normal webhook verification
+                    using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(checksumKey));
+                    byte[] hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(webhookBody));
+
+                    computedSignature = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+                    var receivedSignature = signature.ToLower();
+
+                    isValid = computedSignature == receivedSignature;
+
+                    _logger.LogInformation($"Webhook signature verification: {isValid}");
+                    _logger.LogInformation($"Computed: {computedSignature}");
+                    _logger.LogInformation($"Received: {receivedSignature}");
+                }
 
                 return isValid;
             }

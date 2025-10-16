@@ -55,10 +55,13 @@ namespace PublicCarRental.Presentation.Controllers
         {
             try
             {
+                _logger.LogInformation("=== WEBHOOK RECEIVED ===");
+
                 using var reader = new StreamReader(HttpContext.Request.Body);
                 var webhookBody = await reader.ReadToEndAsync();
 
-                _logger.LogInformation($"Webhook received: {webhookBody}");
+                _logger.LogInformation($"Webhook body length: {webhookBody?.Length ?? 0}");
+                _logger.LogInformation($"Webhook body: {webhookBody}");
 
                 var signature = HttpContext.Request.Headers["x-payos-signature"].FirstOrDefault();
 
@@ -67,6 +70,12 @@ namespace PublicCarRental.Presentation.Controllers
                 {
                     _logger.LogWarning("Invalid webhook signature");
                     return BadRequest(new { error = "Invalid signature" });
+                }
+
+                if (string.IsNullOrEmpty(webhookBody))
+                {
+                    _logger.LogInformation("Empty webhook body - returning success for PayOS test");
+                    return Ok(new { success = true, message = "Webhook test successful" });
                 }
 
                 var webhookData = JsonSerializer.Deserialize<JsonElement>(webhookBody);
