@@ -133,7 +133,45 @@ namespace PublicCarRental.Application.Service.Pay
                     return false;
                 }
 
-                var dataToHash = webhookBody ?? "";
+                // Remove the signature field from the JSON before hashing
+                string dataToHash;
+                if (!string.IsNullOrEmpty(webhookBody))
+                {
+                    try
+                    {
+                        var jsonDoc = JsonDocument.Parse(webhookBody);
+                        var root = jsonDoc.RootElement;
+
+                        // Create a new JSON without the signature field
+                        using var stream = new MemoryStream();
+                        using var writer = new Utf8JsonWriter(stream);
+
+                        writer.WriteStartObject();
+
+                        foreach (var property in root.EnumerateObject())
+                        {
+                            if (property.Name != "signature")
+                            {
+                                property.WriteTo(writer);
+                            }
+                        }
+
+                        writer.WriteEndObject();
+                        writer.Flush();
+
+                        dataToHash = Encoding.UTF8.GetString(stream.ToArray());
+                        _logger.LogInformation($"📝 Data to hash (without signature): {dataToHash}");
+                    }
+                    catch (JsonException)
+                    {
+                        dataToHash = webhookBody;
+                        _logger.LogWarning("⚠️ Could not parse JSON, using original body for signature");
+                    }
+                }
+                else
+                {
+                    dataToHash = "";
+                }
 
                 using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(checksumKey));
                 byte[] hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(dataToHash));
@@ -141,18 +179,18 @@ namespace PublicCarRental.Application.Service.Pay
                 var computedSignature = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
                 var receivedSignature = signature.ToLower();
 
-                _logger.LogInformation($"Computed: {computedSignature}");
-                _logger.LogInformation($"Received: {receivedSignature}");
+                _logger.LogInformation($"🔍 Computed: {computedSignature}");
+                _logger.LogInformation($"🔍 Received: {receivedSignature}");
 
                 var isValid = computedSignature == receivedSignature;
 
-                _logger.LogInformation(isValid ? "Signature verification PASSED" : "Signature verification FAILED");
+                _logger.LogInformation(isValid ? "✅ Signature verification PASSED" : "❌ Signature verification FAILED");
 
                 return isValid;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error verifying webhook signature");
+                _logger.LogError(ex, "💥 Error verifying webhook signature");
                 return false;
             }
         }
