@@ -118,27 +118,22 @@ namespace PublicCarRental.Application.Service.Pay
         {
             try
             {
-                _logger.LogInformation("Webhook verification started");
+                _logger.LogInformation("🔐 Webhook verification started");
 
                 if (string.IsNullOrEmpty(signature))
                 {
-                    _logger.LogWarning("Webhook signature is missing");
+                    _logger.LogWarning("❌ Webhook signature is missing");
                     return false;
                 }
 
                 var checksumKey = _configuration["PayOS:ChecksumKey"];
                 if (string.IsNullOrEmpty(checksumKey))
                 {
-                    _logger.LogError("ChecksumKey is not configured");
+                    _logger.LogError("❌ ChecksumKey is not configured");
                     return false;
                 }
 
-                _logger.LogInformation($"Using ChecksumKey: {checksumKey.Substring(0, 10)}...");
-
                 var dataToHash = webhookBody ?? "";
-
-                _logger.LogInformation($"Data to hash length: {dataToHash.Length}");
-                _logger.LogInformation($"Data to hash: '{dataToHash}'");
 
                 using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(checksumKey));
                 byte[] hashBytes = hmac.ComputeHash(Encoding.UTF8.GetBytes(dataToHash));
@@ -146,8 +141,8 @@ namespace PublicCarRental.Application.Service.Pay
                 var computedSignature = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
                 var receivedSignature = signature.ToLower();
 
-                _logger.LogInformation($"Computed signature: {computedSignature}");
-                _logger.LogInformation($"Received signature: {receivedSignature}");
+                _logger.LogInformation($"Computed: {computedSignature}");
+                _logger.LogInformation($"Received: {receivedSignature}");
 
                 var isValid = computedSignature == receivedSignature;
 
@@ -157,7 +152,7 @@ namespace PublicCarRental.Application.Service.Pay
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "💥 Error verifying webhook signature");
+                _logger.LogError(ex, "Error verifying webhook signature");
                 return false;
             }
         }

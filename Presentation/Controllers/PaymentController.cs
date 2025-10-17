@@ -53,99 +53,127 @@ namespace PublicCarRental.Presentation.Controllers
         [HttpPost("webhook")]
         public async Task<IActionResult> HandleWebhook()
         {
+            string webhookBody = null;
             try
             {
-                _logger.LogInformation("=== WEBHOOK RECEIVED ===");
+                _logger.LogInformation("🎯 === WEBHOOK RECEIVED ===");
+
+                // Log ALL headers for debugging
+                foreach (var header in HttpContext.Request.Headers)
+                {
+                    _logger.LogInformation($"📋 Header: {header.Key} = {header.Value}");
+                }
 
                 using var reader = new StreamReader(HttpContext.Request.Body);
-                var webhookBody = await reader.ReadToEndAsync();
+                webhookBody = await reader.ReadToEndAsync();
 
-                _logger.LogInformation($"Webhook body length: {webhookBody?.Length ?? 0}");
-                _logger.LogInformation($"Webhook body: {webhookBody}");
+                _logger.LogInformation($"📦 Webhook body length: {webhookBody?.Length ?? 0}");
+                _logger.LogInformation($"📦 Webhook body: '{webhookBody}'");
 
                 var signature = HttpContext.Request.Headers["x-payos-signature"].FirstOrDefault();
+                _logger.LogInformation($"🔐 Signature from header: '{signature}'");
 
-                var isValid = _payOSService.VerifyWebhook(webhookBody, signature);
-                if (!isValid)
+                // Handle PayOS test requests (empty body + no signature)
+                if (string.IsNullOrEmpty(webhookBody) && string.IsNullOrEmpty(signature))
                 {
-                    _logger.LogWarning("Invalid webhook signature");
-                    return BadRequest(new { error = "Invalid signature" });
-                }
-
-                if (string.IsNullOrEmpty(webhookBody))
-                {
-                    _logger.LogInformation("Empty webhook body - returning success for PayOS test");
-                    return Ok(new { success = true, message = "Webhook test successful" });
-                }
-
-                var webhookData = JsonSerializer.Deserialize<JsonElement>(webhookBody);
-
-                if (webhookData.TryGetProperty("data", out var dataElement) &&
-                    dataElement.TryGetProperty("orderCode", out var orderCodeElement) &&
-                    dataElement.TryGetProperty("status", out var statusElement))
-                {
-                    var orderCode = orderCodeElement.GetInt32();
-                    var status = statusElement.GetString();
-
-                    _logger.LogInformation($"Webhook processed: Order {orderCode} - Status {status}");
-
-                    var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
-
-                    if (invoice != null)
+                    _logger.LogInformation("🔄 PayOS test webhook detected - empty body, no signature");
+                    return Ok(new
                     {
-                        _logger.LogInformation($"Current invoice status: {invoice.Status}");
+                        success = true,
+                        message = "Webhook test successful - PayOS test request handled",
+                        timestamp = DateTime.UtcNow
+                    });
+                }
 
-                        if (status == "PAID")
+                // For actual webhooks, verify signature
+                if (!string.IsNullOrEmpty(signature))
+                {
+                    var isValid = _payOSService.VerifyWebhook(webhookBody, signature);
+                    if (!isValid)
+                    {
+                        _logger.LogWarning("❌ Invalid webhook signature");
+                        return BadRequest(new { error = "Invalid signature" });
+                    }
+                    _logger.LogInformation("✅ Webhook signature valid");
+                }
+                else
+                {
+                    _logger.LogWarning("⚠️ No signature provided for non-empty webhook");
+                    return BadRequest(new { error = "Signature required" });
+                }
+
+                // Process actual webhook data (non-empty body)
+                if (!string.IsNullOrEmpty(webhookBody))
+                {
+                    var webhookData = JsonSerializer.Deserialize<JsonElement>(webhookBody);
+
+                    if (webhookData.TryGetProperty("data", out var dataElement) &&
+                        dataElement.TryGetProperty("orderCode", out var orderCodeElement) &&
+                        dataElement.TryGetProperty("status", out var statusElement))
+                    {
+                        var orderCode = orderCodeElement.GetInt32();
+                        var status = statusElement.GetString();
+
+                        _logger.LogInformation($"💰 Webhook processed: Order {orderCode} - Status {status}");
+
+                        var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
+
+                        if (invoice != null)
                         {
-                            var bookingToken = invoice.BookingToken;
-                            var bookingRequest = await _bookingService.GetBookingRequest(bookingToken);
+                            _logger.LogInformation($"📄 Current invoice status: {invoice.Status}");
 
-                            if (bookingRequest != null)
+                            if (status == "PAID")
                             {
-                                var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
-                                if (result.Success)
+                                var bookingToken = invoice.BookingToken;
+                                var bookingRequest = await _bookingService.GetBookingRequest(bookingToken);
+
+                                if (bookingRequest != null)
                                 {
-                                    _logger.LogInformation($"Contract {result.contractId} created successfully");
-
-                                    var updateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
-
-                                    if (updateSuccess)
+                                    var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
+                                    if (result.Success)
                                     {
-                                        await _bookingService.RemoveBookingRequest(bookingToken);
-                                        _logger.LogInformation($"Payment completed: Invoice {invoice.InvoiceId} paid, Contract {result.contractId} created");
+                                        _logger.LogInformation($"📝 Contract {result.contractId} created successfully");
+
+                                        var updateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
+
+                                        if (updateSuccess)
+                                        {
+                                            await _bookingService.RemoveBookingRequest(bookingToken);
+                                            _logger.LogInformation($"✅ Payment completed: Invoice {invoice.InvoiceId} paid, Contract {result.contractId} created");
+                                        }
+                                        else
+                                        {
+                                            _logger.LogError($"❌ Invoice status update failed after contract creation");
+                                        }
                                     }
                                     else
                                     {
-                                        _logger.LogError($"Invoice status update failed after contract creation");
+                                        _logger.LogError($"❌ Failed to create contract: {result.Message}");
                                     }
                                 }
                                 else
                                 {
-                                    _logger.LogError($"Failed to create contract: {result.Message}");
+                                    _logger.LogWarning($"⚠️ No booking request found for paid invoice {invoice.InvoiceId}");
                                 }
                             }
-                            else
+                            else if (status == "CANCELLED" || status == "EXPIRED")
                             {
-                                _logger.LogWarning($"No booking request found for paid invoice {invoice.InvoiceId}");
+                                _logger.LogInformation($"❌ Payment {status} for invoice {invoice.InvoiceId}");
+
+                                var success = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Cancelled);
+
+                                if (success)
+                                {
+                                    var bookingToken = invoice.BookingToken;
+                                    await _bookingService.RemoveBookingRequest(bookingToken);
+                                    _logger.LogInformation($"🗑️ Invoice {invoice.InvoiceId} marked as CANCELLED and booking request cleaned up");
+                                }
                             }
                         }
-                        else if (status == "CANCELLED" || status == "EXPIRED")
+                        else
                         {
-                            _logger.LogInformation($"Payment {status} for invoice {invoice.InvoiceId}");
-
-                            var success = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Cancelled);
-
-                            if (success)
-                            {
-                                var bookingToken = invoice.BookingToken;
-                                await _bookingService.RemoveBookingRequest(bookingToken);
-                                _logger.LogInformation($"Invoice {invoice.InvoiceId} marked as CANCELLED and booking request cleaned up");
-                            }
+                            _logger.LogWarning($"⚠️ No invoice found for order code: {orderCode}");
                         }
-                    }
-                    else
-                    {
-                        _logger.LogWarning($"No invoice found for order code: {orderCode}");
                     }
                 }
 
@@ -153,7 +181,7 @@ namespace PublicCarRental.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing webhook");
+                _logger.LogError(ex, "💥 Error processing webhook");
                 return StatusCode(500, new { error = "Internal server error" });
             }
         }
