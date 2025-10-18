@@ -2,6 +2,8 @@
 import { useParams } from "react-router-dom";
 import { Box, useColorModeValue, Button, VStack, Text, Alert, AlertIcon } from "@chakra-ui/react";
 import Footer from "../components/Footer";
+import MaybeYouWillLike from "../components/MaybeYouWillLike";
+import BookingForm from "../components/BookingForm";
 import { modelAPI } from "../services/api";
 import '../styles/ModelDetail.css';
 
@@ -77,7 +79,7 @@ function ModelDetail() {
 
                 <div className="container">
                     <div className="model-detail-flex">
-                        {/* Left Column: Image and Stations */}
+                        {/* Left Column: Image */}
                         <div className="left-column" style={{ flex: 1 }}>
                             {/* Image */}
                             <div className="model-detail-image-box">
@@ -87,8 +89,29 @@ function ModelDetail() {
                                     className="model-detail-image"
                                 />
                             </div>
+                        </div>
 
-                            {/* Station List - positioned under the image */}
+                        {/* Right Column: Info and Stations */}
+                        <div className="right-column" style={{ flex: 1 }}>
+                            {/* Info Box */}
+                            <div className="model-detail-info-box">
+                                <div className="model-title-brand">
+                                    <h1 className="model-detail-title" style={{ fontSize: '3.8rem' }}>{model.name}</h1>
+                                    <span className="model-detail-brand" style={{ fontSize: '1.9rem' }}>{model.brandName}</span>
+                                </div>
+
+                                <div className="model-detail-type-price">
+                                    <span className="model-detail-type" style={{ fontSize: '1.8rem' }}>{model.typeName}</span>
+                                    <span className="model-detail-price" style={{ fontSize: '2.1rem' }}>${model.price}/hr</span>
+                                </div>
+
+                                <div className="model-detail-description" style={{ fontSize: '1.6rem' }}>
+                                   
+                                    <p>{model.description || "Experience the future of driving with our premium electric vehicle. Featuring cutting-edge technology, superior comfort, and eco-friendly performance."}</p>
+                                </div>
+                            </div>
+
+                            {/* Station List - positioned below info box */}
                             <div className="stations-section" style={{
                                 width: '100%',
                                 marginTop: '2rem'
@@ -126,8 +149,7 @@ function ModelDetail() {
                                                     <Box
                                                         key={index}
                                                         p={5}
-                                                        border="1px solid"
-                                                        borderColor="gray.200"
+                                                        border="none"
                                                         borderRadius="md"
                                                         bg={cardBg}
                                                         className="station-card"
@@ -138,7 +160,7 @@ function ModelDetail() {
                                                         <div style={{
                                                             display: 'flex',
                                                             justifyContent: 'space-between',
-                                                            alignItems: 'flex-start',
+                                                            alignItems: 'center',
                                                             gap: '20px'
                                                         }}>
                                                             {/* Station Info */}
@@ -191,34 +213,26 @@ function ModelDetail() {
                                 )}
                             </div>
                         </div>
-
-                        {/* Right: Info */}
-                        <div className="model-detail-info-box">
-                            <h1 className="model-detail-title" style={{ fontSize: '3.8rem' }}>{model.name}</h1>
-
-
-                            <span className="model-detail-brand" style={{ fontSize: '1.9rem' }}>{model.brandName}</span>
-                            <div className="model-detail-type-price">
-                                <span className="model-detail-type" style={{ fontSize: '1.8rem' }}>{model.typeName}</span>
-                                <span className="model-detail-price" style={{ fontSize: '2.1rem' }}>${model.price}/hr</span>
-
-                            </div>
-
-                            { /*
-                            <div className="model-detail-features">
-                                <div className="feature-item"><b>Fuel:</b> Electric</div>
-                                <div className="feature-item"><b>Range:</b> {model.range} km</div>
-                                <div className="feature-item"><b>Capacity:</b> {model.capacity} seats</div>
-                            </div>
-                              */}
-
-                            <div className="model-detail-description" style={{ fontSize: '1.6rem' }}>
-                                <b style={{ fontSize: '1.7rem' }}>Description:</b>
-                                <p>{model.description || "Experience the future of driving with our premium electric vehicle. Featuring cutting-edge technology, superior comfort, and eco-friendly performance."}</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
+
+                {/* Booking Form Section */}
+                <div className="container">
+                    <BookingForm 
+                        modelName={model?.name}
+                        modelId={id}
+                        evRenterId={1} // You can get this from user context or props
+                    />
+                </div>
+
+                {/* Maybe You Will Like Section */}
+                <div className="container">
+                    <MaybeYouWillLike 
+                        currentModelId={id} 
+                        currentBrandName={model?.brandName} 
+                    />
+                </div>
+
                 <Footer />
             </section>
         </>

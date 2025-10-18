@@ -1,0 +1,128 @@
+.maybe-you-will-like {
+    margin-top: 4rem;
+    padding: 2rem 0;
+    background: #f8fafc;
+    border-radius: 1.5rem;
+    padding: 2.5rem;
+}
+
+.section-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: #2d3748;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.models-grid {
+    display: flex;
+    gap: 2.5rem;
+    padding: 1rem 0;
+    overflow-x: auto;
+    scroll-behavior: smooth;
+}
+
+.models-grid::-webkit-scrollbar {
+    height: 6px;
+}
+
+.models-grid::-webkit-scrollbar-track {
+    background: #e2e8f0;
+    border-radius: 3px;
+}
+
+.models-grid::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+}
+
+.models-grid::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+}
+
+.model-card {
+    min-width: 280px;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    overflow: hidden;
+    flex-shrink: 0;
+    margin: 0.8rem 0;
+}
+
+.model-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.model-image {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.model-info {
+    padding: 1.5rem;
+    align-items: flex-start;
+}
+
+.model-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #2d3748;
+    line-height: 1.3;
+    text-align: left;
+    width: 100%;
+}
+
+.model-brand {
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: left;
+    width: 100%;
+}
+
+.price-badge {
+    font-size: 1.1rem;
+    font-weight: 700;
+    padding: 0.3rem 0.8rem;
+}
+
+@media (max-width: 768px) {
+    .maybe-you-will-like {
+        margin-top: 2rem;
+        padding: 1.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.8rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .models-grid {
+        gap: 2rem;
+    }
+    
+    .model-card {
+        min-width: 240px;
+        margin: 0.5rem 0;
+    }
+    
+    .model-image {
+        height: 150px;
+    }
+    
+    .model-info {
+        padding: 1rem;
+    }
+    
+    .model-name {
+        font-size: 1.2rem;
+    }
+    
+    .model-brand {
+        font-size: 1rem;
+    }
+}
