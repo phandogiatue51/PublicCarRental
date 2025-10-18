@@ -147,6 +147,7 @@ namespace PublicCarRental.Application.Service.Cont
 
             var lockKey = $"vehicle_booking:{bookingRequest.VehicleId}:{bookingRequest.StartTime:yyyyMMddHHmm}";
             _distributedLock.ReleaseLock(lockKey);
+            var renter = await _renterService.GetByIdAsync(bookingRequest.EVRenterId);
 
             _ = Task.Run(async () =>
             {
@@ -155,7 +156,7 @@ namespace PublicCarRental.Application.Service.Cont
                     var bookingEvent = new BookingCreatedEvent
                     {
                         BookingId = contract.ContractId,
-                        RenterId = bookingRequest.EVRenterId, 
+                        RenterId = bookingRequest.EVRenterId,
                         VehicleId = vehicle.VehicleId,
                         StationId = contract.StationId ?? 0,
                         StartTime = contract.StartTime,
@@ -165,14 +166,12 @@ namespace PublicCarRental.Application.Service.Cont
 
                     await _bookingEventProducer.PublishBookingCreatedAsync(bookingEvent);
 
-                    var renter = await _renterService.GetByIdAsync(bookingRequest.EVRenterId);
-
                     await _receiptGenerationProducerService.PublishReceiptGenerationAsync(
                         invoice.InvoiceId,
                         contract.ContractId,
                         bookingRequest.EVRenterId,
-                        renter?.Email,     
-                        renter?.FullName   
+                        renter?.Email,    
+                        renter?.FullName 
                     );
                 }
                 catch (Exception ex)
