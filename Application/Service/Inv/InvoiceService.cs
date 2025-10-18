@@ -55,6 +55,7 @@ namespace PublicCarRental.Application.Service.Inv
                 AmountPaid = i.AmountPaid,
                 PaidAt = i.PaidAt,
                 Status = i.Status,
+                OrderCode = i.OrderCode
             };
         }
 

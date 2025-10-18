@@ -53,15 +53,15 @@ namespace PublicCarRental.Presentation.Controllers
         [HttpPost("webhook")]
         public async Task<IActionResult> HandleWebhook()
         {
+            string webhookBody = null;
             try
             {
                 _logger.LogInformation("🎯 === WEBHOOK RECEIVED ===");
 
                 using var reader = new StreamReader(HttpContext.Request.Body);
-                var webhookBody = await reader.ReadToEndAsync(); 
+                webhookBody = await reader.ReadToEndAsync();
 
                 _logger.LogInformation($"📦 Webhook body length: {webhookBody?.Length ?? 0}");
-
 
                 if (string.IsNullOrEmpty(webhookBody))
                 {
@@ -72,6 +72,7 @@ namespace PublicCarRental.Presentation.Controllers
                 try
                 {
                     var webhookData = JsonSerializer.Deserialize<JsonElement>(webhookBody);
+                    _logger.LogInformation("✅ Successfully parsed webhook JSON");
 
                     if (webhookData.TryGetProperty("signature", out var signatureElement))
                     {
@@ -80,79 +81,69 @@ namespace PublicCarRental.Presentation.Controllers
                     }
 
                     // Process the payment data
-                    if (webhookData.TryGetProperty("data", out var dataElement) &&
-                        dataElement.TryGetProperty("orderCode", out var orderCodeElement) &&
-                        dataElement.TryGetProperty("status", out var statusElement))
+                    if (webhookData.TryGetProperty("data", out var dataElement))
                     {
-                        var orderCode = orderCodeElement.GetInt32();
-                        var status = statusElement.GetString();
+                        _logger.LogInformation("✅ Found 'data' property in webhook");
 
-                        _logger.LogInformation($"💰 Processing: Order {orderCode} - Status {status}");
-
-                        var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
-
-                        if (invoice != null)
+                        if (dataElement.TryGetProperty("orderCode", out var orderCodeElement) &&
+                            dataElement.TryGetProperty("status", out var statusElement))
                         {
-                            _logger.LogInformation($"📄 Invoice {invoice.InvoiceId} current status: {invoice.Status}");
+                            var orderCode = orderCodeElement.GetInt32();
+                            var status = statusElement.GetString();
 
-                            if (status == "PAID" && invoice.Status != InvoiceStatus.Paid)
+                            _logger.LogInformation($"💰 Processing: Order {orderCode} - Status {status}");
+
+                            var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
+                            _logger.LogInformation($"📄 Invoice lookup result: {(invoice != null ? $"Found invoice {invoice.InvoiceId}" : "NOT FOUND")}");
+
+                            if (invoice != null)
                             {
-                                _logger.LogInformation($"💳 Payment confirmed for invoice {invoice.InvoiceId}");
+                                _logger.LogInformation($"📄 Invoice {invoice.InvoiceId} current status: {invoice.Status}");
 
-                                var bookingToken = invoice.BookingToken;
-                                var bookingRequest = await _bookingService.GetBookingRequest(bookingToken);
-
-                                if (bookingRequest != null)
+                                if (status == "PAID" && invoice.Status != InvoiceStatus.Paid)
                                 {
-                                    var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
-                                    if (result.Success)
-                                    {
-                                        _logger.LogInformation($"📝 Contract {result.contractId} created successfully");
+                                    _logger.LogInformation($"💳 Payment confirmed for invoice {invoice.InvoiceId}");
 
-                                        var updateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
+                                    var bookingToken = invoice.BookingToken;
+                                    _logger.LogInformation($"🔑 Booking token: {bookingToken}");
 
-                                        if (updateSuccess)
-                                        {
-                                            await _bookingService.RemoveBookingRequest(bookingToken);
-                                            _logger.LogInformation($"✅ Payment completed: Invoice {invoice.InvoiceId} paid, Contract {result.contractId} created");
-                                        }
-                                        else
-                                        {
-                                            _logger.LogError($"❌ Invoice status update failed after contract creation");
-                                        }
-                                    }
-                                    else
+                                    var bookingRequest = await _bookingService.GetBookingRequest(bookingToken);
+                                    _logger.LogInformation($"📋 Booking request: {(bookingRequest != null ? "FOUND" : "NOT FOUND")}");
+
+                                    if (bookingRequest != null)
                                     {
-                                        _logger.LogError($"❌ Failed to create contract: {result.Message}");
+                                        _logger.LogInformation("🚀 Calling ConfirmBookingAfterPaymentAsync...");
+                                        var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
+                                        _logger.LogInformation($"📝 Contract creation result: Success={result.Success}, ContractId={result.contractId}, Message={result.Message}");
+
+                                        if (result.Success)
+                                        {
+                                            _logger.LogInformation("🔄 Updating invoice status...");
+                                            var updateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
+                                            _logger.LogInformation($"📊 Invoice status update: {updateSuccess}");
+
+                                            if (updateSuccess)
+                                            {
+                                                await _bookingService.RemoveBookingRequest(bookingToken);
+                                                _logger.LogInformation($"✅ Payment completed: Invoice {invoice.InvoiceId} paid, Contract {result.contractId} created");
+                                            }
+                                        }
                                     }
                                 }
                                 else
                                 {
-                                    _logger.LogWarning($"⚠️ No booking request found for paid invoice {invoice.InvoiceId}");
+                                    _logger.LogInformation($"ℹ️ No action needed - Status: {status}, Invoice already: {invoice.Status}");
                                 }
-                            }
-                            else if ((status == "CANCELLED" || status == "EXPIRED") && invoice.Status != InvoiceStatus.Cancelled)
-                            {
-                                _logger.LogInformation($"❌ Payment {status} for invoice {invoice.InvoiceId}");
-
-                                var success = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Cancelled);
-
-                                if (success)
-                                {
-                                    var bookingToken = invoice.BookingToken;
-                                    await _bookingService.RemoveBookingRequest(bookingToken);
-                                    _logger.LogInformation($"🗑️ Invoice {invoice.InvoiceId} marked as CANCELLED");
-                                }
-                            }
-                            else
-                            {
-                                _logger.LogInformation($"ℹ️ No action needed - Invoice {invoice.InvoiceId} already in correct status");
                             }
                         }
                         else
                         {
-                            _logger.LogWarning($"⚠️ No invoice found for order code: {orderCode}");
+                            _logger.LogWarning("❌ Missing orderCode or status in data");
                         }
+                    }
+                    else
+                    {
+                        _logger.LogWarning("❌ No 'data' property found in webhook");
                     }
                 }
                 catch (JsonException jsonEx)
