@@ -1,4 +1,5 @@
 ﻿using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MimeKit;
@@ -21,10 +22,12 @@ namespace PublicCarRental.Application.Service.Email
         private async Task<bool> SendEmailAsync(Func<MimeMessage> createMessage, int maxRetries = 3)
         {
             var smtpServer = _config["EmailSettings:SmtpServer"];
-            var port = int.Parse(_config["EmailSettings:Port"]);
+            var port = int.Parse(_config["EmailSettings:Port"] ?? "587");
             var username = _config["EmailSettings:Username"];
             var password = _config["EmailSettings:Password"];
-            var useSsl = bool.Parse(_config["EmailSettings:UseSsl"]);
+
+            _logger.LogInformation("🔧 EMAIL CONFIG - Server: {Server}, Port: {Port}, Username: {Username}",
+                smtpServer, port, username);
 
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
@@ -32,52 +35,51 @@ namespace PublicCarRental.Application.Service.Email
 
                 try
                 {
-                    client.Timeout = 60000; // 60 seconds for PDF emails
-
-                    _logger.LogInformation("Attempt {Attempt} to connect to SMTP: {Server}:{Port}",
-                        attempt + 1, smtpServer, port);
-
-                    if (smtpServer.Contains("sendgrid", StringComparison.OrdinalIgnoreCase))
-                    {
-                        await client.ConnectAsync(smtpServer, port, MailKit.Security.SecureSocketOptions.StartTls);
-                    }
-                    else
-                    {
-                        var secureSocketOptions = useSsl ? MailKit.Security.SecureSocketOptions.StartTls : MailKit.Security.SecureSocketOptions.None;
-                        await client.ConnectAsync(smtpServer, port, secureSocketOptions);
-                    }
-
-                    client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-
-                    await client.AuthenticateAsync(username, password);
-
+                    _logger.LogInformation("📧 ATTEMPT {Attempt} - Creating message...", attempt + 1);
                     var message = createMessage();
 
-                    using var memoryStream = new MemoryStream();
-                    await message.WriteToAsync(memoryStream);
-                    _logger.LogInformation("Email message size: {Size} bytes", memoryStream.Length);
+                    client.Timeout = 120000; // 120 seconds
 
+                    _logger.LogInformation("🔗 Connecting to {Server}:{Port}...", smtpServer, port);
+
+                    await client.ConnectAsync(smtpServer, port, MailKit.Security.SecureSocketOptions.StartTls);
+                    _logger.LogInformation("✅ CONNECTED to SMTP server");
+
+                    _logger.LogInformation("🔐 Authenticating...");
+                    await client.AuthenticateAsync(username, password);
+                    _logger.LogInformation("✅ AUTHENTICATED successfully");
+
+                    _logger.LogInformation("📤 Sending email to {To}...", message.To.ToString());
                     await client.SendAsync(message);
-                    await client.DisconnectAsync(true);
+                    _logger.LogInformation("🎉 EMAIL SENT SUCCESSFULLY!");
 
-                    _logger.LogInformation("Email sent successfully on attempt {Attempt}", attempt + 1);
+                    await client.DisconnectAsync(true);
                     return true;
                 }
                 catch (TimeoutException ex)
                 {
-                    _logger.LogWarning(ex, "SMTP timeout on attempt {Attempt}", attempt + 1);
-                    if (attempt == maxRetries - 1) return false;
-
-                    var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+                    _logger.LogWarning(ex, "⏰ SMTP TIMEOUT on attempt {Attempt}", attempt + 1);
+                    if (attempt == maxRetries - 1)
+                    {
+                        _logger.LogError("❌ All attempts failed due to timeout");
+                        return false;
+                    }
+                    var delay = TimeSpan.FromSeconds(Math.Pow(3, attempt)); // 3, 9, 27 seconds
+                    _logger.LogInformation("⏳ Waiting {DelaySeconds}s before retry...", delay.TotalSeconds);
                     await Task.Delay(delay);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to send email on attempt {Attempt}", attempt + 1);
+                    _logger.LogError(ex, "❌ Error on attempt {Attempt}", attempt + 1);
                     if (attempt == maxRetries - 1) return false;
 
-                    var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+                    var delay = TimeSpan.FromSeconds(Math.Pow(3, attempt));
                     await Task.Delay(delay);
+                }
+                finally
+                {
+                    if (client.IsConnected)
+                        await client.DisconnectAsync(true);
                 }
             }
             return false;

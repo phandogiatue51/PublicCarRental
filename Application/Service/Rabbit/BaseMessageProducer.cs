@@ -20,11 +20,7 @@ public class BaseMessageProducer
         {
             using var channel = await _connection.CreateChannelAsync();
 
-            await channel.QueueDeclareAsync(queue: queueName,
-                                          durable: true,
-                                          exclusive: false,
-                                          autoDelete: false,
-                                          arguments: null);
+            await channel.QueueDeclarePassiveAsync(queueName);
 
             var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
 

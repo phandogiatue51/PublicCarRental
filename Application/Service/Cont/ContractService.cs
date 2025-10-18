@@ -1,8 +1,6 @@
-﻿using PublicCarRental.Application.DTOs;
-using PublicCarRental.Application.DTOs.Cont;
+﻿using PublicCarRental.Application.DTOs.Cont;
 using PublicCarRental.Application.DTOs.Message;
 using PublicCarRental.Application.Service.Image;
-using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.PDF;
 using PublicCarRental.Application.Service.Rabbit;
 using PublicCarRental.Application.Service.Redis;
@@ -28,14 +26,13 @@ namespace PublicCarRental.Application.Service.Cont
         private readonly IInvoiceRepository _invoiceRepository;
         private readonly IBookingService _bookingService;
         private readonly IStaffService _staffService;
-        private readonly IPdfService _pdfService;
         private readonly IReceiptGenerationProducerService _receiptGenerationProducerService;
         private readonly IContractGenerationProducerService _contractGenerationProducer;
         private readonly ITransactionService _transactionService;
 
         public ContractService(IContractRepository repo, IVehicleRepository vehicleRepo, IEVRenterService eVRenterService, 
             BookingEventProducerService bookingEventProducerService, IImageStorageService imageStorageService,
-            ILogger<ContractService> logger, IDistributedLockService distributedLock, IStaffService staffService, IPdfService pdfService,
+            ILogger<ContractService> logger, IDistributedLockService distributedLock, IStaffService staffService,
             IInvoiceRepository invoiceRepository, IBookingService bookingService, IReceiptGenerationProducerService receiptGenerationProducerService, 
             IContractGenerationProducerService contractGenerationProducer, ITransactionService transactionService)
         {
@@ -49,7 +46,6 @@ namespace PublicCarRental.Application.Service.Cont
             _invoiceRepository = invoiceRepository;
             _bookingService = bookingService;
             _staffService = staffService;
-            _pdfService = pdfService;
             _receiptGenerationProducerService = receiptGenerationProducerService;
             _contractGenerationProducer = contractGenerationProducer;
             _transactionService = transactionService;
@@ -169,10 +165,14 @@ namespace PublicCarRental.Application.Service.Cont
 
                     await _bookingEventProducer.PublishBookingCreatedAsync(bookingEvent);
 
+                    var renter = await _renterService.GetByIdAsync(bookingRequest.EVRenterId);
+
                     await _receiptGenerationProducerService.PublishReceiptGenerationAsync(
                         invoice.InvoiceId,
                         contract.ContractId,
-                        bookingRequest.EVRenterId 
+                        bookingRequest.EVRenterId,
+                        renter?.Email,     
+                        renter?.FullName   
                     );
                 }
                 catch (Exception ex)

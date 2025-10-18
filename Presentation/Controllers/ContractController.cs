@@ -13,15 +13,10 @@ namespace PublicCarRental.Presentation.Controllers
     public class ContractController : ControllerBase
     {
         private readonly IContractService _contractService;
-        private readonly ITransactionService _transactionService;
-        private readonly PdfService _pdfService;
         private readonly IPdfStorageService _pdfStorageService;
-        public ContractController(IContractService contractService, ITransactionService transactionService,
-        PdfService pdfService, IPdfStorageService pdfStorageService)
+        public ContractController(IContractService contractService, IPdfStorageService pdfStorageService)
         {
             _contractService = contractService;
-            _transactionService = transactionService;
-            _pdfService = pdfService;
             _pdfStorageService = pdfStorageService;
         }
 

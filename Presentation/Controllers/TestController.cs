@@ -1,73 +1,44 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using PublicCarRental.Infrastructure.Data.Models;
-using PublicCarRental.Infrastructure.Data.Models.Configuration;
-using RabbitMQ.Client;
+using PublicCarRental.Application.Service.Email;
 
 namespace PublicCarRental.Presentation.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
-    public class DebugController : ControllerBase
+    [ApiController]
+    public class TestController : ControllerBase
     {
-        private readonly ILogger<DebugController> _logger;
-        private readonly RabbitMQSettings _settings;
-        private readonly AccidentEventProducerService _producerService;
-
-        public DebugController(
-            IOptions<RabbitMQSettings> settings,
-            AccidentEventProducerService producerService,
-            ILogger<DebugController> logger)
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ILogger<TestController> _logger;
+        public TestController(IServiceProvider serviceProvider, ILogger<TestController> logger)
         {
-            _settings = settings.Value;
-            _producerService = producerService;
+            _serviceProvider = serviceProvider;
             _logger = logger;
         }
 
-        [HttpGet("rabbitmq-status")]
-        public async Task<IActionResult> CheckRabbitMQStatus()
+        [HttpGet("test-email-send")]
+        public async Task<IActionResult> TestEmailSend()
         {
             try
             {
-                var factory = new ConnectionFactory { Uri = new Uri(_settings.ConnectionString) };
-                using var connection = await factory.CreateConnectionAsync();
-                using var channel = await connection.CreateChannelAsync();
+                var emailService = _serviceProvider.GetRequiredService<IEmailService>();
 
-                var result = await channel.QueueDeclarePassiveAsync(_settings.QueueNames.NotificationQueue);
+                _logger.LogInformation("🚀 Starting email test...");
 
-                return Ok(new
-                {
-                    Status = "Connected",
-                    Queue = _settings.QueueNames.NotificationQueue,
-                    MessageCount = result.MessageCount,
-                    ConsumerCount = result.ConsumerCount,
-                    ConnectionString = _settings.ConnectionString?.Substring(0, 20) + "..."
-                });
+                await emailService.SendEmail(
+                    "phandogiatue51@gmail.com", // Use a DIFFERENT email to test
+                    "Test Email from PublicCarRental",
+                    "<h1>Test Email</h1><p>This is a <b>test email</b> from PublicCarRental app.</p>"
+                );
+
+                _logger.LogInformation("✅ Test email completed without errors");
+                return Ok("✅ Test email sent successfully - check logs for details");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to connect to RabbitMQ");
-                return BadRequest(new { Status = "Failed", Error = ex.Message });
+                _logger.LogError(ex, "❌ Test email failed");
+                return BadRequest($"❌ Test email failed: {ex.Message}");
             }
-        }
-
-        [HttpPost("test-accident")]
-        public async Task<IActionResult> TestAccidentNotification()
-        {
-            var testAccident = new AccidentReport
-            {
-                AccidentId = 999,
-                VehicleId = 1,
-                ContractId = 1,
-                StaffId = 1,
-                Description = "Test accident notification",
-                Location = "Test Location",
-                ReportedAt = DateTime.Now
-            };
-
-            await _producerService.PublishAccidentReportedAsync(testAccident);
-            return Ok("Test accident notification sent");
         }
     }
 }
