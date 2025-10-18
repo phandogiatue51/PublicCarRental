@@ -160,26 +160,13 @@ namespace PublicCarRental.Application.Service.Rabbit
             {
                 Type = "NewBooking",
                 BookingId = bookingEvent.BookingId,
-                RenterName = bookingEvent.RenterName ?? "Unknown Renter",
-                VehicleLicensePlate = bookingEvent.VehicleLicensePlate ?? "Unknown Vehicle",
                 StationId = bookingEvent.StationId,
-                StationName = bookingEvent.StationName ?? "Unknown Station",
                 StartTime = bookingEvent.StartTime,
-                Message = $"New booking at {bookingEvent.StationName} by {bookingEvent.RenterName ?? "a renter"}"
+                Message = $"New booking received at your station"
             });
 
             _logger.LogInformation("Booking notification sent to station {StationId} for booking {BookingId}",
                 bookingEvent.StationId, bookingEvent.BookingId);
-
-            if (bookingEvent.RenterId > 0)
-            {
-                await hubContext.Clients.Group($"user-{bookingEvent.RenterId}").SendAsync("ReceiveBookingConfirmation", new
-                {
-                    Type = "BookingConfirmed",
-                    BookingId = bookingEvent.BookingId,
-                    Message = $"Your booking at {bookingEvent.StationName} has been created successfully!"
-                });
-            }
         }
 
         private async Task ProcessAccidentNotificationAsync(IHubContext<NotificationHub> hubContext, AccidentReportedEvent accidentEvent)

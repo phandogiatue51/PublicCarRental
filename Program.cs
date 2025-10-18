@@ -175,8 +175,6 @@ builder.Services.AddHostedService<ContractGenerationConsumerService>();
 
 
 
-
-
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = jwtSettings["Key"];
 var issuer = jwtSettings["Issuer"];

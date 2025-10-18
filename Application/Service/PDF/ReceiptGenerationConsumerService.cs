@@ -3,6 +3,7 @@ using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Application.Service.Email;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.PDF;
+using PublicCarRental.Application.Service.Ren;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text;
@@ -90,11 +91,14 @@ namespace PublicCarRental.Application.Service.Rabbit
             var invoiceService = scope.ServiceProvider.GetRequiredService<IInvoiceService>();
             var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
             var pdfStorageService = scope.ServiceProvider.GetRequiredService<IPdfStorageService>();
+            var renterService = scope.ServiceProvider.GetRequiredService<IEVRenterService>();
+
 
             try
             {
                 var invoice = invoiceService.GetEntityById(receiptEvent.InvoiceId);
                 var contract = contractService.GetEntityById(receiptEvent.ContractId);
+                var renter = await renterService.GetEntityByIdAsync(receiptEvent.RenterId);
 
                 if (invoice == null)
                 {
@@ -102,22 +106,19 @@ namespace PublicCarRental.Application.Service.Rabbit
                     return;
                 }
 
-                // Generate receipt PDF
                 var receiptBytes = pdfReceiptService.GeneratePaymentReceipt(invoice, contract);
 
-                // Save to storage
                 await pdfStorageService.SaveReceiptPdfAsync(invoice.InvoiceId, receiptBytes);
 
-                // Send email with receipt
                 await emailService.SendReceiptPdfAsync(
-                    receiptEvent.RenterEmail,
-                    receiptEvent.RenterName,
-                    receiptBytes,
-                    invoice.InvoiceId
+                   renter.Account.Email,
+                   renter.Account.FullName,
+                   receiptBytes,
+                   invoice.InvoiceId
                 );
 
                 _logger.LogInformation("Receipt emailed to {Email} for invoice {InvoiceId}",
-                    receiptEvent.RenterEmail, receiptEvent.InvoiceId);
+                    renter.Account.Email, invoice.InvoiceId);
             }
             catch (Exception ex)
             {

@@ -156,21 +156,15 @@ namespace PublicCarRental.Application.Service.Cont
             {
                 try
                 {
-                    var renter = await _renterService.GetByIdAsync(bookingRequest.EVRenterId);
-
                     var bookingEvent = new BookingCreatedEvent
                     {
                         BookingId = contract.ContractId,
-                        RenterId = renter.RenterId,
-                        RenterEmail = renter.Email,
-                        RenterName = renter.FullName,
+                        RenterId = bookingRequest.EVRenterId, 
                         VehicleId = vehicle.VehicleId,
-                        VehicleLicensePlate = vehicle.LicensePlate,
                         StationId = contract.StationId ?? 0,
-                        StationName = vehicle.Station?.Name,
                         StartTime = contract.StartTime,
                         EndTime = contract.EndTime,
-                        TotalCost = contract.TotalCost.Value
+                        TotalCost = contract.TotalCost.Value,
                     };
 
                     await _bookingEventProducer.PublishBookingCreatedAsync(bookingEvent);
@@ -178,8 +172,7 @@ namespace PublicCarRental.Application.Service.Cont
                     await _receiptGenerationProducerService.PublishReceiptGenerationAsync(
                         invoice.InvoiceId,
                         contract.ContractId,
-                        renter.Email,
-                        renter.FullName
+                        bookingRequest.EVRenterId 
                     );
                 }
                 catch (Exception ex)

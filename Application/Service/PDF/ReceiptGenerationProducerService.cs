@@ -4,7 +4,7 @@ namespace PublicCarRental.Application.Service.PDF
 {
     public interface IReceiptGenerationProducerService
     {
-        Task PublishReceiptGenerationAsync(int invoiceId, int contractId, string renterEmail, string renterName);
+        Task PublishReceiptGenerationAsync(int invoiceId, int contractId, int renterId);
     }
 
     public class ReceiptGenerationProducerService : IReceiptGenerationProducerService
@@ -13,14 +13,13 @@ namespace PublicCarRental.Application.Service.PDF
         private readonly ILogger<ReceiptGenerationProducerService> _logger;
         private readonly string _queueName = "receipt_generation_queue";
 
-        public async Task PublishReceiptGenerationAsync(int invoiceId, int contractId, string renterEmail, string renterName)
+        public async Task PublishReceiptGenerationAsync(int invoiceId, int contractId, int renterId)
         {
             var receiptEvent = new ReceiptGenerationEvent
             {
                 InvoiceId = invoiceId,
                 ContractId = contractId,
-                RenterEmail = renterEmail,
-                RenterName = renterName
+                RenterId = renterId 
             };
 
             await _messageProducer.PublishMessageAsync(receiptEvent, _queueName);
