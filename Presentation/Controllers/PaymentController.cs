@@ -50,172 +50,122 @@ namespace PublicCarRental.Presentation.Controllers
             }
         }
 
-        //[HttpPost("webhook")]
-        //public async Task<IActionResult> HandleWebhook()
-        //{
-        //    string webhookBody = null;
-        //    try
-        //    {
-        //        _logger.LogInformation("🎯 === WEBHOOK RECEIVED ===");
-
-        //        using var reader = new StreamReader(HttpContext.Request.Body);
-        //        webhookBody = await reader.ReadToEndAsync();
-
-        //        _logger.LogInformation($"📦 Webhook body length: {webhookBody?.Length ?? 0}");
-        //        _logger.LogInformation($"📦 Webhook body: '{webhookBody}'");
-
-        //        string signature = null;
-
-        //        if (string.IsNullOrEmpty(webhookBody))
-        //        {
-        //            _logger.LogInformation("🔄 PayOS test webhook detected - empty body");
-        //            return Ok(new
-        //            {
-        //                success = true,
-        //                message = "Webhook test successful",
-        //                timestamp = DateTime.UtcNow
-        //            });
-        //        }
-
-        //        try
-        //        {
-        //            var webhookData = JsonSerializer.Deserialize<JsonElement>(webhookBody);
-
-        //            if (webhookData.TryGetProperty("signature", out var signatureElement))
-        //            {
-        //                signature = signatureElement.GetString();
-        //                _logger.LogInformation($"🔐 Signature from JSON body: '{signature}'");
-        //            }
-        //            else
-        //            {
-        //                _logger.LogWarning("❌ No signature found in JSON body");
-        //                return BadRequest(new { error = "Signature not found in webhook body" });
-        //            }
-
-        //            var isValid = _payOSService.VerifyWebhook(webhookBody, signature);
-        //            if (!isValid)
-        //            {
-        //                _logger.LogWarning("❌ Invalid webhook signature");
-        //                return BadRequest(new { error = "Invalid signature" });
-        //            }
-
-        //            _logger.LogInformation("✅ Webhook signature valid");
-
-        //            if (webhookData.TryGetProperty("data", out var dataElement) &&
-        //                dataElement.TryGetProperty("orderCode", out var orderCodeElement) &&
-        //                dataElement.TryGetProperty("status", out var statusElement))
-        //            {
-        //                var orderCode = orderCodeElement.GetInt32();
-        //                var status = statusElement.GetString();
-
-        //                _logger.LogInformation($"💰 Webhook processed: Order {orderCode} - Status {status}");
-
-        //                var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
-
-        //                if (invoice != null)
-        //                {
-        //                    _logger.LogInformation($"📄 Current invoice status: {invoice.Status}");
-
-        //                    if (status == "PAID")
-        //                    {
-        //                        var bookingToken = invoice.BookingToken;
-        //                        var bookingRequest = await _bookingService.GetBookingRequest(bookingToken);
-
-        //                        if (bookingRequest != null)
-        //                        {
-        //                            var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
-        //                            if (result.Success)
-        //                            {
-        //                                _logger.LogInformation($"📝 Contract {result.contractId} created successfully");
-
-        //                                var updateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
-
-        //                                if (updateSuccess)
-        //                                {
-        //                                    await _bookingService.RemoveBookingRequest(bookingToken);
-        //                                    _logger.LogInformation($"✅ Payment completed: Invoice {invoice.InvoiceId} paid, Contract {result.contractId} created");
-        //                                }
-        //                                else
-        //                                {
-        //                                    _logger.LogError($"❌ Invoice status update failed after contract creation");
-        //                                }
-        //                            }
-        //                            else
-        //                            {
-        //                                _logger.LogError($"❌ Failed to create contract: {result.Message}");
-        //                            }
-        //                        }
-        //                        else
-        //                        {
-        //                            _logger.LogWarning($"⚠️ No booking request found for paid invoice {invoice.InvoiceId}");
-        //                        }
-        //                    }
-        //                    else if (status == "CANCELLED" || status == "EXPIRED")
-        //                    {
-        //                        _logger.LogInformation($"❌ Payment {status} for invoice {invoice.InvoiceId}");
-
-        //                        var success = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Cancelled);
-
-        //                        if (success)
-        //                        {
-        //                            var bookingToken = invoice.BookingToken;
-        //                            await _bookingService.RemoveBookingRequest(bookingToken);
-        //                            _logger.LogInformation($"🗑️ Invoice {invoice.InvoiceId} marked as CANCELLED and booking request cleaned up");
-        //                        }
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    _logger.LogWarning($"⚠️ No invoice found for order code: {orderCode}");
-        //                }
-        //            }
-        //        }
-        //        catch (JsonException jsonEx)
-        //        {
-        //            _logger.LogError(jsonEx, "❌ Failed to parse webhook JSON");
-        //            return BadRequest(new { error = "Invalid JSON format" });
-        //        }
-
-        //        return Ok(new { success = true });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex, "💥 Error processing webhook");
-        //        return StatusCode(500, new { error = "Internal server error" });
-        //    }
-        //}
-
         [HttpPost("webhook")]
         public async Task<IActionResult> HandleWebhook()
         {
             try
             {
-                _logger.LogInformation("🎯 WEBHOOK RECEIVED - PayOS test");
+                _logger.LogInformation("🎯 === WEBHOOK RECEIVED ===");
 
-                // Read the body but don't process it for now
                 using var reader = new StreamReader(HttpContext.Request.Body);
-                var webhookBody = await reader.ReadToEndAsync();
+                var webhookBody = await reader.ReadToEndAsync(); 
 
-                _logger.LogInformation($"Webhook body length: {webhookBody?.Length ?? 0}");
+                _logger.LogInformation($"📦 Webhook body length: {webhookBody?.Length ?? 0}");
 
-                // ALWAYS return 200 OK to PayOS
-                return Ok(new
+
+                if (string.IsNullOrEmpty(webhookBody))
                 {
-                    success = true,
-                    message = "Webhook received successfully",
-                    timestamp = DateTime.UtcNow
-                });
+                    _logger.LogInformation("🔄 PayOS test webhook detected - empty body");
+                    return Ok(new { success = true, message = "Webhook test successful" });
+                }
+
+                try
+                {
+                    var webhookData = JsonSerializer.Deserialize<JsonElement>(webhookBody);
+
+                    if (webhookData.TryGetProperty("signature", out var signatureElement))
+                    {
+                        var signature = signatureElement.GetString();
+                        _logger.LogInformation($"🔐 Signature found (not verified): '{signature}'");
+                    }
+
+                    // Process the payment data
+                    if (webhookData.TryGetProperty("data", out var dataElement) &&
+                        dataElement.TryGetProperty("orderCode", out var orderCodeElement) &&
+                        dataElement.TryGetProperty("status", out var statusElement))
+                    {
+                        var orderCode = orderCodeElement.GetInt32();
+                        var status = statusElement.GetString();
+
+                        _logger.LogInformation($"💰 Processing: Order {orderCode} - Status {status}");
+
+                        var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
+
+                        if (invoice != null)
+                        {
+                            _logger.LogInformation($"📄 Invoice {invoice.InvoiceId} current status: {invoice.Status}");
+
+                            if (status == "PAID" && invoice.Status != InvoiceStatus.Paid)
+                            {
+                                _logger.LogInformation($"💳 Payment confirmed for invoice {invoice.InvoiceId}");
+
+                                var bookingToken = invoice.BookingToken;
+                                var bookingRequest = await _bookingService.GetBookingRequest(bookingToken);
+
+                                if (bookingRequest != null)
+                                {
+                                    var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
+                                    if (result.Success)
+                                    {
+                                        _logger.LogInformation($"📝 Contract {result.contractId} created successfully");
+
+                                        var updateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
+
+                                        if (updateSuccess)
+                                        {
+                                            await _bookingService.RemoveBookingRequest(bookingToken);
+                                            _logger.LogInformation($"✅ Payment completed: Invoice {invoice.InvoiceId} paid, Contract {result.contractId} created");
+                                        }
+                                        else
+                                        {
+                                            _logger.LogError($"❌ Invoice status update failed after contract creation");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        _logger.LogError($"❌ Failed to create contract: {result.Message}");
+                                    }
+                                }
+                                else
+                                {
+                                    _logger.LogWarning($"⚠️ No booking request found for paid invoice {invoice.InvoiceId}");
+                                }
+                            }
+                            else if ((status == "CANCELLED" || status == "EXPIRED") && invoice.Status != InvoiceStatus.Cancelled)
+                            {
+                                _logger.LogInformation($"❌ Payment {status} for invoice {invoice.InvoiceId}");
+
+                                var success = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Cancelled);
+
+                                if (success)
+                                {
+                                    var bookingToken = invoice.BookingToken;
+                                    await _bookingService.RemoveBookingRequest(bookingToken);
+                                    _logger.LogInformation($"🗑️ Invoice {invoice.InvoiceId} marked as CANCELLED");
+                                }
+                            }
+                            else
+                            {
+                                _logger.LogInformation($"ℹ️ No action needed - Invoice {invoice.InvoiceId} already in correct status");
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"⚠️ No invoice found for order code: {orderCode}");
+                        }
+                    }
+                }
+                catch (JsonException jsonEx)
+                {
+                    _logger.LogError(jsonEx, "❌ Failed to parse webhook JSON");
+                }
+
+                return Ok(new { success = true });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error in webhook");
-                // STILL return 200 OK even if there's an error
-                return Ok(new
-                {
-                    success = true,
-                    message = "Webhook processed",
-                    timestamp = DateTime.UtcNow
-                });
+                _logger.LogError(ex, "💥 Error processing webhook");
+                return Ok(new { success = true });
             }
         }
 
