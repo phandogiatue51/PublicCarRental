@@ -13,6 +13,12 @@ namespace PublicCarRental.Application.Service.PDF
         private readonly ILogger<ReceiptGenerationProducerService> _logger;
         private readonly string _queueName = "receipt_generation_queue";
 
+        public ReceiptGenerationProducerService(BaseMessageProducer messageProducer, ILogger<ReceiptGenerationProducerService> logger)
+        {
+            _messageProducer = messageProducer;
+            _logger = logger;
+        }
+
         public async Task PublishReceiptGenerationAsync(int invoiceId, int contractId, int renterId)
         {
             var receiptEvent = new ReceiptGenerationEvent
