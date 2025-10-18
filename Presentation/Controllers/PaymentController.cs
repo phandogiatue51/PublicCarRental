@@ -50,6 +50,116 @@ namespace PublicCarRental.Presentation.Controllers
             }
         }
 
+        //[HttpPost("webhook")]
+        //public async Task<IActionResult> HandleWebhook()
+        //{
+        //    string webhookBody = null;
+        //    try
+        //    {
+        //        _logger.LogInformation("🎯 === WEBHOOK RECEIVED ===");
+
+        //        using var reader = new StreamReader(HttpContext.Request.Body);
+        //        webhookBody = await reader.ReadToEndAsync();
+
+        //        _logger.LogInformation($"📦 Webhook body length: {webhookBody?.Length ?? 0}");
+
+        //        if (string.IsNullOrEmpty(webhookBody))
+        //        {
+        //            _logger.LogInformation("🔄 PayOS test webhook detected - empty body");
+        //            return Ok(new { success = true, message = "Webhook test successful" });
+        //        }
+
+        //        try
+        //        {
+        //            var webhookData = JsonSerializer.Deserialize<JsonElement>(webhookBody);
+        //            _logger.LogInformation("✅ Successfully parsed webhook JSON");
+
+        //            if (webhookData.TryGetProperty("signature", out var signatureElement))
+        //            {
+        //                var signature = signatureElement.GetString();
+        //                _logger.LogInformation($"🔐 Signature found (not verified): '{signature}'");
+        //            }
+
+        //            // Process the payment data
+        //            if (webhookData.TryGetProperty("data", out var dataElement))
+        //            {
+        //                _logger.LogInformation("✅ Found 'data' property in webhook");
+
+        //                if (dataElement.TryGetProperty("orderCode", out var orderCodeElement) &&
+        //                    dataElement.TryGetProperty("status", out var statusElement))
+        //                {
+        //                    var orderCode = orderCodeElement.GetInt32();
+        //                    var status = statusElement.GetString();
+
+        //                    _logger.LogInformation($"💰 Processing: Order {orderCode} - Status {status}");
+
+        //                    var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
+        //                    _logger.LogInformation($"📄 Invoice lookup result: {(invoice != null ? $"Found invoice {invoice.InvoiceId}" : "NOT FOUND")}");
+
+        //                    if (invoice != null)
+        //                    {
+        //                        _logger.LogInformation($"📄 Invoice {invoice.InvoiceId} current status: {invoice.Status}");
+
+        //                        if (status == "PAID" && invoice.Status != InvoiceStatus.Paid)
+        //                        {
+        //                            _logger.LogInformation($"💳 Payment confirmed for invoice {invoice.InvoiceId}");
+
+        //                            var bookingToken = invoice.BookingToken;
+        //                            _logger.LogInformation($"🔑 Booking token: {bookingToken}");
+
+        //                            var bookingRequest = await _bookingService.GetBookingRequest(bookingToken);
+        //                            _logger.LogInformation($"📋 Booking request: {(bookingRequest != null ? "FOUND" : "NOT FOUND")}");
+
+        //                            if (bookingRequest != null)
+        //                            {
+        //                                _logger.LogInformation("🚀 Calling ConfirmBookingAfterPaymentAsync...");
+        //                                var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
+        //                                _logger.LogInformation($"📝 Contract creation result: Success={result.Success}, ContractId={result.contractId}, Message={result.Message}");
+
+        //                                if (result.Success)
+        //                                {
+        //                                    _logger.LogInformation("🔄 Updating invoice status...");
+        //                                    var updateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
+        //                                    _logger.LogInformation($"📊 Invoice status update: {updateSuccess}");
+
+        //                                    if (updateSuccess)
+        //                                    {
+        //                                        await _bookingService.RemoveBookingRequest(bookingToken);
+        //                                        _logger.LogInformation($"✅ Payment completed: Invoice {invoice.InvoiceId} paid, Contract {result.contractId} created");
+        //                                    }
+        //                                }
+        //                            }
+        //                        }
+        //                        else
+        //                        {
+        //                            _logger.LogInformation($"ℹ️ No action needed - Status: {status}, Invoice already: {invoice.Status}");
+        //                        }
+        //                    }
+        //                }
+        //                else
+        //                {
+        //                    _logger.LogWarning("❌ Missing orderCode or status in data");
+        //                }
+        //            }
+        //            else
+        //            {
+        //                _logger.LogWarning("❌ No 'data' property found in webhook");
+        //            }
+        //        }
+        //        catch (JsonException jsonEx)
+        //        {
+        //            _logger.LogError(jsonEx, "❌ Failed to parse webhook JSON");
+        //        }
+
+        //        return Ok(new { success = true });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "💥 Error processing webhook");
+        //        return Ok(new { success = true });
+        //    }
+        //}
+
         [HttpPost("webhook")]
         public async Task<IActionResult> HandleWebhook()
         {
@@ -61,7 +171,7 @@ namespace PublicCarRental.Presentation.Controllers
                 using var reader = new StreamReader(HttpContext.Request.Body);
                 webhookBody = await reader.ReadToEndAsync();
 
-                _logger.LogInformation($"📦 Webhook body length: {webhookBody?.Length ?? 0}");
+                _logger.LogInformation($"📦 Webhook body: {webhookBody}"); // Just log the full JSON
 
                 if (string.IsNullOrEmpty(webhookBody))
                 {
@@ -72,79 +182,56 @@ namespace PublicCarRental.Presentation.Controllers
                 try
                 {
                     var webhookData = JsonSerializer.Deserialize<JsonElement>(webhookBody);
-                    _logger.LogInformation("✅ Successfully parsed webhook JSON");
 
-                    if (webhookData.TryGetProperty("signature", out var signatureElement))
-                    {
-                        var signature = signatureElement.GetString();
-                        _logger.LogInformation($"🔐 Signature found (not verified): '{signature}'");
-                    }
+                    // SIMPLE APPROACH: Just extract orderCode and status directly
+                    int orderCode = 0;
+                    string status = null;
 
-                    // Process the payment data
+                    // Method 1: Try to get from data property first
                     if (webhookData.TryGetProperty("data", out var dataElement))
                     {
-                        _logger.LogInformation("✅ Found 'data' property in webhook");
+                        _logger.LogInformation("🔍 Found 'data' property, checking inside...");
 
-                        if (dataElement.TryGetProperty("orderCode", out var orderCodeElement) &&
-                            dataElement.TryGetProperty("status", out var statusElement))
+                        if (dataElement.TryGetProperty("orderCode", out var orderCodeElement))
                         {
-                            var orderCode = orderCodeElement.GetInt32();
-                            var status = statusElement.GetString();
-
-                            _logger.LogInformation($"💰 Processing: Order {orderCode} - Status {status}");
-
-                            var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
-                            _logger.LogInformation($"📄 Invoice lookup result: {(invoice != null ? $"Found invoice {invoice.InvoiceId}" : "NOT FOUND")}");
-
-                            if (invoice != null)
-                            {
-                                _logger.LogInformation($"📄 Invoice {invoice.InvoiceId} current status: {invoice.Status}");
-
-                                if (status == "PAID" && invoice.Status != InvoiceStatus.Paid)
-                                {
-                                    _logger.LogInformation($"💳 Payment confirmed for invoice {invoice.InvoiceId}");
-
-                                    var bookingToken = invoice.BookingToken;
-                                    _logger.LogInformation($"🔑 Booking token: {bookingToken}");
-
-                                    var bookingRequest = await _bookingService.GetBookingRequest(bookingToken);
-                                    _logger.LogInformation($"📋 Booking request: {(bookingRequest != null ? "FOUND" : "NOT FOUND")}");
-
-                                    if (bookingRequest != null)
-                                    {
-                                        _logger.LogInformation("🚀 Calling ConfirmBookingAfterPaymentAsync...");
-                                        var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
-                                        _logger.LogInformation($"📝 Contract creation result: Success={result.Success}, ContractId={result.contractId}, Message={result.Message}");
-
-                                        if (result.Success)
-                                        {
-                                            _logger.LogInformation("🔄 Updating invoice status...");
-                                            var updateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
-                                            _logger.LogInformation($"📊 Invoice status update: {updateSuccess}");
-
-                                            if (updateSuccess)
-                                            {
-                                                await _bookingService.RemoveBookingRequest(bookingToken);
-                                                _logger.LogInformation($"✅ Payment completed: Invoice {invoice.InvoiceId} paid, Contract {result.contractId} created");
-                                            }
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    _logger.LogInformation($"ℹ️ No action needed - Status: {status}, Invoice already: {invoice.Status}");
-                                }
-                            }
+                            orderCode = orderCodeElement.GetInt32();
+                            _logger.LogInformation($"🔍 Found orderCode in data: {orderCode}");
                         }
-                        else
+
+                        if (dataElement.TryGetProperty("status", out var statusElement))
                         {
-                            _logger.LogWarning("❌ Missing orderCode or status in data");
+                            status = statusElement.GetString();
+                            _logger.LogInformation($"🔍 Found status in data: {status}");
                         }
+                    }
+
+                    // Method 2: If not found in data, try root level
+                    if (orderCode == 0 && webhookData.TryGetProperty("orderCode", out var rootOrderCodeElement))
+                    {
+                        orderCode = rootOrderCodeElement.GetInt32();
+                        _logger.LogInformation($"🔍 Found orderCode in root: {orderCode}");
+                    }
+
+                    if (string.IsNullOrEmpty(status) && webhookData.TryGetProperty("status", out var rootStatusElement))
+                    {
+                        status = rootStatusElement.GetString();
+                        _logger.LogInformation($"🔍 Found status in root: {status}");
+                    }
+
+                    if (orderCode > 0 && !string.IsNullOrEmpty(status))
+                    {
+                        _logger.LogInformation($"💰 PROCESSING: Order {orderCode} - Status {status}");
+
+                        // Your existing processing logic here...
+                        var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
+                        // ... rest of your processing code
+
                     }
                     else
                     {
-                        _logger.LogWarning("❌ No 'data' property found in webhook");
+                        _logger.LogWarning($"❌ Could not extract orderCode and status. OrderCode: {orderCode}, Status: {status}");
                     }
+
                 }
                 catch (JsonException jsonEx)
                 {
