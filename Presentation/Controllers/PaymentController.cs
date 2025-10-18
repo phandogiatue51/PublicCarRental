@@ -50,116 +50,6 @@ namespace PublicCarRental.Presentation.Controllers
             }
         }
 
-        //[HttpPost("webhook")]
-        //public async Task<IActionResult> HandleWebhook()
-        //{
-        //    string webhookBody = null;
-        //    try
-        //    {
-        //        _logger.LogInformation("🎯 === WEBHOOK RECEIVED ===");
-
-        //        using var reader = new StreamReader(HttpContext.Request.Body);
-        //        webhookBody = await reader.ReadToEndAsync();
-
-        //        _logger.LogInformation($"📦 Webhook body length: {webhookBody?.Length ?? 0}");
-
-        //        if (string.IsNullOrEmpty(webhookBody))
-        //        {
-        //            _logger.LogInformation("🔄 PayOS test webhook detected - empty body");
-        //            return Ok(new { success = true, message = "Webhook test successful" });
-        //        }
-
-        //        try
-        //        {
-        //            var webhookData = JsonSerializer.Deserialize<JsonElement>(webhookBody);
-        //            _logger.LogInformation("✅ Successfully parsed webhook JSON");
-
-        //            if (webhookData.TryGetProperty("signature", out var signatureElement))
-        //            {
-        //                var signature = signatureElement.GetString();
-        //                _logger.LogInformation($"🔐 Signature found (not verified): '{signature}'");
-        //            }
-
-        //            // Process the payment data
-        //            if (webhookData.TryGetProperty("data", out var dataElement))
-        //            {
-        //                _logger.LogInformation("✅ Found 'data' property in webhook");
-
-        //                if (dataElement.TryGetProperty("orderCode", out var orderCodeElement) &&
-        //                    dataElement.TryGetProperty("status", out var statusElement))
-        //                {
-        //                    var orderCode = orderCodeElement.GetInt32();
-        //                    var status = statusElement.GetString();
-
-        //                    _logger.LogInformation($"💰 Processing: Order {orderCode} - Status {status}");
-
-        //                    var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
-        //                    _logger.LogInformation($"📄 Invoice lookup result: {(invoice != null ? $"Found invoice {invoice.InvoiceId}" : "NOT FOUND")}");
-
-        //                    if (invoice != null)
-        //                    {
-        //                        _logger.LogInformation($"📄 Invoice {invoice.InvoiceId} current status: {invoice.Status}");
-
-        //                        if (status == "PAID" && invoice.Status != InvoiceStatus.Paid)
-        //                        {
-        //                            _logger.LogInformation($"💳 Payment confirmed for invoice {invoice.InvoiceId}");
-
-        //                            var bookingToken = invoice.BookingToken;
-        //                            _logger.LogInformation($"🔑 Booking token: {bookingToken}");
-
-        //                            var bookingRequest = await _bookingService.GetBookingRequest(bookingToken);
-        //                            _logger.LogInformation($"📋 Booking request: {(bookingRequest != null ? "FOUND" : "NOT FOUND")}");
-
-        //                            if (bookingRequest != null)
-        //                            {
-        //                                _logger.LogInformation("🚀 Calling ConfirmBookingAfterPaymentAsync...");
-        //                                var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
-        //                                _logger.LogInformation($"📝 Contract creation result: Success={result.Success}, ContractId={result.contractId}, Message={result.Message}");
-
-        //                                if (result.Success)
-        //                                {
-        //                                    _logger.LogInformation("🔄 Updating invoice status...");
-        //                                    var updateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
-        //                                    _logger.LogInformation($"📊 Invoice status update: {updateSuccess}");
-
-        //                                    if (updateSuccess)
-        //                                    {
-        //                                        await _bookingService.RemoveBookingRequest(bookingToken);
-        //                                        _logger.LogInformation($"✅ Payment completed: Invoice {invoice.InvoiceId} paid, Contract {result.contractId} created");
-        //                                    }
-        //                                }
-        //                            }
-        //                        }
-        //                        else
-        //                        {
-        //                            _logger.LogInformation($"ℹ️ No action needed - Status: {status}, Invoice already: {invoice.Status}");
-        //                        }
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    _logger.LogWarning("❌ Missing orderCode or status in data");
-        //                }
-        //            }
-        //            else
-        //            {
-        //                _logger.LogWarning("❌ No 'data' property found in webhook");
-        //            }
-        //        }
-        //        catch (JsonException jsonEx)
-        //        {
-        //            _logger.LogError(jsonEx, "❌ Failed to parse webhook JSON");
-        //        }
-
-        //        return Ok(new { success = true });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex, "💥 Error processing webhook");
-        //        return Ok(new { success = true });
-        //    }
-        //}
-
         [HttpPost("webhook")]
         public async Task<IActionResult> HandleWebhook()
         {
@@ -192,7 +82,6 @@ namespace PublicCarRental.Presentation.Controllers
                     if (webhookData.TryGetProperty("code", out var codeElement))
                     {
                         var code = codeElement.GetString();
-                        // "00" means success/PAID in PayOS webhook
                         status = code == "00" ? "PAID" : "UNKNOWN";
                         _logger.LogInformation($"🔍 Root code: {code} -> Status: {status}");
                     }
@@ -200,24 +89,29 @@ namespace PublicCarRental.Presentation.Controllers
                     if (webhookData.TryGetProperty("success", out var successElement) &&
                         successElement.GetBoolean())
                     {
-                        status = "PAID"; // Override if success is true
+                        status = "PAID";
                         _logger.LogInformation($"🔍 Success is true -> Status: {status}");
                     }
 
-                    if (orderCode > 0 && !string.IsNullOrEmpty(status))
+                    if (orderCode > 0 && !string.IsNullOrEmpty(status) && status == "PAID")
                     {
                         _logger.LogInformation($"💰 PROCESSING: Order {orderCode} - Status {status}");
 
                         var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
                         _logger.LogInformation($"📄 Invoice lookup result: {(invoice != null ? $"Found invoice {invoice.InvoiceId}" : "NOT FOUND")}");
 
-                        if (invoice != null)
+                        if (invoice != null && invoice.Status != InvoiceStatus.Paid)
                         {
                             _logger.LogInformation($"📄 Invoice {invoice.InvoiceId} current status: {invoice.Status}");
 
-                            if (status == "PAID" && invoice.Status != InvoiceStatus.Paid)
+                            // STEP 1: Update invoice status to PAID FIRST
+                            _logger.LogInformation("🔄 STEP 1: Updating invoice status to PAID...");
+                            var invoiceUpdateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
+                            _logger.LogInformation($"📊 Invoice status update: {invoiceUpdateSuccess}");
+
+                            if (invoiceUpdateSuccess)
                             {
-                                _logger.LogInformation($"💳 Payment confirmed for invoice {invoice.InvoiceId}");
+                                _logger.LogInformation("✅ Invoice status updated to PAID");
 
                                 var bookingToken = invoice.BookingToken;
                                 _logger.LogInformation($"🔑 Booking token: {bookingToken}");
@@ -227,35 +121,33 @@ namespace PublicCarRental.Presentation.Controllers
 
                                 if (bookingRequest != null)
                                 {
-                                    _logger.LogInformation("🚀 Calling ConfirmBookingAfterPaymentAsync...");
+                                    // STEP 2: Now create contract (invoice is already PAID)
+                                    _logger.LogInformation("🚀 STEP 2: Calling ConfirmBookingAfterPaymentAsync...");
                                     var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
                                     _logger.LogInformation($"📝 Contract creation result: Success={result.Success}, ContractId={result.contractId}, Message={result.Message}");
 
                                     if (result.Success)
                                     {
-                                        _logger.LogInformation("🔄 Updating invoice status...");
-                                        var updateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
-                                        _logger.LogInformation($"📊 Invoice status update: {updateSuccess}");
-
-                                        if (updateSuccess)
-                                        {
-                                            await _bookingService.RemoveBookingRequest(bookingToken);
-                                            _logger.LogInformation($"✅ Payment completed: Invoice {invoice.InvoiceId} paid, Contract {result.contractId} created");
-                                        }
+                                        // STEP 3: Clean up booking request
+                                        await _bookingService.RemoveBookingRequest(bookingToken);
+                                        _logger.LogInformation($"✅ Payment completed: Invoice {invoice.InvoiceId} paid, Contract {result.contractId} created");
                                     }
                                 }
+                                else
+                                {
+                                    _logger.LogWarning($"⚠️ No booking request found, but invoice marked as PAID");
+                                }
                             }
-                            else
-                            {
-                                _logger.LogInformation($"ℹ️ No action needed - Status: {status}, Invoice already: {invoice.Status}");
-                            }
+                        }
+                        else
+                        {
+                            _logger.LogInformation($"ℹ️ No action needed - Invoice already processed or not found");
                         }
                     }
                     else
                     {
-                        _logger.LogWarning($"❌ Could not extract orderCode and status. OrderCode: {orderCode}, Status: {status}");
+                        _logger.LogWarning($"❌ Invalid orderCode or status. OrderCode: {orderCode}, Status: {status}");
                     }
-
                 }
                 catch (JsonException jsonEx)
                 {
