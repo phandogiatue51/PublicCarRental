@@ -31,6 +31,7 @@
     <PackageReference Include="PayOS" Version="1.0.9" />
     <PackageReference Include="QuestPDF" Version="2025.7.2" />
     <PackageReference Include="RabbitMQ.Client" Version="7.1.2" />
+    <PackageReference Include="SendGrid.Extensions.DependencyInjection" Version="1.0.1" />
     <PackageReference Include="StackExchange.Redis" Version="2.9.25" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
     <PackageReference Include="System.Linq" Version="4.3.0" />

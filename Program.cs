@@ -38,6 +38,7 @@ using PublicCarRental.Infrastructure.Data.Repository.Typ;
 using PublicCarRental.Infrastructure.Data.Repository.Vehi;
 using PublicCarRental.Infrastructure.Helpers;
 using PublicCarRental.Infrastructure.Signal;
+using SendGrid.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text.Json.Serialization;
@@ -172,8 +173,12 @@ builder.Services.AddScoped<IContractGenerationProducerService, ContractGeneratio
 builder.Services.AddHostedService<ReceiptGenerationConsumerService>();
 builder.Services.AddHostedService<ContractGenerationConsumerService>();
 
+builder.Services.AddScoped<IPaymentProcessingService, PaymentProcessingService>();
 
-
+builder.Services.AddSendGrid(options =>
+{
+    options.ApiKey = builder.Configuration["EmailSettings:Password"];
+});
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = jwtSettings["Key"];

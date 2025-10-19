@@ -1,10 +1,12 @@
 ﻿using MailKit.Net.Smtp;
 using MailKit.Security;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using MimeKit;
 using PublicCarRental.Application.DTOs.Message;
-using System.Net;
+using SendGrid;
+using SendGrid.Helpers.Mail;
+using EmailAddress = SendGrid.Helpers.Mail.EmailAddress;
+using EmailMessage = PublicCarRental.Application.DTOs.Message.EmailMessage;
+using Task = System.Threading.Tasks.Task;
 
 namespace PublicCarRental.Application.Service.Email
 {
@@ -12,69 +14,83 @@ namespace PublicCarRental.Application.Service.Email
     {
         private readonly IConfiguration _config;
         private readonly ILogger<EmailService> _logger;
+        private readonly ISendGridClient _sendGridClient;
 
-        public EmailService(IConfiguration config, ILogger<EmailService> logger)
+        public EmailService(IConfiguration config, ILogger<EmailService> logger, ISendGridClient sendGridClient = null)
         {
             _config = config;
             _logger = logger;
+            _sendGridClient = sendGridClient;
         }
 
-        private async Task<bool> SendEmailAsync(Func<MimeMessage> createMessage, int maxRetries = 3)
+        private async Task<bool> SendEmailAsync(Func<MimeMessage> createMessage, int maxRetries = 2)
+        {
+            // Try SMTP first
+            var smtpSuccess = await TrySendViaSmtpAsync(createMessage, maxRetries);
+            if (smtpSuccess)
+            {
+                _logger.LogInformation("✅ Email sent successfully via SMTP");
+                return true;
+            }
+
+            // Fall back to SendGrid API if SMTP fails
+            if (_sendGridClient != null)
+            {
+                _logger.LogInformation("🔄 SMTP failed, trying SendGrid API...");
+                var apiSuccess = await TrySendViaSendGridApiAsync(createMessage);
+                if (apiSuccess)
+                {
+                    _logger.LogInformation("✅ Email sent successfully via SendGrid API");
+                    return true;
+                }
+            }
+
+            _logger.LogError("❌ All email delivery methods failed");
+            return false;
+        }
+
+        private async Task<bool> TrySendViaSmtpAsync(Func<MimeMessage> createMessage, int maxRetries)
         {
             var smtpServer = _config["EmailSettings:SmtpServer"];
             var port = int.Parse(_config["EmailSettings:Port"] ?? "587");
             var username = _config["EmailSettings:Username"];
             var password = _config["EmailSettings:Password"];
 
-            _logger.LogInformation("🔧 EMAIL CONFIG - Server: {Server}, Port: {Port}, Username: {Username}",
-                smtpServer, port, username);
-
             for (int attempt = 0; attempt < maxRetries; attempt++)
             {
                 using var client = new SmtpClient();
-
                 try
                 {
-                    _logger.LogInformation("📧 ATTEMPT {Attempt} - Creating message...", attempt + 1);
-                    var message = createMessage();
+                    _logger.LogInformation("📧 SMTP Attempt {Attempt} - Connecting to {Server}:{Port}",
+                        attempt + 1, smtpServer, port);
 
-                    client.Timeout = 120000; // 120 seconds
+                    client.Timeout = 30000;
 
-                    _logger.LogInformation("🔗 Connecting to {Server}:{Port}...", smtpServer, port);
+                    await client.ConnectAsync(smtpServer, port, SecureSocketOptions.StartTls);
+                    _logger.LogInformation("✅ SMTP Connected");
 
-                    await client.ConnectAsync(smtpServer, port, MailKit.Security.SecureSocketOptions.StartTls);
-                    _logger.LogInformation("✅ CONNECTED to SMTP server");
-
-                    _logger.LogInformation("🔐 Authenticating...");
                     await client.AuthenticateAsync(username, password);
-                    _logger.LogInformation("✅ AUTHENTICATED successfully");
+                    _logger.LogInformation("✅ SMTP Authenticated");
 
-                    _logger.LogInformation("📤 Sending email to {To}...", message.To.ToString());
+                    var message = createMessage();
                     await client.SendAsync(message);
-                    _logger.LogInformation("🎉 EMAIL SENT SUCCESSFULLY!");
-
                     await client.DisconnectAsync(true);
+
                     return true;
                 }
                 catch (TimeoutException ex)
                 {
-                    _logger.LogWarning(ex, "⏰ SMTP TIMEOUT on attempt {Attempt}", attempt + 1);
-                    if (attempt == maxRetries - 1)
-                    {
-                        _logger.LogError("❌ All attempts failed due to timeout");
-                        return false;
-                    }
-                    var delay = TimeSpan.FromSeconds(Math.Pow(3, attempt)); // 3, 9, 27 seconds
-                    _logger.LogInformation("⏳ Waiting {DelaySeconds}s before retry...", delay.TotalSeconds);
-                    await Task.Delay(delay);
+                    _logger.LogWarning("⏰ SMTP timeout on attempt {Attempt}", attempt + 1);
+                    if (attempt == maxRetries - 1) return false;
+
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "❌ Error on attempt {Attempt}", attempt + 1);
+                    _logger.LogWarning("❌ SMTP error on attempt {Attempt}: {Message}", attempt + 1, ex.Message);
                     if (attempt == maxRetries - 1) return false;
 
-                    var delay = TimeSpan.FromSeconds(Math.Pow(3, attempt));
-                    await Task.Delay(delay);
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)));
                 }
                 finally
                 {
@@ -83,6 +99,83 @@ namespace PublicCarRental.Application.Service.Email
                 }
             }
             return false;
+        }
+
+        private async Task<bool> TrySendViaSendGridApiAsync(Func<MimeMessage> createMessage)
+        {
+            try
+            {
+                var message = createMessage();
+
+                var fromEmail = _config["EmailSettings:SenderEmail"];
+                var fromName = _config["EmailSettings:SenderName"];
+                var toEmail = message.To.Mailboxes.FirstOrDefault()?.Address;
+                var subject = message.Subject;
+
+                // Extract HTML body from MimeMessage
+                string htmlContent = "Please view this email in an HTML-compatible email client.";
+                if (message.Body is TextPart textPart)
+                {
+                    htmlContent = textPart.Text;
+                }
+                else if (message.Body is Multipart multipart)
+                {
+                    foreach (var part in multipart)
+                    {
+                        if (part is TextPart htmlPart && htmlPart.IsHtml)
+                        {
+                            htmlContent = htmlPart.Text;
+                            break;
+                        }
+                    }
+                }
+
+                var msg = new SendGridMessage()
+                {
+                    From = new EmailAddress(fromEmail, fromName),
+                    Subject = subject,
+                    PlainTextContent = "Please view this email in an HTML-compatible email client.",
+                    HtmlContent = htmlContent
+                };
+                msg.AddTo(new EmailAddress(toEmail));
+
+                // Handle attachments
+                if (message.Body is Multipart multipartWithAttachments)
+                {
+                    foreach (var part in multipartWithAttachments)
+                    {
+                        if (part is MimePart attachment && attachment.IsAttachment)
+                        {
+                            using var stream = new MemoryStream();
+                            await attachment.Content.DecodeToAsync(stream);
+                            var fileBytes = stream.ToArray();
+                            var fileName = attachment.FileName;
+
+                            msg.AddAttachment(fileName, Convert.ToBase64String(fileBytes));
+                        }
+                    }
+                }
+
+                var response = await _sendGridClient.SendEmailAsync(msg);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("✅ SendGrid API: Email sent to {ToEmail}", toEmail);
+                    return true;
+                }
+                else
+                {
+                    var error = await response.Body.ReadAsStringAsync();
+                    _logger.LogError("❌ SendGrid API error: {StatusCode} - {Error}",
+                        response.StatusCode, error);
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ SendGrid API failed");
+                return false;
+            }
         }
 
         public async Task SendVerificationEmail(string toEmail, string token)
@@ -181,7 +274,7 @@ namespace PublicCarRental.Application.Service.Email
             await SendEmailAsync(CreateMessage); 
         }
 
-        public async Task SendAttachment(EmailMessage emailMessage)
+        public async Task SendAttachment(DTOs.Message.EmailMessage emailMessage)
         {
             var senderName = _config["EmailSettings:SenderName"];
             var senderEmail = _config["EmailSettings:SenderEmail"];

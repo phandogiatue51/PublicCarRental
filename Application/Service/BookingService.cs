@@ -100,7 +100,7 @@ public class BookingService : IBookingService
                 _distributedLock.ReleaseLock(lockKey);
             });
 
-            return (true, "Please proceed to payment", invoice.InvoiceId, bookingToken);
+            return (true, "Booking request created successfully!", invoice.InvoiceId, bookingToken);
         }
         catch (Exception ex)
         {
