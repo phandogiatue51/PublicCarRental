@@ -137,7 +137,7 @@ const BookingSummaryModal = ({ isOpen, onClose, bookingSummary, onConfirm }) => 
                                 <HStack justify="space-between">
                                     <Text fontWeight="bold" fontSize="xl">💰 Total Cost:</Text>
                                     <Text fontWeight="bold" fontSize="xl" color="green.600" bg="green.50" px={3} py={1} borderRadius="md">
-                                        ${parseFloat(bookingSummary.totalCost || 0).toFixed(2)}
+                                        {parseInt(bookingSummary.totalCost || 0).toLocaleString()} VND
                                     </Text>
                                 </HStack>
 
