@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'https://localhost:7230/api'
+  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
 
 // Generic API request function
@@ -333,5 +333,27 @@ export const invoiceAPI = {
   // Get invoice by ID
   getById: (id) => apiRequest(`/Invoice/${id}`),
 };
+
+// Booking API
+export const bookingAPI = {
+    // Create booking request
+    createBooking: (bookingData) => apiRequest('/Booking/request', {
+        method: 'POST',
+        body: JSON.stringify(bookingData)
+    }),
+    
+    // Get booking summary by token
+    getBookingSummary: (bookingToken) => apiRequest(`/Booking/summary/${bookingToken}`),
+};
+
+// Payment API
+export const paymentAPI = {
+    // Create payment
+    createPayment: (paymentData) => apiRequest('/Payment/create-payment', {
+        method: 'POST',
+        body: JSON.stringify(paymentData)
+    }),
+};
+
 
 export default apiRequest;
