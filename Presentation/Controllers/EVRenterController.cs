@@ -31,6 +31,13 @@ public class EVRenterController : ControllerBase
         return Ok(renters);
     }
 
+    [HttpGet("filter-by-param/{param}")]
+    public IActionResult FilterParam(string param)
+    {
+        var renters = _eVRenterService.FilterByParam(param);
+        return Ok(renters);
+    }
+
     [HttpGet("{id}")]
     public async Task<IActionResult> GetByIdAsync(int id)
     {

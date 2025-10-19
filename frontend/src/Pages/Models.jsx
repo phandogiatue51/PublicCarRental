@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
+import axios from "axios";
 import { Link } from "react-router-dom";
 import HeroPages from "../components/HeroPages";
 import Footer from "../components/Footer";
-import { modelAPI, brandAPI, typeAPI, stationAPI } from "../services/api";
 import "../styles/Model.css"; 
 
 function Models() {
@@ -11,45 +11,29 @@ function Models() {
   const [types, setTypes] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
-  const [station, setStation] = useState([]);
-  const [selectedStation, setSelectedStation] = useState(null);
 
   useEffect(() => {
-    // Fetch brands, types, and stations for dropdowns
-    const fetchData = async () => {
-      try {
-        const [brandsRes, typesRes, stationsRes] = await Promise.all([
-          brandAPI.getAll(),
-          typeAPI.getAll(),
-          stationAPI.getAll()
-        ]);
-        setBrands(brandsRes);
-        setTypes(typesRes);
-        setStation(stationsRes);
-      } catch (error) {
-        console.error("Failed to fetch filter data", error);
-      }
-    };
-    fetchData();
+    // Fetch brands and types for dropdowns
+    axios.get("https://publiccarrental-production-b7c5.up.railway.app/api/Brand/get-all").then((res) => setBrands(res.data));
+    axios.get("https://publiccarrental-production-b7c5.up.railway.app/api/Type/get-all").then((res) => setTypes(res.data));
   }, []);
 
   useEffect(() => {
-    // Fetch models based on selected filters
-    const fetchModels = async () => {
-      try {
-        const modelsData = await modelAPI.filterModels(selectedBrand, selectedType, selectedStation);
-        setModels(modelsData);
-      } catch (error) {
-        console.error("Failed to fetch models", error);
-      }
-    };
-    fetchModels();
-  }, [selectedBrand, selectedType, selectedStation]);
+    // Fetch models based on selected brand and type
+    axios
+      .get("https://publiccarrental-production-b7c5.up.railway.app/api/Model/from-brand-and-type", {
+        params: {
+          brandId: selectedBrand,
+          typeId: selectedType,
+        },
+      })
+      .then((res) => setModels(res.data))
+      .catch((err) => console.error("Failed to fetch models", err));
+  }, [selectedBrand, selectedType]);
 
   const clearFilters = () => {
     setSelectedBrand(null);
     setSelectedType(null);
-    setSelectedStation(null);
   };
 
   return (
@@ -102,26 +86,6 @@ function Models() {
                   <i className="fa-solid fa-chevron-down dropdown-arrow"></i>
                 </div>
               </div>
-              
-               <div className="filter-group">
-                <div className="filter-input-wrapper">
-                  <i className="fa-solid fa-map-marker-alt filter-icon"></i>
-                  <select 
-                    className="filter-select"
-                    onChange={(e) => setSelectedStation(e.target.value || null)}
-                    value={selectedStation || ''}
-                  >
-                    <option value="">All Stations</option>
-                    {station.map((s) => (
-                      <option key={s.stationId} value={s.stationId}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                  <i className="fa-solid fa-chevron-down dropdown-arrow"></i>
-                </div>
-              </div>
-
 
               <button 
                 className="clear-filters-btn"
@@ -154,13 +118,9 @@ function Models() {
                       </div>
                     </div>
                     <div className="models-div__box__descr__name-price__btn">
-                      <Link
-                        onClick={() => window.scrollTo(0, 0)}
-                        to={`/models/${model.modelId}`}
-                      >
-                        View Model
+                      <Link onClick={() => window.scrollTo(0, 0)} to="/">
+                        Book Ride
                       </Link>
-
                     </div>
                   </div>
                 </div>
