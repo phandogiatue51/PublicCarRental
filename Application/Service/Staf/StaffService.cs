@@ -116,7 +116,24 @@ namespace PublicCarRental.Application.Service.Staf
 
         public IEnumerable<StaffReadDto> FilterByParamNStation(string param, int stationId)
         {
-            if (string.IsNullOrWhiteSpace(param)) param = string.Empty;
+            if (string.IsNullOrWhiteSpace(param)) 
+            {
+                // If no search param, return all staff in the station
+                return _staffRepo.GetAll()
+                    .Where(s => s.Account != null && s.StationId == stationId)
+                    .Select(s => new StaffReadDto
+                    {
+                        StaffId = s.StaffId,
+                        AccountId = s.AccountId,
+                        FullName = s.Account.FullName,
+                        Email = s.Account.Email,
+                        PhoneNumber = s.Account.PhoneNumber,
+                        StationId = s.StationId,
+                        Status = s.Account.Status,
+                        IdentityCardNumber = s.Account.IdentityCardNumber
+                    }).ToList();
+            }
+
             var p = param.Trim().ToLower();
 
             return _staffRepo.GetAll()
@@ -137,6 +154,29 @@ namespace PublicCarRental.Application.Service.Staf
                     Status = s.Account.Status,
                     IdentityCardNumber = s.Account.IdentityCardNumber
                 }).ToList();
+        }
+
+        public IEnumerable<StaffReadDto> FilterByContractStatus(int stationId, RentalStatus? contractStatus)
+        {
+            var query = _staffRepo.GetAll()
+                .Where(s => s.Account != null && s.StationId == stationId);
+
+            if (contractStatus.HasValue)
+            {
+                query = query.Where(s => s.RentalContracts != null && s.RentalContracts.Any(rc => rc.Status == contractStatus.Value));
+            }
+
+            return query.Select(s => new StaffReadDto
+            {
+                StaffId = s.StaffId,
+                AccountId = s.AccountId,
+                FullName = s.Account.FullName,
+                Email = s.Account.Email,
+                PhoneNumber = s.Account.PhoneNumber,
+                StationId = s.StationId,
+                Status = s.Account.Status,
+                IdentityCardNumber = s.Account.IdentityCardNumber
+            }).ToList();
         }
     }
 }

@@ -14,5 +14,6 @@ namespace PublicCarRental.Application.Service.Staf
         public bool DeleteStaff(int id);
         public bool ChangeStatus(int staffId);
         public IEnumerable<StaffReadDto> FilterByParamNStation(string param, int stationId);
+        public IEnumerable<StaffReadDto> FilterByContractStatus(int stationId, RentalStatus? contractStatus);
     }
 }

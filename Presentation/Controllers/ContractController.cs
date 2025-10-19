@@ -104,6 +104,13 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(contracts);
         }
 
+        [HttpGet("filter-by-status/{status}")]
+        public IActionResult FilterByStatus(RentalStatus status)
+        {
+            var contracts = _contractService.FilterByStatus(status);
+            return Ok(contracts);
+        }
+
         [HttpGet("contracts/{contractId}/pdf")]
         [Authorize]
         public IActionResult DownloadContractPdf(int contractId)

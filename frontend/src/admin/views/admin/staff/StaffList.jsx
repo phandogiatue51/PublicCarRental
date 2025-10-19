@@ -1,15 +1,17 @@
 /* eslint-disable */
 
 import {
-  Box,  Button,  Flex,  Icon,  Table,  Tbody,  Td,  Text,  Th,  Thead,  Tr,  useColorModeValue,  Spinner,  Alert,  AlertIcon,
-  AlertTitle,  AlertDescription,  Badge,  Select,  HStack,  VStack,  Modal,  ModalOverlay,  ModalContent,  ModalHeader,
-  ModalFooter,  ModalBody,  ModalCloseButton,  FormControl,  FormLabel,  Input,  useToast,  useDisclosure,} from '@chakra-ui/react';
+  Box, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue, Spinner, Alert, AlertIcon,
+  AlertTitle, AlertDescription, Badge, Select, HStack, VStack, Modal, ModalOverlay, ModalContent, ModalHeader,
+  ModalFooter, ModalBody, ModalCloseButton, FormControl, FormLabel, Input, useToast, useDisclosure, InputGroup,
+  InputLeftElement, Divider,
+} from '@chakra-ui/react';
 import {
-  createColumnHelper,  flexRender,  getCoreRowModel,  getSortedRowModel,  useReactTable,
+  createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable,
 } from '@tanstack/react-table';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { staffAPI, stationAPI } from '../../../../services/api';
-import { MdEdit, MdDelete, MdAdd, MdChevronLeft, MdChevronRight, MdPerson, MdEmail, MdPhone, MdLocationOn, MdToggleOn, MdToggleOff } from 'react-icons/md';
+import { MdEdit, MdDelete, MdAdd, MdChevronLeft, MdChevronRight, MdPerson, MdEmail, MdPhone, MdLocationOn, MdToggleOn, MdToggleOff, MdSearch, MdFilterList, MdClear } from 'react-icons/md';
 
 // Custom components
 import Card from '../../../components/card/Card';
@@ -26,12 +28,18 @@ export default function StaffList() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [stations, setStations] = useState([]);
   const toast = useToast();
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
-  
+
+  // Search and filter state
+  const [searchParam, setSearchParam] = useState('');
+  const [selectedStationId, setSelectedStationId] = useState('');
+  const [contractStatusFilter, setContractStatusFilter] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const brandColor = useColorModeValue('brand.500', 'white');
@@ -51,6 +59,72 @@ export default function StaffList() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Search staff by parameter within station
+  const searchStaff = async () => {
+    if (!selectedStationId) {
+      toast({
+        title: 'Warning',
+        description: 'Please select a station first',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      setError(null);
+      const response = await staffAPI.searchByParam(searchParam, selectedStationId);
+      console.log('Search response:', response);
+      setStaff(response || []);
+      setTotalItems(response?.length || 0);
+      setCurrentPage(1); // Reset to first page
+    } catch (err) {
+      console.error('Error searching staff:', err);
+      setError(err.message || 'Failed to search staff');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Filter staff by contract status within station
+  const filterByContractStatus = async () => {
+    if (!selectedStationId) {
+      toast({
+        title: 'Warning',
+        description: 'Please select a station first',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      setError(null);
+      const response = await staffAPI.filterByContractStatus(selectedStationId, contractStatusFilter);
+      console.log('Filter response:', response);
+      setStaff(response || []);
+      setTotalItems(response?.length || 0);
+      setCurrentPage(1); // Reset to first page
+    } catch (err) {
+      console.error('Error filtering staff:', err);
+      setError(err.message || 'Failed to filter staff');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Clear search and filters
+  const clearFilters = () => {
+    setSearchParam('');
+    setContractStatusFilter('');
+    setSelectedStationId('');
+    fetchStaff(); // Reload all staff
   };
 
   // Fetch stations for dropdown
@@ -74,7 +148,7 @@ export default function StaffList() {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const paginatedStaff = staff.slice(startIndex, endIndex);
-    
+
     return {
       totalPages,
       startIndex,
@@ -307,19 +381,19 @@ export default function StaffList() {
         const status = info.getValue();
         const staffId = info.row.original.staffId;
         const isActive = status === 0;
-        
+
         return (
           <Flex align="center">
-           <Button
-                fontSize="4xl"
-                leftIcon={<Icon as={isActive ? MdToggleOn : MdToggleOff} boxSize={8} />}
-                colorScheme={isActive ? "green" : "red"}
-                variant="ghost"
-                onClick={() => handleStatusToggle(staffId, status)}
-                _hover={{
-                    bg: isActive ? "green.50" : "red.50"
-                }}
-                >
+            <Button
+              fontSize="4xl"
+              leftIcon={<Icon as={isActive ? MdToggleOn : MdToggleOff} boxSize={8} />}
+              colorScheme={isActive ? "green" : "red"}
+              variant="ghost"
+              onClick={() => handleStatusToggle(staffId, status)}
+              _hover={{
+                bg: isActive ? "green.50" : "red.50"
+              }}
+            >
             </Button>
           </Flex>
         );
@@ -388,7 +462,7 @@ export default function StaffList() {
   const pageNumbers = useMemo(() => {
     const maxVisiblePages = 5;
     const pages = [];
-    
+
     if (totalPages <= maxVisiblePages) {
       // Show all pages if total is 5 or less
       for (let i = 1; i <= totalPages; i++) {
@@ -397,7 +471,7 @@ export default function StaffList() {
     } else {
       // Smart pagination logic
       let startPage, endPage;
-      
+
       if (currentPage <= 3) {
         startPage = 1;
         endPage = maxVisiblePages;
@@ -408,12 +482,12 @@ export default function StaffList() {
         startPage = currentPage - 2;
         endPage = currentPage + 2;
       }
-      
+
       for (let i = startPage; i <= endPage; i++) {
         pages.push(i);
       }
     }
-    
+
     return pages;
   }, [currentPage, totalPages]);
 
@@ -475,6 +549,106 @@ export default function StaffList() {
           </Button>
         </Flex>
 
+        {/* Search and Filter Controls */}
+        <Card>
+          <Box p={6}>
+            <VStack spacing={4} align="stretch">
+              <Text color={textColor} fontSize="lg" fontWeight="600">
+                Search & Filter Staff
+              </Text>
+
+              <HStack spacing={4} wrap="wrap">
+                {/* Station Selection */}
+                <FormControl minW="200px">
+                  <FormLabel fontSize="sm" color="gray.600">Station</FormLabel>
+                  <Select
+                    value={selectedStationId}
+                    onChange={(e) => setSelectedStationId(e.target.value)}
+                    placeholder="Select station"
+                    size="sm"
+                  >
+                    {stations.map((station) => (
+                      <option key={station.stationId} value={station.stationId}>
+                        {station.name}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Search Input */}
+                <FormControl minW="250px">
+                  <FormLabel fontSize="sm" color="gray.600">Search (Name, Email, Phone)</FormLabel>
+                  <InputGroup size="sm">
+                    <InputLeftElement pointerEvents="none">
+                      <Icon as={MdSearch} color="gray.400" />
+                    </InputLeftElement>
+                    <Input
+                      value={searchParam}
+                      onChange={(e) => setSearchParam(e.target.value)}
+                      placeholder="Enter search term..."
+                      onKeyPress={(e) => e.key === 'Enter' && searchStaff()}
+                    />
+                  </InputGroup>
+                </FormControl>
+
+                {/* Contract Status Filter */}
+                <FormControl minW="200px">
+                  <FormLabel fontSize="sm" color="gray.600">Contract Status</FormLabel>
+                  <Select
+                    value={contractStatusFilter}
+                    onChange={(e) => setContractStatusFilter(e.target.value)}
+                    placeholder="All statuses"
+                    size="sm"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="ToBeConfirmed">To Be Confirmed</option>
+                    <option value="Confirmed">Confirmed</option>
+                    <option value="Active">Active</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </Select>
+                </FormControl>
+              </HStack>
+
+              <HStack spacing={2} justify="flex-start">
+                <Button
+                  leftIcon={<Icon as={MdSearch} />}
+                  colorScheme="blue"
+                  size="sm"
+                  onClick={searchStaff}
+                  isLoading={isSearching}
+                  loadingText="Searching..."
+                  isDisabled={!selectedStationId}
+                >
+                  Search
+                </Button>
+
+                <Button
+                  leftIcon={<Icon as={MdFilterList} />}
+                  colorScheme="purple"
+                  size="sm"
+                  onClick={filterByContractStatus}
+                  isLoading={isSearching}
+                  loadingText="Filtering..."
+                  isDisabled={!selectedStationId}
+                >
+                  Filter by Status
+                </Button>
+
+                <Button
+                  leftIcon={<Icon as={MdClear} />}
+                  colorScheme="gray"
+                  size="sm"
+                  onClick={clearFilters}
+                  variant="outline"
+                >
+                  Clear Filters
+                </Button>
+              </HStack>
+            </VStack>
+          </Box>
+        </Card>
+
         {/* Table Card */}
         <Card>
           <Box>
@@ -500,9 +674,9 @@ export default function StaffList() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                         </Flex>
                       </Th>
                     ))}
@@ -577,7 +751,7 @@ export default function StaffList() {
               >
                 Previous
               </Button>
-              
+
               <HStack spacing={1}>
                 {pageNumbers.map((pageNum) => (
                   <Button
@@ -684,7 +858,7 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!fullName.trim()) {
       toast({
         title: 'Validation Error',
@@ -742,7 +916,7 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
 
     try {
       setLoading(true);
-      
+
       const staffData = {
         fullName: fullName.trim(),
         email: email.trim(),
@@ -755,7 +929,7 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
       if (password.trim()) {
         staffData.password = password.trim();
       }
-      
+
       if (isEdit) {
         const response = await staffAPI.update(staff.staffId, staffData);
         toast({
@@ -775,7 +949,7 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
           isClosable: true,
         });
       }
-      
+
       onSuccess();
       handleClose();
     } catch (error) {
@@ -803,7 +977,7 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
       <ModalContent>
         <ModalHeader>{isEdit ? 'Edit Staff' : 'Add New Staff'}</ModalHeader>
         <ModalCloseButton />
-        
+
         <form onSubmit={handleSubmit}>
           <ModalBody>
             <VStack spacing={4}>
@@ -882,9 +1056,9 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
             <Button variant="ghost" mr={3} onClick={handleClose} disabled={loading || fetchingStaff}>
               Cancel
             </Button>
-            <Button 
-              colorScheme="blue" 
-              type="submit" 
+            <Button
+              colorScheme="blue"
+              type="submit"
               isLoading={loading}
               loadingText={isEdit ? 'Updating...' : 'Creating...'}
               isDisabled={fetchingStaff}
