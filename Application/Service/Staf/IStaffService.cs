@@ -13,5 +13,6 @@ namespace PublicCarRental.Application.Service.Staf
         public bool UpdateStaff(int id, StaffUpdateDto updatedStaff);
         public bool DeleteStaff(int id);
         public bool ChangeStatus(int staffId);
+        public IEnumerable<StaffReadDto> FilterByParamNStation(string param, int stationId);
     }
 }

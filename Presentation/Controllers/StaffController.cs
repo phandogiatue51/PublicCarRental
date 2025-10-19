@@ -85,5 +85,12 @@ namespace PublicCarRental.Presentation.Controllers
             if (!success) return NotFound("Staff not found");
             return Ok($"Staff status changed");
         }
+
+        [HttpGet("filter-by-param-n-station")]
+        public IActionResult FilterParamStation([FromQuery] string param, [FromQuery] int stationId)
+        {
+            var staffList = _staffService.FilterByParamNStation(param, stationId);
+            return Ok(staffList);
+        }
     }
 }
