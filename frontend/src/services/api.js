@@ -348,8 +348,8 @@ export const bookingAPI = {
 
 // Payment API
 export const paymentAPI = {
-    // Create payment link
-    createPaymentLink: (paymentData) => apiRequest('/Payment/Create-Payment-Link', {
+    // Create payment
+    createPayment: (paymentData) => apiRequest('/Payment/create-payment', {
         method: 'POST',
         body: JSON.stringify(paymentData)
     }),

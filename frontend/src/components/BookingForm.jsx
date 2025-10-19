@@ -149,6 +149,7 @@ const BookingForm = ({ modelName, modelId, evRenterId }) => {
                         setBookingSummary({
                             bookingToken: summary.bookingToken,
                             invoiceId: response.invoiceId,
+                            renterId: parseInt(evRenterId) || 1, // Include renterId for payment
                             message: response.message,
                             stationId: summary.stationId,
                             period: summary.period,
@@ -173,6 +174,7 @@ const BookingForm = ({ modelName, modelId, evRenterId }) => {
                         setBookingSummary({
                             bookingToken: response.bookingToken,
                             invoiceId: response.invoiceId,
+                            renterId: parseInt(evRenterId) || 1, // Include renterId for payment
                             message: response.message,
                             fullResponse: response,
                             vehicle: {
