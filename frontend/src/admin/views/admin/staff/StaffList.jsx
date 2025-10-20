@@ -61,23 +61,12 @@ export default function StaffList() {
     }
   };
 
-  // Search staff by parameter within station
+  // Search staff by parameter (optional station filter)
   const searchStaff = async () => {
-    if (!selectedStationId) {
-      toast({
-        title: 'Warning',
-        description: 'Please select a station first',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
     try {
       setIsSearching(true);
       setError(null);
-      const response = await staffAPI.searchByParam(searchParam, selectedStationId);
+      const response = await staffAPI.searchByParam(searchParam, selectedStationId || null);
       console.log('Search response:', response);
       setStaff(response || []);
       setTotalItems(response?.length || 0);
@@ -90,23 +79,12 @@ export default function StaffList() {
     }
   };
 
-  // Filter staff by contract status within station
+  // Filter staff by contract status (optional station filter)
   const filterByContractStatus = async () => {
-    if (!selectedStationId) {
-      toast({
-        title: 'Warning',
-        description: 'Please select a station first',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
     try {
       setIsSearching(true);
       setError(null);
-      const response = await staffAPI.filterByContractStatus(selectedStationId, contractStatusFilter);
+      const response = await staffAPI.filterByContractStatus(selectedStationId || null, contractStatusFilter);
       console.log('Filter response:', response);
       setStaff(response || []);
       setTotalItems(response?.length || 0);

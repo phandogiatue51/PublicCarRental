@@ -212,7 +212,7 @@ export const staffAPI = {
     method: 'POST',
   }),
 
-  // Search staff by parameter within station
+  // Search staff by parameter (optional station filter)
   searchByParam: (param, stationId) => {
     const queryParams = new URLSearchParams();
     if (param) queryParams.append('param', param);
@@ -220,7 +220,7 @@ export const staffAPI = {
     return apiRequest(`/Staff/search-by-param?${queryParams.toString()}`);
   },
 
-  // Filter staff by contract status within station
+  // Filter staff by contract status (optional station filter)
   filterByContractStatus: (stationId, contractStatus) => {
     const queryParams = new URLSearchParams();
     if (stationId) queryParams.append('stationId', stationId);

@@ -87,31 +87,22 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("search-by-param")]
-        public IActionResult SearchByParam([FromQuery] string? param, [FromQuery] int stationId)
+        public IActionResult SearchByParam([FromQuery] string? param, [FromQuery] int? stationId)
         {
-            if (stationId <= 0)
-                return BadRequest("Station ID must be provided and greater than 0");
-
             var staffList = _staffService.FilterByParamNStation(param ?? string.Empty, stationId);
             return Ok(staffList);
         }
 
         [HttpGet("filter-by-param-n-station")]
-        public IActionResult FilterParamStation([FromQuery] string param, [FromQuery] int stationId)
+        public IActionResult FilterParamStation([FromQuery] string? param, [FromQuery] int? stationId)
         {
-            if (stationId <= 0)
-                return BadRequest("Station ID must be provided and greater than 0");
-
             var staffList = _staffService.FilterByParamNStation(param ?? string.Empty, stationId);
             return Ok(staffList);
         }
 
         [HttpGet("filter-by-contract-status")]
-        public IActionResult FilterByContractStatus([FromQuery] int stationId, [FromQuery] string? contractStatus)
+        public IActionResult FilterByContractStatus([FromQuery] int? stationId, [FromQuery] string? contractStatus)
         {
-            if (stationId <= 0)
-                return BadRequest("Station ID must be provided and greater than 0");
-
             RentalStatus? status = null;
             if (!string.IsNullOrEmpty(contractStatus) && Enum.TryParse<RentalStatus>(contractStatus, true, out var parsedStatus))
             {
