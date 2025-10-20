@@ -102,7 +102,7 @@ function ModelDetail() {
 
                                 <div className="model-detail-type-price">
                                     <span className="model-detail-type" style={{ fontSize: '1.8rem' }}>{model.typeName}</span>
-                                    <span className="model-detail-price" style={{ fontSize: '2.1rem' }}>${model.price}/hr</span>
+                                    <span className="model-detail-price" style={{ fontSize: '2.1rem' }}>{model.price.toLocaleString()}VND/hr</span>
                                 </div>
 
                                 <div className="model-detail-description" style={{ fontSize: '1.6rem' }}>
