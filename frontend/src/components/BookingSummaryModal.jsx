@@ -90,7 +90,6 @@ const BookingSummaryModal = ({ isOpen, onClose, bookingSummary, onConfirm }) => 
             setPaymentLoading(false);
         }
     };
-
     return (
         <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
             <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(10px)" />
@@ -102,10 +101,8 @@ const BookingSummaryModal = ({ isOpen, onClose, bookingSummary, onConfirm }) => 
                 <ModalBody className="booking-summary-modal-body">
                     <VStack spacing={6} align="stretch">
                         {/* Booking Details */}
-                        <Box className="booking-details-box">
-                            <Text fontSize="xl" fontWeight="bold" mb={4}>
-                                📋 Booking Details
-                            </Text>
+                       
+                            
                             <VStack spacing={3} align="stretch">
                                 {bookingSummary.period && (
                                     <HStack justify="space-between">
@@ -115,35 +112,28 @@ const BookingSummaryModal = ({ isOpen, onClose, bookingSummary, onConfirm }) => 
                                         </Text>
                                     </HStack>
                                 )}
-
                                 {bookingSummary.vehicle && (
                                     <>
-                                        <Divider />
+                                      
                                         <HStack justify="space-between">
                                             <Text fontWeight="bold">🚗 Vehicle:</Text>
                                             <Text fontSize="lg" color="blue.600">{bookingSummary.vehicle.modelName}</Text>
-                                        </HStack>
-                                        
+                                        </HStack>   
                                         <HStack justify="space-between">
                                             <Text fontWeight="bold">📍 Station:</Text>
                                             <Text fontSize="lg">{bookingSummary.station?.name}</Text>
                                         </HStack>
-                                        
-                                        
                                     </>
                                 )}
-
-                                <Divider />
                                 <HStack justify="space-between">
                                     <Text fontWeight="bold" fontSize="xl">💰 Total Cost:</Text>
-                                    <Text fontWeight="bold" fontSize="xl" color="green.600" bg="green.50" px={3} py={1} borderRadius="md">
+                                    <Text fontWeight="bold" fontSize="xxl" color="green" bg="green.50" px={3} py={1} borderRadius="md">
                                         {parseInt(bookingSummary.totalCost || 0).toLocaleString()} VND
                                     </Text>
                                 </HStack>
-
-                                {bookingSummary.terms && bookingSummary.terms.length > 0 && (
+                               {bookingSummary.terms && bookingSummary.terms.length > 0 && (
                                     <>
-                                        <Divider />
+                                       
                                         <Box>
                                             <Text fontWeight="bold" fontSize="lg" mb={3}>📋 Terms & Conditions:</Text>
                                             <VStack spacing={2} align="stretch">
@@ -158,8 +148,7 @@ const BookingSummaryModal = ({ isOpen, onClose, bookingSummary, onConfirm }) => 
                                     </>
                                 )}
                             </VStack>
-                        </Box>
-
+                        
                         {/* Payment Information */}
                         {paymentInfo && (
                             <Box className="payment-info-box">
@@ -198,9 +187,7 @@ const BookingSummaryModal = ({ isOpen, onClose, bookingSummary, onConfirm }) => 
                 </ModalBody>
 
                 <ModalFooter className="booking-summary-modal-footer">
-                    <Button className="close-button" onClick={onClose} size="lg">
-                        Close
-                    </Button>
+                    
                     {!paymentInfo && (
                         <Button 
                             className="confirm-button" 

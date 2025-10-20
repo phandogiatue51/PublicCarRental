@@ -255,7 +255,7 @@
 }
 
 .stations-title::before {
-    content: '📍';
+    content: '';
     position: absolute;
     left: -0.5rem;
     top: 50%;
@@ -302,7 +302,7 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     margin-bottom: 1rem;
     border: none !important;
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    background: transparent; /* changed to transparent */
     position: relative;
     overflow: hidden;
 }

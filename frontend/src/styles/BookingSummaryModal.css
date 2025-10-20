@@ -1,12 +1,14 @@
 /* Booking Summary Modal Styles */
 
 /* Modal Overlay */
-.chakra-modal__overlay {
+
+
+.chakra-modal__content-container {
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-}
-
+    min-height: 100vh !important;
+}   
 .booking-summary-modal-content {
     background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
     border-radius: 20px;
@@ -17,6 +19,8 @@
     font-family: 'Rubik', sans-serif;
     border: 1px solid #e2e8f0;
     margin: 0 auto;
+    position: relative;
+    z-index: 1501; /* make sure modal content sits above overlay/backdrop */
 }
 
 .booking-summary-modal-content::before {
@@ -58,16 +62,22 @@
 
 .booking-summary-modal-body .chakra-text {
     margin-bottom: 1rem;
-    font-size: 1.1rem;
+    font-size: 1.5rem; /* increased from 1.1rem */
     line-height: 1.7;
     font-family: 'Rubik', sans-serif;
+}
+
+/* Stronger override to ensure Chakra's fontSize props don't reduce our size for body text */
+.booking-summary-modal-body .chakra-text,
+.booking-summary-modal-body .chakra-text * {
+    font-size: 1.5rem !important;
 }
 
 .booking-summary-modal-body .chakra-text b {
     font-family: 'Poppins', sans-serif;
     font-weight: 700;
     color: #2c5282;
-    font-size: 1.2rem;
+    font-size: 1.6rem; /* increased for bold labels */
 }
 
 .booking-summary-modal-body .chakra-badge {
