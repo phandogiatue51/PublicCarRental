@@ -26,7 +26,7 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(staffList);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
             var staff = _staffService.GetById(id); 
@@ -86,10 +86,30 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok($"Staff status changed");
         }
 
-        [HttpGet("filter-by-param-n-station")]
-        public IActionResult FilterParamStation([FromQuery] string param, [FromQuery] int stationId)
+        [HttpGet("search-by-param")]
+        public IActionResult SearchByParam([FromQuery] string? param, [FromQuery] int? stationId)
         {
-            var staffList = _staffService.FilterByParamNStation(param, stationId);
+            var staffList = _staffService.FilterByParamNStation(param ?? string.Empty, stationId);
+            return Ok(staffList);
+        }
+
+        [HttpGet("filter-by-param-n-station")]
+        public IActionResult FilterParamStation([FromQuery] string? param, [FromQuery] int? stationId)
+        {
+            var staffList = _staffService.FilterByParamNStation(param ?? string.Empty, stationId);
+            return Ok(staffList);
+        }
+
+        [HttpGet("filter-by-contract-status")]
+        public IActionResult FilterByContractStatus([FromQuery] int? stationId, [FromQuery] string? contractStatus)
+        {
+            RentalStatus? status = null;
+            if (!string.IsNullOrEmpty(contractStatus) && Enum.TryParse<RentalStatus>(contractStatus, true, out var parsedStatus))
+            {
+                status = parsedStatus;
+            }
+
+            var staffList = _staffService.FilterByContractStatus(stationId, status);
             return Ok(staffList);
         }
     }

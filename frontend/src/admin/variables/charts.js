@@ -24,7 +24,7 @@ export const barChartOptionsDailyTraffic = {
         fontFamily: undefined,
       },
     },
-    theme: "dark",
+    theme: "light",
   },
   xaxis: {
     categories: ["00", "04", "08", "12", "14", "16", "18"],
@@ -138,7 +138,7 @@ export const barChartOptionsConsumption = {
         fontFamily: undefined,
       },
     },
-    theme: "dark",
+    theme: "light",
   },
   xaxis: {
     categories: ["17", "18", "19", "20", "21", "22", "23", "24", "25"],
@@ -243,7 +243,7 @@ export const pieChartOptions = {
   },
   tooltip: {
     enabled: true,
-    theme: "dark",
+    theme: "light",
   },
 };
 
@@ -293,7 +293,7 @@ export const lineChartOptionsTotalSpent = {
     showNullDataPoints: true,
   },
   tooltip: {
-    theme: "dark",
+    theme: "light",
   },
   dataLabels: {
     enabled: false,

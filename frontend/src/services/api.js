@@ -124,24 +124,24 @@ export const modelAPI = {
       if (brandId) params.append('brandId', brandId);
       if (typeId) params.append('typeId', typeId);
       if (stationId) params.append('stationId', stationId);
-      
+
       const response = await apiRequest(`/Model/filter-models?${params.toString()}`);
       return response.result || response || [];
     } catch (error) {
       console.error('Error filtering models:', error);
       return [];
     }
-    },
-    getStationFromModel: async (modelId) => {
+  },
+  getStationFromModel: async (modelId) => {
 
-        try {
-            const response = await apiRequest(`/Model/get-station-from-model/${modelId}`);
-            return response.result || response || [];
-        } catch (error) {
-            console.error('Error fetching stations from model:', error);
-            return [];
-        }
-    },
+    try {
+      const response = await apiRequest(`/Model/get-station-from-model/${modelId}`);
+      return response.result || response || [];
+    } catch (error) {
+      console.error('Error fetching stations from model:', error);
+      return [];
+    }
+  },
 
 
   // Create new model
@@ -202,10 +202,31 @@ export const staffAPI = {
     body: JSON.stringify(staffData),
   }),
 
+  // Delete staff
+  delete: (id) => apiRequest(`/Staff/delete-staff/${id}`, {
+    method: 'DELETE',
+  }),
+
   // Change staff status
   changeStatus: (id) => apiRequest(`/Staff/change-status/${id}`, {
     method: 'POST',
   }),
+
+  // Search staff by parameter (optional station filter)
+  searchByParam: (param, stationId) => {
+    const queryParams = new URLSearchParams();
+    if (param) queryParams.append('param', param);
+    if (stationId) queryParams.append('stationId', stationId);
+    return apiRequest(`/Staff/search-by-param?${queryParams.toString()}`);
+  },
+
+  // Filter staff by contract status (optional station filter)
+  filterByContractStatus: (stationId, contractStatus) => {
+    const queryParams = new URLSearchParams();
+    if (stationId) queryParams.append('stationId', stationId);
+    if (contractStatus) queryParams.append('contractStatus', contractStatus);
+    return apiRequest(`/Staff/filter-by-contract-status?${queryParams.toString()}`);
+  },
 };
 
 // Station API services
@@ -284,6 +305,25 @@ export const contractAPI = {
 
   // Get contract by ID
   getById: (id) => apiRequest(`/Contract/${id}`),
+
+  // Get contracts by station ID
+  getByStation: (stationId) => apiRequest(`/Contract/get-by-station/${stationId}`),
+
+  // Filter contracts by status
+  filterByStatus: (status) => apiRequest(`/Contract/filter-by-status/${status}`),
+
+  // Filter contracts with multiple parameters
+  filter: (filters) => {
+    const queryParams = new URLSearchParams();
+    if (filters.stationId) queryParams.append('stationId', filters.stationId);
+    if (filters.status) queryParams.append('status', filters.status);
+    if (filters.renterId) queryParams.append('renterId', filters.renterId);
+    if (filters.staffId) queryParams.append('staffId', filters.staffId);
+    if (filters.vehicleId) queryParams.append('vehicleId', filters.vehicleId);
+
+    const queryString = queryParams.toString();
+    return apiRequest(`/Contract/filter${queryString ? `?${queryString}` : ''}`);
+  },
 };
 
 // Vehicle API services
@@ -336,23 +376,23 @@ export const invoiceAPI = {
 
 // Booking API
 export const bookingAPI = {
-    // Create booking request
-    createBooking: (bookingData) => apiRequest('/Booking/request', {
-        method: 'POST',
-        body: JSON.stringify(bookingData)
-    }),
-    
-    // Get booking summary by token
-    getBookingSummary: (bookingToken) => apiRequest(`/Booking/summary/${bookingToken}`),
+  // Create booking request
+  createBooking: (bookingData) => apiRequest('/Booking/request', {
+    method: 'POST',
+    body: JSON.stringify(bookingData)
+  }),
+
+  // Get booking summary by token
+  getBookingSummary: (bookingToken) => apiRequest(`/Booking/summary/${bookingToken}`),
 };
 
 // Payment API
 export const paymentAPI = {
-    // Create payment
-    createPayment: (paymentData) => apiRequest('/Payment/create-payment', {
-        method: 'POST',
-        body: JSON.stringify(paymentData)
-    }),
+  // Create payment
+  createPayment: (paymentData) => apiRequest('/Payment/create-payment', {
+    method: 'POST',
+    body: JSON.stringify(paymentData)
+  }),
 };
 
 

@@ -38,7 +38,7 @@ public class EVRenterController : ControllerBase
         return Ok(renters);
     }
 
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<IActionResult> GetByIdAsync(int id)
     {
         var renter =  await _eVRenterService.GetByIdAsync(id);

@@ -27,7 +27,7 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(contracts);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
             var contract = _contractService.GetById(id);
@@ -101,6 +101,21 @@ namespace PublicCarRental.Presentation.Controllers
         public IActionResult GetByStationId(int stationId)
         {
             var contracts = _contractService.GetContractByStationId(stationId);
+            return Ok(contracts);
+        }
+
+        [HttpGet("filter-by-status/{status}")]
+        public IActionResult FilterByStatus(RentalStatus status)
+        {
+            var contracts = _contractService.FilterByStatus(status);
+            return Ok(contracts);
+        }
+
+        [HttpGet("filter")]
+        public IActionResult FilterContracts([FromQuery] int? stationId, [FromQuery] RentalStatus? status, 
+            [FromQuery] int? renterId, [FromQuery] int? staffId, [FromQuery] int? vehicleId)
+        {
+            var contracts = _contractService.FilterContracts(stationId, status, renterId, staffId, vehicleId);
             return Ok(contracts);
         }
 
