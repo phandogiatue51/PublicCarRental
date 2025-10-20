@@ -169,26 +169,23 @@ namespace PublicCarRental.Application.Service.Pay
 
             _logger.LogInformation($"🔄 Handling CANCELLED payment for invoice {invoice.InvoiceId}");
 
-            // Update invoice status to cancelled
             var updateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Cancelled, 0);
 
             if (updateSuccess)
             {
                 _logger.LogInformation($"✅ Invoice {invoice.InvoiceId} marked as CANCELLED");
 
-                // Clean up booking request
                 if (!string.IsNullOrEmpty(invoice.BookingToken))
                 {
                     await _bookingService.RemoveBookingRequest(invoice.BookingToken);
                     _logger.LogInformation($"✅ Booking request cleaned up for token: {invoice.BookingToken}");
                 }
 
-                // Release any locks on the vehicle
                 var bookingRequest = await _bookingService.GetBookingRequest(invoice.BookingToken);
                 if (bookingRequest != null)
                 {
-                    var lockKey = $"vehicle_booking:{bookingRequest.VehicleId}:{bookingRequest.StartTime:yyyyMMddHHmm}";
-                    _distributedLock.ReleaseLock(lockKey);
+                    var lockKey = $"vehicle_booking:{bookingRequest.VehicleId}:{bookingRequest.StartTime:yyyyMMddHHmm}_{bookingRequest.EndTime:yyyyMMddHHmm}";
+                    _distributedLock.ReleaseLock(lockKey, invoice.BookingToken); 
                     _logger.LogInformation($"✅ Vehicle lock released: {lockKey}");
                 }
             }

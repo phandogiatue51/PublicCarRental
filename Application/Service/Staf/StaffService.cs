@@ -114,29 +114,41 @@ namespace PublicCarRental.Application.Service.Staf
             return true;
         }
 
-        public IEnumerable<StaffReadDto> FilterByParamNStation(string param, int stationId)
+        public IEnumerable<StaffReadDto> FilterByParam(string? param, int? stationId, int? contractId)
         {
-            if (string.IsNullOrWhiteSpace(param)) param = string.Empty;
-            var p = param.Trim().ToLower();
+            var query = _staffRepo.GetAll().Where(s => s.Account != null);
 
-            return _staffRepo.GetAll()
-                .Where(s => s.Account != null && s.StationId == stationId &&
-                            (
-                                (!string.IsNullOrEmpty(s.Account.FullName) && s.Account.FullName.ToLower().Contains(p)) ||
-                                (!string.IsNullOrEmpty(s.Account.Email) && s.Account.Email.ToLower().Contains(p)) ||
-                                (!string.IsNullOrEmpty(s.Account.PhoneNumber) && s.Account.PhoneNumber.ToLower().Contains(p))
-                            ))
-                .Select(s => new StaffReadDto
-                {
-                    StaffId = s.StaffId,
-                    AccountId = s.AccountId,
-                    FullName = s.Account.FullName,
-                    Email = s.Account.Email,
-                    PhoneNumber = s.Account.PhoneNumber,
-                    StationId = s.StationId,
-                    Status = s.Account.Status,
-                    IdentityCardNumber = s.Account.IdentityCardNumber
-                }).ToList();
+            if (stationId.HasValue)
+            {
+                query = query.Where(s => s.StationId == stationId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(param))
+            {
+                var p = param.Trim().ToLower();
+                query = query.Where(s =>
+                    (!string.IsNullOrEmpty(s.Account.FullName) && s.Account.FullName.ToLower().Contains(p)) ||
+                    (!string.IsNullOrEmpty(s.Account.Email) && s.Account.Email.ToLower().Contains(p)) ||
+                    (!string.IsNullOrEmpty(s.Account.PhoneNumber) && s.Account.PhoneNumber.ToLower().Contains(p))
+                );
+            }
+
+            if (contractId.HasValue)
+            {
+                query = query.Where(s => s.RentalContracts != null && s.RentalContracts.Any(rc => rc.ContractId == contractId.Value));
+            }
+
+            return query.Select(s => new StaffReadDto
+            {
+                StaffId = s.StaffId,
+                AccountId = s.AccountId,
+                FullName = s.Account.FullName,
+                Email = s.Account.Email,
+                PhoneNumber = s.Account.PhoneNumber,
+                StationId = s.StationId,
+                Status = s.Account.Status,
+                IdentityCardNumber = s.Account.IdentityCardNumber
+            }).ToList();
         }
     }
 }

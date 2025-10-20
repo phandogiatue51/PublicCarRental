@@ -12,5 +12,8 @@ namespace PublicCarRental.Infrastructure.Data.Models
         public Account Account { get; set; }
         public int? StationId { get; set; }
         public Station Station { get; set; }
+        
+        // Navigation property for contracts
+        public ICollection<RentalContract> RentalContracts { get; set; } = new List<RentalContract>();
     }
 }

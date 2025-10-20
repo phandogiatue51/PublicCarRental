@@ -197,12 +197,13 @@ namespace PublicCarRental.Application.Service.Veh
 
         public async Task<Vehicle> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd)
         {
-            var cacheKey = CreateCacheKey("available_vehicle", modelId, stationId, requestedStart.Date, requestedEnd.Date);
 
-            return await _cache.GetOrSetAsync(cacheKey, async () =>
-            {
                 return await _repo.GetFirstAvailableVehicleByModelAsync(modelId, stationId, requestedStart, requestedEnd);
-            }, TimeSpan.FromMinutes(5)); 
+        }
+
+        public async Task<bool> CheckVehicleAvailabilityAsync(int vehicleId, DateTime startTime, DateTime endTime)
+        {
+            return await _repo.CheckVehicleAvailabilityAsync(vehicleId, startTime, endTime);
         }
 
         public Vehicle GetEntityById(int id) => _repo.GetById(id);

@@ -28,11 +28,17 @@ namespace PublicCarRental.Application.Service.Email
             using var connection = await factory.CreateConnectionAsync();
             using var channel = await connection.CreateChannelAsync();
 
+            var dlqArgs = new Dictionary<string, object>
+            {
+                { "x-dead-letter-exchange", "" },
+                { "x-dead-letter-routing-key", "receipt_generation_dlq" }
+            };
+
             await channel.QueueDeclareAsync(queue: _queueName,
                                           durable: true,
                                           exclusive: false,
                                           autoDelete: false,
-                                          arguments: null);
+                                          arguments: dlqArgs);
 
             var consumer = new AsyncEventingBasicConsumer(channel);
             consumer.ReceivedAsync += async (model, ea) =>

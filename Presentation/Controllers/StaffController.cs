@@ -26,7 +26,7 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(staffList);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
             var staff = _staffService.GetById(id); 
@@ -86,10 +86,10 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok($"Staff status changed");
         }
 
-        [HttpGet("filter-by-param-n-station")]
-        public IActionResult FilterParamStation([FromQuery] string param, [FromQuery] int stationId)
+        [HttpGet("search-by-param")]
+        public IActionResult SearchByParam([FromQuery] string? param, [FromQuery] int? stationId, [FromQuery] int? contractId)
         {
-            var staffList = _staffService.FilterByParamNStation(param, stationId);
+            var staffList = _staffService.FilterByParam(param, stationId, contractId);
             return Ok(staffList);
         }
     }

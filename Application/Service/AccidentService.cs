@@ -2,6 +2,7 @@
 using PublicCarRental.Application.DTOs.Accident;
 using PublicCarRental.Application.DTOs.Bran;
 using PublicCarRental.Application.Service.Image;
+using PublicCarRental.Application.Service.Rabbit;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Cont;
 using PublicCarRental.Infrastructure.Data.Repository.Vehi;

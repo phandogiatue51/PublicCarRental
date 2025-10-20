@@ -14,18 +14,14 @@ public class BaseMessageProducer
         _logger = logger;
     }
 
-    public async Task PublishMessageAsync<T>(T message, string queueName) 
+    public async Task PublishMessageAsync<T>(T message, string queueName)
     {
         try
         {
             using var channel = await _connection.CreateChannelAsync();
 
-            await channel.QueueDeclarePassiveAsync(queueName);
-
             var body = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(message));
-
-            var properties = new BasicProperties();
-            properties.Persistent = true;
+            var properties = new BasicProperties { Persistent = true };
 
             await channel.BasicPublishAsync(
                 exchange: "",

@@ -5,8 +5,10 @@ namespace PublicCarRental.Application.Service.Redis
     {
         Task<bool> AcquireLockAsync(string key, TimeSpan expiry);
         Task ReleaseLockAsync(string key);
-        bool AcquireLock(string key, TimeSpan expiry);
-        void ReleaseLock(string key);
+        bool AcquireLock(string key, TimeSpan expiry);           
+        void ReleaseLock(string key);                          
+        bool AcquireLock(string key, string ownerId, TimeSpan expiry);
+        void ReleaseLock(string key, string expectedOwnerId);
     }
 
     public class DistributedLockService : IDistributedLockService
@@ -20,6 +22,7 @@ namespace PublicCarRental.Application.Service.Redis
             _logger = logger;
         }
 
+        // ✅ Async simple version
         public async Task<bool> AcquireLockAsync(string key, TimeSpan expiry)
         {
             try
@@ -33,6 +36,7 @@ namespace PublicCarRental.Application.Service.Redis
             }
         }
 
+        // ✅ Async simple version
         public async Task ReleaseLockAsync(string key)
         {
             try
@@ -45,6 +49,7 @@ namespace PublicCarRental.Application.Service.Redis
             }
         }
 
+        // ✅ Sync simple version - THÊM VÀO
         public bool AcquireLock(string key, TimeSpan expiry)
         {
             try
@@ -58,11 +63,49 @@ namespace PublicCarRental.Application.Service.Redis
             }
         }
 
+        // ✅ Sync simple version - THÊM VÀO
         public void ReleaseLock(string key)
         {
             try
             {
                 _redis.KeyDelete(key);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to release lock for key {LockKey}", key);
+            }
+        }
+
+        // ✅ Sync owner-verified version
+        public bool AcquireLock(string key, string ownerId, TimeSpan expiry)
+        {
+            try
+            {
+                return _redis.StringSet(key, ownerId, expiry, When.NotExists);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to acquire lock for key {LockKey}", key);
+                return false;
+            }
+        }
+
+        // ✅ Sync owner-verified version
+        public void ReleaseLock(string key, string expectedOwnerId)
+        {
+            try
+            {
+                var currentOwner = _redis.StringGet(key);
+                if (currentOwner == expectedOwnerId)
+                {
+                    _redis.KeyDelete(key);
+                    _logger.LogDebug("✅ Released lock for key {LockKey} owned by {Owner}", key, expectedOwnerId);
+                }
+                else
+                {
+                    _logger.LogWarning("🚨 Attempted to release lock for key {LockKey} owned by {CurrentOwner} but expected {ExpectedOwner}",
+                        key, currentOwner, expectedOwnerId);
+                }
             }
             catch (Exception ex)
             {

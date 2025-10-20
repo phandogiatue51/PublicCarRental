@@ -117,7 +117,7 @@ const MaybeYouWillLike = ({ currentModelId, currentBrandName }) => {
                             </Text>
                             <HStack spacing={2}>
                                 <Badge colorScheme="green" className="price-badge">
-                                    ${model.pricePerHour}/hr
+                                    {model.pricePerHour.toLocaleString()}VND/hr
                                 </Badge>
                                 
                             </HStack>

@@ -55,17 +55,24 @@ public class BookingService : IBookingService
         if (vehicle == null)
             return (false, "Model not available. Choose another time, station, or model.", 0, "");
 
-        var lockKey = $"vehicle_booking:{vehicle.VehicleId}:{dto.StartTime:yyyyMMddHHmm}";
+        var lockKey = $"vehicle_booking:{vehicle.VehicleId}:{dto.StartTime:yyyyMMddHHmm}_{dto.EndTime:yyyyMMddHHmm}";
+        var bookingToken = Guid.NewGuid().ToString();
 
         try
         {
-            if (!_distributedLock.AcquireLock(lockKey, TimeSpan.FromSeconds(5)))
+            if (!_distributedLock.AcquireLock(lockKey, bookingToken, TimeSpan.FromMinutes(15)))
                 return (false, "Please try again. Someone is booking this vehicle.", 0, "");
+
+            var isStillAvailable = await _vehicleService.CheckVehicleAvailabilityAsync(vehicle.VehicleId, dto.StartTime, dto.EndTime);
+            if (!isStillAvailable)
+            {
+                _distributedLock.ReleaseLock(lockKey, bookingToken); 
+                return (false, "Vehicle no longer available.", 0, "");
+            }
 
             var duration = (dto.EndTime - dto.StartTime).TotalHours;
             var totalCost = (decimal)duration * vehicle.Model.PricePerHour;
 
-            var bookingToken = Guid.NewGuid().ToString();
             var invoice = new Invoice
             {
                 AmountDue = totalCost,
@@ -97,14 +104,13 @@ public class BookingService : IBookingService
             {
                 await Task.Delay(TimeSpan.FromMinutes(10));
                 await _distributedCache.RemoveAsync($"booking:{bookingToken}");
-                _distributedLock.ReleaseLock(lockKey);
             });
 
             return (true, "Booking request created successfully!", invoice.InvoiceId, bookingToken);
         }
         catch (Exception ex)
         {
-            _distributedLock.ReleaseLock(lockKey);
+            _distributedLock.ReleaseLock(lockKey, bookingToken); 
             _logger.LogError(ex, "Error creating booking request");
             throw;
         }
@@ -156,7 +162,7 @@ public class BookingService : IBookingService
                     "Any damages must be reported immediately.",
                     "Late returns will incur additional charges.",
                     "Electricity is the responsibility of the renter.",
-                    "Fuel/charging costs are not included in the rental price.",
+                    "Charging costs are not included in the rental price.",
                     "The vehicle must be returned to the same station."
                 }
             };

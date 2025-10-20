@@ -33,7 +33,7 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(accounts);
         }
 
-        [HttpGet("/{id}")]
+        [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
             var account = _accountService.GetAccountById(id);
