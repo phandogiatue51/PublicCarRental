@@ -216,14 +216,14 @@ export const staffAPI = {
   searchByParam: (param, stationId) => {
     const queryParams = new URLSearchParams();
     if (param) queryParams.append('param', param);
-    queryParams.append('stationId', stationId);
+    if (stationId) queryParams.append('stationId', stationId);
     return apiRequest(`/Staff/search-by-param?${queryParams.toString()}`);
   },
 
   // Filter staff by contract status within station
   filterByContractStatus: (stationId, contractStatus) => {
     const queryParams = new URLSearchParams();
-    queryParams.append('stationId', stationId);
+    if (stationId) queryParams.append('stationId', stationId);
     if (contractStatus) queryParams.append('contractStatus', contractStatus);
     return apiRequest(`/Staff/filter-by-contract-status?${queryParams.toString()}`);
   },
@@ -305,6 +305,25 @@ export const contractAPI = {
 
   // Get contract by ID
   getById: (id) => apiRequest(`/Contract/${id}`),
+
+  // Get contracts by station ID
+  getByStation: (stationId) => apiRequest(`/Contract/get-by-station/${stationId}`),
+
+  // Filter contracts by status
+  filterByStatus: (status) => apiRequest(`/Contract/filter-by-status/${status}`),
+
+  // Filter contracts with multiple parameters
+  filter: (filters) => {
+    const queryParams = new URLSearchParams();
+    if (filters.stationId) queryParams.append('stationId', filters.stationId);
+    if (filters.status) queryParams.append('status', filters.status);
+    if (filters.renterId) queryParams.append('renterId', filters.renterId);
+    if (filters.staffId) queryParams.append('staffId', filters.staffId);
+    if (filters.vehicleId) queryParams.append('vehicleId', filters.vehicleId);
+
+    const queryString = queryParams.toString();
+    return apiRequest(`/Contract/filter${queryString ? `?${queryString}` : ''}`);
+  },
 };
 
 // Vehicle API services

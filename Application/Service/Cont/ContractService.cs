@@ -408,5 +408,47 @@ namespace PublicCarRental.Application.Service.Cont
                 ImageOut = contract.ImageUrlOut
             }).ToList();
         }
+
+        public IEnumerable<ContractDto> FilterContracts(int? stationId, RentalStatus? status, int? renterId, int? staffId, int? vehicleId)
+        {
+            var query = _contractRepo.GetAll().AsQueryable();
+
+            if (stationId.HasValue)
+                query = query.Where(c => c.StationId == stationId.Value);
+
+            if (status.HasValue)
+                query = query.Where(c => c.Status == status.Value);
+
+            if (renterId.HasValue)
+                query = query.Where(c => c.EVRenterId == renterId.Value);
+
+            if (staffId.HasValue)
+                query = query.Where(c => c.StaffId == staffId.Value);
+
+            if (vehicleId.HasValue)
+                query = query.Where(c => c.VehicleId == vehicleId.Value);
+
+            var contracts = query.ToList();
+
+            return contracts.Select(contract => new ContractDto
+            {
+                ContractId = contract.ContractId,
+                InvoiceId = contract.Invoice != null ? contract.Invoice.InvoiceId : null,
+                EVRenterId = contract.EVRenterId,
+                EVRenterName = contract.EVRenter != null && contract.EVRenter.Account != null ? contract.EVRenter.Account.FullName : null,
+                StaffId = contract.StaffId,
+                StaffName = contract.Staff != null && contract.Staff.Account != null ? contract.Staff.Account.FullName : null,
+                VehicleId = contract.VehicleId ?? 0,
+                VehicleLicensePlate = contract.Vehicle != null ? contract.Vehicle.LicensePlate : null,
+                StationId = contract.StationId ?? 0,
+                StationName = contract.Station != null ? contract.Station.Name : null,
+                StartTime = contract.StartTime,
+                EndTime = contract.EndTime,
+                TotalCost = contract.TotalCost,
+                Status = contract.Status,
+                ImageIn = contract.ImageUrlIn,
+                ImageOut = contract.ImageUrlOut
+            }).ToList();
+        }
     }
 }

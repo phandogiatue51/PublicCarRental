@@ -111,6 +111,14 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(contracts);
         }
 
+        [HttpGet("filter")]
+        public IActionResult FilterContracts([FromQuery] int? stationId, [FromQuery] RentalStatus? status, 
+            [FromQuery] int? renterId, [FromQuery] int? staffId, [FromQuery] int? vehicleId)
+        {
+            var contracts = _contractService.FilterContracts(stationId, status, renterId, staffId, vehicleId);
+            return Ok(contracts);
+        }
+
         [HttpGet("contracts/{contractId}/pdf")]
         [Authorize]
         public IActionResult DownloadContractPdf(int contractId)
