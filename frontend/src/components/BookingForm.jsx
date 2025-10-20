@@ -39,8 +39,14 @@ const BookingForm = ({ modelName, modelId, evRenterId }) => {
         fetchAllStations();
     }, []);
 
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date().toISOString().split('T')[0];
+    // Helper: get minimal datetime-local string (rounded to current hour)
+    const getMinDateTimeLocal = () => {
+        const now = new Date();
+        now.setMinutes(0, 0, 0);
+        return now.toISOString().slice(0,16); // YYYY-MM-DDTHH:mm
+    };
+
+    const minDateTimeLocal = getMinDateTimeLocal();
 
     // Debug: Log stations data
     console.log('BookingForm all stations:', allStations);
@@ -76,7 +82,7 @@ const BookingForm = ({ modelName, modelId, evRenterId }) => {
             return;
         }
         
-        // Validate date range
+        // Validate datetime range
         if (new Date(formData.endDate) <= new Date(formData.startDate)) {
             alert('End date must be after start date!');
             return;
@@ -108,9 +114,9 @@ const BookingForm = ({ modelName, modelId, evRenterId }) => {
         if (window.confirm(confirmMessage)) {
             setLoading(true);
             try {
-                // Convert dates to ISO format
-                const startTime = new Date(formData.startDate + 'T00:00:00.000Z').toISOString();
-                const endTime = new Date(formData.endDate + 'T23:59:59.999Z').toISOString();
+                // Convert datetime-local strings to ISO (Date will treat them as local time)
+                const startTime = new Date(formData.startDate).toISOString();
+                const endTime = new Date(formData.endDate).toISOString();
                 
                 // Prepare booking data
                 const bookingData = {
@@ -256,11 +262,11 @@ const BookingForm = ({ modelName, modelId, evRenterId }) => {
                                 Start Date <span className="required">*</span>
                             </Text>
                             <input
-                                type="date"
+                                type="datetime-local"
                                 value={formData.startDate}
                                 onChange={(e) => handleInputChange('startDate', e.target.value)}
                                 className="form-date-input"
-                                min={today}
+                                min={minDateTimeLocal}
                                 required
                             />
                         </Box>
@@ -270,11 +276,11 @@ const BookingForm = ({ modelName, modelId, evRenterId }) => {
                                 End Date <span className="required">*</span>
                             </Text>
                             <input
-                                type="date"
+                                type="datetime-local"
                                 value={formData.endDate}
                                 onChange={(e) => handleInputChange('endDate', e.target.value)}
                                 className="form-date-input"
-                                min={formData.startDate || today}
+                                min={formData.startDate || minDateTimeLocal}
                                 required
                             />
                         </Box>

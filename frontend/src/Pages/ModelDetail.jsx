@@ -151,7 +151,7 @@ function ModelDetail() {
                                                         p={5}
                                                         border="none"
                                                         borderRadius="md"
-                                                        bg={cardBg}
+                                                        bg="transparent"
                                                         className="station-card"
                                                         style={{
                                                             width: '100%'
