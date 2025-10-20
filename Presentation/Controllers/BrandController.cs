@@ -22,7 +22,7 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(brands);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetByIdAsync(int id)
         {
             var brand = await _service.GetByIdAsync(id);

@@ -27,7 +27,7 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(contracts);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public IActionResult GetById(int id)
         {
             var contract = _contractService.GetById(id);

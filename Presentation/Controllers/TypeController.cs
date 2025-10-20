@@ -19,7 +19,7 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(types);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetByIdAsync(int id) {
             var type = await _typeService.GetByIdAsync(id);
             if (type == null) return NotFound();

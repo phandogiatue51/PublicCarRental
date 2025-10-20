@@ -24,7 +24,7 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(result);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _accidentService.GetByIdAsync(id);
