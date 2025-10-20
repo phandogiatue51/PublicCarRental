@@ -45,12 +45,14 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Vehi
                 .Where(v => v.ModelId == modelId && v.StationId == stationId)
                 .ToListAsync();
 
-            foreach (var vehicle in vehicles)
+            var random = new Random();
+            var randomizedVehicles = vehicles.OrderBy(x => random.Next()).ToList();
+
+            foreach (var vehicle in randomizedVehicles) 
             {
                 bool isAvailable = true;
-
                 foreach (var contract in vehicle.RentalContracts
-                         .Where(c => c.Status == RentalStatus.Active || 
+                         .Where(c => c.Status == RentalStatus.Active ||
                          c.Status == RentalStatus.ToBeConfirmed ||
                          c.Status == RentalStatus.Confirmed))
                 {
