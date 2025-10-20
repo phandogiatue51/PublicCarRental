@@ -114,17 +114,15 @@ namespace PublicCarRental.Application.Service.Staf
             return true;
         }
 
-        public IEnumerable<StaffReadDto> FilterByParamNStation(string param, int? stationId)
+        public IEnumerable<StaffReadDto> FilterByParam(string? param, int? stationId, int? contractId)
         {
             var query = _staffRepo.GetAll().Where(s => s.Account != null);
 
-            // Filter by station if provided
             if (stationId.HasValue)
             {
                 query = query.Where(s => s.StationId == stationId.Value);
             }
 
-            // Filter by search parameter if provided
             if (!string.IsNullOrWhiteSpace(param))
             {
                 var p = param.Trim().ToLower();
@@ -135,33 +133,9 @@ namespace PublicCarRental.Application.Service.Staf
                 );
             }
 
-            return query.Select(s => new StaffReadDto
+            if (contractId.HasValue)
             {
-                StaffId = s.StaffId,
-                AccountId = s.AccountId,
-                FullName = s.Account.FullName,
-                Email = s.Account.Email,
-                PhoneNumber = s.Account.PhoneNumber,
-                StationId = s.StationId,
-                Status = s.Account.Status,
-                IdentityCardNumber = s.Account.IdentityCardNumber
-            }).ToList();
-        }
-
-        public IEnumerable<StaffReadDto> FilterByContractStatus(int? stationId, RentalStatus? contractStatus)
-        {
-            var query = _staffRepo.GetAll().Where(s => s.Account != null);
-
-            // Filter by station if provided
-            if (stationId.HasValue)
-            {
-                query = query.Where(s => s.StationId == stationId.Value);
-            }
-
-            // Filter by contract status if provided
-            if (contractStatus.HasValue)
-            {
-                query = query.Where(s => s.RentalContracts != null && s.RentalContracts.Any(rc => rc.Status == contractStatus.Value));
+                query = query.Where(s => s.RentalContracts != null && s.RentalContracts.Any(rc => rc.ContractId == contractId.Value));
             }
 
             return query.Select(s => new StaffReadDto

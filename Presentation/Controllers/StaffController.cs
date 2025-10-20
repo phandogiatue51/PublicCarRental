@@ -87,29 +87,9 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("search-by-param")]
-        public IActionResult SearchByParam([FromQuery] string? param, [FromQuery] int? stationId)
+        public IActionResult SearchByParam([FromQuery] string? param, [FromQuery] int? stationId, [FromQuery] int? contractId)
         {
-            var staffList = _staffService.FilterByParamNStation(param ?? string.Empty, stationId);
-            return Ok(staffList);
-        }
-
-        [HttpGet("filter-by-param-n-station")]
-        public IActionResult FilterParamStation([FromQuery] string? param, [FromQuery] int? stationId)
-        {
-            var staffList = _staffService.FilterByParamNStation(param ?? string.Empty, stationId);
-            return Ok(staffList);
-        }
-
-        [HttpGet("filter-by-contract-status")]
-        public IActionResult FilterByContractStatus([FromQuery] int? stationId, [FromQuery] string? contractStatus)
-        {
-            RentalStatus? status = null;
-            if (!string.IsNullOrEmpty(contractStatus) && Enum.TryParse<RentalStatus>(contractStatus, true, out var parsedStatus))
-            {
-                status = parsedStatus;
-            }
-
-            var staffList = _staffService.FilterByContractStatus(stationId, status);
+            var staffList = _staffService.FilterByParam(param, stationId, contractId);
             return Ok(staffList);
         }
     }
