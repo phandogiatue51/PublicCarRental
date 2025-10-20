@@ -26,7 +26,6 @@ namespace PublicCarRental.Application.Service.Rabbit
             _connectionString = rabbitMQSettings.Value.ConnectionString;
             _queueName = rabbitMQSettings.Value.QueueNames.NotificationQueue;
 
-            // CRITICAL: Add these logs to see if constructor is called
             _logger.LogInformation("🎯 NOTIFICATION CONSUMER CONSTRUCTOR CALLED");
             _logger.LogInformation("🎯 ConnectionString present: {HasConnection}", !string.IsNullOrEmpty(_connectionString));
             _logger.LogInformation("🎯 QueueName: {QueueName}", _queueName);
@@ -68,12 +67,18 @@ namespace PublicCarRental.Application.Service.Rabbit
                 await channel.BasicQosAsync(0, 1, false);
                 _logger.LogInformation("✅ QoS set (prefetch=1)");
 
+                var dlqArgs = new Dictionary<string, object>
+                {
+                    { "x-dead-letter-exchange", "" },
+                    { "x-dead-letter-routing-key", "notification_dlq" }
+                };
+
                 await channel.QueueDeclareAsync(
                     queue: _queueName,
                     durable: true,
                     exclusive: false,
                     autoDelete: false,
-                    arguments: null
+                    arguments: dlqArgs
                 );
 
                 _logger.LogInformation("✅ Queue declared: {QueueName}", _queueName);
@@ -81,6 +86,8 @@ namespace PublicCarRental.Application.Service.Rabbit
                 var consumer = new AsyncEventingBasicConsumer(channel);
                 consumer.ReceivedAsync += async (model, ea) =>
                 {
+                    bool shouldAck = false;
+
                     try
                     {
                         _logger.LogInformation("📨 MESSAGE RECEIVED - Processing started | DeliveryTag={DeliveryTag} Redelivered={Redelivered}", ea.DeliveryTag, ea.Redelivered);
@@ -114,12 +121,6 @@ namespace PublicCarRental.Application.Service.Rabbit
                                         break;
                                 }
                             }
-                            else if (messageJson.Contains("AccidentId"))
-                            {
-                                _logger.LogInformation("Processing fixing request notification");
-                                var accidentEvent = JsonSerializer.Deserialize<AccidentReportedEvent>(messageJson);
-                                await ProcessAccidentNotificationAsync(hubContext, accidentEvent);
-                            }
                             else if (messageJson.Contains("BookingId"))
                             {
                                 var bookingCreated = JsonSerializer.Deserialize<BookingCreatedEvent>(messageJson);
@@ -129,23 +130,36 @@ namespace PublicCarRental.Application.Service.Rabbit
                             {
                                 _logger.LogWarning("Unknown message type received: {MessageJson}", messageJson);
                             }
+
+                            shouldAck = true; 
                         }
                         catch (JsonException ex)
                         {
                             _logger.LogError(ex, "Failed to parse message JSON");
+                            shouldAck = false;
                         }
 
-                        await channel.BasicAckAsync(ea.DeliveryTag, false);
-                        _logger.LogInformation("Notification processed and sent via SignalR");
+                        if (shouldAck)
+                        {
+                            await channel.BasicAckAsync(ea.DeliveryTag, false);
+                            _logger.LogInformation("✅ Notification processed and sent via SignalR");
+                        }
+                        else
+                        {
+                            await channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                            _logger.LogWarning("❌ Notification message rejected and sent to DLQ");
+                        }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error processing notification message");
+                        _logger.LogError(ex, "❌ Error processing notification message");
+                        await channel.BasicNackAsync(ea.DeliveryTag, false, false);
                     }
                 };
 
                 var consumerTag = await channel.BasicConsumeAsync(queue: _queueName, autoAck: false, consumer: consumer);
-                _logger.LogInformation("NOTIFICATION CONSUMER SUCCESSFULLY STARTED listening on {QueueName} with tag {Tag}", _queueName, consumerTag);
+                _logger.LogInformation("✅ NOTIFICATION CONSUMER LISTENING on {QueueName}", _queueName);
+
             }
             catch (Exception ex)
             {
@@ -167,21 +181,6 @@ namespace PublicCarRental.Application.Service.Rabbit
 
             _logger.LogInformation("Booking notification sent to station {StationId} for booking {BookingId}",
                 bookingEvent.StationId, bookingEvent.BookingId);
-        }
-
-        private async Task ProcessAccidentNotificationAsync(IHubContext<NotificationHub> hubContext, AccidentReportedEvent accidentEvent)
-        {
-            await hubContext.Clients.Group("admin").SendAsync("ReceiveAccidentNotification", new
-            {
-                Type = "AccidentReported",
-                AccidentId = accidentEvent.AccidentId,
-                VehicleId = accidentEvent.VehicleId,
-                VehicleLicensePlate = accidentEvent.VehicleLicensePlate ?? "Unknown Vehicle",
-                Location = accidentEvent.Location ?? "Unknown Location",
-                Message = $"Fixing Request: Vehicle {accidentEvent.VehicleLicensePlate} at {accidentEvent.Location}"
-            });
-
-            _logger.LogWarning("Fixing Request notification sent to admins for vehicle {VehicleId}", accidentEvent.VehicleId);
         }
 
         private async Task ProcessBookingConfirmedNotificationAsync(IHubContext<NotificationHub> hubContext, BookingConfirmedEvent bookingEvent)

@@ -145,8 +145,9 @@ namespace PublicCarRental.Application.Service.Cont
 
             _bookingService.RemoveBookingRequest(invoice.BookingToken);
 
-            var lockKey = $"vehicle_booking:{bookingRequest.VehicleId}:{bookingRequest.StartTime:yyyyMMddHHmm}";
-            _distributedLock.ReleaseLock(lockKey);
+            var lockKey = $"vehicle_booking:{bookingRequest.VehicleId}:{bookingRequest.StartTime:yyyyMMddHHmm}_{bookingRequest.EndTime:yyyyMMddHHmm}";
+            _distributedLock.ReleaseLock(lockKey, invoice.BookingToken); 
+
             var renter = await _renterService.GetByIdAsync(bookingRequest.EVRenterId);
 
             _ = Task.Run(async () =>
@@ -170,8 +171,8 @@ namespace PublicCarRental.Application.Service.Cont
                         invoice.InvoiceId,
                         contract.ContractId,
                         bookingRequest.EVRenterId,
-                        renter?.Email,    
-                        renter?.FullName 
+                        renter?.Email,
+                        renter?.FullName
                     );
                 }
                 catch (Exception ex)

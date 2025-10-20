@@ -44,14 +44,6 @@ namespace PublicCarRental.Application.Service.Rabbit
                 arguments: dlqArgs
             );
 
-            await channel.QueueDeclareAsync(
-                queue: "contract_generation_dlq",
-                durable: true,
-                exclusive: false,
-                autoDelete: false,
-                arguments: null
-            );
-
             await channel.BasicQosAsync(0, 1, false);
 
             var consumer = new AsyncEventingBasicConsumer(channel);

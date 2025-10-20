@@ -37,36 +37,32 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Vehi
                 .FirstOrDefault(v => v.VehicleId == id);
         }
 
-        public async Task<Vehicle?> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd)
+        public async Task<Vehicle?> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime startTime, DateTime endTime)
         {
-            var vehicles = await _context.Vehicles
-                .Include(v => v.RentalContracts)
-                .Include(v => v.Model)
-                .Where(v => v.ModelId == modelId && v.StationId == stationId)
+            var availableVehicles = await _context.Vehicles
+                .Where(v => v.ModelId == modelId &&
+                           v.StationId == stationId &&
+                           !v.RentalContracts.Any(c =>
+                               (c.Status == RentalStatus.Confirmed ||
+                                c.Status == RentalStatus.Active ||
+                                c.Status == RentalStatus.ToBeConfirmed) &&
+                               startTime < c.EndTime &&
+                               endTime > c.StartTime))
+                .OrderBy(x => Guid.NewGuid())  
                 .ToListAsync();
 
-            var random = new Random();
-            var randomizedVehicles = vehicles.OrderBy(x => random.Next()).ToList();
+            return availableVehicles.FirstOrDefault();
+        }
 
-            foreach (var vehicle in randomizedVehicles) 
-            {
-                bool isAvailable = true;
-                foreach (var contract in vehicle.RentalContracts
-                         .Where(c => c.Status == RentalStatus.Active ||
-                         c.Status == RentalStatus.ToBeConfirmed ||
-                         c.Status == RentalStatus.Confirmed))
-                {
-                    bool overlaps = requestedStart < contract.ChargingEndTime && requestedEnd > contract.StartTime;
-                    if (overlaps)
-                    {
-                        isAvailable = false;
-                        break;
-                    }
-                }
-                if (isAvailable)
-                    return vehicle;
-            }
-            return null;
+        public async Task<bool> CheckVehicleAvailabilityAsync(int vehicleId, DateTime startTime, DateTime endTime)
+        {
+            return await _context.Vehicles
+                .Where(v => v.VehicleId == vehicleId)
+                .SelectMany(v => v.RentalContracts)
+                .Where(c => c.Status == RentalStatus.Confirmed ||
+                           c.Status == RentalStatus.Active ||
+                           c.Status == RentalStatus.ToBeConfirmed)
+                .AllAsync(c => !(startTime < c.EndTime && endTime > c.StartTime));
         }
 
         public void Create(Vehicle vehicle)

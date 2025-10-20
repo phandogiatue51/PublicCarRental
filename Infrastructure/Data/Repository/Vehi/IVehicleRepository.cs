@@ -8,6 +8,8 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Vehi
         IQueryable<Vehicle> GetAll();
         Vehicle GetById(int id);
         Task<Vehicle?> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd);
+        Task<bool> CheckVehicleAvailabilityAsync(int vehicleId, DateTime startTime, DateTime endTime);
+
         void Create(Vehicle vehicle);
         void Update(Vehicle vehicle);
         void Delete(int id);

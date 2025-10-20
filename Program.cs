@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Exchange.WebServices.Data;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -151,14 +152,14 @@ builder.Services.AddScoped<BaseMessageProducer>();
 builder.Services.AddScoped<EmailProducerService>();
 builder.Services.AddHostedService<EmailConsumerService>();
 builder.Services.AddScoped<BookingEventProducerService>();
-builder.Services.AddHostedService<StaffNotificationConsumer>();
-builder.Services.AddScoped<StaffNotificationService>();
-builder.Services.AddScoped<INotificationService, NotificationService>();
+
 builder.Services.AddScoped<IImageStorageService, CloudinaryService>();
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 builder.Services.AddScoped<IDocumentService,  DocumentService>();
 builder.Services.AddScoped<IAccidentRepository, AccidentRepository>();
 builder.Services.AddScoped<IAccidentService, AccidentService>();
+
+builder.Services.AddHostedService<AccidentConsumerService>();
 builder.Services.AddScoped<AccidentEventProducerService>();
 builder.Services.AddHostedService<NotificationConsumerService>();
 builder.Services.AddScoped<IDistributedLockService, DistributedLockService>();

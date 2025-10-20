@@ -13,6 +13,7 @@ namespace PublicCarRental.Application.Service.Veh
         Task<(bool Success, string Message, int? VehicleId)> CreateVehicleAsync(VehicleCreateDto dto);
         Task<(bool Success, string Message)> UpdateVehicleAsync(int id, VehicleUpdateDto updatedVehicle);
         Task<bool> DeleteVehicleAsync(int id);
+        Task<bool> CheckVehicleAvailabilityAsync(int vehicleId, DateTime startTime, DateTime endTime);
         Task<Vehicle> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd);
         Task<IEnumerable<StationDtoForView>> GetStationFromModelAsync(int modelId);
     }
