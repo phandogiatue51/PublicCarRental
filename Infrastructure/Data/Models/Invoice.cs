@@ -27,5 +27,6 @@ namespace PublicCarRental.Infrastructure.Data.Models
         public int? OrderCode { get; set; }
 
         public string? BookingToken { get; set; }
+        public string? Note { get; set; }
     }
 }

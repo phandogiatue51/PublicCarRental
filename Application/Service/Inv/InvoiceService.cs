@@ -1,7 +1,4 @@
 ﻿using PublicCarRental.Application.DTOs.Inv;
-using PublicCarRental.Application.Service;
-using PublicCarRental.Application.Service.Cont;
-using PublicCarRental.Application.Service.Email;
 using PublicCarRental.Application.Service.Trans;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Inv;
@@ -11,18 +8,14 @@ namespace PublicCarRental.Application.Service.Inv
     public class InvoiceService : IInvoiceService
     {
         private readonly IInvoiceRepository _repo;
-        private readonly IHelperService _contInvHelperService;
-        private readonly IContractService _contractService;
         private readonly ITransactionService _transactionService;
         private readonly ILogger<InvoiceService> _logger;
 
 
-        public InvoiceService(IInvoiceRepository repo, IHelperService contInvHelperService,
-            IContractService contractService, ITransactionService transactionService, ILogger<InvoiceService> logger)
+        public InvoiceService(IInvoiceRepository repo, ITransactionService transactionService, 
+            ILogger<InvoiceService> logger)
         {
             _repo = repo;
-            _contInvHelperService = contInvHelperService;
-            _contractService = contractService;
             _transactionService = transactionService;
             _logger = logger;
         }
@@ -39,6 +32,8 @@ namespace PublicCarRental.Application.Service.Inv
                     AmountPaid = i.AmountPaid,
                     PaidAt = i.PaidAt,
                     Status = i.Status,
+                    OrderCode = i.OrderCode,
+                    Note = i.Note
                 }).ToList();
         }
 
@@ -55,7 +50,8 @@ namespace PublicCarRental.Application.Service.Inv
                 AmountPaid = i.AmountPaid,
                 PaidAt = i.PaidAt,
                 Status = i.Status,
-                OrderCode = i.OrderCode
+                OrderCode = i.OrderCode,
+                Note = i.Note
             };
         }
 
@@ -73,6 +69,7 @@ namespace PublicCarRental.Application.Service.Inv
                 PaidAt = i.PaidAt,
                 OrderCode = i.OrderCode,
                 Status = i.Status,
+                Note = i.Note
             };
         }
 
@@ -89,6 +86,8 @@ namespace PublicCarRental.Application.Service.Inv
                 AmountPaid = i.AmountPaid,
                 PaidAt = i.PaidAt,
                 Status = i.Status,
+                OrderCode = i.OrderCode,
+                Note = i.Note
             };
         }
 
@@ -117,6 +116,8 @@ namespace PublicCarRental.Application.Service.Inv
                 AmountPaid = i.AmountPaid,
                 PaidAt = i.PaidAt,
                 Status = i.Status,
+                OrderCode = i.OrderCode,
+                Note = i.Note
             });
         }
         public Invoice GetInvoiceByOrderCode(int orderCode)
@@ -200,6 +201,8 @@ namespace PublicCarRental.Application.Service.Inv
                 AmountPaid = i.AmountPaid,
                 PaidAt = i.PaidAt,
                 Status = i.Status,
+                OrderCode = i.OrderCode,
+                Note = i.Note
             });
         }
     }

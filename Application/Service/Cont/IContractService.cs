@@ -6,7 +6,7 @@ namespace PublicCarRental.Application.Service.Cont
     public interface IContractService
     {
         public IEnumerable<ContractDto> GetAll();
-        public ContractDto GetById(int id);
+        public ContractReadDto GetById(int id);
         RentalContract? GetEntityById(int id);
         Task<(bool Success, string Message)> UpdateContractAsync(int id, UpdateContractDto updatedContract);
         Task<(bool Success, string Message, int contractId)> ConfirmBookingAfterPaymentAsync(int invoiceId);

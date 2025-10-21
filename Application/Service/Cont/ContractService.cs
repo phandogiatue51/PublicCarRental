@@ -1,4 +1,5 @@
 ﻿using PublicCarRental.Application.DTOs.Cont;
+using PublicCarRental.Application.DTOs.Inv;
 using PublicCarRental.Application.DTOs.Message;
 using PublicCarRental.Application.Service.Image;
 using PublicCarRental.Application.Service.PDF;
@@ -53,11 +54,11 @@ namespace PublicCarRental.Application.Service.Cont
 
         public IEnumerable<ContractDto> GetAll()
         {
-            return _contractRepo.GetAll()
+            return _contractRepo.GetAll().ToList()
             .Select(contract => new ContractDto
             {
                 ContractId = contract.ContractId,
-                InvoiceId = contract.Invoice != null ? contract.Invoice.InvoiceId : null,
+                InvoiceCount = contract.Invoices?.Count ?? 0,
                 EVRenterId = contract.EVRenterId,
                 EVRenterName = contract.EVRenter != null && contract.EVRenter.Account != null ? contract.EVRenter.Account.FullName : null,
                 StaffId = contract.StaffId,
@@ -71,19 +72,19 @@ namespace PublicCarRental.Application.Service.Cont
                 TotalCost = contract.TotalCost,
                 Status = contract.Status,
                 ImageIn = contract.ImageUrlIn,
-                ImageOut = contract.ImageUrlOut
-            })
-            .ToList();
+                ImageOut = contract.ImageUrlOut,
+                Notes = contract.Note
+            });
         }
 
-        public ContractDto GetById(int id)
+        public ContractReadDto GetById(int id)
         {
             var contract = _contractRepo.GetById(id);
             if (contract == null) return null;
-            return new ContractDto
+
+            return new ContractReadDto
             {
                 ContractId = contract.ContractId,
-                InvoiceId = contract.Invoice?.InvoiceId,
                 EVRenterId = contract.EVRenterId,
                 EVRenterName = contract.EVRenter?.Account?.FullName,
                 StaffId = contract.StaffId,
@@ -97,7 +98,19 @@ namespace PublicCarRental.Application.Service.Cont
                 TotalCost = contract.TotalCost,
                 Status = contract.Status,
                 ImageIn = contract.ImageUrlIn,
-                ImageOut = contract.ImageUrlOut
+                ImageOut = contract.ImageUrlOut,
+                Notes = contract.Note,
+                Invoices = contract.Invoices?.Select(i => new InvoiceDto
+                {
+                    InvoiceId = i.InvoiceId,
+                    ContractId = i.ContractId,
+                    IssuedAt = i.IssuedAt,
+                    AmountDue = i.AmountDue,
+                    AmountPaid = i.AmountPaid,
+                    PaidAt = i.PaidAt,
+                    Status = i.Status,
+                    OrderCode = i.OrderCode
+                }).ToList()
             };
         }
 
@@ -307,7 +320,6 @@ namespace PublicCarRental.Application.Service.Cont
             return contracts.Select(contract => new ContractDto
             {
                 ContractId = contract.ContractId,
-                InvoiceId = contract.Invoice?.InvoiceId,
                 EVRenterId = contract.EVRenterId,
                 EVRenterName = contract.EVRenter?.Account?.FullName,
                 StaffId = contract.StaffId,
@@ -367,7 +379,7 @@ namespace PublicCarRental.Application.Service.Cont
             return contracts.Select(contract => new ContractDto
             {
                 ContractId = contract.ContractId,
-                InvoiceId = contract.Invoice?.InvoiceId,
+                InvoiceCount = contract.Invoices?.Count ?? 0,
                 EVRenterId = contract.EVRenterId,
                 EVRenterName = contract.EVRenter?.Account?.FullName,
                 StaffId = contract.StaffId,
@@ -392,7 +404,7 @@ namespace PublicCarRental.Application.Service.Cont
             return contracts.Select(contract => new ContractDto
             {
                 ContractId = contract.ContractId,
-                InvoiceId = contract.Invoice != null ? contract.Invoice.InvoiceId : null,
+                InvoiceCount = contract.Invoices?.Count ?? 0,
                 EVRenterId = contract.EVRenterId,
                 EVRenterName = contract.EVRenter != null && contract.EVRenter.Account != null ? contract.EVRenter.Account.FullName : null,
                 StaffId = contract.StaffId,
@@ -434,7 +446,7 @@ namespace PublicCarRental.Application.Service.Cont
             return contracts.Select(contract => new ContractDto
             {
                 ContractId = contract.ContractId,
-                InvoiceId = contract.Invoice != null ? contract.Invoice.InvoiceId : null,
+                InvoiceCount = contract.Invoices?.Count ?? 0,
                 EVRenterId = contract.EVRenterId,
                 EVRenterName = contract.EVRenter != null && contract.EVRenter.Account != null ? contract.EVRenter.Account.FullName : null,
                 StaffId = contract.StaffId,

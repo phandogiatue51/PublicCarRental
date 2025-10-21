@@ -28,14 +28,14 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Cont
                             .ThenInclude(r => r.Account)
                 .Include(c => c.Vehicle)
                 .Include(c => c.Station)
-                .Include(c => c.Invoice)
+                .Include(c => c.Invoices)
                 .FirstOrDefault(c => c.ContractId == id);
         }
 
         public IQueryable<RentalContract> GetAll()
         {
             return _context.RentalContracts
-                .Include(c => c.Invoice)
+                .Include(c => c.Invoices)
                 .Include(c => c.EVRenter)
                     .ThenInclude(r => r.Account)
                 .Include(c => c.Staff)

@@ -17,7 +17,7 @@ namespace PublicCarRental.Application.DTOs.Inv
         public DateTime PaymentDeadline => IssuedAt.AddMinutes(30);
         public bool IsExpired => DateTime.UtcNow > PaymentDeadline;
         public int? OrderCode { get; set; }
-
+        public string? Note { get; set; }
         public InvoiceStatus Status { get; set; }
     }
 }

@@ -109,10 +109,10 @@ namespace PublicCarRental.Infrastructure.Data.Models
                 .WithMany(s => s.RentalContracts)
                 .HasForeignKey(rc => rc.StationId);
 
-            modelBuilder.Entity<RentalContract>()
-                .HasOne(rc => rc.Invoice)
-                .WithOne(i => i.Contract)
-                .HasForeignKey<Invoice>(i => i.ContractId)
+            modelBuilder.Entity<Invoice>()
+                .HasOne(i => i.Contract)
+                .WithMany(rc => rc.Invoices)
+                .HasForeignKey(i => i.ContractId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Invoice>()

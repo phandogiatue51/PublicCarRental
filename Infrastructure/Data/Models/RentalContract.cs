@@ -33,11 +33,7 @@ namespace PublicCarRental.Infrastructure.Data.Models
         public decimal? TotalCost { get; set; }
         public RentalStatus Status { get; set; } = RentalStatus.ToBeConfirmed;
 
-        [InverseProperty("Contract")]
-        public Invoice Invoice { get; set; }
-
-        [NotMapped]
-        public DateTime ChargingEndTime => EndTime.AddHours(3);
+        public ICollection<Invoice> Invoices { get; set; }  
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public string? ImageUrlIn { get; set; }

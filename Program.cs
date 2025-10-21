@@ -102,7 +102,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReactApp", policy =>
     {
         policy.WithOrigins(
-            "https://sweet-essence-production.up.railway.app", 
+            "https://fortunate-art-production.up.railway.app", 
             "https://publiccarrental-production-b7c5.up.railway.app",
             "http://localhost:3000", 
             "https://localhost:3000",
