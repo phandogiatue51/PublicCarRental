@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using PublicCarRental.Infrastructure.Data.Models;
@@ -11,9 +12,11 @@ using PublicCarRental.Infrastructure.Data.Models;
 namespace PublicCarRental.Migrations
 {
     [DbContext(typeof(EVRentalDbContext))]
-    partial class EVRentalDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251021062636_MakeContractInvoiceM2M")]
+    partial class MakeContractInvoiceM2M
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

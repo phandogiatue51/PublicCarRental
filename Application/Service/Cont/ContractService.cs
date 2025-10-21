@@ -395,33 +395,6 @@ namespace PublicCarRental.Application.Service.Cont
             });
         }
 
-        public IEnumerable<ContractDto> FilterByStatus(RentalStatus status)
-        {
-            var contracts = _contractRepo.GetAll()
-                .Where(c => c.Status == status)
-                .ToList();
-
-            return contracts.Select(contract => new ContractDto
-            {
-                ContractId = contract.ContractId,
-                InvoiceCount = contract.Invoices?.Count ?? 0,
-                EVRenterId = contract.EVRenterId,
-                EVRenterName = contract.EVRenter != null && contract.EVRenter.Account != null ? contract.EVRenter.Account.FullName : null,
-                StaffId = contract.StaffId,
-                StaffName = contract.Staff != null && contract.Staff.Account != null ? contract.Staff.Account.FullName : null,
-                VehicleId = contract.VehicleId ?? 0,
-                VehicleLicensePlate = contract.Vehicle != null ? contract.Vehicle.LicensePlate : null,
-                StationId = contract.StationId ?? 0,
-                StationName = contract.Station != null ? contract.Station.Name : null,
-                StartTime = contract.StartTime,
-                EndTime = contract.EndTime,
-                TotalCost = contract.TotalCost,
-                Status = contract.Status,
-                ImageIn = contract.ImageUrlIn,
-                ImageOut = contract.ImageUrlOut
-            }).ToList();
-        }
-
         public IEnumerable<ContractDto> FilterContracts(int? stationId, RentalStatus? status, int? renterId, int? staffId, int? vehicleId)
         {
             var query = _contractRepo.GetAll().AsQueryable();

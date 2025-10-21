@@ -104,13 +104,6 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(contracts);
         }
 
-        [HttpGet("filter-by-status/{status}")]
-        public IActionResult FilterByStatus(RentalStatus status)
-        {
-            var contracts = _contractService.FilterByStatus(status);
-            return Ok(contracts);
-        }
-
         [HttpGet("filter")]
         public IActionResult FilterContracts([FromQuery] int? stationId, [FromQuery] RentalStatus? status, 
             [FromQuery] int? renterId, [FromQuery] int? staffId, [FromQuery] int? vehicleId)
