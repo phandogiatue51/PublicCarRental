@@ -9,5 +9,6 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Inv
         Invoice GetById(int id);
         public Invoice? GetByContractId(int contractId);
         void Update(Invoice invoice);
+        public void Delete(Invoice invoice);
     }
 }

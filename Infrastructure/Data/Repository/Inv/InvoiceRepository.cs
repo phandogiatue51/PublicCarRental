@@ -44,5 +44,11 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Inv
             _context.Invoices.Update(invoice);
             _context.SaveChanges();
         }
+
+        public void Delete(Invoice invoice)
+        {
+            _context.Invoices.Remove(invoice);
+            _context.SaveChanges();
+        }
     }
 }

@@ -205,5 +205,11 @@ namespace PublicCarRental.Application.Service.Inv
                 Note = i.Note
             });
         }
+
+        public bool DeleteInvoice(Invoice invoice)
+        {
+            _repo.Delete(invoice);
+            return true;
+        }
     }
 }

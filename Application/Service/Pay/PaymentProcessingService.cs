@@ -10,7 +10,6 @@ namespace PublicCarRental.Application.Service.Pay
     {
         Task ProcessPaymentWebhookAsync(string webhookBody);
         Task HandlePaidPaymentAsync(int invoiceId);
-        Task HandleCancelledPaymentAsync(int invoiceId);
     }
 
     public class PaymentProcessingService : IPaymentProcessingService
@@ -18,20 +17,14 @@ namespace PublicCarRental.Application.Service.Pay
         private readonly IInvoiceService _invoiceService;
         private readonly IContractService _contractService;
         private readonly IBookingService _bookingService;
-        private readonly IDistributedLockService _distributedLock;
         private readonly ILogger<PaymentProcessingService> _logger;
 
-        public PaymentProcessingService(
-            IInvoiceService invoiceService,
-            IContractService contractService,
-            IBookingService bookingService,
-            IDistributedLockService distributedLock,
+        public PaymentProcessingService(IInvoiceService invoiceService, IContractService contractService, IBookingService bookingService,
             ILogger<PaymentProcessingService> logger)
         {
             _invoiceService = invoiceService;
             _contractService = contractService;
             _bookingService = bookingService;
-            _distributedLock = distributedLock;
             _logger = logger;
         }
 
@@ -41,9 +34,8 @@ namespace PublicCarRental.Application.Service.Pay
             {
                 var webhookData = JsonSerializer.Deserialize<JsonElement>(webhookBody);
 
-                // Extract orderCode from data
                 int orderCode = 0;
-                string status = "UNKNOWN";
+                bool isPaid = false;
 
                 if (webhookData.TryGetProperty("data", out var dataElement) &&
                     dataElement.TryGetProperty("orderCode", out var orderCodeElement))
@@ -52,53 +44,24 @@ namespace PublicCarRental.Application.Service.Pay
                     _logger.LogInformation($"🔍 Found orderCode: {orderCode}");
                 }
 
-                // Determine status from multiple possible fields
-                if (webhookData.TryGetProperty("code", out var codeElement))
+                if (webhookData.TryGetProperty("code", out var codeElement) &&
+                    codeElement.GetString() == "00")
                 {
-                    var code = codeElement.GetString();
-                    status = code == "00" ? "PAID" : GetStatusFromCode(code);
-                    _logger.LogInformation($"🔍 Root code: {code} -> Status: {status}");
+                    isPaid = true;
                 }
                 else if (webhookData.TryGetProperty("success", out var successElement) &&
                          successElement.GetBoolean())
                 {
-                    status = "PAID";
-                    _logger.LogInformation($"🔍 Success is true -> Status: {status}");
-                }
-                else if (webhookData.TryGetProperty("status", out var statusElement))
-                {
-                    status = statusElement.GetString()?.ToUpper() ?? "UNKNOWN";
-                    _logger.LogInformation($"🔍 Status field: {status}");
+                    isPaid = true;
                 }
 
-                _logger.LogInformation($"💰 PROCESSING: Order {orderCode} - Status {status}");
-
-                if (orderCode > 0)
+                if (orderCode > 0 && isPaid)
                 {
                     var invoice = _invoiceService.GetInvoiceByOrderCode(orderCode);
-                    _logger.LogInformation($"📄 Invoice lookup result: {(invoice != null ? $"Found invoice {invoice.InvoiceId}" : "NOT FOUND")}");
-
                     if (invoice != null)
                     {
-                        switch (status)
-                        {
-                            case "PAID":
-                                await HandlePaidPaymentAsync(invoice.InvoiceId);
-                                break;
-                            case "CANCELLED":
-                            case "EXPIRED":
-                            case "FAILED":
-                                await HandleCancelledPaymentAsync(invoice.InvoiceId);
-                                break;
-                            default:
-                                _logger.LogWarning($"❓ Unknown status: {status} for order {orderCode}");
-                                break;
-                        }
+                        await HandlePaidPaymentAsync(invoice.InvoiceId);
                     }
-                }
-                else
-                {
-                    _logger.LogWarning($"❌ Invalid orderCode: {orderCode}");
                 }
             }
             catch (JsonException jsonEx)
@@ -139,14 +102,12 @@ namespace PublicCarRental.Application.Service.Pay
 
                 if (bookingRequest != null)
                 {
-                    // STEP 2: Now create contract (invoice is already PAID)
                     _logger.LogInformation("🚀 STEP 2: Calling ConfirmBookingAfterPaymentAsync...");
                     var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
                     _logger.LogInformation($"📝 Contract creation result: Success={result.Success}, ContractId={result.contractId}, Message={result.Message}");
 
                     if (result.Success)
                     {
-                        // STEP 3: Clean up booking request
                         await _bookingService.RemoveBookingRequest(bookingToken);
                         _logger.LogInformation($"✅ Payment completed: Invoice {invoice.InvoiceId} paid, Contract {result.contractId} created");
                     }
@@ -156,50 +117,6 @@ namespace PublicCarRental.Application.Service.Pay
                     _logger.LogWarning($"⚠️ No booking request found, but invoice marked as PAID");
                 }
             }
-        }
-
-        public async Task HandleCancelledPaymentAsync(int invoiceId)
-        {
-            var invoice = _invoiceService.GetEntityById(invoiceId);
-            if (invoice == null)
-            {
-                _logger.LogWarning($"Invoice {invoiceId} not found");
-                return;
-            }
-
-            _logger.LogInformation($"🔄 Handling CANCELLED payment for invoice {invoice.InvoiceId}");
-
-            var updateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Cancelled, 0);
-
-            if (updateSuccess)
-            {
-                _logger.LogInformation($"✅ Invoice {invoice.InvoiceId} marked as CANCELLED");
-
-                if (!string.IsNullOrEmpty(invoice.BookingToken))
-                {
-                    await _bookingService.RemoveBookingRequest(invoice.BookingToken);
-                    _logger.LogInformation($"✅ Booking request cleaned up for token: {invoice.BookingToken}");
-                }
-
-                var bookingRequest = await _bookingService.GetBookingRequest(invoice.BookingToken);
-                if (bookingRequest != null)
-                {
-                    var lockKey = $"vehicle_booking:{bookingRequest.VehicleId}:{bookingRequest.StartTime:yyyyMMddHHmm}_{bookingRequest.EndTime:yyyyMMddHHmm}";
-                    _distributedLock.ReleaseLock(lockKey, invoice.BookingToken); 
-                    _logger.LogInformation($"✅ Vehicle lock released: {lockKey}");
-                }
-            }
-        }
-
-        private string GetStatusFromCode(string code)
-        {
-            return code switch
-            {
-                "01" or "02" or "03" => "CANCELLED",
-                "04" or "05" => "EXPIRED",
-                "06" or "07" => "FAILED",
-                _ => "UNKNOWN"
-            };
         }
     }
 }
