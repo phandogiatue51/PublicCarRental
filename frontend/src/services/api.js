@@ -372,6 +372,7 @@ export const invoiceAPI = {
 
   // Get invoice by ID
   getById: (id) => apiRequest(`/Invoice/${id}`),
+  deleteByOrderCode: (orderCode) => apiRequest(`/Invoice/cancel-invoice/${orderCode}`, 'DELETE'),
 };
 
 // Booking API

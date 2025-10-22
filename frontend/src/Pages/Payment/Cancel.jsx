@@ -1,6 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { invoiceAPI } from '../../services/api';
 
 function Cancel() {
+    const [searchParams] = useSearchParams();
+    
+    useEffect(() => {
+        const orderCode = searchParams.get('orderCode');
+        if (orderCode) {
+            invoiceAPI.deleteByOrderCode(orderCode)
+                .then(() => console.log('Invoice deleted'))
+                .catch(err => console.error('Failed to delete invoice:', err));
+        }
+    }, [searchParams]);
+
     return (
         <div style={{
             display: 'flex',
