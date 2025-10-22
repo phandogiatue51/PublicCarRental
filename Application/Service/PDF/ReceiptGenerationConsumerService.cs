@@ -88,9 +88,17 @@ namespace PublicCarRental.Application.Service.Rabbit
 
             try
             {
+                _logger.LogInformation("🔍 Starting receipt generation for Invoice {InvoiceId}, Contract {ContractId}, Renter {RenterId}", 
+                    receiptEvent.InvoiceId, receiptEvent.ContractId, receiptEvent.RenterId);
+
                 var invoice = invoiceService.GetEntityById(receiptEvent.InvoiceId);
+                _logger.LogInformation("📄 Invoice loaded: {InvoiceFound}", invoice != null ? "YES" : "NO");
+                
                 var contract = contractService.GetEntityById(receiptEvent.ContractId);
+                _logger.LogInformation("📋 Contract loaded: {ContractFound}", contract != null ? "YES" : "NO");
+                
                 var renter = await renterService.GetEntityByIdAsync(receiptEvent.RenterId);
+                _logger.LogInformation("👤 Renter loaded: {RenterFound}", renter != null ? "YES" : "NO");
 
                 if (invoice == null)
                 {
@@ -110,10 +118,15 @@ namespace PublicCarRental.Application.Service.Rabbit
                     return;
                 }
 
+                _logger.LogInformation("🎯 All entities loaded successfully, generating PDF...");
                 var receiptBytes = pdfReceiptService.GeneratePaymentReceipt(invoice, contract);
+                _logger.LogInformation("📄 PDF generated successfully, size: {Size} bytes", receiptBytes.Length);
 
+                _logger.LogInformation("💾 Saving PDF to storage...");
                 await pdfStorageService.SaveReceiptPdfAsync(invoice.InvoiceId, receiptBytes);
+                _logger.LogInformation("✅ PDF saved to storage");
 
+                _logger.LogInformation("📧 Sending receipt email to {Email}...", renter.Account.Email);
                 await emailService.SendReceiptPdfAsync(
                    renter.Account.Email,
                    renter.Account.FullName,
@@ -121,7 +134,7 @@ namespace PublicCarRental.Application.Service.Rabbit
                    invoice.InvoiceId
                 );
 
-                _logger.LogInformation("Receipt emailed to {Email} for invoice {InvoiceId}",
+                _logger.LogInformation("✅ Receipt emailed to {Email} for invoice {InvoiceId}",
                     renter.Account.Email, invoice.InvoiceId);
             }
             catch (Exception ex)

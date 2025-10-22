@@ -230,7 +230,7 @@ public class PdfService : IPdfService
                             grid.Item().Text($"INV-{invoice.InvoiceId:D6}");
 
                             grid.Item().Text("Issue Date:").SemiBold();
-                            grid.Item().Text($"{invoice.PaidAt:dd/MM/yyyy HH:mm}");
+                            grid.Item().Text(invoice.PaidAt?.ToString("dd/MM/yyyy HH:mm") ?? "N/A");
 
                             grid.Item().Text("Order Code:").SemiBold();
                             grid.Item().Text(invoice.OrderCode?.ToString() ?? "N/A");
@@ -246,7 +246,7 @@ public class PdfService : IPdfService
                             grid.Spacing(8);
 
                             grid.Item().Text("Amount Paid:").SemiBold();
-                            grid.Item().Text($"{invoice.AmountPaid:N0} VND");
+                            grid.Item().Text($"{invoice.AmountPaid?.ToString("N0") ?? "0"} VND");
 
                             grid.Item().Text("Payment Method:").SemiBold();
                             grid.Item().Text("PayOS Gateway");
@@ -255,7 +255,7 @@ public class PdfService : IPdfService
                             grid.Item().Text("PAID");
 
                             grid.Item().Text("Payment Date:").SemiBold();
-                            grid.Item().Text($"{invoice.PaidAt:dd/MM/yyyy HH:mm}");
+                            grid.Item().Text(invoice.PaidAt?.ToString("dd/MM/yyyy HH:mm") ?? "N/A");
                         });
 
                         column.Item().LineHorizontal(0.5f);
@@ -304,13 +304,13 @@ public class PdfService : IPdfService
 
                             grid.Item().Text("Vehicle Rental");
                             grid.Item().Text($"{duration:F1} hours");
-                            grid.Item().AlignRight().Text($"{invoice.AmountPaid:N0} VND");
+                            grid.Item().AlignRight().Text($"{invoice.AmountPaid?.ToString("N0") ?? "0"} VND");
                         });
 
                         column.Item().LineHorizontal(0.5f);
 
                         // Total Amount
-                        column.Item().AlignRight().Text($"TOTAL: {invoice.AmountPaid:N0} VND")
+                        column.Item().AlignRight().Text($"TOTAL: {invoice.AmountPaid?.ToString("N0") ?? "0"} VND")
                             .SemiBold().FontSize(12);
 
                         // Thank You Message
