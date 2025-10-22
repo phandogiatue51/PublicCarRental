@@ -45,61 +45,88 @@ namespace PublicCarRental.Application.Service.Rabbit
             {
                 var factory = new ConnectionFactory { Uri = new Uri(_connectionString) };
                 using var connection = await factory.CreateConnectionAsync();
-                using var channel = await connection.CreateChannelAsync();
 
-                await channel.BasicQosAsync(0, 2, false); 
-                _logger.LogInformation("✅ Accident QoS set (prefetch=2)");
+                var channel = await connection.CreateChannelAsync();
 
-                var dlqArgs = new Dictionary<string, object>
+                try
                 {
-                    { "x-dead-letter-exchange", "" },
-                    { "x-dead-letter-routing-key", "accident_dlq" }
-                };
+                    await channel.BasicQosAsync(0, 2, false);
+                    _logger.LogInformation("✅ Accident QoS set (prefetch=2)");
 
-                await channel.QueueDeclareAsync(
-                    queue: _queueName,
-                    durable: true,
-                    exclusive: false,
-                    autoDelete: false,
-                    arguments: dlqArgs
-                );
+                    var dlqArgs = new Dictionary<string, object>
+                    {
+                        { "x-dead-letter-exchange", "" },
+                        { "x-dead-letter-routing-key", "accident_dlq" }
+                    };
 
-                _logger.LogInformation("✅ Accident Queue declared: {QueueName}", _queueName);
+                    await channel.QueueDeclareAsync(
+                        queue: _queueName,
+                        durable: true,
+                        exclusive: false,
+                        autoDelete: false,
+                        arguments: dlqArgs
+                    );
 
-                var consumer = new AsyncEventingBasicConsumer(channel);
-                consumer.ReceivedAsync += async (model, ea) =>
+                    _logger.LogInformation("✅ Accident Queue declared: {QueueName}", _queueName);
+
+                    var consumer = new AsyncEventingBasicConsumer(channel);
+                    consumer.ReceivedAsync += async (model, ea) =>
+                    {
+                        try
+                        {
+                            _logger.LogWarning("🚨 ACCIDENT MESSAGE RECEIVED | DeliveryTag={DeliveryTag}", ea.DeliveryTag);
+
+                            var body = ea.Body.ToArray();
+                            var messageJson = Encoding.UTF8.GetString(body);
+
+                            using var scope = _serviceProvider.CreateScope();
+                            var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<NotificationHub>>();
+
+                            var accidentEvent = JsonSerializer.Deserialize<AccidentReportedEvent>(messageJson);
+
+                            await ProcessAccidentNotificationAsync(hubContext, accidentEvent);
+
+                            if (channel.IsOpen)
+                            {
+                                await channel.BasicAckAsync(ea.DeliveryTag, false);
+                                _logger.LogWarning("✅ Accident notification processed: {AccidentId}", accidentEvent.AccidentId);
+                            }
+                            else
+                            {
+                                _logger.LogWarning("Channel closed, cannot ack accident message {AccidentId}", accidentEvent.AccidentId);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "❌ ERROR processing accident message");
+                            if (channel.IsOpen)
+                            {
+                                await channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                            }
+                        }
+                    };
+
+                    await channel.BasicConsumeAsync(
+                        queue: _queueName,
+                        autoAck: false,
+                        consumer: consumer
+                    );
+
+                    _logger.LogInformation("✅ ACCIDENT CONSUMER LISTENING on {QueueName}", _queueName);
+
+                    while (!stoppingToken.IsCancellationRequested && channel.IsOpen)
+                    {
+                        await Task.Delay(1000, stoppingToken);
+                    }
+                }
+                finally
                 {
-                    try
+                    if (channel?.IsOpen == true)
                     {
-                        _logger.LogWarning("🚨 ACCIDENT MESSAGE RECEIVED | DeliveryTag={DeliveryTag}", ea.DeliveryTag);
-
-                        var body = ea.Body.ToArray();
-                        var messageJson = Encoding.UTF8.GetString(body);
-
-                        using var scope = _serviceProvider.CreateScope();
-                        var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<NotificationHub>>();
-
-                        var accidentEvent = JsonSerializer.Deserialize<AccidentReportedEvent>(messageJson);
-
-                        await ProcessAccidentNotificationAsync(hubContext, accidentEvent);
-
-                        await channel.BasicAckAsync(ea.DeliveryTag, false);
-                        _logger.LogWarning("✅ Accident notification processed: {AccidentId}", accidentEvent.AccidentId);
+                        await channel.CloseAsync();
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "❌ ERROR processing accident message");
-                        await channel.BasicNackAsync(ea.DeliveryTag, false, false);
-                    }
-                };
-
-                await channel.BasicConsumeAsync(
-                    queue: _queueName,
-                    autoAck: false,
-                    consumer: consumer
-                );
-
-                _logger.LogInformation("✅ ACCIDENT CONSUMER LISTENING on {QueueName}", _queueName);
+                    channel?.Dispose();
+                }
             }
             catch (Exception ex)
             {

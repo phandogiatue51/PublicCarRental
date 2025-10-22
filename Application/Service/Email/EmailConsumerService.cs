@@ -26,73 +26,94 @@ namespace PublicCarRental.Application.Service.Email
             var factory = new ConnectionFactory { Uri = new Uri(_connectionString) };
 
             using var connection = await factory.CreateConnectionAsync();
-            using var channel = await connection.CreateChannelAsync();
 
-            var dlqArgs = new Dictionary<string, object>
+            var channel = await connection.CreateChannelAsync();
+
+            try
             {
-                { "x-dead-letter-exchange", "" },
-                { "x-dead-letter-routing-key", "receipt_generation_dlq" }
-            };
-
-            await channel.QueueDeclareAsync(queue: _queueName,
-                                          durable: true,
-                                          exclusive: false,
-                                          autoDelete: false,
-                                          arguments: dlqArgs);
-
-            var consumer = new AsyncEventingBasicConsumer(channel);
-            consumer.ReceivedAsync += async (model, ea) =>
-            {
-                try
+                var dlqArgs = new Dictionary<string, object>
                 {
-                    var body = ea.Body.ToArray();
-                    var message = JsonSerializer.Deserialize<EmailMessage>(Encoding.UTF8.GetString(body));
+                    { "x-dead-letter-exchange", "" },
+                    { "x-dead-letter-routing-key", "receipt_generation_dlq" }
+                };
 
-                    _logger.LogInformation("Processing email for {Email}", message.ToEmail);
+                await channel.QueueDeclareAsync(queue: _queueName,
+                                              durable: true,
+                                              exclusive: false,
+                                              autoDelete: false,
+                                              arguments: dlqArgs);
 
-                    using var scope = _serviceProvider.CreateScope();
-                    var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
-
-                    if (message.MessageType == "Verification")
-                    {
-                        await emailService.SendVerificationEmail(message.ToEmail, message.Token);
-                        _logger.LogInformation("Verification email sent to {Email}", message.ToEmail);
-                    }
-                    else if (message.MessageType == "PasswordReset")
-                    {
-                        await emailService.SendPasswordResetEmail(message.ToEmail, message.Token);
-                        _logger.LogInformation("Password reset email sent to {Email}", message.ToEmail);
-                    }
-                    else if (message.MessageType == "StaffNotification")
-                    {
-                        await emailService.SendEmail(message.ToEmail, message.Subject, message.Body);
-                        _logger.LogInformation("Staff notification email sent to {Email}", message.ToEmail);
-                    }
-                    else
-                    {
-                        await emailService.SendEmail(message.ToEmail, message.Subject, message.Body);
-                        _logger.LogInformation("General email sent to {Email}", message.ToEmail);
-                    }
-
-                    await channel.BasicAckAsync(ea.DeliveryTag, false);
-                }
-                catch (Exception ex)
+                var consumer = new AsyncEventingBasicConsumer(channel);
+                consumer.ReceivedAsync += async (model, ea) =>
                 {
-                    _logger.LogError(ex, "Error processing email message");
+                    try
+                    {
+                        var body = ea.Body.ToArray();
+                        var message = JsonSerializer.Deserialize<EmailMessage>(Encoding.UTF8.GetString(body));
 
-                    await channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                        _logger.LogInformation("Processing email for {Email}", message.ToEmail);
+
+                        using var scope = _serviceProvider.CreateScope();
+                        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+                        if (message.MessageType == "Verification")
+                        {
+                            await emailService.SendVerificationEmail(message.ToEmail, message.Token);
+                            _logger.LogInformation("Verification email sent to {Email}", message.ToEmail);
+                        }
+                        else if (message.MessageType == "PasswordReset")
+                        {
+                            await emailService.SendPasswordResetEmail(message.ToEmail, message.Token);
+                            _logger.LogInformation("Password reset email sent to {Email}", message.ToEmail);
+                        }
+                        else if (message.MessageType == "StaffNotification")
+                        {
+                            await emailService.SendEmail(message.ToEmail, message.Subject, message.Body);
+                            _logger.LogInformation("Staff notification email sent to {Email}", message.ToEmail);
+                        }
+                        else
+                        {
+                            await emailService.SendEmail(message.ToEmail, message.Subject, message.Body);
+                            _logger.LogInformation("General email sent to {Email}", message.ToEmail);
+                        }
+
+                        if (channel.IsOpen)
+                        {
+                            await channel.BasicAckAsync(ea.DeliveryTag, false);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Channel closed, cannot ack email message for {Email}", message.ToEmail);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error processing email message");
+                        if (channel.IsOpen)
+                        {
+                            await channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                        }
+                    }
+                };
+
+                await channel.BasicConsumeAsync(queue: _queueName,
+                                              autoAck: false,
+                                              consumer: consumer);
+
+                _logger.LogInformation("Email consumer started listening on {QueueName}", _queueName);
+
+                while (!stoppingToken.IsCancellationRequested && channel.IsOpen)
+                {
+                    await Task.Delay(1000, stoppingToken);
                 }
-            };
-
-            await channel.BasicConsumeAsync(queue: _queueName,
-                                          autoAck: false,
-                                          consumer: consumer);
-
-            _logger.LogInformation("Email consumer started listening on {QueueName}", _queueName);
-
-            while (!stoppingToken.IsCancellationRequested)
+            }
+            finally
             {
-                await Task.Delay(1000, stoppingToken);
+                if (channel?.IsOpen == true)
+                {
+                    await channel.CloseAsync();
+                }
+                channel?.Dispose();
             }
         }
     }

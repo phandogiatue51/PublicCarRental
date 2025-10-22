@@ -20,7 +20,10 @@ namespace PublicCarRental.Application.Service.Rabbit
             {
                 var factory = new ConnectionFactory
                 {
-                    Uri = new Uri(connectionString)
+                    Uri = new Uri(connectionString),
+                    AutomaticRecoveryEnabled = true,       
+                    NetworkRecoveryInterval = TimeSpan.FromSeconds(10),
+                    RequestedHeartbeat = TimeSpan.FromSeconds(60)
                 };
 
                 _connection = factory.CreateConnectionAsync().GetAwaiter().GetResult();

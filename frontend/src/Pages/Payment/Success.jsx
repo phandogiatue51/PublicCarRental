@@ -17,7 +17,13 @@ function Success() {
             <div style={{ textAlign: 'center' }}>
                 <h1 style={{ marginBottom: '20px' }}>✅ Payment Successful!</h1>
                 <p style={{ marginBottom: '15px' }}>
-                    Thank you for your payment. Your rental has been confirmed.
+                    Thank you for your payment. Your booking request has been confirmed.
+                </p>
+                <p style={{ marginBottom: '15px' }}>
+                    A receipt has been sent to your email address (even in Spam). 
+                </p>
+                <p style={{ marginBottom: '15px' }}>
+                    To start your renting, you will have to present your receipt.
                 </p>
                 {orderCode && (
                     <p style={{ marginBottom: '15px' }}>

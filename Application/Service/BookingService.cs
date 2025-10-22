@@ -106,7 +106,7 @@ public class BookingService : IBookingService
                 await _distributedCache.RemoveAsync($"booking:{bookingToken}");
             });
 
-            return (true, "Booking request created successfully!", invoice.InvoiceId, bookingToken);
+            return (true, "Please review your booking request!", invoice.InvoiceId, bookingToken);
         }
         catch (Exception ex)
         {

@@ -21,16 +21,29 @@ namespace PublicCarRental.Application.Service.PDF
 
         public async Task PublishReceiptGenerationAsync(int invoiceId, int contractId, int renterId, string renterEmail, string renterName)
         {
-            var receiptEvent = new ReceiptGenerationEvent
+            try
             {
-                InvoiceId = invoiceId,
-                ContractId = contractId,
-                RenterId = renterId,
-                RenterEmail = renterEmail,
-                RenterName = renterName   
-            };
+                _logger.LogInformation("📧 Publishing receipt generation event for Invoice {InvoiceId}, Contract {ContractId}, Renter {RenterId}", 
+                    invoiceId, contractId, renterId);
 
-            await _messageProducer.PublishMessageAsync(receiptEvent, _queueName);
+                var receiptEvent = new ReceiptGenerationEvent
+                {
+                    InvoiceId = invoiceId,
+                    ContractId = contractId,
+                    RenterId = renterId,
+                    RenterEmail = renterEmail,
+                    RenterName = renterName   
+                };
+
+                await _messageProducer.PublishMessageAsync(receiptEvent, _queueName);
+                
+                _logger.LogInformation("✅ Receipt generation event published successfully for Invoice {InvoiceId}", invoiceId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Failed to publish receipt generation event for Invoice {InvoiceId}", invoiceId);
+                throw;
+            }
         }
     }
 }

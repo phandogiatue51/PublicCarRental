@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Storage;
-using PublicCarRental.Application.DTOs.Cont;
-using PublicCarRental.Infrastructure.Data.Models;
+﻿using PublicCarRental.Infrastructure.Data.Models;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -272,7 +270,7 @@ public class PdfService : IPdfService
                             grid.Item().Text(contract.EVRenter?.Account?.FullName ?? "N/A");
 
                             grid.Item().Text("Vehicle:").SemiBold();
-                            grid.Item().Text($"{contract.Vehicle?.LicensePlate} - {contract.Vehicle?.Model?.Name}");
+                            grid.Item().Text($"{contract.Vehicle?.Model?.Name}");
 
                             grid.Item().Text("Station:").SemiBold();
                             grid.Item().Text(contract.Station?.Name ?? "N/A");
@@ -284,34 +282,6 @@ public class PdfService : IPdfService
                             var duration = (contract.EndTime - contract.StartTime).TotalHours;
                             grid.Item().Text($"{duration:F1} hours");
                         });
-
-                        // Amount Breakdown
-                        column.Item().LineHorizontal(0.5f);
-                        column.Item().Text("AMOUNT BREAKDOWN").SemiBold().FontSize(12);
-
-
-                        var duration = (contract.EndTime - contract.StartTime).TotalHours;
-                        var hourlyRate = contract.Vehicle?.Model?.PricePerHour ?? 0;
-
-                        column.Item().Grid(grid =>
-                        {
-                            grid.Columns(3);
-                            grid.Spacing(5);
-
-                            grid.Item().Text("Description").SemiBold();
-                            grid.Item().Text("Quantity").SemiBold();
-                            grid.Item().AlignRight().Text("Amount").SemiBold();
-
-                            grid.Item().Text("Vehicle Rental");
-                            grid.Item().Text($"{duration:F1} hours");
-                            grid.Item().AlignRight().Text($"{invoice.AmountPaid?.ToString("N0") ?? "0"} VND");
-                        });
-
-                        column.Item().LineHorizontal(0.5f);
-
-                        // Total Amount
-                        column.Item().AlignRight().Text($"TOTAL: {invoice.AmountPaid?.ToString("N0") ?? "0"} VND")
-                            .SemiBold().FontSize(12);
 
                         // Thank You Message
                         column.Item().PaddingTop(20).AlignCenter().Column(thankYouColumn =>
@@ -330,9 +300,9 @@ public class PdfService : IPdfService
                         column.Item().PaddingTop(15).AlignCenter().Column(contactColumn =>
                         {
                             contactColumn.Item().Text("Contact Information").SemiBold().FontSize(10);
-                            contactColumn.Item().Text("Email: support@publiccarrental.com | Phone: 1800-123-456")
+                            contactColumn.Item().Text("Email: publiccarrental987@gmail.com | Phone: 0901 697 330")
                                 .FontSize(9);
-                            contactColumn.Item().Text("Website: www.publiccarrental.com")
+                            contactColumn.Item().Text("Website: www.fortunate-art-production.up.railway.app")
                                 .FontSize(9);
                         });
                     });

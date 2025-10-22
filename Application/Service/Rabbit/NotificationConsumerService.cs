@@ -62,104 +62,129 @@ namespace PublicCarRental.Application.Service.Rabbit
                 using var connection = await factory.CreateConnectionAsync();
                 _logger.LogInformation("✅ RabbitMQ connection established");
 
-                using var channel = await connection.CreateChannelAsync();
+                var channel = await connection.CreateChannelAsync();
 
-                await channel.BasicQosAsync(0, 1, false);
-                _logger.LogInformation("✅ QoS set (prefetch=1)");
-
-                var dlqArgs = new Dictionary<string, object>
+                try
                 {
-                    { "x-dead-letter-exchange", "" },
-                    { "x-dead-letter-routing-key", "notification_dlq" }
-                };
+                    await channel.BasicQosAsync(0, 1, false);
+                    _logger.LogInformation("✅ QoS set (prefetch=1)");
 
-                await channel.QueueDeclareAsync(
-                    queue: _queueName,
-                    durable: true,
-                    exclusive: false,
-                    autoDelete: false,
-                    arguments: dlqArgs
-                );
+                    var dlqArgs = new Dictionary<string, object>
+            {
+                { "x-dead-letter-exchange", "" },
+                { "x-dead-letter-routing-key", "notification_dlq" }
+            };
 
-                _logger.LogInformation("✅ Queue declared: {QueueName}", _queueName);
+                    await channel.QueueDeclareAsync(
+                        queue: _queueName,
+                        durable: true,
+                        exclusive: false,
+                        autoDelete: false,
+                        arguments: dlqArgs
+                    );
 
-                var consumer = new AsyncEventingBasicConsumer(channel);
-                consumer.ReceivedAsync += async (model, ea) =>
-                {
-                    bool shouldAck = false;
+                    _logger.LogInformation("✅ Queue declared: {QueueName}", _queueName);
 
-                    try
+                    var consumer = new AsyncEventingBasicConsumer(channel);
+                    consumer.ReceivedAsync += async (model, ea) =>
                     {
-                        _logger.LogInformation("📨 MESSAGE RECEIVED - Processing started | DeliveryTag={DeliveryTag} Redelivered={Redelivered}", ea.DeliveryTag, ea.Redelivered);
-
-                        var body = ea.Body.ToArray();
-                        var messageJson = Encoding.UTF8.GetString(body);
-
-                        using var scope = _serviceProvider.CreateScope();
-                        var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<NotificationHub>>();
-
-                        _logger.LogInformation("Processing message: {MessageJson}", messageJson);
+                        bool shouldAck = false;
 
                         try
                         {
-                            using var doc = JsonDocument.Parse(messageJson);
-                            if (doc.RootElement.TryGetProperty("EventType", out var eventTypeProp))
+                            _logger.LogInformation("📨 MESSAGE RECEIVED - Processing started | DeliveryTag={DeliveryTag} Redelivered={Redelivered}", ea.DeliveryTag, ea.Redelivered);
+
+                            var body = ea.Body.ToArray();
+                            var messageJson = Encoding.UTF8.GetString(body);
+
+                            using var scope = _serviceProvider.CreateScope();
+                            var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<NotificationHub>>();
+
+                            _logger.LogInformation("Processing message: {MessageJson}", messageJson);
+
+                            try
                             {
-                                var eventType = eventTypeProp.GetString();
-                                switch (eventType)
+                                using var doc = JsonDocument.Parse(messageJson);
+                                if (doc.RootElement.TryGetProperty("EventType", out var eventTypeProp))
                                 {
-                                    case "BookingCreated":
-                                        var bookingCreated = JsonSerializer.Deserialize<BookingCreatedEvent>(messageJson);
-                                        await ProcessBookingNotificationAsync(hubContext, bookingCreated);
-                                        break;
-                                    case "BookingConfirmed":
-                                        var bookingConfirmed = JsonSerializer.Deserialize<BookingConfirmedEvent>(messageJson);
-                                        await ProcessBookingConfirmedNotificationAsync(hubContext, bookingConfirmed);
-                                        break;
-                                    default:
-                                        _logger.LogWarning("Unhandled EventType: {EventType}", eventType);
-                                        break;
+                                    var eventType = eventTypeProp.GetString();
+                                    switch (eventType)
+                                    {
+                                        case "BookingCreated":
+                                            var bookingCreated = JsonSerializer.Deserialize<BookingCreatedEvent>(messageJson);
+                                            await ProcessBookingNotificationAsync(hubContext, bookingCreated);
+                                            break;
+                                        case "BookingConfirmed":
+                                            var bookingConfirmed = JsonSerializer.Deserialize<BookingConfirmedEvent>(messageJson);
+                                            await ProcessBookingConfirmedNotificationAsync(hubContext, bookingConfirmed);
+                                            break;
+                                        default:
+                                            _logger.LogWarning("Unhandled EventType: {EventType}", eventType);
+                                            break;
+                                    }
                                 }
+                                else if (messageJson.Contains("BookingId"))
+                                {
+                                    var bookingCreated = JsonSerializer.Deserialize<BookingCreatedEvent>(messageJson);
+                                    await ProcessBookingNotificationAsync(hubContext, bookingCreated);
+                                }
+                                else
+                                {
+                                    _logger.LogWarning("Unknown message type received: {MessageJson}", messageJson);
+                                }
+
+                                shouldAck = true;
                             }
-                            else if (messageJson.Contains("BookingId"))
+                            catch (JsonException ex)
                             {
-                                var bookingCreated = JsonSerializer.Deserialize<BookingCreatedEvent>(messageJson);
-                                await ProcessBookingNotificationAsync(hubContext, bookingCreated);
+                                _logger.LogError(ex, "Failed to parse message JSON");
+                                shouldAck = false;
+                            }
+
+                            if (channel.IsOpen)
+                            {
+                                if (shouldAck)
+                                {
+                                    await channel.BasicAckAsync(ea.DeliveryTag, false);
+                                    _logger.LogInformation("✅ Notification processed and sent via SignalR");
+                                }
+                                else
+                                {
+                                    await channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                                    _logger.LogWarning("❌ Notification message rejected and sent to DLQ");
+                                }
                             }
                             else
                             {
-                                _logger.LogWarning("Unknown message type received: {MessageJson}", messageJson);
+                                _logger.LogWarning("Channel closed, cannot ack/nack notification message");
                             }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "❌ Error processing notification message");
+                            if (channel.IsOpen)
+                            {
+                                await channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                            }
+                        }
+                    };
 
-                            shouldAck = true; 
-                        }
-                        catch (JsonException ex)
-                        {
-                            _logger.LogError(ex, "Failed to parse message JSON");
-                            shouldAck = false;
-                        }
+                    var consumerTag = await channel.BasicConsumeAsync(queue: _queueName, autoAck: false, consumer: consumer);
+                    _logger.LogInformation("✅ NOTIFICATION CONSUMER LISTENING on {QueueName}", _queueName);
 
-                        if (shouldAck)
-                        {
-                            await channel.BasicAckAsync(ea.DeliveryTag, false);
-                            _logger.LogInformation("✅ Notification processed and sent via SignalR");
-                        }
-                        else
-                        {
-                            await channel.BasicNackAsync(ea.DeliveryTag, false, false);
-                            _logger.LogWarning("❌ Notification message rejected and sent to DLQ");
-                        }
-                    }
-                    catch (Exception ex)
+                    while (!stoppingToken.IsCancellationRequested && channel.IsOpen)
                     {
-                        _logger.LogError(ex, "❌ Error processing notification message");
-                        await channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                        await Task.Delay(1000, stoppingToken);
                     }
-                };
-
-                var consumerTag = await channel.BasicConsumeAsync(queue: _queueName, autoAck: false, consumer: consumer);
-                _logger.LogInformation("✅ NOTIFICATION CONSUMER LISTENING on {QueueName}", _queueName);
-
+                }
+                finally
+                {
+                    if (channel?.IsOpen == true)
+                    {
+                        await channel.CloseAsync();
+                    }
+                    channel?.Dispose();
+                }
             }
             catch (Exception ex)
             {

@@ -39,6 +39,8 @@ using PublicCarRental.Infrastructure.Data.Repository.Typ;
 using PublicCarRental.Infrastructure.Data.Repository.Vehi;
 using PublicCarRental.Infrastructure.Helpers;
 using PublicCarRental.Infrastructure.Signal;
+using QuestPDF;
+using QuestPDF.Infrastructure;
 using SendGrid.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
@@ -46,6 +48,8 @@ using System.Text.Json.Serialization;
 using Task = System.Threading.Tasks.Task;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Settings.License = LicenseType.Community;
 
 builder.Services.AddStackExchangeRedisCache(options =>
 {
@@ -64,6 +68,7 @@ builder.Services.AddSingleton<IRabbitMQConnection>(provider =>
 {
     var settings = provider.GetRequiredService<IOptions<RabbitMQSettings>>().Value;
     var logger = provider.GetRequiredService<ILogger<RabbitMQConnection>>();
+
     return new RabbitMQConnection(settings.ConnectionString, logger);
 });
 

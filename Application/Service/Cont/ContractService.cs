@@ -163,10 +163,13 @@ namespace PublicCarRental.Application.Service.Cont
 
             var renter = await _renterService.GetByIdAsync(bookingRequest.EVRenterId);
 
+            _logger.LogInformation("🚀 Starting background tasks for contract {ContractId} - Booking event and receipt generation", contract.ContractId);
+
             _ = Task.Run(async () =>
             {
                 try
                 {
+                    _logger.LogInformation("📋 Publishing booking created event for contract {ContractId}", contract.ContractId);
                     var bookingEvent = new BookingCreatedEvent
                     {
                         BookingId = contract.ContractId,
@@ -179,7 +182,9 @@ namespace PublicCarRental.Application.Service.Cont
                     };
 
                     await _bookingEventProducer.PublishBookingCreatedAsync(bookingEvent);
+                    _logger.LogInformation("✅ Booking created event published for contract {ContractId}", contract.ContractId);
 
+                    _logger.LogInformation("🧾 Publishing receipt generation event for contract {ContractId}, invoice {InvoiceId}", contract.ContractId, invoice.InvoiceId);
                     await _receiptGenerationProducerService.PublishReceiptGenerationAsync(
                         invoice.InvoiceId,
                         contract.ContractId,
@@ -187,10 +192,11 @@ namespace PublicCarRental.Application.Service.Cont
                         renter?.Email,
                         renter?.FullName
                     );
+                    _logger.LogInformation("✅ Receipt generation event published for contract {ContractId}", contract.ContractId);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to publish events for contract {ContractId}", contract.ContractId);
+                    _logger.LogError(ex, "❌ Failed to publish events for contract {ContractId}", contract.ContractId);
                 }
             });
 
@@ -280,6 +286,7 @@ namespace PublicCarRental.Application.Service.Cont
             _contractRepo.Update(contract);
 
             // Queue contract generation (REMOVE direct PDF generation)
+            _logger.LogInformation("📄 Publishing contract generation event for contract {ContractId}", contract.ContractId);
             await _contractGenerationProducer.PublishContractGenerationAsync(
                 contract.ContractId,
                 renter.Email,
@@ -287,6 +294,7 @@ namespace PublicCarRental.Application.Service.Cont
                 includeStaffSignature: true,
                 staffName: staffName
             );
+            _logger.LogInformation("✅ Contract generation event published for contract {ContractId}", contract.ContractId);
 
             try
             {

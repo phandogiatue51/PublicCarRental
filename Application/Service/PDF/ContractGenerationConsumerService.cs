@@ -28,49 +28,71 @@ namespace PublicCarRental.Application.Service.Rabbit
             using var scope = _serviceProvider.CreateScope();
             var connection = scope.ServiceProvider.GetRequiredService<IRabbitMQConnection>();
 
-            using var channel = await connection.CreateChannelAsync();
+            var channel = await connection.CreateChannelAsync();
 
-            var dlqArgs = new Dictionary<string, object>
+            try
             {
-                { "x-dead-letter-exchange", "" },
-                { "x-dead-letter-routing-key", "contract_generation_dlq" }
-            };
+                var dlqArgs = new Dictionary<string, object>
+                {
+                    { "x-dead-letter-exchange", "" },
+                    { "x-dead-letter-routing-key", "contract_generation_dlq" }
+                };
 
-            await channel.QueueDeclareAsync(
-                queue: _queueName,
-                durable: true,
-                exclusive: false,
-                autoDelete: false,
-                arguments: dlqArgs
-            );
+                await channel.QueueDeclareAsync(
+                    queue: _queueName,
+                    durable: true,
+                    exclusive: false,
+                    autoDelete: false,
+                    arguments: dlqArgs
+                );
 
-            await channel.BasicQosAsync(0, 1, false);
+                await channel.BasicQosAsync(0, 1, false);
 
-            var consumer = new AsyncEventingBasicConsumer(channel);
-            consumer.ReceivedAsync += async (model, ea) =>
+                var consumer = new AsyncEventingBasicConsumer(channel);
+                consumer.ReceivedAsync += async (model, ea) =>
+                {
+                    try
+                    {
+                        var body = ea.Body.ToArray();
+                        var messageJson = Encoding.UTF8.GetString(body);
+                        var contractEvent = JsonSerializer.Deserialize<ContractGenerationEvent>(messageJson);
+
+                        _logger.LogInformation("Processing contract generation for contract {ContractId}", contractEvent.ContractId);
+
+                        await ProcessContractGenerationAsync(contractEvent);
+
+                        if (channel.IsOpen)
+                        {
+                            await channel.BasicAckAsync(ea.DeliveryTag, false);
+                            _logger.LogInformation("Contract generated for contract {ContractId}", contractEvent.ContractId);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error processing contract generation for delivery tag {DeliveryTag}", ea.DeliveryTag);
+                        if (channel.IsOpen)
+                        {
+                            await channel.BasicNackAsync(ea.DeliveryTag, false, false);
+                        }
+                    }
+                };
+
+                await channel.BasicConsumeAsync(queue: _queueName, autoAck: false, consumer: consumer);
+                _logger.LogInformation("✅ Contract Generation Consumer listening on {QueueName}", _queueName);
+
+                while (!stoppingToken.IsCancellationRequested && channel.IsOpen)
+                {
+                    await Task.Delay(1000, stoppingToken);
+                }
+            }
+            finally
             {
-                try
+                if (channel?.IsOpen == true)
                 {
-                    var body = ea.Body.ToArray();
-                    var messageJson = Encoding.UTF8.GetString(body);
-                    var contractEvent = JsonSerializer.Deserialize<ContractGenerationEvent>(messageJson);
-
-                    _logger.LogInformation("Processing contract generation for contract {ContractId}", contractEvent.ContractId);
-
-                    await ProcessContractGenerationAsync(contractEvent);
-
-                    await channel.BasicAckAsync(ea.DeliveryTag, false);
-                    _logger.LogInformation("Contract generated for contract {ContractId}", contractEvent.ContractId);
+                    await channel.CloseAsync();
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error processing contract generation for delivery tag {DeliveryTag}", ea.DeliveryTag);
-                    await channel.BasicNackAsync(ea.DeliveryTag, false, false);
-                }
-            };
-
-            await channel.BasicConsumeAsync(queue: _queueName, autoAck: false, consumer: consumer);
-            _logger.LogInformation("✅ Contract Generation Consumer listening on {QueueName}", _queueName);
+                channel?.Dispose();
+            }
         }
 
         private async Task ProcessContractGenerationAsync(ContractGenerationEvent contractEvent)
