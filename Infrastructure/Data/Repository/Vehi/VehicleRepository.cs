@@ -40,8 +40,10 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Vehi
         public async Task<Vehicle?> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime startTime, DateTime endTime)
         {
             var availableVehicles = await _context.Vehicles
+                .Include(v => v.Model)
                 .Where(v => v.ModelId == modelId &&
                            v.StationId == stationId &&
+                           v.Status != VehicleStatus.InMaintenance &&
                            !v.RentalContracts.Any(c =>
                                (c.Status == RentalStatus.Confirmed ||
                                 c.Status == RentalStatus.Active ||
