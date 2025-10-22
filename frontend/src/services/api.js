@@ -174,6 +174,12 @@ export const modelAPI = {
     const queryString = queryParams.toString();
     return apiRequest(`/Model/filter-models${queryString ? `?${queryString}` : ''}`);
   },
+
+  // Check model availability
+  checkAvailable: (availabilityData) => apiRequest('/Model/check-available', {
+    method: 'POST',
+    body: JSON.stringify(availabilityData),
+  }),
 };
 
 // Type API services
@@ -212,20 +218,13 @@ export const staffAPI = {
     method: 'POST',
   }),
 
-  // Search staff by parameter (optional station filter)
-  searchByParam: (param, stationId) => {
+  // Search staff by parameter (optional station and contract filter)
+  searchByParam: (param, stationId, contractId) => {
     const queryParams = new URLSearchParams();
     if (param) queryParams.append('param', param);
     if (stationId) queryParams.append('stationId', stationId);
+    if (contractId) queryParams.append('contractId', contractId);
     return apiRequest(`/Staff/search-by-param?${queryParams.toString()}`);
-  },
-
-  // Filter staff by contract status (optional station filter)
-  filterByContractStatus: (stationId, contractStatus) => {
-    const queryParams = new URLSearchParams();
-    if (stationId) queryParams.append('stationId', stationId);
-    if (contractStatus) queryParams.append('contractStatus', contractStatus);
-    return apiRequest(`/Staff/filter-by-contract-status?${queryParams.toString()}`);
   },
 };
 
@@ -264,14 +263,53 @@ export const renterAPI = {
   // Get renter by ID
   getById: (id) => apiRequest(`/EVRenter/${id}`),
 
+  // Filter renters by parameter
+  filterByParam: (param) => apiRequest(`/EVRenter/filter-by-param/${param}`),
+
+  // Update renter
+  updateRenter: (id, renterData) => apiRequest(`/EVRenter/update-renter/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(renterData),
+  }),
+
+  // Delete renter
+  deleteRenter: (id) => apiRequest(`/EVRenter/delete-renter/${id}`, {
+    method: 'DELETE',
+  }),
+
   // Change renter status
   changeStatus: (id) => apiRequest(`/EVRenter/change-status/${id}`, {
     method: 'POST',
   }),
+
+  // Get renter favorites
+  getFavorites: (renterId) => apiRequest(`/EVRenter/${renterId}/favorites`),
+
+  // Add favorite model
+  addFavorite: (renterId, modelId) => apiRequest(`/EVRenter/${renterId}/favorites/${modelId}`, {
+    method: 'POST',
+  }),
+
+  // Remove favorite model
+  removeFavorite: (renterId, modelId) => apiRequest(`/EVRenter/${renterId}/favorites/${modelId}`, {
+    method: 'DELETE',
+  }),
+
+  // Get renter contracts
+  getContracts: (renterId) => apiRequest(`/EVRenter/${renterId}/contracts`),
+
+  // Get renter invoices
+  getInvoices: (renterId) => apiRequest(`/EVRenter/${renterId}/invoices`),
 };
 
 // Account API services
 export const accountAPI = {
+  // Get all accounts
+  getAll: () => apiRequest('/Account/get-all'),
+
+  // Get account by ID
+  getById: (id) => apiRequest(`/Account/${id}`),
+
   // Login
   login: (payload) => apiRequest('/Account/login', {
     method: 'POST',
@@ -296,6 +334,53 @@ export const accountAPI = {
     }),
     skipAuth: true,
   }),
+
+  // Logout
+  logout: () => apiRequest('/Account/logout', {
+    method: 'POST',
+  }),
+
+  // Verify email
+  verifyEmail: (token) => apiRequest(`/Account/verify-email?token=${token}`),
+
+  // Change password
+  changePassword: (accountId, passwordData) => {
+    const formData = new FormData();
+    formData.append('accountId', accountId);
+    formData.append('CurrentPassword', passwordData.currentPassword);
+    formData.append('NewPassword', passwordData.newPassword);
+    formData.append('ConfirmPassword', passwordData.confirmPassword);
+
+    return apiRequest('/Account/change-password', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  // Forgot password
+  forgotPassword: (email) => {
+    const formData = new FormData();
+    formData.append('email', email);
+
+    return apiRequest('/Account/forgot-password', {
+      method: 'POST',
+      body: formData,
+      skipAuth: true,
+    });
+  },
+
+  // Reset password
+  resetPassword: (token, newPassword) => {
+    const formData = new FormData();
+    formData.append('token', token);
+    formData.append('newPassword', newPassword);
+
+    return apiRequest('/Account/reset-password', {
+      method: 'POST',
+      body: formData,
+      skipAuth: true,
+    });
+  },
 };
 
 // Contract API services
@@ -306,11 +391,31 @@ export const contractAPI = {
   // Get contract by ID
   getById: (id) => apiRequest(`/Contract/${id}`),
 
+  // Update contract
+  updateContract: (id, contractData) => apiRequest(`/Contract/update-contract/${id}`, {
+    method: 'POST',
+    body: JSON.stringify(contractData),
+  }),
+
+  // Active contract (confirm handover)
+  activeContract: (formData) => apiRequest('/Contract/active-contract', {
+    method: 'POST',
+    body: formData,
+  }),
+
+  // Finish contract (return vehicle)
+  finishContract: (formData) => apiRequest('/Contract/finish-contract', {
+    method: 'POST',
+    body: formData,
+  }),
+
+  // Delete contract
+  deleteContract: (id) => apiRequest(`/Contract/delete-contract/${id}`, {
+    method: 'DELETE',
+  }),
+
   // Get contracts by station ID
   getByStation: (stationId) => apiRequest(`/Contract/get-by-station/${stationId}`),
-
-  // Filter contracts by status
-  filterByStatus: (status) => apiRequest(`/Contract/filter-by-status/${status}`),
 
   // Filter contracts with multiple parameters
   filter: (filters) => {
@@ -324,6 +429,9 @@ export const contractAPI = {
     const queryString = queryParams.toString();
     return apiRequest(`/Contract/filter${queryString ? `?${queryString}` : ''}`);
   },
+
+  // Download contract PDF
+  downloadContractPdf: (contractId) => apiRequest(`/Contract/contracts/${contractId}/pdf`),
 };
 
 // Vehicle API services
@@ -333,11 +441,6 @@ export const vehicleAPI = {
 
   // Get vehicle by ID
   getById: (id) => apiRequest(`/Vehicle/${id}`),
-
-  // Delete vehicle
-  delete: (id) => apiRequest(`/Vehicle/delete-vehicle/${id}`, {
-    method: 'DELETE',
-  }),
 
   // Create vehicle
   create: (vehicleData) => apiRequest('/Vehicle/create-vehicle', {
@@ -350,6 +453,22 @@ export const vehicleAPI = {
     method: 'PUT',
     body: JSON.stringify(vehicleData),
   }),
+
+  // Delete vehicle
+  delete: (id) => apiRequest(`/Vehicle/delete-vehicle/${id}`, {
+    method: 'DELETE',
+  }),
+
+  // Get available vehicles
+  getAvailableVehicles: (modelId, stationId, startTime, endTime) => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('modelId', modelId);
+    queryParams.append('stationId', stationId);
+    queryParams.append('startTime', startTime);
+    queryParams.append('endTime', endTime);
+
+    return apiRequest(`/Vehicle/available-vehicles?${queryParams.toString()}`);
+  },
 
   // Filter vehicles
   filter: (filters) => {
@@ -372,7 +491,20 @@ export const invoiceAPI = {
 
   // Get invoice by ID
   getById: (id) => apiRequest(`/Invoice/${id}`),
-  deleteByOrderCode: (orderCode) => apiRequest(`/Invoice/cancel-invoice/${orderCode}`, {method: 'DELETE' }),
+
+  // Get invoice by contract ID
+  getByContractId: (contractId) => apiRequest(`/Invoice/by-contract/${contractId}`),
+
+  // Get invoice by order code
+  getByOrderCode: (orderCode) => apiRequest(`/Invoice/by-order-code/${orderCode}`),
+
+  // Get invoices by station ID
+  getByStation: (stationId) => apiRequest(`/Invoice/get-by-station/${stationId}`),
+
+  // Cancel invoice by order code
+  cancelInvoice: (orderCode) => apiRequest(`/Invoice/cancel-invoice/${orderCode}`, {
+    method: 'DELETE',
+  }),
 };
 
 // Booking API
@@ -385,6 +517,84 @@ export const bookingAPI = {
 
   // Get booking summary by token
   getBookingSummary: (bookingToken) => apiRequest(`/Booking/summary/${bookingToken}`),
+};
+
+// Document API services
+export const documentAPI = {
+  // Get all documents
+  getAll: () => apiRequest('/Document/get-all'),
+
+  // Get documents by renter ID
+  getByRenterId: (renterId) => apiRequest(`/Document/get-by-renter-id/${renterId}`),
+
+  // Get documents by staff ID
+  getByStaffId: (staffId) => apiRequest(`/Document/get-by-staff-id/${staffId}`),
+
+  // Upload staff identity card
+  uploadStaffId: (staffId, formData) => apiRequest('/Document/upload-staff-id', {
+    method: 'POST',
+    body: formData,
+  }),
+
+  // Upload all renter documents
+  uploadRenterAll: (renterId, formData) => apiRequest(`/Document/upload-renter-all/${renterId}`, {
+    method: 'POST',
+    body: formData,
+  }),
+
+  // Staff verify renter documents
+  staffVerifyRenter: (staffId, verifyData) => apiRequest(`/Document/staff-verify-renter/${staffId}`, {
+    method: 'POST',
+    body: JSON.stringify(verifyData),
+  }),
+
+  // Filter documents by verification status
+  filterDocument: (isVerified) => {
+    const queryParams = new URLSearchParams();
+    if (isVerified !== null && isVerified !== undefined) {
+      queryParams.append('isVerified', isVerified);
+    }
+    const queryString = queryParams.toString();
+    return apiRequest(`/Document/filter-document${queryString ? `?${queryString}` : ''}`);
+  },
+};
+
+// Transaction API services
+export const transactionAPI = {
+  // Get all transactions
+  getAll: () => apiRequest('/Transaction/get-all'),
+};
+
+// Accident API services
+export const accidentAPI = {
+  // Get all accidents
+  getAll: () => apiRequest('/Accident/get-all'),
+
+  // Get accident by ID
+  getById: (id) => apiRequest(`/Accident/${id}`),
+
+  // Create contract accident report
+  createContractReport: (formData) => apiRequest('/Accident/create-contract-report', {
+    method: 'POST',
+    body: formData,
+  }),
+
+  // Create vehicle accident report
+  createVehicleReport: (formData) => apiRequest('/Accident/create-vehicle-report', {
+    method: 'POST',
+    body: formData,
+  }),
+
+  // Delete accident report
+  deleteReport: (id) => apiRequest(`/Accident/delete-report/${id}`, {
+    method: 'DELETE',
+  }),
+
+  // Update accident report status
+  updateReportStatus: (id, newStatus) => apiRequest(`/Accident/update-report-status/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ newStatus }),
+  }),
 };
 
 // Payment API
