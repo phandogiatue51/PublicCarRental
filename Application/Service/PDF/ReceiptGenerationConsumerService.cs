@@ -98,6 +98,18 @@ namespace PublicCarRental.Application.Service.Rabbit
                     return;
                 }
 
+                if (contract == null)
+                {
+                    _logger.LogWarning("Contract {ContractId} not found for receipt generation", receiptEvent.ContractId);
+                    return;
+                }
+
+                if (renter == null)
+                {
+                    _logger.LogWarning("Renter {RenterId} not found for receipt generation", receiptEvent.RenterId);
+                    return;
+                }
+
                 var receiptBytes = pdfReceiptService.GeneratePaymentReceipt(invoice, contract);
 
                 await pdfStorageService.SaveReceiptPdfAsync(invoice.InvoiceId, receiptBytes);

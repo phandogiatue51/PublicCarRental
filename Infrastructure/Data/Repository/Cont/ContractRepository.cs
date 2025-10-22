@@ -27,6 +27,7 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Cont
                 .Include(c => c.Staff)
                             .ThenInclude(r => r.Account)
                 .Include(c => c.Vehicle)
+                    .ThenInclude(v => v.Model)
                 .Include(c => c.Station)
                 .Include(c => c.Invoices)
                 .FirstOrDefault(c => c.ContractId == id);
@@ -41,6 +42,7 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Cont
                 .Include(c => c.Staff)
                     .ThenInclude(s => s.Account)
                 .Include(c => c.Vehicle)
+                    .ThenInclude(v => v.Model)
                 .Include(c => c.Station);
         }
 
