@@ -110,7 +110,7 @@ namespace PublicCarRental.Application.Service.Pay
 
         public async Task HandlePaidPaymentAsync(int invoiceId)
         {
-            var invoice = _invoiceService.GetInvoiceByOrderCode(invoiceId);
+            var invoice = _invoiceService.GetEntityById(invoiceId);
             if (invoice == null)
             {
                 _logger.LogWarning($"Invoice {invoiceId} not found");
