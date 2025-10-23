@@ -16,5 +16,7 @@ namespace PublicCarRental.Application.Service.Inv
         public bool UpdateInvoiceStatus(int invoiceId, InvoiceStatus status, decimal amountPaid = 0);
         public IEnumerable<InvoiceDto> GetInvoiceByStationId(int stationId);
         public bool DeleteInvoice(Invoice invoice);
+        public IEnumerable<InvoiceDto> FilterInvoices(int? contractId = null, int? orderCode = null, int? stationId = null);
+
     }
 }
