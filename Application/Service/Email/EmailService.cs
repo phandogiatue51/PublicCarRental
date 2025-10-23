@@ -38,7 +38,7 @@ namespace PublicCarRental.Application.Service.Email
             {
                 var payload = new
                 {
-                    from = "Public Car Rental <onboarding@resend.dev>",
+                    from = "Car777 <onboarding@resend.dev>",
                     to = new[] { toEmail },
                     subject = subject,
                     html = htmlBody
@@ -79,7 +79,7 @@ namespace PublicCarRental.Application.Service.Email
 
                 var payload = new
                 {
-                    from = "Public Car Rental <onboarding@resend.dev>",
+                    from = "Car777 <onboarding@resend.dev>",
                     to = new[] { toEmail },
                     subject = subject,
                     html = htmlBody,
@@ -125,7 +125,7 @@ namespace PublicCarRental.Application.Service.Email
             var verificationLink = $"https://publiccarrental-production-b7c5.up.railway.app/api/Account/verify-email?token={token}";
 
             var htmlContent = $@"
-                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>
+                <div style='font-family: Times New Roman, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>
                     <h2 style='color: #007bff;'>Welcome to PublicCarRental!</h2>
                     <p>Hi {toEmail},</p>
                     <p>Thanks for registering. Please verify your email by clicking the button below:</p>
@@ -218,7 +218,7 @@ namespace PublicCarRental.Application.Service.Email
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1">
                 <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+                    body { font-family: Times New Roman, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
                     .header { color: #2563eb; text-align: center; padding: 20px 0; }
                     .content { background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; }
                     .footer { color: #6b7280; font-size: 12px; text-align: center; padding-top: 20px; border-top: 1px solid #e5e7eb; }
