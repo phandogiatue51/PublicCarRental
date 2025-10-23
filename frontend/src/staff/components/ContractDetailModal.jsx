@@ -92,10 +92,6 @@ const ContractDetailModal = ({ isOpen, onClose, contract }) => {
                                     <Text fontWeight="semibold" color={textColor}>Contract ID:</Text>
                                     <Text color={textColor}>{contract.contractId}</Text>
                                 </HStack>
-                                <HStack justify="space-between" mb={2}>
-                                    <Text fontWeight="semibold" color={textColor}>Invoice ID:</Text>
-                                    <Text color={textColor}>{contract.invoiceId}</Text>
-                                </HStack>
                             </Box>
                         </GridItem>
 

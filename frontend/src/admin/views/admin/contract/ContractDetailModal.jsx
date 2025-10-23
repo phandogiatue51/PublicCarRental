@@ -1,4 +1,4 @@
-/* eslint-disable */
+﻿/* eslint-disable */
 
 import {
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton,
@@ -16,27 +16,28 @@ export default function ContractDetailModal({ isOpen, onClose, contract }) {
   if (!contract) return null;
 
   // Get status badge color
-  const getStatusColor = (status) => {
-    switch (status) {
-        case 0: return 'green'; // Active
-        case 1: return 'orange'; // Pending
-        case 2: return 'gray'; // Completed
-        case 3: return 'red'; // Cancelled
-        default: return 'gray';
-    }
-  };
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 0: return 'orange'; // ToBeConfirmed - màu cam cho chờ xác nhận
+            case 1: return 'green'; // Active - màu xanh lá cho đang hoạt động
+            case 2: return 'purple'; // Completed - màu tím cho hoàn thành
+            case 3: return 'red'; // Cancelled - màu đỏ cho đã hủy
+            case 4: return 'teal'; // Confirmed - màu xanh ngọc cho đã xác nhận
+            default: return 'gray';
+        }
+    };
 
-  // Get status text
-  const getStatusText = (status) => {
-    switch (status) {
-        case 0: return 'Active';
-        case 1: return 'Pending';
-        case 2: return 'Completed';
-        case 3: return 'Cancelled';
-        default: return 'Unknown';
-    }
-  };
-
+    // Get status text
+    const getStatusText = (status) => {
+        switch (status) {
+            case 0: return 'To Be Confirmed';
+            case 1: return 'Active';
+            case 2: return 'Completed';
+            case 3: return 'Cancelled';
+            case 4: return 'Confirmed';
+            default: return 'Unknown';
+        }
+    };
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -88,10 +89,6 @@ export default function ContractDetailModal({ isOpen, onClose, contract }) {
                 <HStack justify="space-between" mb={2}>
                   <Text fontWeight="semibold" color={textColor}>Contract ID:</Text>
                   <Text color={textColor}>{contract.contractId}</Text>
-                </HStack>
-                <HStack justify="space-between" mb={2}>
-                  <Text fontWeight="semibold" color={textColor}>Invoice ID:</Text>
-                  <Text color={textColor}>{contract.invoiceId}</Text>
                 </HStack>
               </Box>
             </GridItem>
@@ -202,9 +199,7 @@ export default function ContractDetailModal({ isOpen, onClose, contract }) {
             </GridItem>
 
             <GridItem colSpan={3}>                
-              <Text fontSize="lg" fontWeight="bold" color={textColor} mb={3}>
-                Financial Information
-              </Text>
+             
               <Box w="100%" p={4} bg={useColorModeValue('green.50', 'green.900')} borderRadius="md" border="1px" borderColor="green.200">
                 <HStack justify="center">
                   <Icon as={MdAttachMoney} color="green.500" boxSize={6} />

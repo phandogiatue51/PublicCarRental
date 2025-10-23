@@ -50,42 +50,11 @@ const ContractList = () => {
             setLoading(true);
             setError(null);
 
-            // TEMPORARILY DISABLE AUTHENTICATED API CALLS FOR TESTING
-            // TODO: Re-enable when authentication is properly set up
-            console.log('⚠️ Using mock data for testing - authentication required for real data');
-
-            // Mock data for testing
-            const mockContracts = [
-                {
-                    contractId: 1,
-                    vehicleLicensePlate: "ABC-123",
-                    startTime: "2024-01-15T10:00:00Z",
-                    endTime: "2024-01-15T18:00:00Z",
-                    status: 1, // Active
-                    imageIn: null,
-                    imageOut: null
-                },
-                {
-                    contractId: 2,
-                    vehicleLicensePlate: "XYZ-789",
-                    startTime: "2024-01-16T09:00:00Z",
-                    endTime: "2024-01-16T17:00:00Z",
-                    status: 4, // Confirmed
-                    imageIn: null,
-                    imageOut: null
-                }
-            ];
-
-            setContracts(mockContracts);
-            setTotalItems(mockContracts.length);
-
-            // Original API call (commented out for testing)
-            /*
-            const response = await contractAPI.getAll(); // This requires authentication
+            // Use the real API call with the new contract data structure
+            const response = await contractAPI.getAll();
             console.log('Contracts response:', response);
             setContracts(response || []);
             setTotalItems(response?.length || 0);
-            */
         } catch (err) {
             console.error('Error fetching contracts:', err);
             setError(err.message || 'Failed to fetch contracts');
@@ -262,8 +231,9 @@ const ContractList = () => {
             ),
         }),
 
-        columnHelper.accessor('vehicleLicensePlate', {
-            id: 'vehicle',
+       
+        columnHelper.accessor('stationName', {
+            id: 'station',
             header: () => (
                 <Text
                     justifyContent="space-between"
@@ -271,20 +241,17 @@ const ContractList = () => {
                     fontSize={{ sm: '10px', lg: '12px' }}
                     color="gray.400"
                 >
-                    VEHICLE
+                    STATION
                 </Text>
             ),
             cell: (info) => (
-                <Flex align="center" gap={2}>
-                    <Icon as={MdDriveEta} color="gray.500" />
-                    <Text color={textColor} fontSize="sm" fontWeight="700">
-                        {info.getValue()}
-                    </Text>
-                </Flex>
+                <Text color={textColor} fontSize="sm">
+                    {info.getValue()}
+                </Text>
             ),
         }),
 
-        columnHelper.accessor('startTime', {
+            columnHelper.accessor('startTime', {
             id: 'startTime',
             header: () => (
                 <Text
