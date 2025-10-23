@@ -37,23 +37,7 @@ const StaffLayout = () => {
             setIsCheckingAuth(false);
             
             // Original auth check (commented out for testing)
-            /*
-            if (!token || userRole !== 'Staff' || !staffId) {
-                console.log('Staff authentication failed, redirecting to login');
-                toast({
-                    title: 'Authentication Required',
-                    description: 'Please log in as staff to access this area',
-                    status: 'warning',
-                    duration: 3000,
-                    isClosable: true,
-                });
-                navigate('/');
-                return;
-            }
-            
-            setIsAuthenticated(true);
-            setIsCheckingAuth(false);
-            */
+     
         };
 
         checkAuth();
@@ -70,7 +54,7 @@ const StaffLayout = () => {
             if (notification?.type === 'NewBooking') {
                 toast({
                     title: "🎉 New Booking!",
-                    description: `${notification.RenterName} booked ${notification.VehicleLicensePlate} at ${notification.StationName}`,
+                    description: notification.message || `New booking received (ID: ${notification.bookingId})`,
                     status: "success",
                     duration: 6000,
                     isClosable: true,

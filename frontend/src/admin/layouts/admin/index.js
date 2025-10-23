@@ -119,10 +119,10 @@ export default function Dashboard(props) {
       
         if (notification?.type === 'AccidentReported') {
         toast({
-          title: "🚨 Fixing Request",
-          description: `Vehicle ${notification.VehicleLicensePlate} at ${notification.Location}`,
+          title: "🚨 Accident Report",
+          description: notification.message || "An accident has been reported",
           status: "error",
-          duration: 8000,
+          duration: 10000,
           isClosable: true,
           position: "top-right"
         });
@@ -131,9 +131,9 @@ export default function Dashboard(props) {
       if (notification?.type === 'NewBooking') {
         toast({
           title: "📋 New Booking",
-          description: `New booking at station ${notification.StationId}`,
+          description: notification.message || `New booking received (ID: ${notification.bookingId || 'N/A'})`,
           status: "info",
-          duration: 5000,
+          duration: 10000,
           isClosable: true,
           position: "top-right"
         });
