@@ -57,15 +57,15 @@ public class PdfService : IPdfService
                         column.Item().Text("PARTIES:").SemiBold().FontSize(14);
 
                         column.Item().PaddingBottom(10).Text("Party A (Lessor): CAR777 COMPANY");
-                        column.Item().Text($"Address: {contract.Vehicle.Station.Name}");
-                        column.Item().Text($"Represented by: {staffName}");
-                        column.Item().Text($"Phone: {contract.Staff.Account.PhoneNumber}");
+                        column.Item().Text($"Address: {contract.Vehicle?.Station?.Name ?? "N/A"}");
+                        column.Item().Text($"Represented by: {staffName ?? "N/A"}");
+                        column.Item().Text($"Phone: {contract.Staff?.Account?.PhoneNumber ?? "N/A"}");
                         column.Item().Text("Position: Staff");
 
                         column.Item().PaddingTop(10).Text("Party B (Lessee):").SemiBold();
-                        column.Item().Text($"Full name: {contract.EVRenter?.Account?.FullName}");
-                        column.Item().Text($"ID Card/Passport: {contract.EVRenter?.Account?.IdentityCardNumber}");
-                        column.Item().Text($"Phone: {contract.EVRenter?.Account?.PhoneNumber}");
+                        column.Item().Text($"Full name: {contract.EVRenter?.Account?.FullName ?? "N/A"}");
+                        column.Item().Text($"ID Card/Passport: {contract.EVRenter?.Account?.IdentityCardNumber ?? "N/A"}");
+                        column.Item().Text($"Phone: {contract.EVRenter?.Account?.PhoneNumber ?? "N/A"}");
 
                         column.Item().Text("Based on the needs and capabilities of both parties,").Italic();
                         column.Item().Text("the two parties agree to enter into this Vehicle Rental Contract with the following terms:")
@@ -79,23 +79,23 @@ public class PdfService : IPdfService
                             grid.Spacing(8);
 
                             grid.Item().Text("License plate:").SemiBold();
-                            grid.Item().Text(contract.Vehicle?.LicensePlate);
+                            grid.Item().Text(contract.Vehicle?.LicensePlate ?? "N/A");
 
                             grid.Item().Text("Vehicle type:").SemiBold();
-                            grid.Item().Text(contract.Vehicle?.Model?.Type?.Name);
+                            grid.Item().Text(contract.Vehicle?.Model?.Type?.Name ?? "Electric Car");
 
                             grid.Item().Text("Model:").SemiBold();
-                            grid.Item().Text(contract.Vehicle?.Model?.Name);
+                            grid.Item().Text(contract.Vehicle?.Model?.Name ?? "N/A");
 
                             grid.Item().Text("Brand:").SemiBold();
-                            grid.Item().Text(contract.Vehicle?.Model?.Brand?.Name);
+                            grid.Item().Text(contract.Vehicle?.Model?.Brand?.Name ?? "VinFast");
                         });
 
                         // Article 2: Rental Period and Location
                         column.Item().Text("ARTICLE 2: RENTAL PERIOD AND LOCATION").SemiBold().FontSize(12);
                         column.Item().Text($"Rental period: From {contract.StartTime:HH:mm dd/MM/yyyy} to {contract.EndTime:HH:mm dd/MM/yyyy}");
-                        column.Item().Text($"Pick-up and return location: {contract.Station?.Name}");
-                        column.Item().Text($"Address: {contract.Station?.Address}");
+                        column.Item().Text($"Pick-up and return location: {contract.Station?.Name ?? "N/A"}");
+                        column.Item().Text($"Address: {contract.Station?.Address ?? "N/A"}");
 
                         // Article 3: Rental Fee and Payment
                         column.Item().Text("ARTICLE 3: RENTAL FEE AND PAYMENT").SemiBold().FontSize(12);
@@ -123,7 +123,7 @@ public class PdfService : IPdfService
 
                         // Article 6: Vehicle Condition
                         column.Item().Text("ARTICLE 6: VEHICLE CONDITION").SemiBold().FontSize(12);
-                        column.Item().Text($"Current mileage/battery level: {contract.Vehicle.BatteryLevel} km/%");
+                        column.Item().Text($"Current mileage/battery level: {contract.Vehicle?.BatteryLevel ?? 0} km/%");
                         column.Item().Text($"Condition: {contract.Note ?? "Fine"}");
 
                         // Article 7: Contract Termination
@@ -155,7 +155,7 @@ public class PdfService : IPdfService
                                 partyBColumn.Item().AlignCenter().Text("PARTY B (LESSEE)").SemiBold().FontSize(12);
                                 partyBColumn.Item().PaddingTop(20).AlignCenter().Text("Signature and Full Name");
                                 partyBColumn.Item().PaddingTop(40).AlignCenter().LineHorizontal(2);
-                                partyBColumn.Item().AlignCenter().Text(contract.EVRenter?.Account?.FullName);
+                                partyBColumn.Item().AlignCenter().Text(contract.EVRenter?.Account?.FullName ?? "N/A");
                             });
 
                             // Party A (Lessor)
@@ -165,7 +165,7 @@ public class PdfService : IPdfService
                                 partyAColumn.Item().AlignCenter().Text("CAR777 COMPANY");
                                 partyAColumn.Item().PaddingTop(20).AlignCenter().Text("Representative");
                                 partyAColumn.Item().PaddingTop(40).AlignCenter().LineHorizontal(2);
-                                partyAColumn.Item().AlignCenter().Text(staffName);
+                                partyAColumn.Item().AlignCenter().Text(staffName ?? "N/A");
                                 partyAColumn.Item().AlignCenter().Text("(Authorized Staff)");
                             });
                         });

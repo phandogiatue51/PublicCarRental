@@ -23,11 +23,15 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Cont
         {
             return _context.RentalContracts
                 .Include(c => c.EVRenter)
-                            .ThenInclude(r => r.Account)
+                    .ThenInclude(r => r.Account)
                 .Include(c => c.Staff)
-                            .ThenInclude(r => r.Account)
+                    .ThenInclude(r => r.Account)
                 .Include(c => c.Vehicle)
                     .ThenInclude(v => v.Model)
+                        .ThenInclude(m => m.Type)       
+                .Include(c => c.Vehicle)
+                    .ThenInclude(v => v.Model)
+                        .ThenInclude(m => m.Brand)    
                 .Include(c => c.Station)
                 .Include(c => c.Invoices)
                 .FirstOrDefault(c => c.ContractId == id);
@@ -43,6 +47,10 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Cont
                     .ThenInclude(s => s.Account)
                 .Include(c => c.Vehicle)
                     .ThenInclude(v => v.Model)
+                        .ThenInclude(m => m.Type)    
+                .Include(c => c.Vehicle)
+                    .ThenInclude(v => v.Model)
+                        .ThenInclude(m => m.Brand)      
                 .Include(c => c.Station);
         }
 
