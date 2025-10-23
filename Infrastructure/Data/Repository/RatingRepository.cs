@@ -21,7 +21,6 @@ public interface IRatingRepository
 
     IQueryable<Rating> GetRecentRatings(int count = 10);
     IQueryable<Rating> GetRatingsByStar(RatingLabel starRating);
-    IQueryable<Rating> GetRatingsWithComments();
 }
 
 public class RatingRepository : IRatingRepository
@@ -166,19 +165,6 @@ public class RatingRepository : IRatingRepository
                 .ThenInclude(c => c.EVRenter)
                     .ThenInclude(r => r.Account)
             .Where(r => r.Stars == starRating)
-            .OrderByDescending(r => r.CreatedAt);
-    }
-
-    public IQueryable<Rating> GetRatingsWithComments()
-    {
-        return _context.Ratings
-            .Include(r => r.Contract)
-                .ThenInclude(c => c.Vehicle)
-                    .ThenInclude(v => v.Model)
-            .Include(r => r.Contract)
-                .ThenInclude(c => c.EVRenter)
-                    .ThenInclude(r => r.Account)
-            .Where(r => !string.IsNullOrEmpty(r.Comment))
             .OrderByDescending(r => r.CreatedAt);
     }
 }

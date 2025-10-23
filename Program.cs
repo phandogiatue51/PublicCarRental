@@ -163,6 +163,8 @@ builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 builder.Services.AddScoped<IDocumentService,  DocumentService>();
 builder.Services.AddScoped<IAccidentRepository, AccidentRepository>();
 builder.Services.AddScoped<IAccidentService, AccidentService>();
+builder.Services.AddScoped<IRatingRepository, RatingRepository>();
+builder.Services.AddScoped<IRatingService, RatingService>();
 
 builder.Services.AddHostedService<AccidentConsumerService>();
 builder.Services.AddScoped<AccidentEventProducerService>();
