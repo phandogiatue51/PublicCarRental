@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Exchange.WebServices.Data;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -46,6 +45,7 @@ using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text.Json.Serialization;
 using Task = System.Threading.Tasks.Task;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -267,6 +267,8 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
+
+builder.Services.AddHttpClient();
 
 builder.Services.AddSignalR();
 
