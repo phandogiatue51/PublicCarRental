@@ -38,7 +38,7 @@ export default function Footer() {
         {" "}
         &copy; {1900 + new Date().getYear()}
         <Text as='span' fontWeight='500' ms='4px'>
-          CAR RENTAL. All Rights Reserved. Made with love by
+          CAR777. All Rights Reserved. Made with love by
           <Link
             mx='3px'
             color={textColor}

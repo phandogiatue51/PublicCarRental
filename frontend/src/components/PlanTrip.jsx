@@ -10,7 +10,7 @@ function PlanTrip() {
           <div className="plan-container">
             <div className="plan-container__title">
               <h3>Plan your trip now</h3>
-              <h2>Quick & easy car rental</h2>
+              <h2>Quick & easy</h2>
             </div>
 
             <div className="plan-container__boxes">

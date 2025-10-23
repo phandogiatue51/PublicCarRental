@@ -354,7 +354,7 @@ namespace PublicCarRental.Application.Service.Email
         private string BuildContractPlainTextContent(string renterName, int contractId)
         {
             return $"""
-                PUBLIC CAR RENTAL - RENTAL CONTRACT
+                CAR777 - RENTAL CONTRACT
 
                 Dear {renterName},
 
@@ -373,7 +373,7 @@ namespace PublicCarRental.Application.Service.Email
                 If you have any questions about your contract, please contact us at publiccarrental987@gmail.com
 
                 Best regards,
-                Public Car Rental Team
+                Car777 Team
 
                 ---
                 This is an automated contract document. Please do not reply to this message.
@@ -399,7 +399,7 @@ namespace PublicCarRental.Application.Service.Email
             </head>
             <body>
                 <div class="header">
-                    <h2>Public Car Rental</h2>
+                    <h2>CAR777</h2>
                     <h3>Rental Contract</h3>
                 </div>
         
@@ -424,7 +424,7 @@ namespace PublicCarRental.Application.Service.Email
                 </div>
         
                 <div class="footer">
-                    <p><strong>Public Car Rental Team</strong><br>
+                    <p><strong>Car777 Team</strong><br>
                     publiccarrental987@gmail.com</p>
             
                     <p style="margin-top: 15px; color: #9ca3af;">
@@ -467,7 +467,7 @@ namespace PublicCarRental.Application.Service.Email
         private string BuildReceiptPlainTextContent(string userName, int invoiceId)
         {
             return $"""
-            PUBLIC CAR RENTAL - PAYMENT CONFIRMATION
+            CAR777 - PAYMENT CONFIRMATION
     
             Dear {userName},
     
@@ -483,7 +483,7 @@ namespace PublicCarRental.Application.Service.Email
             If you have any questions about your booking, please contact us at publiccarrental987@gmail.com
     
             Best regards,
-            Public Car Rental Team
+            Car777 Team
     
             ---
             This is an automated transaction receipt. Please do not reply to this message.
@@ -508,7 +508,7 @@ namespace PublicCarRental.Application.Service.Email
             </head>
             <body>
                 <div class="header">
-                    <h2>Public Car Rental</h2>
+                    <h2>Car777</h2>
                     <h3>Payment Confirmation</h3>
                 </div>
         
@@ -526,7 +526,7 @@ namespace PublicCarRental.Application.Service.Email
                 </div>
         
                 <div class="footer">
-                    <p><strong>Public Car Rental Team</strong><br>
+                    <p><strong>Car777 Team</strong><br>
                     publiccarrental987@gmail.com</p>
             
                     <p style="margin-top: 15px; color: #9ca3af;">

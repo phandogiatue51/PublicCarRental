@@ -118,7 +118,7 @@ export default function HeaderLinks(props) {
               borderRadius="8px"
               mb="10px"
             >
-              <ItemContent info="CAR RENTAL Dashboard" />
+              <ItemContent info="CAR777 Dashboard" />
             </MenuItem>
             <MenuItem
               _hover={{ bg: 'none' }}
@@ -127,7 +127,7 @@ export default function HeaderLinks(props) {
               borderRadius="8px"
               mb="10px"
             >
-              <ItemContent info="CAR RENTAL Design System" />
+              <ItemContent info="CAR777 Design System" />
             </MenuItem>
           </Flex>
         </MenuList>

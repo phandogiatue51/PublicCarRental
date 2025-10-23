@@ -56,7 +56,7 @@ public class PdfService : IPdfService
                         // Parties Section
                         column.Item().Text("PARTIES:").SemiBold().FontSize(14);
 
-                        column.Item().PaddingBottom(10).Text("Party A (Lessor): PUBLIC CAR RENTAL COMPANY");
+                        column.Item().PaddingBottom(10).Text("Party A (Lessor): CAR777 COMPANY");
                         column.Item().Text($"Address: {contract.Vehicle.Station.Name}");
                         column.Item().Text($"Represented by: {staffName}");
                         column.Item().Text($"Phone: {contract.Staff.Account.PhoneNumber}");
@@ -162,7 +162,7 @@ public class PdfService : IPdfService
                             grid.Item().Column(partyAColumn =>
                             {
                                 partyAColumn.Item().AlignCenter().Text("PARTY A (LESSOR)").SemiBold().FontSize(12);
-                                partyAColumn.Item().AlignCenter().Text("PUBLIC CAR RENTAL COMPANY");
+                                partyAColumn.Item().AlignCenter().Text("CAR777 COMPANY");
                                 partyAColumn.Item().PaddingTop(20).AlignCenter().Text("Representative");
                                 partyAColumn.Item().PaddingTop(40).AlignCenter().LineHorizontal(2);
                                 partyAColumn.Item().AlignCenter().Text(staffName);
@@ -202,7 +202,7 @@ public class PdfService : IPdfService
                     .AlignCenter()
                     .Column(column =>
                     {
-                        column.Item().Text("PUBLIC CAR RENTAL")
+                        column.Item().Text("CAR777")
                             .Bold().FontSize(16);
 
                         column.Item().Text("Payment Receipt")
