@@ -109,7 +109,8 @@ namespace PublicCarRental.Application.Service.Cont
                     AmountPaid = i.AmountPaid,
                     PaidAt = i.PaidAt,
                     Status = i.Status,
-                    OrderCode = i.OrderCode
+                    OrderCode = i.OrderCode,
+                    Note = i.Note
                 }).ToList()
             };
         }

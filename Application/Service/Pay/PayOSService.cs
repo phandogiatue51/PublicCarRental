@@ -1,5 +1,6 @@
 ﻿using Net.payOS;
 using Net.payOS.Types;
+using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Ren;
 using System.Text;
@@ -22,9 +23,10 @@ namespace PublicCarRental.Application.Service.Pay
         private readonly IBookingService _bookingService; 
         private readonly ILogger<PayOSService> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IContractService _contractService;
 
         public PayOSService(IConfiguration configuration, IInvoiceService invoiceService, IEVRenterService renterService,
-            IBookingService bookingService, ILogger<PayOSService> logger)
+            IBookingService bookingService, ILogger<PayOSService> logger, IContractService contractService)
         {
             var clientId = configuration["PayOS:ClientId"];
             var apiKey = configuration["PayOS:ApiKey"];
@@ -36,6 +38,7 @@ namespace PublicCarRental.Application.Service.Pay
             _bookingService = bookingService;
             _logger = logger;
             _configuration = configuration;
+            _contractService = contractService;
         }
 
         public async Task<CreatePaymentResult> CreatePaymentLink(int invoiceId, int renterId)
@@ -51,14 +54,25 @@ namespace PublicCarRental.Application.Service.Pay
                     throw new ArgumentException("Renter not found");
 
                 if (string.IsNullOrEmpty(invoice.BookingToken))
-                    throw new InvalidOperationException("Invoice is not associated with a valid booking");
+                {
+                    if (!invoice.ContractId.HasValue)
+                        throw new InvalidOperationException("Invoice is not associated with a valid booking or contract");
 
-                var bookingRequest = await _bookingService.GetBookingRequest(invoice.BookingToken);
-                if (bookingRequest == null)
-                    throw new InvalidOperationException("Booking request not found or expired");
+                    var contract = _contractService.GetEntityById(invoice.ContractId.Value);
+                    if (contract == null)
+                        throw new InvalidOperationException("Associated contract not found");
 
-                if (bookingRequest.EVRenterId != renterId)
-                    throw new UnauthorizedAccessException("Invoice does not belong to this renter");
+                    _logger.LogInformation($"Processing payment for additional invoice {invoiceId} for contract {contract.ContractId}");
+                }
+                else
+                {
+                    var bookingRequest = await _bookingService.GetBookingRequest(invoice.BookingToken);
+                    if (bookingRequest == null)
+                        throw new InvalidOperationException("Booking request not found or expired");
+
+                    if (bookingRequest.EVRenterId != renterId)
+                        throw new UnauthorizedAccessException("Invoice does not belong to this renter");
+                }
 
                 var orderCode = new Random().Next(100000, 999999);
 
@@ -74,7 +88,7 @@ namespace PublicCarRental.Application.Service.Pay
                     items: new List<ItemData>
                     {
                 new ItemData(
-                    name: "Car Rental",
+                    name: "Car Rental Additional Charge",
                     quantity: 1,
                     price: (int)invoice.AmountDue)
                     },

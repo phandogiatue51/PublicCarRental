@@ -8,7 +8,11 @@ namespace PublicCarRental.Presentation.Controllers
     [Route("api/contracts/{contractId}/modifications")]
     public class ContractModificationController : ControllerBase
     {
-        private readonly ContractModificationService _modificationService;
+        private readonly IContractModificationService _modificationService;
+        public ContractModificationController(IContractModificationService modificationService)
+        {
+            _modificationService = modificationService;
+        }
 
         [HttpPost("change-model")]
         public async Task<ActionResult<ModificationResultDto>> ChangeModel(
