@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -157,6 +159,7 @@ builder.Services.AddScoped<BaseMessageProducer>();
 builder.Services.AddScoped<EmailProducerService>();
 builder.Services.AddHostedService<EmailConsumerService>();
 builder.Services.AddScoped<BookingEventProducerService>();
+builder.Services.AddScoped<IContractModificationService, ContractModificationService>();
 
 builder.Services.AddScoped<IImageStorageService, CloudinaryService>();
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();

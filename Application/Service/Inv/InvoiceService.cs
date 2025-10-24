@@ -211,5 +211,53 @@ namespace PublicCarRental.Application.Service.Inv
             _repo.Delete(invoice);
             return true;
         }
+
+        public async Task<Invoice> CreateAdditionalInvoiceAsync(int contractId, decimal amount, string note)
+        {
+            try
+            {
+                var invoice = new Invoice
+                {
+                    ContractId = contractId,
+                    AmountDue = amount,
+                    IssuedAt = DateTime.UtcNow,
+                    Status = InvoiceStatus.Pending,
+                    Note = note,
+                    OrderCode = GenerateOrderCode() // You might need a different order code generation
+                };
+
+                _repo.Create(invoice);
+                _logger.LogInformation("Created additional invoice {InvoiceId} for contract {ContractId}",
+                    invoice.InvoiceId, contractId);
+
+                return invoice;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to create additional invoice for contract {ContractId}", contractId);
+                throw;
+            }
+        }
+
+        public async Task<Invoice> GetOriginalInvoiceAsync(int contractId)
+        {
+            return _repo.GetAll()
+                .Where(i => i.ContractId == contractId)
+                .OrderBy(i => i.IssuedAt)
+                .FirstOrDefault();
+        }
+
+        public async Task<decimal> GetTotalPaidAmountAsync(int contractId)
+        {
+            return (decimal)_repo.GetAll()
+                .Where(i => i.ContractId == contractId && i.Status == InvoiceStatus.Paid)
+                .Sum(i => i.AmountPaid);
+        }
+
+        private int GenerateOrderCode()
+        {
+            return new Random().Next(100000, 999999);
+        }
+
     }
 }

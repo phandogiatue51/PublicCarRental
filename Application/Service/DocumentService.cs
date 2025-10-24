@@ -49,7 +49,6 @@ public class DocumentService : IDocumentService
                 DocumentNumber = dto.DocumentNumber,
                 UploadedAt = DateTime.UtcNow,
                 IsVerified = false,
-                StaffId = null
             };
 
             _documentRepository.CreateDocument(document);
@@ -142,7 +141,6 @@ public class DocumentService : IDocumentService
         {
             doc.IsVerified = true;
             doc.VerifiedAt = DateTime.UtcNow;
-            doc.StaffId = staffVerifierId;
         }
 
         _documentRepository.UpdateRange(documentList);
@@ -194,8 +192,6 @@ public class DocumentService : IDocumentService
             Side = document.Side,
             DocumentNumber = document.DocumentNumber,
             IsVerified = document.IsVerified,
-            StaffId = document.StaffId,
-            StaffName = document.Staff?.Account?.FullName
         };
     }
 

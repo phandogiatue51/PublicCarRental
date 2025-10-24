@@ -13,7 +13,6 @@
         public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
         public bool IsVerified { get; set; } = false;
         public DateTime? VerifiedAt { get; set; }
-        public int? StaffId { get; set; } 
         public string? DocumentNumber { get; set; }
         public Staff? Staff { get; set; }
 
