@@ -16,13 +16,24 @@ import ForgotPassword from "./Pages/Account/ForgotPassword";
 import ModelDetail from "./Pages/ModelDetail";
 import Success from './Pages/Payment/Success';
 import Cancel from './Pages/Payment/Cancel';
+import AdminRoute from "./admin/AdminRoute";
+import StaffRoute from "./staff/components/StaffRoute";
+import { ChakraProvider } from "@chakra-ui/react"; 
 
 function App() {
   return (
-    <>      
+    <ChakraProvider> 
       <Routes>
-        <Route path="admin/*" element={<Main />} />
-        <Route path="staff/*" element={<StaffApp />} />
+        <Route path="admin/*" element={
+          <AdminRoute>
+            <Main />
+          </AdminRoute>
+        } />
+        <Route path="staff/*" element={
+          <StaffRoute>
+            <StaffApp />
+          </StaffRoute>
+        } />
         <Route path="*" element={
           <>
             <Navbar />
@@ -40,14 +51,11 @@ function App() {
               <Route path="forgot-password" element={<ForgotPassword />} />
               <Route path="/payment/success" element={<Success />} />
               <Route path="/payment/cancel" element={<Cancel />} />
-
-
-              
             </Routes>
           </>
         } />
       </Routes>
-    </>
+    </ChakraProvider>
   );
 }
 

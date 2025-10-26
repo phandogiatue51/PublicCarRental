@@ -1,11 +1,12 @@
 ﻿import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Box, useColorModeValue, Button, VStack, Text, Alert, AlertIcon } from "@chakra-ui/react";
+import { Box, Button, VStack, Text, Alert, AlertIcon } from "@chakra-ui/react";
 import Footer from "../components/Footer";
 import MaybeYouWillLike from "../components/MaybeYouWillLike";
-import BookingForm from "../components/BookingForm";
+import BookingForm from "../hooks/BookingForm"; 
 import { modelAPI } from "../services/api";
 import '../styles/ModelDetail.css';
+import { useAuth } from "../hooks/useAuth"; 
 
 function ModelDetail() {
     const { id } = useParams();
@@ -14,8 +15,9 @@ function ModelDetail() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [stationsLoading, setStationsLoading] = useState(false);
-
-    const cardBg = useColorModeValue("white", "navy.800");
+    const { getCurrentUser} = useAuth(); 
+    const userData = getCurrentUser();
+    const evRenterId = userData?.renterId;
 
     useEffect(() => {
         const fetchModelAndStations = async () => {
@@ -216,12 +218,11 @@ function ModelDetail() {
                     </div>
                 </div>
 
-                {/* Booking Form Section */}
                 <div className="container">
-                    <BookingForm 
+                    <BookingForm
                         modelName={model?.name}
                         modelId={id}
-                        evRenterId={1} // You can get this from user context or props
+                        evRenterId={evRenterId} 
                     />
                 </div>
 

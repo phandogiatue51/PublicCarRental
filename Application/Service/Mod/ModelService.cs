@@ -166,29 +166,4 @@ public class ModelService : BaseCachedService, IModelService
     public IEnumerable<ModelDto> GetModelsByFilters(int? brandId, int? typeId, int? stationId)
         => GetModelsByFiltersAsync(brandId, typeId, stationId).GetAwaiter().GetResult();
 
-    public async Task<IEnumerable<StationDtoForView>> GetStationsByModelAsync(int modelId)
-    {
-        var cacheKey = CreateCacheKey("stations_by_model", modelId);
-        return await _cache.GetOrSetAsync(cacheKey, async () =>
-        {
-            var model = _repo.GetAll()
-                .Include(m => m.Vehicles)
-                .ThenInclude(v => v.Station)
-                .FirstOrDefault(m => m.ModelId == modelId);
-
-            if (model == null)
-                return Enumerable.Empty<StationDtoForView>();
-
-            return model.Vehicles
-                .Where(v => v.Status == VehicleStatus.Available)
-                .GroupBy(v => v.Station)
-                .Select(g => new StationDtoForView
-                {
-                    Name = g.Key.Name,
-                    Address = g.Key.Address,
-                    Latitude = g.Key.Latitude,
-                    Longitude = g.Key.Longitude,
-                }).ToList();
-        }, TimeSpan.FromMinutes(15));
-    }
 }

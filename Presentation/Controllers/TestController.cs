@@ -29,4 +29,24 @@ public class TestController : ControllerBase
             return BadRequest($"Failed: {ex.Message}");
         }
     }
+
+    private async Task ClearCacheByPattern(string pattern)
+    {
+        await Task.CompletedTask;
+    }
+
+    [HttpPost("clear-vehicle-cache")]
+    public async Task<IActionResult> ClearVehicleCache()
+    {
+        await ClearCacheByPattern("vehicles*");
+        await ClearCacheByPattern("stations_by_model*");
+        return Ok("Vehicle-related cache cleared");
+    }
+
+    [HttpPost("clear-station-cache")]
+    public async Task<IActionResult> ClearStationCache()
+    {
+        await ClearCacheByPattern("stations*");
+        return Ok("Station-related cache cleared");
+    }
 }

@@ -12,11 +12,13 @@ namespace PublicCarRental.Presentation.Controllers
     {
         private readonly IModelService _service;
         private readonly IVehicleService _vehicleService;
+        private readonly ILogger<ModelController> _logger;
 
-        public ModelController(IModelService service, IVehicleService vehicleService)
+        public ModelController(IModelService service, IVehicleService vehicleService, ILogger<ModelController> logger)
         {
             _service = service;
             _vehicleService = vehicleService;
+            _logger = logger;
         }
 
         [HttpGet("get-all")]
@@ -66,22 +68,27 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(models);
         }
 
-        [HttpPost("check-available")]
-        public async Task<IActionResult> CheckAvailabilityAsync([FromBody] AvailableVehicle dto)
-        {
-            var vehicle = await _vehicleService.GetFirstAvailableVehicleByModelAsync(dto.ModelId, dto.StationId, dto.StartTime, dto.EndTime);
-            if (vehicle == null)
-            {
-                return NotFound($"No available vehicle found for model ID {dto.ModelId} at station ID {dto.StationId} between {dto.StartTime:g} and {dto.EndTime:g}.");
-            }
-            return Ok("You can rent this model");
-        }
-
         [HttpGet("get-station-from-model/{modelId}")]
         public async Task<IActionResult> GetStationAsync(int modelId)
         {
             var models = await _vehicleService.GetStationFromModelAsync(modelId);
             return Ok(models);
+        }
+
+        [HttpPost("get-available-count")]
+        public async Task<ActionResult<int>> GetAvailableCount([FromBody] AvailableVehicle dto)
+        {
+            try
+            {
+                var count = await _vehicleService.GetAvailableVehicleCountByModelAsync(
+                    dto.ModelId, dto.StationId, dto.StartTime, dto.EndTime);
+                return Ok(count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting available count");
+                return StatusCode(500, "Error checking availability");
+            }
         }
     }
 }
