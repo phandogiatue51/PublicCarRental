@@ -4,8 +4,7 @@ import {
     Flex, useColorModeValue, Spinner, Alert, AlertIcon, AlertTitle, AlertDescription
 } from '@chakra-ui/react';
 import {
-    MdPerson, MdDriveEta, MdAssignment,
-    MdReceipt
+    MdPerson, MdDriveEta, MdAssignment, MdReceipt
 } from 'react-icons/md';
 import { renterAPI, vehicleAPI, contractAPI, invoiceAPI } from '../../services/api';
 
@@ -20,61 +19,72 @@ const StaffDashboard = () => {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [stationId, setStationId] = useState(null);
 
     const textColor = useColorModeValue('gray.600', 'white');
     const cardBg = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.200', 'gray.700');
 
     useEffect(() => {
-        fetchDashboardData();
+        // Get stationId from localStorage
+        const storedStationId = localStorage.getItem('stationId');
+        console.log('StaffDashboard - StationId from localStorage:', storedStationId);
+        
+        if (storedStationId) {
+            setStationId(parseInt(storedStationId));
+        } else {
+            setError('No station assigned. Please contact administrator.');
+            setLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        if (stationId) {
+            fetchDashboardData();
+        }
+    }, [stationId]);
 
     const fetchDashboardData = async () => {
         try {
             setLoading(true);
             setError(null);
 
-            // TEMPORARILY DISABLE AUTHENTICATED API CALLS FOR TESTING
-            // TODO: Re-enable when authentication is properly set up
-            console.log('⚠️ Using mock data for testing - authentication required for real data');
+            console.log('Fetching dashboard data for stationId:', stationId);
 
-            // Mock data for testing
-            const mockStats = {
-                totalRenters: 25,
-                totalVehicles: 15,
-                totalContracts: 8,
-                totalInvoices: 12,
-                activeContracts: 3,
-                availableVehicles: 10
-            };
-
-            setStats(mockStats);
-
-            // Original API calls (commented out for testing)
-            /*
-            const [renters, vehicles, contracts, invoices] = await Promise.all([
-                renterAPI.getAll(),
-                vehicleAPI.getAll(),
-                contractAPI.getAll(), // This requires authentication
-                invoiceAPI.getAll()
+            // Fetch data filtered by stationId
+            const [vehicles, contracts, invoices] = await Promise.all([
+                vehicleAPI.filter({ stationId }), // Filter vehicles by station
+                contractAPI.filter({ stationId }), // Filter contracts by station
+                invoiceAPI.getByStation(stationId) // Get invoices by station
             ]);
 
-            const activeContracts = contracts?.filter(contract => contract.status === 0) || [];
-            const availableVehicles = vehicles?.filter(vehicle => vehicle.status === 0) || [];
+            console.log('Dashboard data:', { vehicles, contracts, invoices });
+
+            // Calculate stats
+            const activeContracts = contracts?.filter(contract => 
+                contract.status === 'Active' || contract.status === 0
+            ) || [];
+            
+            const availableVehicles = vehicles?.filter(vehicle => 
+                vehicle.status === 'Available' || vehicle.status === 0
+            ) || [];
+
+            // Get renters from contracts (unique)
+            const uniqueRenterIds = new Set(contracts?.map(c => c.renterId) || []);
 
             setStats({
-                totalRenters: renters?.length || 0,
+                totalRenters: uniqueRenterIds.size,
                 totalVehicles: vehicles?.length || 0,
                 totalContracts: contracts?.length || 0,
                 totalInvoices: invoices?.length || 0,
                 activeContracts: activeContracts.length,
                 availableVehicles: availableVehicles.length
             });
-            */
+
         } catch (err) {
             console.error('Error fetching dashboard data:', err);
             setError(err.message || 'Failed to fetch dashboard data');
-        } finally {
+        } finally {             
             setLoading(false);
         }
     };
@@ -127,7 +137,7 @@ const StaffDashboard = () => {
     return (
         <Box>
             <Text fontSize="2xl" fontWeight="bold" color={textColor} mb={6}>
-                Staff Dashboard
+                Staff Dashboard {stationId && `(Station ${stationId})`}
             </Text>
 
             <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={6}>
@@ -194,7 +204,7 @@ const StaffDashboard = () => {
                         </Text>
                         <Text color={textColor} fontSize="sm">
                             Use the navigation menu to view detailed information about renters, vehicles, contracts, and invoices.
-                            All data is read-only for staff members.
+                            All data is filtered by your assigned station.
                         </Text>
                     </CardBody>
                 </Card>
