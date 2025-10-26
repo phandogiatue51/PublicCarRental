@@ -343,7 +343,7 @@ export default function InvoiceList() {
 
   if (loading) {
     return (
-      <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+      <Box >
         <Card>
           <Flex justify="center" align="center" minH="200px">
             <Spinner size="xl" color={brandColor} />
@@ -358,7 +358,7 @@ export default function InvoiceList() {
 
   if (error) {
     return (
-      <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+      <Box >
         <Card>
           <Alert status="error">
             <AlertIcon />
@@ -376,7 +376,7 @@ export default function InvoiceList() {
   }
 
   return (
-    <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+    <Box>
       <Flex direction="column" gap="20px" me="auto">
         {/* Header */}
         <Flex

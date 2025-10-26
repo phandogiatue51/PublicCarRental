@@ -485,7 +485,7 @@ const ContractList = () => {
 
     if (loading) {
         return (
-            <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+            <Box >
                 <Card>
                     <Flex justify="center" align="center" minH="200px">
                         <Spinner size="xl" color={brandColor} />
@@ -500,7 +500,7 @@ const ContractList = () => {
 
     if (error) {
         return (
-            <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+            <Box >
                 <Card>
                     <Alert status="error">
                         <AlertIcon />
@@ -518,7 +518,7 @@ const ContractList = () => {
     }
 
     return (
-        <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+        <Box>
             <Flex direction="column" gap="20px" me="auto">
                 {/* Header */}
                 <Flex

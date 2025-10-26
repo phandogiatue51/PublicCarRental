@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { Link } from "react-router-dom";
+import { useToast } from "@chakra-ui/react";
 import HeroPages from "../components/HeroPages";
 import Footer from "../components/Footer";
+import { brandAPI, typeAPI, modelAPI } from "../services/api";
 import "../styles/Model.css"; 
 
 function Models() {
@@ -11,25 +12,58 @@ function Models() {
   const [types, setTypes] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [selectedType, setSelectedType] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     // Fetch brands and types for dropdowns
-    axios.get("https://publiccarrental-production-b7c5.up.railway.app/api/Brand/get-all").then((res) => setBrands(res.data));
-    axios.get("https://publiccarrental-production-b7c5.up.railway.app/api/Type/get-all").then((res) => setTypes(res.data));
-  }, []);
+    const fetchInitialData = async () => {
+      try {
+        const [brandsResponse, typesResponse] = await Promise.all([
+          brandAPI.getAll(),
+          typeAPI.getAll()
+        ]);
+        setBrands(brandsResponse || []);
+        setTypes(typesResponse || []);
+      } catch (error) {
+        console.error("Failed to fetch brands and types:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load brands and types",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    };
+    
+    fetchInitialData();
+  }, [toast]);
 
   useEffect(() => {
     // Fetch models based on selected brand and type
-    axios
-      .get("https://publiccarrental-production-b7c5.up.railway.app/api/Model/from-brand-and-type", {
-        params: {
-          brandId: selectedBrand,
-          typeId: selectedType,
-        },
-      })
-      .then((res) => setModels(res.data))
-      .catch((err) => console.error("Failed to fetch models", err));
-  }, [selectedBrand, selectedType]);
+    const fetchModels = async () => {
+      setLoading(true);
+      try {
+        const modelsResponse = await modelAPI.filterModels(selectedBrand, selectedType, null);
+        setModels(modelsResponse || []);
+      } catch (error) {
+        console.error("Failed to fetch models:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load vehicle models",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+        setModels([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchModels();
+  }, [selectedBrand, selectedType, toast]);
 
   const clearFilters = () => {
     setSelectedBrand(null);
@@ -98,34 +132,58 @@ function Models() {
           </div>
 
           <div className="models-div">
-            {models.map((model) => (
-              <div className="models-div__box" key={model.modelId}>
-                <div className="models-div__box__img">
-                  <img src={model.imageUrl} alt={model.name} />
-                  <div className="models-div__box__descr">
-                    <div className="models-div__box__descr__name-price">
-                      <div className="models-div__box__descr__name-price__name">
-                        <p>{model.name}</p>
-                        <span>
-                          {[...Array(5)].map((_, i) => (
-                            <i key={i} className="fa-solid fa-star"></i>
-                          ))}
-                        </span>
+            {loading ? (
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                minHeight: '200px',
+                fontSize: '18px',
+                color: '#666'
+              }}>
+                Loading vehicle models...
+              </div>
+            ) : models.length === 0 ? (
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                minHeight: '200px',
+                fontSize: '18px',
+                color: '#666'
+              }}>
+                No vehicle models found. Try adjusting your filters.
+              </div>
+            ) : (
+              models.map((model) => (
+                <div className="models-div__box" key={model.modelId}>
+                  <div className="models-div__box__img">
+                    <img src={model.imageUrl} alt={model.name} />
+                    <div className="models-div__box__descr">
+                      <div className="models-div__box__descr__name-price">
+                        <div className="models-div__box__descr__name-price__name">
+                          <p>{model.name}</p>
+                          <span>
+                            {[...Array(5)].map((_, i) => (
+                              <i key={i} className="fa-solid fa-star"></i>
+                            ))}
+                          </span>
+                        </div>
+                        <div className="models-div__box__descr__name-price__price">
+                          <h4>${model.pricePerHour}</h4>
+                          <p>per hour</p>
+                        </div>
                       </div>
-                      <div className="models-div__box__descr__name-price__price">
-                        <h4>${model.pricePerHour}</h4>
-                        <p>per hour</p>
+                      <div className="models-div__box__descr__name-price__btn">
+                        <Link onClick={() => window.scrollTo(0, 0)} to="/">
+                          Book Ride
+                        </Link>
                       </div>
-                    </div>
-                    <div className="models-div__box__descr__name-price__btn">
-                      <Link onClick={() => window.scrollTo(0, 0)} to="/">
-                        Book Ride
-                      </Link>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </section>

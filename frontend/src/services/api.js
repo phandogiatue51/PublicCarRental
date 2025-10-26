@@ -164,17 +164,6 @@ export const modelAPI = {
   // Get available images
   getAvailableImages: () => apiRequest('/Model/available-images'),
 
-  // Filter models
-  filterModels: (brandId, typeId, stationId) => {
-    const queryParams = new URLSearchParams();
-    if (brandId) queryParams.append('brandId', brandId);
-    if (typeId) queryParams.append('typeId', typeId);
-    if (stationId) queryParams.append('stationId', stationId);
-
-    const queryString = queryParams.toString();
-    return apiRequest(`/Model/filter-models${queryString ? `?${queryString}` : ''}`);
-  },
-
   // Check model availability
   checkAvailable: (availabilityData) => apiRequest('/Model/check-available', {
     method: 'POST',
