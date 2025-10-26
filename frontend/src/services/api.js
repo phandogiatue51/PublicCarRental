@@ -558,47 +558,72 @@ export const documentAPI = {
   },
 };
 
-// Transaction API services
 export const transactionAPI = {
-  // Get all transactions
   getAll: () => apiRequest('/Transaction/get-all'),
 };
 
-// Accident API services
 export const accidentAPI = {
-  // Get all accidents
-  getAll: () => apiRequest('/Accident/get-all'),
+  getAll: async () => {
+    const data = await apiRequest('/Accident/get-all');
+    return data.map(accident => ({
+      ...accident,
+      status: mapStatusNumberToString(accident.status)
+    }));
+  },
 
-  // Get accident by ID
-  getById: (id) => apiRequest(`/Accident/${id}`),
+  getById: async (id) => {
+    const data = await apiRequest(`/Accident/${id}`);
+    return {
+      ...data,
+      status: mapStatusNumberToString(data.status)
+    };
+  },
 
-  // Create contract accident report
   createContractReport: (formData) => apiRequest('/Accident/create-contract-report', {
     method: 'POST',
     body: formData,
   }),
 
-  // Create vehicle accident report
   createVehicleReport: (formData) => apiRequest('/Accident/create-vehicle-report', {
     method: 'POST',
     body: formData,
   }),
 
-  // Delete accident report
   deleteReport: (id) => apiRequest(`/Accident/delete-report/${id}`, {
     method: 'DELETE',
   }),
 
-  // Update accident report status
-  updateReportStatus: (id, newStatus) => apiRequest(`/Accident/update-report-status/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ newStatus }),
-  }),
+  updateReportStatus: async (id, newStatus) => {
+    const statusNumber = mapStatusStringToNumber(newStatus);
+    return apiRequest(`/Accident/update-report-status/${id}?newStatus=${statusNumber}`, {
+      method: 'PATCH',
+    });
+  },
 };
 
-// Payment API
+const mapStatusNumberToString = (statusNumber) => {
+  const statusMap = {
+    0: 'Reported',
+    1: 'UnderInvestigation',
+    2: 'RepairApproved',
+    3: 'UnderRepair',
+    4: 'Repaired'
+  };
+  return statusMap[statusNumber] || 'Reported';
+};
+
+const mapStatusStringToNumber = (statusString) => {
+  const statusMap = {
+    'Reported': 0,
+    'UnderInvestigation': 1,
+    'RepairApproved': 2,
+    'UnderRepair': 3,
+    'Repaired': 4
+  };
+  return statusMap[statusString] || 0;
+};
+
 export const paymentAPI = {
-  // Create payment
   createPayment: (paymentData) => apiRequest('/Payment/create-payment', {
     method: 'POST',
     body: JSON.stringify(paymentData)
