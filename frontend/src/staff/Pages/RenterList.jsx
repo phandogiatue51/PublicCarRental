@@ -335,7 +335,7 @@ const RenterList = () => {
 
     if (loading) {
         return (
-            <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+            <Box >
                 <Flex justify="center" align="center" minH="200px">
                     <Spinner size="xl" color={brandColor} />
                     <Text ml={4} color={textColor}>
@@ -348,7 +348,7 @@ const RenterList = () => {
 
     if (error) {
         return (
-            <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+            <Box >
                 <Alert status="error">
                     <AlertIcon />
                     <AlertTitle>Error!</AlertTitle>

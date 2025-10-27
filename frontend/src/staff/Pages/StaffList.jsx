@@ -310,7 +310,7 @@ export default function StaffList() {
 
     if (loading) {
         return (
-            <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+            <Box >
                 <Card>
                     <CardBody>
                         <Flex justify="center" align="center" minH="200px">
@@ -327,7 +327,7 @@ export default function StaffList() {
 
     if (error) {
         return (
-            <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+            <Box >
                 <Card>
                     <CardBody>
                         <Alert status="error">
@@ -347,7 +347,7 @@ export default function StaffList() {
     }
 
     return (
-        <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+        <Box>
             <Flex direction="column" gap="20px" me="auto">
                 {/* Header */}
                 <Flex

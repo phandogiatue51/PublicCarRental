@@ -172,27 +172,6 @@ export default function InvoiceList() {
         </Flex>
       ),
     }),
-    columnHelper.accessor('amountDue', {
-      id: 'amountDue',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          AMOUNT DUE
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center" gap={2}>
-          <Icon as={MdAttachMoney} color="red.500" />
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {formatCurrency(info.getValue())}
-          </Text>
-        </Flex>
-      ),
-    }),
     columnHelper.accessor('amountPaid', {
       id: 'amountPaid',
       header: () => (
@@ -266,37 +245,6 @@ export default function InvoiceList() {
           </Badge>
         );
       },
-    }),
-    columnHelper.accessor('actions', {
-      id: 'actions',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          ACTIONS
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center" gap={2}>
-          <Tooltip label="View Details">
-            <Button
-              variant="ghost"
-              size="sm"
-              leftIcon={<Icon as={MdVisibility} />}
-              colorScheme="blue"
-              onClick={() => {
-                // TODO: Implement view details functionality
-                console.log('View invoice:', info.row.original);
-              }}
-            >
-              View
-            </Button>
-          </Tooltip>
-        </Flex>
-      ),
     }),
   ], [textColor]);
 
