@@ -18,7 +18,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("station/{stationId}/overview")]
-        public async Task<ActionResult<StaffStationOverviewDto>> GetStationOverview(int stationId)
+        public async Task<ActionResult> GetStationOverview(int stationId)
         {
             try
             {
@@ -32,7 +32,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("station/{stationId}/incoming-checkins")]
-        public async Task<ActionResult<List<TodayRentalDto>>> GetIncomingCheckIns(
+        public async Task<ActionResult> GetIncomingCheckIns(
             int stationId,
             [FromQuery] int count = 5)
         {
@@ -48,7 +48,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("station/{stationId}/incoming-checkouts")]
-        public async Task<ActionResult<List<TodayRentalDto>>> GetIncomingCheckOuts(
+        public async Task<ActionResult> GetIncomingCheckOuts(
             int stationId,
             [FromQuery] int count = 5)
         {
@@ -64,7 +64,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("station/{stationId}/maintenance-queue")]
-        public async Task<ActionResult<List<VehicleAtStationDto>>> GetMaintenanceQueue(int stationId)
+        public async Task<ActionResult> GetMaintenanceQueue(int stationId)
         {
             try
             {
@@ -78,7 +78,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("station/{stationId}/low-battery-vehicles")]
-        public async Task<ActionResult<List<VehicleAtStationDto>>> GetLowBatteryVehicles(int stationId)
+        public async Task<ActionResult> GetLowBatteryVehicles(int stationId)
         {
             try
             {

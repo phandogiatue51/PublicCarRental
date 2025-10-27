@@ -2,6 +2,10 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.Application.DTOs.AdminDashboard;
+using PublicCarRental.Application.DTOs.AdminDashboard.Customer;
+using PublicCarRental.Application.DTOs.AdminDashboard.Rate;
+using PublicCarRental.Application.DTOs.AdminDashboard.Revenue;
+using PublicCarRental.Application.DTOs.AdminDashboard.Vehi;
 using PublicCarRental.Application.Service.Dashboard;
 
 namespace PublicCarRental.Presentation.Controllers
@@ -18,7 +22,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("overview")]
-        public async Task<ActionResult<AdminOverviewDto>> GetSystemOverview()
+        public async Task<ActionResult> GetSystemOverview()
         {
             try
             {
@@ -32,7 +36,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("fleet-management")]
-        public async Task<ActionResult<FleetManagementDto>> GetFleetManagement()
+        public async Task<ActionResult> GetFleetManagement()
         {
             try
             {
@@ -46,7 +50,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("stations-performance")]
-        public async Task<ActionResult<List<StationPerformanceDto>>> GetStationsPerformance()
+        public async Task<ActionResult> GetStationsPerformance()
         {
             try
             {
@@ -60,7 +64,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("customer-analytics")]
-        public async Task<ActionResult<CustomerAnalyticsDto>> GetCustomerAnalytics()
+        public async Task<ActionResult> GetCustomerAnalytics()
         {
             try
             {
@@ -74,7 +78,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("risk-customers")]
-        public async Task<ActionResult<List<RiskCustomerDto>>> GetRiskCustomers()
+        public async Task<ActionResult> GetRiskCustomers()
         {
             try
             {
@@ -88,7 +92,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("staff-performance")]
-        public async Task<ActionResult<StaffPerformanceDto>> GetStaffPerformance()
+        public async Task<ActionResult> GetStaffPerformance()
         {
             try
             {
@@ -101,14 +105,12 @@ namespace PublicCarRental.Presentation.Controllers
             }
         }
 
-        [HttpGet("financial-report")]
-        public async Task<ActionResult<FinancialReportDto>> GetFinancialReport(
-            [FromQuery] DateTime startDate,
-            [FromQuery] DateTime endDate)
+        [HttpPost("financial-report")]
+        public async Task<ActionResult> GetFinancialReport(DateRange dto)
         {
             try
             {
-                var dateRange = new DateRange { StartDate = startDate, EndDate = endDate };
+                var dateRange = new DateRange { StartDate = dto.StartDate, EndDate = dto.EndDate};
                 var financialReport = await _adminDashboardService.GetFinancialReportAsync(dateRange);
                 return Ok(financialReport);
             }
@@ -119,7 +121,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("rating-analytics")]
-        public async Task<ActionResult<RatingAnalyticsDto>> GetRatingAnalytics()
+        public async Task<ActionResult> GetRatingAnalytics()
         {
             try
             {

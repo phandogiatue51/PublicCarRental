@@ -1,4 +1,8 @@
 ﻿using PublicCarRental.Application.DTOs.AdminDashboard;
+using PublicCarRental.Application.DTOs.AdminDashboard.Customer;
+using PublicCarRental.Application.DTOs.AdminDashboard.Rate;
+using PublicCarRental.Application.DTOs.AdminDashboard.Revenue;
+using PublicCarRental.Application.DTOs.AdminDashboard.Vehi;
 
 namespace PublicCarRental.Application.Service.Dashboard
 {

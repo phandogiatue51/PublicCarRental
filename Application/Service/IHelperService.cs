@@ -9,7 +9,7 @@ namespace PublicCarRental.Application.Service
         public double CalculateStationUtilizationRate(int stationId, List<Vehicle> vehicles, List<RentalContract> contracts);
         public double CalculateModelUtilizationRate(int modelId, ICollection<Vehicle> vehicles);
         public decimal CalculateAverageRevenueForSegment(List<int> customerIds, List<Invoice> invoices);
-        public string CalculateRiskLevel(EVRenter customer);
+        public string CalculateRiskLevel(EVRenter customer, int accidentCount);
         public double CalculateSatisfactionScore(int staffId);
 
     }

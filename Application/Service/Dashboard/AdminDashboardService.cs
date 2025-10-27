@@ -1,5 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PublicCarRental.Application.DTOs.AdminDashboard;
+using PublicCarRental.Application.DTOs.AdminDashboard.Customer;
+using PublicCarRental.Application.DTOs.AdminDashboard.Rate;
+using PublicCarRental.Application.DTOs.AdminDashboard.Revenue;
+using PublicCarRental.Application.DTOs.AdminDashboard.Staf;
+using PublicCarRental.Application.DTOs.AdminDashboard.Vehi;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Acc;
 using PublicCarRental.Infrastructure.Data.Repository.Cont;
@@ -24,12 +29,15 @@ namespace PublicCarRental.Application.Service.Dashboard
         private readonly IEVRenterRepository _renterRepository;
         private readonly IRatingRepository _ratingRepository;
         private readonly IStaffRepository _staffRepository;
+        private readonly IAccidentRepository _accidentRepository;
 
         private DateTime today => DateTime.UtcNow.Date;
+        private DateTime firstDayOfMonth => new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
         public AdminDashboardService(IStationRepository stationRepository,IVehicleRepository vehicleRepository, IAccountRepository accountRepository,
             IContractRepository contractRepository, IInvoiceRepository invoiceRepository, IModelRepository vehicleModelRepository,
-            IHelperService helperService, IEVRenterRepository renterRepository, IRatingRepository ratingRepository, IStaffRepository staffRepository)
+            IHelperService helperService, IEVRenterRepository renterRepository, IRatingRepository ratingRepository, IStaffRepository staffRepository,
+            IAccidentRepository accidentRepository)
         {
             _stationRepository = stationRepository;
             _vehicleRepository = vehicleRepository;
@@ -41,11 +49,11 @@ namespace PublicCarRental.Application.Service.Dashboard
             _renterRepository = renterRepository;
             _ratingRepository = ratingRepository;
             _staffRepository = staffRepository;
+            _accidentRepository = accidentRepository;
         }
 
         public async Task<AdminOverviewDto> GetSystemOverviewAsync()
         {
-            var firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
 
             var totalStations = _stationRepository.GetAll().Count();
             var totalVehicles = _vehicleRepository.GetAll().Count();
@@ -203,7 +211,7 @@ namespace PublicCarRental.Application.Service.Dashboard
                 },
                 new CustomerSegmentDto
                 {
-                    Segment = "VIP",
+                    Segment = "Common",
                     Count = customers.Count(c => invoices.Where(i =>
                         i.Contract?.EVRenterId == c.RenterId).Sum(i => i.AmountPaid ?? 0) > 1000000), // > 1 million
                     AverageRevenue = _helperService.CalculateAverageRevenueForSegment(customers.Where(c =>
@@ -232,31 +240,43 @@ namespace PublicCarRental.Application.Service.Dashboard
 
         public async Task<List<RiskCustomerDto>> GetRiskCustomersAsync()
         {
-            var customers = await _renterRepository.GetAll()
-                .Include(r => r.Account)
-                .Include(r => r.RentalContracts)
-                .ThenInclude(rc => rc.Vehicle)
-                .ToListAsync();
+            var accidentReports = await _accidentRepository.GetAll()
+                .Include(ar => ar.Contract)
+                    .ThenInclude(c => c.EVRenter)
+                        .ThenInclude(r => r.Account)
+                .Where(ar => ar.ContractId != null)
+                .ToListAsync(); 
 
-            var riskCustomers = customers.Select(customer => new RiskCustomerDto
+            var customersWithAccidents = accidentReports
+                .GroupBy(ar => ar.Contract.EVRenter)
+                .Select(g => new
+                {
+                    Customer = g.Key,
+                    AccidentCount = g.Count(),
+                    LastAccidentDate = g.Max(ar => ar.ReportedAt)
+                })
+                .ToList();
+
+            var riskCustomers = customersWithAccidents.Select(c => new RiskCustomerDto
             {
-                CustomerId = customer.RenterId,
-                FullName = customer.Account.FullName,
-                Email = customer.Account.Email,
-                PhoneNumber = customer.Account.PhoneNumber,
-                LicenseNumber = customer.LicenseNumber,
-                TotalRentals = customer.RentalContracts.Count,
-                ViolationCount = customer.RentalContracts.Count(rc =>
-                    rc.Note != null && (rc.Note.Contains("violation") || rc.Note.Contains("vi phạm"))),
-                DamageReportCount = customer.RentalContracts.Count(rc =>
-                    rc.Vehicle.AccidentReports.Any()),
-                LateReturnCount = customer.RentalContracts.Count(rc =>
-                    rc.EndTime < DateTime.UtcNow && rc.Status == RentalStatus.Active),
-                RiskLevel = _helperService.CalculateRiskLevel(customer),
-                LastRentalDate = customer.RentalContracts.Max(rc => rc.StartTime)
+                CustomerId = c.Customer.RenterId,
+                FullName = c.Customer.Account?.FullName ?? "Unknown",
+                Email = c.Customer.Account?.Email ?? "No email",
+                PhoneNumber = c.Customer.Account?.PhoneNumber ?? "No phone",
+                LicenseNumber = c.Customer.LicenseNumber ?? "No license",
+                TotalRentals = c.Customer.RentalContracts?.Count ?? 0,
+                DamageReportCount = c.AccidentCount,
+                LateReturnCount = c.Customer.RentalContracts?
+                    .Count(rc => rc != null &&
+                               rc.EndTime < DateTime.UtcNow &&
+                               rc.Status == RentalStatus.Active) ?? 0,
+                RiskLevel = _helperService.CalculateRiskLevel(c.Customer, c.AccidentCount),
+                LastRentalDate = c.Customer.RentalContracts?.Any() == true ?
+                    c.Customer.RentalContracts.Max(rc => rc?.StartTime ?? DateTime.MinValue) :
+                    DateTime.MinValue
             })
             .Where(c => c.RiskLevel != "Low")
-            .OrderByDescending(c => c.ViolationCount + c.DamageReportCount + c.LateReturnCount)
+            .OrderByDescending(c => c.DamageReportCount)
             .Take(10)
             .ToList();
 
@@ -268,7 +288,6 @@ namespace PublicCarRental.Application.Service.Dashboard
             var staffMembers = _staffRepository.GetAll().ToList();
 
             var allContracts = await _contractRepository.GetAll().ToListAsync();
-            var today = DateTime.UtcNow.Date;
 
             var staffPerformance = staffMembers.Select(staff =>
             {
@@ -319,6 +338,7 @@ namespace PublicCarRental.Application.Service.Dashboard
                 .Include(i => i.Contract)
                 .ThenInclude(c => c.Station)
                 .Include(i => i.Contract.Vehicle.Model)
+                .ThenInclude(t => t.Type)
                 .ToListAsync();
 
             var totalRevenue = paidInvoices.Sum(i => i.AmountPaid ?? 0);
@@ -381,20 +401,60 @@ namespace PublicCarRental.Application.Service.Dashboard
 
         public async Task<RatingAnalyticsDto> GetRatingAnalyticsAsync()
         {
-            var ratings = _ratingRepository.GetAll().ToList();
+            var ratings = await _ratingRepository.GetAll()
+                .Include(r => r.Contract)
+                    .ThenInclude(c => c.Vehicle)
+                        .ThenInclude(v => v.Model)
+                            .ThenInclude(m => m.Brand)
+                .Include(r => r.Contract.EVRenter.Account)
+                .ToListAsync();
+
+            // Model performance analysis
+            var modelRatings = ratings
+                .Where(r => r.Contract?.Vehicle?.Model != null)
+                .GroupBy(r => r.Contract.Vehicle.Model)
+                .Select(g => new ModelRatingPerformanceDto
+                {
+                    ModelId = g.Key.ModelId,
+                    ModelName = g.Key.Name,
+                    BrandName = g.Key.Brand.Name,
+                    TotalRatings = g.Count(),
+                    AverageRating = Math.Round(g.Average(r => (int)r.Stars), 2),
+                    FiveStarCount = g.Count(r => r.Stars == RatingLabel.Excellent),
+                    FourStarCount = g.Count(r => r.Stars == RatingLabel.Good),
+                    ThreeStarCount = g.Count(r => r.Stars == RatingLabel.Normal),
+                    TwoStarCount = g.Count(r => r.Stars == RatingLabel.Bad),
+                    OneStarCount = g.Count(r => r.Stars == RatingLabel.VeryBad),
+                    PositiveRatingPercentage = g.Count(r => (int)r.Stars >= 4) * 100.0 / g.Count()
+                })
+                .OrderByDescending(m => m.AverageRating)
+                .ThenByDescending(m => m.TotalRatings)
+                .ToList();
+
+            // Top performing models (highest rated with sufficient reviews)
+            var topPerformingModels = modelRatings
+                .Where(m => m.TotalRatings >= 5) // At least 5 ratings to be considered
+                .Take(5)
+                .ToList();
+
+            // Most reviewed models
+            var mostReviewedModels = modelRatings
+                .OrderByDescending(m => m.TotalRatings)
+                .Take(5)
+                .ToList();
 
             return new RatingAnalyticsDto
             {
                 TotalRatings = ratings.Count,
                 AverageRating = ratings.Any() ? Math.Round(ratings.Average(r => (int)r.Stars), 2) : 0,
                 RatingDistribution = new List<RatingDistributionDto>
-                {
-                    new() { Stars = 5, Count = ratings.Count(r => r.Stars == RatingLabel.Excellent), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Excellent) / ratings.Count * 100 : 0 },
-                    new() { Stars = 4, Count = ratings.Count(r => r.Stars == RatingLabel.Good), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Good) / ratings.Count * 100 : 0 },
-                    new() { Stars = 3, Count = ratings.Count(r => r.Stars == RatingLabel.Normal), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Normal) / ratings.Count * 100 : 0 },
-                    new() { Stars = 2, Count = ratings.Count(r => r.Stars == RatingLabel.Bad), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Bad) / ratings.Count * 100 : 0 },
-                    new() { Stars = 1, Count = ratings.Count(r => r.Stars == RatingLabel.VeryBad), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.VeryBad) / ratings.Count * 100 : 0 }
-                },
+        {
+            new() { Stars = 5, Count = ratings.Count(r => r.Stars == RatingLabel.Excellent), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Excellent) / ratings.Count * 100 : 0 },
+            new() { Stars = 4, Count = ratings.Count(r => r.Stars == RatingLabel.Good), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Good) / ratings.Count * 100 : 0 },
+            new() { Stars = 3, Count = ratings.Count(r => r.Stars == RatingLabel.Normal), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Normal) / ratings.Count * 100 : 0 },
+            new() { Stars = 2, Count = ratings.Count(r => r.Stars == RatingLabel.Bad), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Bad) / ratings.Count * 100 : 0 },
+            new() { Stars = 1, Count = ratings.Count(r => r.Stars == RatingLabel.VeryBad), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.VeryBad) / ratings.Count * 100 : 0 }
+        },
                 RecentComments = ratings
                     .Where(r => !string.IsNullOrEmpty(r.Comment))
                     .OrderByDescending(r => r.CreatedAt)
@@ -403,10 +463,17 @@ namespace PublicCarRental.Application.Service.Dashboard
                     {
                         RenterName = r.Contract.EVRenter.Account.FullName,
                         Comment = r.Comment,
-                        Stars = (int)r.Stars, 
-                        CreatedAt = r.CreatedAt
+                        Stars = (int)r.Stars,
+                        CreatedAt = r.CreatedAt,
+                        VehicleModel = r.Contract.Vehicle.Model.Name,
+                        Brand = r.Contract.Vehicle.Model.Brand.Name
                     })
-                    .ToList()
+                    .ToList(),
+                TopPerformingModels = topPerformingModels,
+                MostReviewedModels = mostReviewedModels,
+                TotalModelsRated = modelRatings.Count,
+                BestRatedModel = topPerformingModels.FirstOrDefault(),
+                MostReviewedModel = mostReviewedModels.FirstOrDefault()
             };
         }
     }

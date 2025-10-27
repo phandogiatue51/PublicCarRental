@@ -81,15 +81,16 @@ public class HelperService : IHelperService
         return segmentRevenue / customerIds.Count;
     }
 
-    public string CalculateRiskLevel(EVRenter customer)
+    public string CalculateRiskLevel(EVRenter customer, int accidentCount)
     {
         var riskScore = 0;
-        riskScore += customer.RentalContracts.Count(rc =>
-            rc.Note != null && rc.Note.Contains("violation")) * 3;
-        riskScore += customer.RentalContracts.Count(rc =>
-            rc.Vehicle.AccidentReports.Any()) * 5;
-        riskScore += customer.RentalContracts.Count(rc =>
-            rc.EndTime < DateTime.UtcNow && rc.Status == RentalStatus.Active) * 2;
+
+        riskScore += accidentCount * 5;
+
+        riskScore += customer.RentalContracts?
+            .Count(rc => rc != null &&
+                       rc.EndTime < DateTime.UtcNow &&
+                       rc.Status == RentalStatus.Active) * 2 ?? 0;
 
         return riskScore switch
         {

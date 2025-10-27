@@ -188,6 +188,7 @@ builder.Services.AddHostedService<ContractGenerationConsumerService>();
 builder.Services.AddScoped<IPaymentProcessingService, PaymentProcessingService>();
 
 builder.Services.AddScoped<IStaffDashboardService, StaffDashboardService>();
+builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 
 builder.Services.AddSendGrid(options =>
 {

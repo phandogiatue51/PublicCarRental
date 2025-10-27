@@ -1,4 +1,4 @@
-﻿namespace PublicCarRental.Application.DTOs.AdminDashboard
+﻿namespace PublicCarRental.Application.DTOs.AdminDashboard.Revenue
 {
     public class DailyRevenueDto
     {

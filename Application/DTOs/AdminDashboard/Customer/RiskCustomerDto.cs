@@ -1,4 +1,4 @@
-﻿namespace PublicCarRental.Application.DTOs.AdminDashboard
+﻿namespace PublicCarRental.Application.DTOs.AdminDashboard.Customer
 {
     public class RiskCustomerDto
     {
@@ -8,7 +8,6 @@
         public string PhoneNumber { get; set; }
         public string LicenseNumber { get; set; }
         public int TotalRentals { get; set; }
-        public int ViolationCount { get; set; }
         public int DamageReportCount { get; set; }
         public int LateReturnCount { get; set; }
         public string RiskLevel { get; set; } // Low, Medium, High

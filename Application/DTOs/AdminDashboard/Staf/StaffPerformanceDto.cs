@@ -1,4 +1,6 @@
-﻿namespace PublicCarRental.Application.DTOs.AdminDashboard
+﻿using PublicCarRental.Application.DTOs.AdminDashboard.Staf;
+
+namespace PublicCarRental.Application.DTOs.AdminDashboard
 {
     public class StaffPerformanceDto
     {
