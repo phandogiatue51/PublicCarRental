@@ -7,11 +7,13 @@ public class HelperService : IHelperService
 {
     private readonly IContractRepository _contractRepo;
     private readonly IInvoiceRepository _invoiceRepo;
+    private readonly IRatingRepository _ratingRepo;
 
-    public HelperService(IContractRepository contractRepo, IInvoiceRepository invoiceRepo)
+    public HelperService(IContractRepository contractRepo, IInvoiceRepository invoiceRepo, IRatingRepository ratingRepo)
     {
         _contractRepo = contractRepo;
         _invoiceRepo = invoiceRepo;
+        _ratingRepo = ratingRepo;
     }
 
     public RentalContract GetContractById(int contractId)
@@ -47,6 +49,70 @@ public class HelperService : IHelperService
         }
 
         return cancelledCount;
+    }
+
+    public double CalculateStationUtilizationRate(int stationId, List<Vehicle> vehicles, List<RentalContract> contracts)
+    {
+        var stationVehicles = vehicles.Count(v => v.StationId == stationId);
+        if (stationVehicles == 0) return 0;
+
+        var activeRentals = contracts.Count(rc => rc.StationId == stationId &&
+                                                rc.Status == RentalStatus.Active);
+        return Math.Round((double)activeRentals / stationVehicles * 100, 2);
+    }
+
+    public double CalculateModelUtilizationRate(int modelId, ICollection<Vehicle> vehicles)
+    {
+        var totalVehicles = vehicles.Count;
+        if (totalVehicles == 0) return 0;
+
+        var rentedVehicles = vehicles.Count(v => v.Status == VehicleStatus.Renting);
+        return Math.Round((double)rentedVehicles / totalVehicles * 100, 2);
+    }
+
+    public decimal CalculateAverageRevenueForSegment(List<int> customerIds, List<Invoice> invoices)
+    {
+        if (!customerIds.Any()) return 0;
+
+        var segmentRevenue = invoices
+            .Where(i => i.Contract != null && customerIds.Contains(i.Contract.EVRenterId))
+            .Sum(i => i.AmountPaid ?? 0);
+
+        return segmentRevenue / customerIds.Count;
+    }
+
+    public string CalculateRiskLevel(EVRenter customer)
+    {
+        var riskScore = 0;
+        riskScore += customer.RentalContracts.Count(rc =>
+            rc.Note != null && rc.Note.Contains("violation")) * 3;
+        riskScore += customer.RentalContracts.Count(rc =>
+            rc.Vehicle.AccidentReports.Any()) * 5;
+        riskScore += customer.RentalContracts.Count(rc =>
+            rc.EndTime < DateTime.UtcNow && rc.Status == RentalStatus.Active) * 2;
+
+        return riskScore switch
+        {
+            >= 10 => "High",
+            >= 5 => "Medium",
+            _ => "Low"
+        };
+    }
+
+    public double CalculateSatisfactionScore(int staffId)
+    {
+        var staffContracts = _contractRepo.GetAll()
+            .Where(rc => rc.StaffId == staffId)
+            .Select(rc => rc.ContractId)
+            .ToList();
+
+        if (!staffContracts.Any()) return 0;
+
+        var averageRating = _ratingRepo.GetAll()
+            .Where(r => staffContracts.Contains(r.ContractId))
+            .Average(r => (double?)(int)r.Stars) ?? 0;
+
+        return Math.Round(averageRating, 1);
     }
 
 }
