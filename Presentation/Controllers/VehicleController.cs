@@ -60,18 +60,6 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(new { message = "Vehicle deleted" });
         }
 
-        [HttpGet("available-vehicles")]
-        public async Task<IActionResult> GetAvailableVehiclesAsync(
-             [FromQuery] int modelId,
-             [FromQuery] int stationId,
-             [FromQuery] DateTime startTime,
-             [FromQuery] DateTime endTime)
-        {
-            var vehicles = await _service.GetFirstAvailableVehicleByModelAsync(modelId, stationId, startTime, endTime);
-            if (vehicles == null) return NotFound(new { message = "No available vehicles found" });
-            return Ok("You can rent this vehicle!");
-        }
-
         [HttpGet("filter-vehicle")]
         public async Task<IActionResult> FilterVehicleAsync(
             [FromQuery] int? stationId = null,

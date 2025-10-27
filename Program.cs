@@ -9,6 +9,7 @@ using PublicCarRental.Application.Service;
 using PublicCarRental.Application.Service.Acc;
 using PublicCarRental.Application.Service.Bran;
 using PublicCarRental.Application.Service.Cont;
+using PublicCarRental.Application.Service.Dashboard;
 using PublicCarRental.Application.Service.Email;
 using PublicCarRental.Application.Service.Image;
 using PublicCarRental.Application.Service.Inv;
@@ -185,6 +186,8 @@ builder.Services.AddHostedService<ReceiptGenerationConsumerService>();
 builder.Services.AddHostedService<ContractGenerationConsumerService>();
 
 builder.Services.AddScoped<IPaymentProcessingService, PaymentProcessingService>();
+
+builder.Services.AddScoped<IStaffDashboardService, StaffDashboardService>();
 
 builder.Services.AddSendGrid(options =>
 {
