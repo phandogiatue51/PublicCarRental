@@ -20,5 +20,7 @@ namespace PublicCarRental.Application.Service.Inv
         Task<Invoice> GetOriginalInvoiceAsync(int contractId);
         Task<decimal> GetTotalPaidAmountAsync(int contractId);
 
+        public IEnumerable<InvoiceDto> FilterInvoices(int? contractId = null, int? orderCode = null, int? stationId = null);
+
     }
 }

@@ -259,5 +259,34 @@ namespace PublicCarRental.Application.Service.Inv
             return new Random().Next(100000, 999999);
         }
 
+        public IEnumerable<InvoiceDto> FilterInvoices(int? contractId = null, int? orderCode = null, int? stationId = null)
+        {
+            var query = _repo.GetAll().AsQueryable();
+
+            if (contractId.HasValue)
+                query = query.Where(i => i.ContractId == contractId.Value);
+
+            if (orderCode.HasValue)
+                query = query.Where(i => i.OrderCode == orderCode.Value);
+
+            if (stationId.HasValue)
+                query = query.Where(i => i.Contract.Vehicle.StationId == stationId.Value);
+
+            var invoices = query.ToList();
+
+            return invoices.Select(i => new InvoiceDto
+            {
+                InvoiceId = i.InvoiceId,
+                ContractId = i.ContractId,
+                IssuedAt = i.IssuedAt,
+                AmountDue = i.AmountDue,
+                AmountPaid = i.AmountPaid,
+                PaidAt = i.PaidAt,
+                Status = i.Status,
+                OrderCode = i.OrderCode,
+                Note = i.Note
+            });
+        }
+
     }
 }

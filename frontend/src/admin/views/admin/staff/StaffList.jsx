@@ -1,20 +1,71 @@
 /* eslint-disable */
 
 import {
-  Box, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue, Spinner, Alert, AlertIcon,
-  AlertTitle, AlertDescription, Badge, Select, HStack, VStack, Modal, ModalOverlay, ModalContent, ModalHeader,
-  ModalFooter, ModalBody, ModalCloseButton, FormControl, FormLabel, Input, useToast, useDisclosure, InputGroup,
-  InputLeftElement, Divider,
-} from '@chakra-ui/react';
+  Box,
+  Button,
+  Flex,
+  Icon,
+  Table,
+  Tbody,
+  Td,
+  Text,
+  Th,
+  Thead,
+  Tr,
+  useColorModeValue,
+  Spinner,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
+  Badge,
+  Select,
+  HStack,
+  VStack,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  FormControl,
+  FormLabel,
+  Input,
+  useToast,
+  useDisclosure,
+  InputGroup,
+  InputLeftElement,
+  Divider,
+} from "@chakra-ui/react";
 import {
-  createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable,
-} from '@tanstack/react-table';
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { staffAPI, stationAPI } from '../../../../services/api';
-import { MdEdit, MdDelete, MdAdd, MdChevronLeft, MdChevronRight, MdPerson, MdEmail, MdPhone, MdLocationOn, MdToggleOn, MdToggleOff, MdSearch, MdFilterList, MdClear } from 'react-icons/md';
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { staffAPI, stationAPI } from "../../../../services/api";
+import {
+  MdEdit,
+  MdDelete,
+  MdAdd,
+  MdChevronLeft,
+  MdChevronRight,
+  MdPerson,
+  MdEmail,
+  MdPhone,
+  MdLocationOn,
+  MdToggleOn,
+  MdToggleOff,
+  MdSearch,
+  MdFilterList,
+  MdClear,
+} from "react-icons/md";
 
 // Custom components
-import Card from '../../../components/card/Card';
+import Card from "../../../components/card/Card";
 
 const columnHelper = createColumnHelper();
 
@@ -35,14 +86,14 @@ export default function StaffList() {
   const [totalItems, setTotalItems] = useState(0);
 
   // Search and filter state
-  const [searchParam, setSearchParam] = useState('');
-  const [selectedStationId, setSelectedStationId] = useState('');
-  const [contractStatusFilter, setContractStatusFilter] = useState('');
+  const [searchParam, setSearchParam] = useState("");
+  const [selectedStationId, setSelectedStationId] = useState("");
+  const [contractStatusFilter, setContractStatusFilter] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
-  const textColor = useColorModeValue('secondaryGray.900', 'white');
-  const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
-  const brandColor = useColorModeValue('brand.500', 'white');
+  const textColor = useColorModeValue("secondaryGray.900", "white");
+  const borderColor = useColorModeValue("gray.200", "whiteAlpha.100");
+  const brandColor = useColorModeValue("brand.500", "white");
 
   // Fetch staff from API
   const fetchStaff = async () => {
@@ -50,12 +101,12 @@ export default function StaffList() {
       setLoading(true);
       setError(null);
       const response = await staffAPI.getAll();
-      console.log('Staff response:', response);
+      console.log("Staff response:", response);
       setStaff(response || []);
       setTotalItems(response?.length || 0);
     } catch (err) {
-      console.error('Error fetching staff:', err);
-      setError(err.message || 'Failed to fetch staff');
+      console.error("Error fetching staff:", err);
+      setError(err.message || "Failed to fetch staff");
     } finally {
       setLoading(false);
     }
@@ -66,14 +117,17 @@ export default function StaffList() {
     try {
       setIsSearching(true);
       setError(null);
-      const response = await staffAPI.searchByParam(searchParam, selectedStationId || null);
-      console.log('Search response:', response);
+      const response = await staffAPI.searchByParam(
+        searchParam,
+        selectedStationId || null
+      );
+      console.log("Search response:", response);
       setStaff(response || []);
       setTotalItems(response?.length || 0);
       setCurrentPage(1); // Reset to first page
     } catch (err) {
-      console.error('Error searching staff:', err);
-      setError(err.message || 'Failed to search staff');
+      console.error("Error searching staff:", err);
+      setError(err.message || "Failed to search staff");
     } finally {
       setIsSearching(false);
     }
@@ -84,14 +138,17 @@ export default function StaffList() {
     try {
       setIsSearching(true);
       setError(null);
-      const response = await staffAPI.filterByContractStatus(selectedStationId || null, contractStatusFilter);
-      console.log('Filter response:', response);
+      const response = await staffAPI.filterByContractStatus(
+        selectedStationId || null,
+        contractStatusFilter
+      );
+      console.log("Filter response:", response);
       setStaff(response || []);
       setTotalItems(response?.length || 0);
       setCurrentPage(1); // Reset to first page
     } catch (err) {
-      console.error('Error filtering staff:', err);
-      setError(err.message || 'Failed to filter staff');
+      console.error("Error filtering staff:", err);
+      setError(err.message || "Failed to filter staff");
     } finally {
       setIsSearching(false);
     }
@@ -99,9 +156,9 @@ export default function StaffList() {
 
   // Clear search and filters
   const clearFilters = () => {
-    setSearchParam('');
-    setContractStatusFilter('');
-    setSelectedStationId('');
+    setSearchParam("");
+    setContractStatusFilter("");
+    setSelectedStationId("");
     fetchStaff(); // Reload all staff
   };
 
@@ -111,7 +168,7 @@ export default function StaffList() {
       const response = await stationAPI.getAll();
       setStations(response || []);
     } catch (err) {
-      console.error('Error fetching stations:', err);
+      console.error("Error fetching stations:", err);
     }
   };
 
@@ -131,7 +188,7 @@ export default function StaffList() {
       totalPages,
       startIndex,
       endIndex,
-      paginatedStaff
+      paginatedStaff,
     };
   }, [staff, currentPage, pageSize, totalItems]);
 
@@ -148,9 +205,18 @@ export default function StaffList() {
   }, []);
 
   const goToFirstPage = useCallback(() => setCurrentPage(1), []);
-  const goToLastPage = useCallback(() => setCurrentPage(totalPages), [totalPages]);
-  const goToPreviousPage = useCallback(() => setCurrentPage(prev => Math.max(prev - 1, 1)), []);
-  const goToNextPage = useCallback(() => setCurrentPage(prev => Math.min(prev + 1, totalPages)), [totalPages]);
+  const goToLastPage = useCallback(
+    () => setCurrentPage(totalPages),
+    [totalPages]
+  );
+  const goToPreviousPage = useCallback(
+    () => setCurrentPage((prev) => Math.max(prev - 1, 1)),
+    []
+  );
+  const goToNextPage = useCallback(
+    () => setCurrentPage((prev) => Math.min(prev + 1, totalPages)),
+    [totalPages]
+  );
 
   // Handle edit staff
   const handleEdit = useCallback((staffMember) => {
@@ -160,250 +226,272 @@ export default function StaffList() {
   }, []);
 
   // Handle delete staff
-  const handleDelete = useCallback(async (staffId) => {
-    if (window.confirm('Are you sure you want to delete this staff member?')) {
+  const handleDelete = useCallback(
+    async (staffId) => {
+      if (
+        window.confirm("Are you sure you want to delete this staff member?")
+      ) {
+        try {
+          const response = await staffAPI.delete(staffId);
+          console.log("Delete response:", response);
+          await fetchStaff(); // Refresh the list
+          toast({
+            title: "Success",
+            description: "Staff member deleted successfully",
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+        } catch (err) {
+          setError(err.message || "Failed to delete staff member");
+          toast({
+            title: "Error",
+            description: err.message || "Failed to delete staff member",
+            status: "error",
+            duration: 3000,
+            isClosable: true,
+          });
+        }
+      }
+    },
+    [toast]
+  );
+
+  // Handle status toggle
+  const handleStatusToggle = useCallback(
+    async (staffId, currentStatus) => {
       try {
-        const response = await staffAPI.delete(staffId);
-        console.log('Delete response:', response);
+        const response = await staffAPI.changeStatus(staffId);
+        console.log("Status change response:", response);
         await fetchStaff(); // Refresh the list
         toast({
-          title: 'Success',
-          description: 'Staff member deleted successfully',
-          status: 'success',
+          title: "Success",
+          description: `Staff status changed to ${getStatusText(
+            currentStatus === 0 ? 1 : 0
+          )}`,
+          status: "success",
           duration: 3000,
           isClosable: true,
         });
       } catch (err) {
-        setError(err.message || 'Failed to delete staff member');
         toast({
-          title: 'Error',
-          description: err.message || 'Failed to delete staff member',
-          status: 'error',
+          title: "Error",
+          description: err.message || "Failed to change staff status",
+          status: "error",
           duration: 3000,
           isClosable: true,
         });
       }
-    }
-  }, [toast]);
-
-  // Handle status toggle
-  const handleStatusToggle = useCallback(async (staffId, currentStatus) => {
-    try {
-      const response = await staffAPI.changeStatus(staffId);
-      console.log('Status change response:', response);
-      await fetchStaff(); // Refresh the list
-      toast({
-        title: 'Success',
-        description: `Staff status changed to ${getStatusText(currentStatus === 0 ? 1 : 0)}`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (err) {
-      toast({
-        title: 'Error',
-        description: err.message || 'Failed to change staff status',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-  }, [toast]);
+    },
+    [toast]
+  );
 
   // Get status badge color
   const getStatusColor = (status) => {
     switch (status) {
-      case 0: return 'green'; // Active
-      case 1: return 'red';   // Inactive
-      case 2: return 'orange'; // Suspended
-      default: return 'gray';
+      case 0:
+        return "green"; // Active
+      case 1:
+        return "red"; // Inactive
+      case 2:
+        return "orange"; // Suspended
+      default:
+        return "gray";
     }
   };
 
   // Get status text
   const getStatusText = (status) => {
     switch (status) {
-      case 0: return 'Active';
-      case 1: return 'Inactive';
-      case 2: return 'Suspended';
-      default: return 'Unknown';
+      case 0:
+        return "Active";
+      case 1:
+        return "Inactive";
+      case 2:
+        return "Suspended";
+      default:
+        return "Unknown";
     }
   };
 
   // Get station name
   const getStationName = (stationId) => {
-    if (!stationId) return 'No Station';
-    const station = stations.find(s => s.stationId === stationId);
+    if (!stationId) return "No Station";
+    const station = stations.find((s) => s.stationId === stationId);
     return station ? station.name : `Station ${stationId}`;
   };
 
-  const columns = useMemo(() => [
-    columnHelper.accessor('staffId', {
-      id: 'staffId',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          ID
-        </Text>
-      ),
-      cell: (info) => (
-        <Text color={textColor} fontSize="sm" fontWeight="700">
-          {info.getValue()}
-        </Text>
-      ),
-    }),
-    columnHelper.accessor('fullName', {
-      id: 'fullName',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          FULL NAME
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center" gap={2}>
-          <Icon as={MdPerson} color="gray.500" />
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor("staffId", {
+        id: "staffId",
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: "10px", lg: "12px" }}
+            color="gray.400"
+          >
+            ID
+          </Text>
+        ),
+        cell: (info) => (
           <Text color={textColor} fontSize="sm" fontWeight="700">
             {info.getValue()}
           </Text>
-        </Flex>
-      ),
-    }),
-    columnHelper.accessor('email', {
-      id: 'email',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          EMAIL
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center" gap={2}>
-          <Icon as={MdEmail} color="gray.500" />
-          <Text color={textColor} fontSize="sm">
-            {info.getValue()}
+        ),
+      }),
+      columnHelper.accessor("fullName", {
+        id: "fullName",
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: "10px", lg: "12px" }}
+            color="gray.400"
+          >
+            FULL NAME
           </Text>
-        </Flex>
-      ),
-    }),
-    columnHelper.accessor('phoneNumber', {
-      id: 'phoneNumber',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          PHONE
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center" gap={2}>
-          <Icon as={MdPhone} color="gray.500" />
-          <Text color={textColor} fontSize="sm">
-            {info.getValue()}
-          </Text>
-        </Flex>
-      ),
-    }),
-    columnHelper.accessor('stationId', {
-      id: 'station',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          STATION
-        </Text>
-      ),
-      cell: (info) => {
-        const stationId = info.getValue();
-        return (
+        ),
+        cell: (info) => (
           <Flex align="center" gap={2}>
-            <Icon as={MdLocationOn} color="gray.500" />
-            <Text color={textColor} fontSize="sm">
-              {getStationName(stationId)}
+            <Icon as={MdPerson} color="gray.500" />
+            <Text color={textColor} fontSize="sm" fontWeight="700">
+              {info.getValue()}
             </Text>
           </Flex>
-        );
-      },
-    }),
-    columnHelper.accessor('status', {
-      id: 'status',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          STATUS
-        </Text>
-      ),
-      cell: (info) => {
-        const status = info.getValue();
-        const staffId = info.row.original.staffId;
-        const isActive = status === 0;
+        ),
+      }),
+      columnHelper.accessor("email", {
+        id: "email",
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: "10px", lg: "12px" }}
+            color="gray.400"
+          >
+            EMAIL
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex align="center" gap={2}>
+            <Icon as={MdEmail} color="gray.500" />
+            <Text color={textColor} fontSize="sm">
+              {info.getValue()}
+            </Text>
+          </Flex>
+        ),
+      }),
+      columnHelper.accessor("phoneNumber", {
+        id: "phoneNumber",
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: "10px", lg: "12px" }}
+            color="gray.400"
+          >
+            PHONE
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex align="center" gap={2}>
+            <Icon as={MdPhone} color="gray.500" />
+            <Text color={textColor} fontSize="sm">
+              {info.getValue()}
+            </Text>
+          </Flex>
+        ),
+      }),
+      columnHelper.accessor("stationId", {
+        id: "station",
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: "10px", lg: "12px" }}
+            color="gray.400"
+          >
+            STATION
+          </Text>
+        ),
+        cell: (info) => {
+          const stationId = info.getValue();
+          return (
+            <Flex align="center" gap={2}>
+              <Icon as={MdLocationOn} color="gray.500" />
+              <Text color={textColor} fontSize="sm">
+                {getStationName(stationId)}
+              </Text>
+            </Flex>
+          );
+        },
+      }),
+      columnHelper.accessor("status", {
+        id: "status",
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: "10px", lg: "12px" }}
+            color="gray.400"
+          >
+            STATUS
+          </Text>
+        ),
+        cell: (info) => {
+          const status = info.getValue();
+          const staffId = info.row.original.staffId;
+          const isActive = status === 0;
 
-        return (
-          <Flex align="center">
+          return (
+            <Flex align="center">
+              <Button
+                fontSize="4xl"
+                leftIcon={
+                  <Icon as={isActive ? MdToggleOn : MdToggleOff} boxSize={8} />
+                }
+                colorScheme={isActive ? "green" : "red"}
+                variant="ghost"
+                onClick={() => handleStatusToggle(staffId, status)}
+                _hover={{
+                  bg: isActive ? "green.50" : "red.50",
+                }}
+              ></Button>
+            </Flex>
+          );
+        },
+      }),
+      columnHelper.accessor("actions", {
+        id: "actions",
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: "10px", lg: "12px" }}
+            color="gray.400"
+          >
+            ACTIONS
+          </Text>
+        ),
+        cell: (info) => (
+          <Flex align="center" gap={2}>
             <Button
-              fontSize="4xl"
-              leftIcon={<Icon as={isActive ? MdToggleOn : MdToggleOff} boxSize={8} />}
-              colorScheme={isActive ? "green" : "red"}
               variant="ghost"
-              onClick={() => handleStatusToggle(staffId, status)}
-              _hover={{
-                bg: isActive ? "green.50" : "red.50"
-              }}
+              size="sm"
+              leftIcon={<Icon as={MdEdit} />}
+              colorScheme="blue"
+              onClick={() => handleEdit(info.row.original)}
             >
+              Edit
             </Button>
           </Flex>
-        );
-      },
-    }),
-    columnHelper.accessor('actions', {
-      id: 'actions',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          ACTIONS
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center" gap={2}>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<Icon as={MdEdit} />}
-            colorScheme="blue"
-            onClick={() => handleEdit(info.row.original)}
-          >
-            Edit
-          </Button>
-        </Flex>
-      ),
-    }),
-  ], [textColor, handleEdit, handleDelete, handleStatusToggle, stations]);
+        ),
+      }),
+    ],
+    [textColor, handleEdit, handleDelete, handleStatusToggle, stations]
+  );
 
   const table = useReactTable({
     data: paginatedStaff,
@@ -471,7 +559,7 @@ export default function StaffList() {
 
   if (loading) {
     return (
-      <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+      <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
         <Card>
           <Flex justify="center" align="center" minH="200px">
             <Spinner size="xl" color={brandColor} />
@@ -486,7 +574,7 @@ export default function StaffList() {
 
   if (error) {
     return (
-      <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+      <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
         <Card>
           <Alert status="error">
             <AlertIcon />
@@ -504,14 +592,14 @@ export default function StaffList() {
   }
 
   return (
-    <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+    <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
       <Flex direction="column" gap="20px" me="auto">
         {/* Header */}
         <Flex
           mt="45px"
           justifyContent="space-between"
-          direction={{ base: 'column', md: 'row' }}
-          align={{ base: 'start', md: 'center' }}
+          direction={{ base: "column", md: "row" }}
+          align={{ base: "start", md: "center" }}
         >
           <Text color={textColor} fontSize="2xl" ms="24px" fontWeight="700">
             Staff Management
@@ -527,103 +615,95 @@ export default function StaffList() {
           </Button>
         </Flex>
 
-        {/* Search and Filter Controls */}
+        {/* 🔍 Search & Filter Staff */}
         <Card>
           <Box p={6}>
-            <VStack spacing={4} align="stretch">
-              <Text color={textColor} fontSize="lg" fontWeight="600">
-                Search & Filter Staff
-              </Text>
+            <Flex
+              align="center"
+              justify="flex-start"
+              gap={3}
+              flexWrap="wrap"
+              p={4}
+              bg={useColorModeValue("white", "gray.800")}
+              borderRadius="lg"
+              boxShadow="sm"
+            >
+              {/* Station */}
+              <Select
+                value={selectedStationId}
+                onChange={(e) => setSelectedStationId(e.target.value)}
+                placeholder="All stations"
+                size="sm"
+                w="200px"
+                bg={useColorModeValue("gray.50", "gray.700")}
+              >
+                {stations.map((station) => (
+                  <option key={station.stationId} value={station.stationId}>
+                    {station.name}
+                  </option>
+                ))}
+              </Select>
 
-              <HStack spacing={4} wrap="wrap">
-                {/* Station Selection */}
-                <FormControl minW="200px">
-                  <FormLabel fontSize="sm" color="gray.600">Station</FormLabel>
-                  <Select
-                    value={selectedStationId}
-                    onChange={(e) => setSelectedStationId(e.target.value)}
-                    placeholder="Select station"
-                    size="sm"
-                  >
-                    {stations.map((station) => (
-                      <option key={station.stationId} value={station.stationId}>
-                        {station.name}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
+              {/* Search */}
+              <InputGroup w="250px" size="sm">
+                <InputLeftElement pointerEvents="none">
+                  <Icon as={MdSearch} color="gray.400" />
+                </InputLeftElement>
+                <Input
+                  value={searchParam}
+                  onChange={(e) => setSearchParam(e.target.value)}
+                  placeholder="Name, email or phone..."
+                  bg={useColorModeValue("gray.50", "gray.700")}
+                  onKeyPress={(e) => e.key === "Enter" && searchStaff()}
+                />
+              </InputGroup>
 
-                {/* Search Input */}
-                <FormControl minW="250px">
-                  <FormLabel fontSize="sm" color="gray.600">Search (Name, Email, Phone)</FormLabel>
-                  <InputGroup size="sm">
-                    <InputLeftElement pointerEvents="none">
-                      <Icon as={MdSearch} color="gray.400" />
-                    </InputLeftElement>
-                    <Input
-                      value={searchParam}
-                      onChange={(e) => setSearchParam(e.target.value)}
-                      placeholder="Enter search term..."
-                      onKeyPress={(e) => e.key === 'Enter' && searchStaff()}
-                    />
-                  </InputGroup>
-                </FormControl>
+              {/* Contract Status */}
+              <Select
+                value={contractStatusFilter}
+                onChange={(e) => setContractStatusFilter(e.target.value)}
+                placeholder="All statuses"
+                size="sm"
+                w="200px"
+                bg={useColorModeValue("gray.50", "gray.700")}
+              >
+                <option value="ToBeConfirmed">To Be Confirmed</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Active">Active</option>
+                <option value="Completed">Completed</option>
+                <option value="Cancelled">Cancelled</option>
+              </Select>
 
-                {/* Contract Status Filter */}
-                <FormControl minW="200px">
-                  <FormLabel fontSize="sm" color="gray.600">Contract Status</FormLabel>
-                  <Select
-                    value={contractStatusFilter}
-                    onChange={(e) => setContractStatusFilter(e.target.value)}
-                    placeholder="All statuses"
-                    size="sm"
-                  >
-                    <option value="">All Statuses</option>
-                    <option value="ToBeConfirmed">To Be Confirmed</option>
-                    <option value="Confirmed">Confirmed</option>
-                    <option value="Active">Active</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </Select>
-                </FormControl>
-              </HStack>
+              {/* Buttons */}
+              <Button
+                colorScheme="blue"
+                leftIcon={<Icon as={MdSearch} />}
+                size="sm"
+                onClick={searchStaff}
+                isLoading={isSearching}
+              >
+                Search
+              </Button>
 
-              <HStack spacing={2} justify="flex-start">
-                <Button
-                  leftIcon={<Icon as={MdSearch} />}
-                  colorScheme="blue"
-                  size="sm"
-                  onClick={searchStaff}
-                  isLoading={isSearching}
-                  loadingText="Searching..."
-                  isDisabled={!selectedStationId}
-                >
-                  Search
-                </Button>
+              <Button
+                colorScheme="purple"
+                leftIcon={<Icon as={MdFilterList} />}
+                size="sm"
+                onClick={filterByContractStatus}
+                isLoading={isSearching}
+              >
+                Filter
+              </Button>
 
-                <Button
-                  leftIcon={<Icon as={MdFilterList} />}
-                  colorScheme="purple"
-                  size="sm"
-                  onClick={filterByContractStatus}
-                  isLoading={isSearching}
-                  loadingText="Filtering..."
-                  isDisabled={!selectedStationId}
-                >
-                  Filter by Status
-                </Button>
-
-                <Button
-                  leftIcon={<Icon as={MdClear} />}
-                  colorScheme="gray"
-                  size="sm"
-                  onClick={clearFilters}
-                  variant="outline"
-                >
-                  Clear Filters
-                </Button>
-              </HStack>
-            </VStack>
+              <Button
+                variant="outline"
+                leftIcon={<Icon as={MdClear} />}
+                size="sm"
+                onClick={clearFilters}
+              >
+                Clear
+              </Button>
+            </Flex>
           </Box>
         </Card>
 
@@ -652,9 +732,9 @@ export default function StaffList() {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
                         </Flex>
                       </Th>
                     ))}
@@ -662,26 +742,23 @@ export default function StaffList() {
                 ))}
               </Thead>
               <Tbody>
-                {table
-                  .getRowModel()
-                  .rows
-                  .map((row) => (
-                    <Tr key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <Td
-                          key={cell.id}
-                          fontSize={{ sm: '14px' }}
-                          minW={{ sm: '150px', md: '200px', lg: 'auto' }}
-                          borderColor="transparent"
-                        >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </Td>
-                      ))}
-                    </Tr>
-                  ))}
+                {table.getRowModel().rows.map((row) => (
+                  <Tr key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <Td
+                        key={cell.id}
+                        fontSize={{ sm: "14px" }}
+                        minW={{ sm: "150px", md: "200px", lg: "auto" }}
+                        borderColor="transparent"
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </Td>
+                    ))}
+                  </Tr>
+                ))}
               </Tbody>
             </Table>
           </Box>
@@ -692,10 +769,13 @@ export default function StaffList() {
           <Flex justify="space-between" align="center" p={4}>
             <HStack spacing={4}>
               <Text fontSize="sm" color={textColor}>
-                Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} staff members
+                Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of{" "}
+                {totalItems} staff members
               </Text>
               <HStack spacing={2}>
-                <Text fontSize="sm" color={textColor}>Rows per page:</Text>
+                <Text fontSize="sm" color={textColor}>
+                  Rows per page:
+                </Text>
                 <Select
                   value={pageSize}
                   onChange={(e) => handlePageSizeChange(e.target.value)}
@@ -781,13 +861,20 @@ export default function StaffList() {
 }
 
 // Staff Modal Component
-function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, stations = [] }) {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [identityCardNumber, setIdentityCardNumber] = useState('');
-  const [stationId, setStationId] = useState('');
+function StaffModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  staff = null,
+  isEdit = false,
+  stations = [],
+}) {
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [identityCardNumber, setIdentityCardNumber] = useState("");
+  const [stationId, setStationId] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetchingStaff, setFetchingStaff] = useState(false);
   const toast = useToast();
@@ -806,17 +893,17 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
     try {
       setFetchingStaff(true);
       const staffData = await staffAPI.getById(staff.staffId);
-      setFullName(staffData.fullName || '');
-      setEmail(staffData.email || '');
-      setPhoneNumber(staffData.phoneNumber || '');
-      setIdentityCardNumber(staffData.identityCardNumber || '');
-      setStationId(staffData.stationId || '');
-      setPassword(''); // Don't pre-fill password
+      setFullName(staffData.fullName || "");
+      setEmail(staffData.email || "");
+      setPhoneNumber(staffData.phoneNumber || "");
+      setIdentityCardNumber(staffData.identityCardNumber || "");
+      setStationId(staffData.stationId || "");
+      setPassword(""); // Don't pre-fill password
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to fetch staff data',
-        status: 'error',
+        title: "Error",
+        description: "Failed to fetch staff data",
+        status: "error",
         duration: 3000,
         isClosable: true,
       });
@@ -826,12 +913,12 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
   };
 
   const resetForm = () => {
-    setFullName('');
-    setEmail('');
-    setPassword('');
-    setPhoneNumber('');
-    setIdentityCardNumber('');
-    setStationId('');
+    setFullName("");
+    setEmail("");
+    setPassword("");
+    setPhoneNumber("");
+    setIdentityCardNumber("");
+    setStationId("");
   };
 
   const handleSubmit = async (e) => {
@@ -839,9 +926,9 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
 
     if (!fullName.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Full name is required',
-        status: 'error',
+        title: "Validation Error",
+        description: "Full name is required",
+        status: "error",
         duration: 3000,
         isClosable: true,
       });
@@ -850,9 +937,9 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
 
     if (!email.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Email is required',
-        status: 'error',
+        title: "Validation Error",
+        description: "Email is required",
+        status: "error",
         duration: 3000,
         isClosable: true,
       });
@@ -861,9 +948,9 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
 
     if (!isEdit && !password.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Password is required for new staff',
-        status: 'error',
+        title: "Validation Error",
+        description: "Password is required for new staff",
+        status: "error",
         duration: 3000,
         isClosable: true,
       });
@@ -872,9 +959,9 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
 
     if (!phoneNumber.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Phone number is required',
-        status: 'error',
+        title: "Validation Error",
+        description: "Phone number is required",
+        status: "error",
         duration: 3000,
         isClosable: true,
       });
@@ -883,9 +970,9 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
 
     if (!identityCardNumber.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Identity card number is required',
-        status: 'error',
+        title: "Validation Error",
+        description: "Identity card number is required",
+        status: "error",
         duration: 3000,
         isClosable: true,
       });
@@ -911,18 +998,18 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
       if (isEdit) {
         const response = await staffAPI.update(staff.staffId, staffData);
         toast({
-          title: 'Success',
-          description: response.message || 'Staff updated successfully',
-          status: 'success',
+          title: "Success",
+          description: response.message || "Staff updated successfully",
+          status: "success",
           duration: 3000,
           isClosable: true,
         });
       } else {
         const response = await staffAPI.create(staffData);
         toast({
-          title: 'Success',
-          description: response.message || 'Staff created successfully',
-          status: 'success',
+          title: "Success",
+          description: response.message || "Staff created successfully",
+          status: "success",
           duration: 3000,
           isClosable: true,
         });
@@ -932,9 +1019,10 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
       handleClose();
     } catch (error) {
       toast({
-        title: 'Error',
-        description: error.message || `Failed to ${isEdit ? 'update' : 'create'} staff`,
-        status: 'error',
+        title: "Error",
+        description:
+          error.message || `Failed to ${isEdit ? "update" : "create"} staff`,
+        status: "error",
         duration: 5000,
         isClosable: true,
       });
@@ -953,7 +1041,7 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
     <Modal isOpen={isOpen} onClose={handleClose} isCentered size="lg">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>{isEdit ? 'Edit Staff' : 'Add New Staff'}</ModalHeader>
+        <ModalHeader>{isEdit ? "Edit Staff" : "Add New Staff"}</ModalHeader>
         <ModalCloseButton />
 
         <form onSubmit={handleSubmit}>
@@ -964,7 +1052,9 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
                 <Input
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder={fetchingStaff ? "Loading staff data..." : "Enter full name"}
+                  placeholder={
+                    fetchingStaff ? "Loading staff data..." : "Enter full name"
+                  }
                   maxLength={100}
                   isDisabled={fetchingStaff}
                 />
@@ -982,12 +1072,16 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
               </FormControl>
 
               <FormControl isRequired={!isEdit}>
-                <FormLabel>Password {isEdit && '(Leave blank to keep current)'}</FormLabel>
+                <FormLabel>
+                  Password {isEdit && "(Leave blank to keep current)"}
+                </FormLabel>
                 <Input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={isEdit ? "Enter new password (optional)" : "Enter password"}
+                  placeholder={
+                    isEdit ? "Enter new password (optional)" : "Enter password"
+                  }
                   isDisabled={fetchingStaff}
                 />
               </FormControl>
@@ -1031,17 +1125,23 @@ function StaffModal({ isOpen, onClose, onSuccess, staff = null, isEdit = false, 
           </ModalBody>
 
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={handleClose} disabled={loading || fetchingStaff}>
+            <Button
+              variant="ghost"
+              mr={3}
+              onClick={handleClose}
+              disabled={loading || fetchingStaff}
+            >
               Cancel
             </Button>
             <Button
               colorScheme="blue"
               type="submit"
               isLoading={loading}
-              loadingText={isEdit ? 'Updating...' : 'Creating...'}
+              loadingText={isEdit ? "Updating..." : "Creating..."}
               isDisabled={fetchingStaff}
             >
-              {fetchingStaff ? 'Loading...' : (isEdit ? 'Update' : 'Create')} Staff
+              {fetchingStaff ? "Loading..." : isEdit ? "Update" : "Create"}{" "}
+              Staff
             </Button>
           </ModalFooter>
         </form>
