@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Box, Flex, Text, Icon, Button, useColorModeValue, useToast, Spinner } from '@chakra-ui/react';
+import { Box, Flex, Text, Icon, Button, useColorModeValue, useToast } from '@chakra-ui/react';
 import {
     MdDashboard, MdPerson, MdDriveEta, MdAssignment, MdReceipt, MdMenu, MdLogout, MdHome
 } from 'react-icons/md';
 import signalRService from '../../services/signalRService';
+import { useAuth } from '../../hooks/useAuth'; // ADD THIS
 
 const StaffLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [isAuthenticated] = useState(false);
-    const [isCheckingAuth] = useState(true);
     const location = useLocation();
     const navigate = useNavigate();
     const toast = useToast();
+    const { logout, isAuthenticated } = useAuth(); // ADD THIS
 
     const bgColor = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.200', 'gray.700');
     const textColor = useColorModeValue('gray.600', 'white');
     const pageBgColor = useColorModeValue('gray.50', 'gray.900');
-    const loadingTextColor = useColorModeValue('gray.600', 'white');
 
     useEffect(() => {
-        if (!isAuthenticated) return;
+        // Only start SignalR if authenticated
+        if (!isAuthenticated()) return;
 
         signalRService.startConnection();
 
@@ -81,44 +81,13 @@ const StaffLayout = () => {
     };
 
     const handleLogout = () => {
-        // Clear all auth-related data from localStorage
-        localStorage.removeItem("jwtToken");
-        localStorage.removeItem("userRole");
-        localStorage.removeItem("accountId");
-        localStorage.removeItem("fullName");
-        localStorage.removeItem("email");
-        localStorage.removeItem("staffId");
-        localStorage.removeItem("stationId");
-        localStorage.removeItem("renterId");
-        localStorage.removeItem("isAdmin");
-        localStorage.removeItem("phoneNumber");
-
-        // Dispatch custom event to notify components of auth state change
-        window.dispatchEvent(new CustomEvent('authStateChanged'));
-
-        navigate('/');
+        logout(); // Use the hook's logout function
     };
 
-    // Show loading spinner while checking authentication
-    if (isCheckingAuth) {
-        return (
-            <Box minH="100vh" bg={pageBgColor} display="flex" alignItems="center" justifyContent="center">
-                <Flex direction="column" align="center" gap={4}>
-                    <Spinner size="xl" color="blue.500" />
-                    <Text color={loadingTextColor}>Checking authentication...</Text>
-                </Flex>
-            </Box>
-        );
-    }
-
-    // Don't render if not authenticated
-    if (!isAuthenticated) {
-        return null;
-    }
+    // REMOVED ALL AUTH CHECKS - StaffRoute already handled this!
 
     return (
         <Box minH="100vh" bg={pageBgColor} display="flex" flexDirection="column">
-
             <Flex flex="1" overflow="hidden">
                 {/* Sidebar */}
                 <Box

@@ -198,36 +198,36 @@ export default function InvoiceList() {
       currency: "VND",
     }).format(amount);
   };
-
-  const columns = useMemo(
-    () => [
-      columnHelper.accessor("invoiceId", {
-        header: () => (
-          <Text color="gray.400" fontSize="12px">
-            ID
-          </Text>
-        ),
-        cell: (info) => (
-          <Text color={textColor} fontWeight="700">
-            {info.getValue()}
-          </Text>
-        ),
-      }),
-      columnHelper.accessor("orderCode", {
-        header: () => (
-          <Text color="gray.400" fontSize="12px">
-            ORDER CODE
-          </Text>
-        ),
-        cell: (info) => <Text color={textColor}>{info.getValue()}</Text>,
-      }),
-      columnHelper.accessor("contractId", {
-        header: () => (
-          <Text color="gray.400" fontSize="12px">
-            CONTRACT
-          </Text>
-        </Flex>
+const columns = useMemo(
+  () => [
+    columnHelper.accessor("invoiceId", {
+      header: () => (
+        <Text color="gray.400" fontSize="12px">
+          ID
+        </Text>
       ),
+      cell: (info) => (
+        <Text color={textColor} fontWeight="700">
+          {info.getValue()}
+        </Text>
+      ),
+    }),
+    columnHelper.accessor("orderCode", {
+      header: () => (
+        <Text color="gray.400" fontSize="12px">
+          ORDER CODE
+        </Text>
+      ),
+      cell: (info) => <Text color={textColor}>{info.getValue()}</Text>,
+    }),
+    columnHelper.accessor("contractId", {
+      header: () => (
+        <Text color="gray.400" fontSize="12px">
+          CONTRACT
+        </Text>
+      ),
+      // Add a cell function for this column
+      cell: (info) => <Text color={textColor}>{info.getValue()}</Text>,
     }),
     columnHelper.accessor('amountPaid', {
       id: 'amountPaid',
