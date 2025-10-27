@@ -13,11 +13,9 @@ const MaybeYouWillLike = ({ currentModelId, currentBrandName }) => {
         const fetchSimilarModels = async () => {
             try {
                 setLoading(true);
-                // Fetch all models
                 const response = await modelAPI.getAll();
                 console.log('Raw API response:', response);
                 
-                // Handle different response formats
                 let models = [];
                 if (Array.isArray(response)) {
                     models = response;
@@ -28,29 +26,27 @@ const MaybeYouWillLike = ({ currentModelId, currentBrandName }) => {
                 }
                 
                 console.log('Processed models:', models);
-                console.log('Current model ID:', currentModelId);
-                console.log('Current brand:', currentBrandName);
                 
-                // First try to get models from same brand
+                // Use modelId since that's what your API returns
                 let similar = models.filter(model => 
-                    model.id !== currentModelId && 
+                    model.modelId !== parseInt(currentModelId) && 
                     model.brandName === currentBrandName
                 );
                 
                 console.log('Same brand models:', similar);
                 
-                // If not enough models from same brand, add other models
                 if (similar.length < 4) {
                     const otherModels = models.filter(model => 
-                        model.id !== currentModelId && 
+                        model.modelId !== parseInt(currentModelId) && 
                         model.brandName !== currentBrandName
                     );
                     similar = [...similar, ...otherModels].slice(0, 4);
                 }
                 
-                // If still no models, show any available models (except current)
                 if (similar.length === 0) {
-                    similar = models.filter(model => model.id !== currentModelId).slice(0, 4);
+                    similar = models.filter(model => 
+                        model.modelId !== parseInt(currentModelId)
+                    ).slice(0, 4);
                 }
                 
                 console.log('Final similar models:', similar);
@@ -68,7 +64,7 @@ const MaybeYouWillLike = ({ currentModelId, currentBrandName }) => {
     }, [currentModelId, currentBrandName]);
 
     const handleModelClick = (modelId) => {
-        navigate(`/model/${modelId}`);
+        navigate(`/models/${modelId}`);
     };
 
     if (loading) {
@@ -95,35 +91,39 @@ const MaybeYouWillLike = ({ currentModelId, currentBrandName }) => {
         <Box className="maybe-you-will-like">
             <Text className="section-title">Maybe you will like</Text>
             <HStack spacing={4} className="models-grid" overflowX="auto">
-                {similarModels.map((model) => (
-                    <Box
-                        key={model.id}
-                        className="model-card"
-                        onClick={() => handleModelClick(model.id)}
-                        cursor="pointer"
-                    >
-                        <Image
-                            src={model.imageUrl}
-                            alt={model.name}
-                            className="model-image"
-                            fallbackSrc="/rent-icon.png"
-                        />
-                        <VStack spacing={2} className="model-info">
-                            <Text className="model-name" noOfLines={2}>
-                                {model.name}
-                            </Text>
-                            <Text className="model-brand" color="blue.500">
-                                {model.brandName}
-                            </Text>
-                            <HStack spacing={2}>
-                                <Badge colorScheme="green" className="price-badge">
-                                    {model.pricePerHour.toLocaleString()}VND/hr
-                                </Badge>
-                                
-                            </HStack>
-                        </VStack>
-                    </Box>
-                ))}
+                {similarModels.map((model, index) => {
+                    // Create a safe, unique key
+                    const safeKey = `model-${model.modelId || model.name || index}-${index}`;
+                    
+                    return (
+                        <Box
+                            key={safeKey} // Use the safe key
+                            className="model-card"
+                            onClick={() => handleModelClick(model.modelId)}
+                            cursor="pointer"
+                        >
+                            <Image
+                                src={model.imageUrl}
+                                alt={model.name}
+                                className="model-image"
+                                fallbackSrc="/rent-icon.png"
+                            />
+                            <VStack spacing={2} className="model-info">
+                                <Text className="model-name" noOfLines={2}>
+                                    {model.name}
+                                </Text>
+                                <Text className="model-brand" color="blue.500">
+                                    {model.brandName}
+                                </Text>
+                                <HStack spacing={2}>
+                                    <Badge colorScheme="green" className="price-badge">
+                                        {model.pricePerHour?.toLocaleString()}VND/hr
+                                    </Badge>
+                                </HStack>
+                            </VStack>
+                        </Box>
+                    );
+                })}
             </HStack>
         </Box>
     );

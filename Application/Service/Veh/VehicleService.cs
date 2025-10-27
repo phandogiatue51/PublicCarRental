@@ -1,4 +1,5 @@
-﻿using PublicCarRental.Application.DTOs.Stat;
+﻿using Microsoft.EntityFrameworkCore;
+using PublicCarRental.Application.DTOs.Stat;
 using PublicCarRental.Application.DTOs.Veh;
 using PublicCarRental.Application.Service.Redis;
 using PublicCarRental.Infrastructure.Data.Models;
@@ -126,10 +127,17 @@ namespace PublicCarRental.Application.Service.Veh
                 await _cache.InvalidateAsync(
                     CreateCacheKey("all_vehicles"),
                     CreateCacheKey("vehicle", vehicle.VehicleId),
-                    CreateCacheKey("vehicles_filter_*"),
-                    CreateCacheKey("stations_by_model_*"),    
-                    CreateCacheKey("available_vehicle_*")     
+
+                    CreateCacheKey("vehicles_filter", dto.ModelId, null, dto.StationId, null, null),
+                    CreateCacheKey("vehicles_filter", dto.ModelId, null, null, null, null),
+                    CreateCacheKey("vehicles_filter", null, null, dto.StationId, null, null),
+                    CreateCacheKey("vehicles_filter", null, (int)VehicleStatus.Available, null, null, null),
+
+                    CreateCacheKey("stations_by_model", dto.ModelId),
+                    CreateCacheKey("available_vehicle_*")  
                 );
+
+                _logger.LogInformation("✅ Vehicle {VehicleId} created and cache invalidated", vehicle.VehicleId);
 
                 return (true, "Vehicle created successfully.", vehicle.VehicleId);
             }
@@ -162,12 +170,13 @@ namespace PublicCarRental.Application.Service.Veh
                 _repo.Update(existing);
 
                 await _cache.InvalidateAsync(
-                    CreateCacheKey("all_vehicles"),
-                    CreateCacheKey("vehicle", id),
-                    CreateCacheKey("vehicles_filter_*"),
-                    CreateCacheKey("stations_by_model_*"),
-                    CreateCacheKey("available_vehicle_*")
-                );
+                     CreateCacheKey("all_vehicles"),
+                     CreateCacheKey("vehicle", id),
+                     CreateCacheKey("vehicles_filter", existing.ModelId, null, existing.StationId, null, null),
+                     CreateCacheKey("vehicles_filter", updatedVehicle.ModelId, null, updatedVehicle.StationId, null, null),
+                     CreateCacheKey("stations_by_model", existing.ModelId),
+                     CreateCacheKey("stations_by_model", updatedVehicle.ModelId)
+                 );
 
                 return (true, "Vehicle updated successfully.");
             }
@@ -188,10 +197,10 @@ namespace PublicCarRental.Application.Service.Veh
             await _cache.InvalidateAsync(
                 CreateCacheKey("all_vehicles"),
                 CreateCacheKey("vehicle", id),
-                CreateCacheKey("vehicles_filter_*"),
-                CreateCacheKey("stations_by_model_*"),
-                CreateCacheKey("available_vehicle_*")
+                CreateCacheKey("vehicles_filter", existing.ModelId, null, existing.StationId, null, null),
+                CreateCacheKey("stations_by_model", existing.ModelId)
             );
+
             return true;
         }
 
@@ -206,7 +215,23 @@ namespace PublicCarRental.Application.Service.Veh
             return await _repo.CheckVehicleAvailabilityAsync(vehicleId, startTime, endTime);
         }
 
+        public async Task<int> GetAvailableVehicleCountByModelAsync(int modelId, int stationId, DateTime startTime, DateTime endTime)
+        {
+            return await _repo.GetAll()
+                .Where(v => v.ModelId == modelId &&
+                           v.StationId == stationId &&
+                           v.Status == VehicleStatus.Available &&
+                           !v.RentalContracts.Any(c =>
+                               (c.Status == RentalStatus.Confirmed ||
+                                c.Status == RentalStatus.Active ||
+                                c.Status == RentalStatus.ToBeConfirmed) &&
+                               startTime < c.EndTime &&
+                               endTime > c.StartTime))
+                .CountAsync();
+        }
+
         public Vehicle GetEntityById(int id) => _repo.GetById(id);
+
 
         public async Task<IEnumerable<StationDtoForView>> GetStationFromModelAsync(int modelId)
         {
@@ -219,6 +244,7 @@ namespace PublicCarRental.Application.Service.Veh
                     .Where(v => v.Station != null)
                     .Select(v => new StationDtoForView
                     {
+                        StationId = (int)v.StationId,
                         Name = v.Station.Name,
                         Address = v.Station.Address,
                         Latitude = v.Station.Latitude,
@@ -226,7 +252,7 @@ namespace PublicCarRental.Application.Service.Veh
                     })
                     .Distinct()
                     .ToList();
-            }, TimeSpan.FromMinutes(15)); 
+            }, TimeSpan.FromMinutes(15));
         }
     }
 }

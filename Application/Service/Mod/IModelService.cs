@@ -14,8 +14,6 @@ namespace PublicCarRental.Application.Service.Mod
         Task<bool> UpdateModelAsync(int id, ModelCreateDto updatedModel, IFormFile newImageFile = null);
         Task<bool> DeleteModelAsync(int id);
         Task<IEnumerable<ModelDto>> GetModelsByFiltersAsync(int? brandId, int? typeId, int? stationId);
-        Task<IEnumerable<StationDtoForView>> GetStationsByModelAsync(int modelId);
-
 
     }
 }

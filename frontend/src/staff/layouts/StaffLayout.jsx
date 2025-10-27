@@ -8,40 +8,17 @@ import signalRService from '../../services/signalRService';
 
 const StaffLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const [isAuthenticated] = useState(false);
+    const [isCheckingAuth] = useState(true);
     const location = useLocation();
     const navigate = useNavigate();
     const toast = useToast();
 
-    // All hooks must be called at the top level
     const bgColor = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.200', 'gray.700');
     const textColor = useColorModeValue('gray.600', 'white');
     const pageBgColor = useColorModeValue('gray.50', 'gray.900');
     const loadingTextColor = useColorModeValue('gray.600', 'white');
-
-    // Authentication check - TEMPORARILY DISABLED FOR TESTING
-    useEffect(() => {
-        const checkAuth = () => {
-            const token = localStorage.getItem('jwtToken');
-            const userRole = localStorage.getItem('userRole');
-            const staffId = localStorage.getItem('staffId');
-            
-            console.log('Staff Auth Check:', { token: !!token, userRole, staffId });
-            
-            // TEMPORARILY DISABLE AUTH FOR TESTING
-            // TODO: Re-enable authentication in production
-            console.log('⚠️ Authentication temporarily disabled for testing');
-            setIsAuthenticated(true);
-            setIsCheckingAuth(false);
-            
-            // Original auth check (commented out for testing)
-     
-        };
-
-        checkAuth();
-    }, [navigate, toast]);
 
     useEffect(() => {
         if (!isAuthenticated) return;

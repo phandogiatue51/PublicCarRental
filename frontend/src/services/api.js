@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'
+  ? 'https://localhost:7230/api'
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
 
 // Generic API request function
@@ -132,39 +132,32 @@ export const modelAPI = {
       return [];
     }
   },
-  getStationFromModel: async (modelId) => {
 
+getStationFromModel: async (modelId) => {
     try {
-      const response = await apiRequest(`/Model/get-station-from-model/${modelId}`);
-      return response.result || response || [];
+        const response = await apiRequest(`/Model/get-station-from-model/${modelId}`);
+        console.log('Raw API response:', response); 
+        return response || [];
     } catch (error) {
-      console.error('Error fetching stations from model:', error);
-      return [];
+        console.error('Error fetching stations from model:', error);
+        return [];
     }
-  },
+},
 
-
-  // Create new model
   create: (modelData) => apiRequest('/Model/create-model', {
     method: 'POST',
-    body: modelData, // Send FormData directly, don't stringify
+    body: modelData,
   }),
 
-  // Update model
   update: (id, modelData) => apiRequest(`/Model/update-model/${id}`, {
     method: 'PUT',
-    body: modelData, // Send FormData directly, don't stringify
+    body: modelData, 
   }),
 
-  // Delete model
   delete: (id) => apiRequest(`/Model/delete-model/${id}`, {
     method: 'DELETE',
   }),
 
-  // Get available images
-  getAvailableImages: () => apiRequest('/Model/available-images'),
-
-  // Filter models
   filterModels: (brandId, typeId, stationId) => {
     const queryParams = new URLSearchParams();
     if (brandId) queryParams.append('brandId', brandId);
@@ -175,28 +168,34 @@ export const modelAPI = {
     return apiRequest(`/Model/filter-models${queryString ? `?${queryString}` : ''}`);
   },
 
-  // Check model availability
-  checkAvailable: (availabilityData) => apiRequest('/Model/check-available', {
-    method: 'POST',
-    body: JSON.stringify(availabilityData),
-  }),
+  getAvailableCount: async (modelId, stationId, startTime, endTime) => {
+    try {
+        const response = await apiRequest('/Model/get-available-count', {
+            method: 'POST',
+            body: JSON.stringify({
+                modelId: modelId,
+                stationId: stationId,
+                startTime: startTime,
+                endTime: endTime
+            })
+        });
+        return response.result || response || 0;
+    } catch (error) {
+        console.error('Error fetching available count:', error);
+        return 0;
+    }
+  }
 };
 
-// Type API services
 export const typeAPI = {
-  // Get all types
   getAll: () => apiRequest('/Type/get-all'),
 };
 
-// Staff API services
 export const staffAPI = {
-  // Get all staff
   getAll: () => apiRequest('/Staff/all-staff'),
 
-  // Get staff by ID
   getById: (id) => apiRequest(`/Staff/${id}`),
 
-  // Create new staff
   create: (staffData) => apiRequest('/Staff/register-staff', {
     method: 'POST',
     body: JSON.stringify(staffData),
@@ -559,47 +558,72 @@ export const documentAPI = {
   },
 };
 
-// Transaction API services
 export const transactionAPI = {
-  // Get all transactions
   getAll: () => apiRequest('/Transaction/get-all'),
 };
 
-// Accident API services
 export const accidentAPI = {
-  // Get all accidents
-  getAll: () => apiRequest('/Accident/get-all'),
+  getAll: async () => {
+    const data = await apiRequest('/Accident/get-all');
+    return data.map(accident => ({
+      ...accident,
+      status: mapStatusNumberToString(accident.status)
+    }));
+  },
 
-  // Get accident by ID
-  getById: (id) => apiRequest(`/Accident/${id}`),
+  getById: async (id) => {
+    const data = await apiRequest(`/Accident/${id}`);
+    return {
+      ...data,
+      status: mapStatusNumberToString(data.status)
+    };
+  },
 
-  // Create contract accident report
   createContractReport: (formData) => apiRequest('/Accident/create-contract-report', {
     method: 'POST',
     body: formData,
   }),
 
-  // Create vehicle accident report
   createVehicleReport: (formData) => apiRequest('/Accident/create-vehicle-report', {
     method: 'POST',
     body: formData,
   }),
 
-  // Delete accident report
   deleteReport: (id) => apiRequest(`/Accident/delete-report/${id}`, {
     method: 'DELETE',
   }),
 
-  // Update accident report status
-  updateReportStatus: (id, newStatus) => apiRequest(`/Accident/update-report-status/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ newStatus }),
-  }),
+  updateReportStatus: async (id, newStatus) => {
+    const statusNumber = mapStatusStringToNumber(newStatus);
+    return apiRequest(`/Accident/update-report-status/${id}?newStatus=${statusNumber}`, {
+      method: 'PATCH',
+    });
+  },
 };
 
-// Payment API
+const mapStatusNumberToString = (statusNumber) => {
+  const statusMap = {
+    0: 'Reported',
+    1: 'UnderInvestigation',
+    2: 'RepairApproved',
+    3: 'UnderRepair',
+    4: 'Repaired'
+  };
+  return statusMap[statusNumber] || 'Reported';
+};
+
+const mapStatusStringToNumber = (statusString) => {
+  const statusMap = {
+    'Reported': 0,
+    'UnderInvestigation': 1,
+    'RepairApproved': 2,
+    'UnderRepair': 3,
+    'Repaired': 4
+  };
+  return statusMap[statusString] || 0;
+};
+
 export const paymentAPI = {
-  // Create payment
   createPayment: (paymentData) => apiRequest('/Payment/create-payment', {
     method: 'POST',
     body: JSON.stringify(paymentData)
