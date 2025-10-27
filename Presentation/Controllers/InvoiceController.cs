@@ -59,6 +59,22 @@ namespace PublicCarRental.Presentation.Controllers
             var invoices = _service.GetInvoiceByStationId(stationId);
             return Ok(invoices);
         }
+      [HttpGet("filter")]
+        public IActionResult FilterInvoices(
+            [FromQuery] int? contractId,
+            [FromQuery] int? orderCode,
+            [FromQuery] int? stationId)
+        {
+            try
+            {
+                var result = _service.FilterInvoices(contractId, orderCode, stationId);
+                return Ok(result);
+            }
+            catch
+            {
+                return StatusCode(500, "Internal server error while filtering invoices");
+            }
+        }
 
         [HttpDelete("cancel-invoice/{orderCode}")]
         public async Task<IActionResult> CancelInvoiceAsync(int orderCode)

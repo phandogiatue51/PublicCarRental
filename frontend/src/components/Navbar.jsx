@@ -18,82 +18,68 @@ function Navbar() {
             if (isAuthenticated()) {
                 const currentUser = getCurrentUser();
                 setUserData(currentUser);
-                setIsLoggingOut(false); // Reset logout state when logged in
+                setIsLoggingOut(false);
             } else {
                 setUserData(null);
-                setIsLoggingOut(false); // Reset logout state when logged out
+                setIsLoggingOut(false);
             }
         };
 
         // Initial check
         updateAuthState();
 
-        // Listen for storage changes (when login/logout happens in other tabs)
+        // Listen for storage changes
         const handleStorageChange = (e) => {
-            if (e.key === 'jwtToken' || e.key === 'userRole' || e.key === 'staffId' || e.key === 'stationId') {
+            if (e.key === 'jwtToken' || e.key === 'userRole') {
                 updateAuthState();
             }
         };
 
         window.addEventListener('storage', handleStorageChange);
-
-        // Listen for custom auth events
-        const handleAuthChange = () => {
-            updateAuthState();
-        };
-
-        window.addEventListener('authStateChanged', handleAuthChange);
-
-        // Listen for page visibility changes (when user comes back from staff/admin pages)
-        const handleVisibilityChange = () => {
-            if (!document.hidden) {
-                updateAuthState();
-            }
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('authStateChanged', updateAuthState);
 
         return () => {
             window.removeEventListener('storage', handleStorageChange);
-            window.removeEventListener('authStateChanged', handleAuthChange);
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('authStateChanged', updateAuthState);
         };
     }, [isAuthenticated, getCurrentUser]);
 
     const isLoggedIn = isAuthenticated();
-    const userRole = userData?.role || localStorage.getItem("userRole");
-    const staffId = userData?.staffId || localStorage.getItem("staffId");
-    const stationId = userData?.stationId || localStorage.getItem("stationId");
-    console.log("Navbar Debug:", {
-        isLoggedIn,
-        userData,
-        userRole,
-        localStorageRole: localStorage.getItem("userRole"),
-        localStorageRenterId: localStorage.getItem("renterId")
-    });
-
-
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const handleLogout = () => {
         setIsLoggingOut(true);
-
         setTimeout(() => {
             logout();
-        }, 2000);
+        }, 1000);
     };
 
     const handleStaffNavigation = () => {
-        if (staffId && stationId) {
-            navigate(`/staff?staffId=${staffId}&stationId=${stationId}`);
+        if (userData?.staffId && userData?.stationId) {
+            navigate(`/staff?staffId=${userData.staffId}&stationId=${userData.stationId}`);
         } else {
             navigate("/staff");
         }
     };
 
-    const handleAdminLogin = () => {
+    const handleAdminNavigation = () => {
         navigate("/admin");
-    }
+    };
+
+    // Removed unused handleAccountNavigation to satisfy lint
+
+    // Helper function to determine role display
+    const getUserRoleDisplay = () => {
+        const role = userData?.role?.toString();
+        switch (role) {
+            case "Admin":
+                return "Admin";
+            case "Staff":
+                return "Staff";
+            case "EVRenter":
+                return "Customer";
+        }
+    };
 
     return (
         <>
@@ -134,11 +120,45 @@ function Navbar() {
                                 Contact
                             </Link>
                         </li>
+                        
+                        {/* Mobile auth buttons */}
+                        {isLoggedIn && (
+                            <li>
+                                <div style={{ 
+                                    padding: "10px", 
+                                    borderTop: "1px solid #eee",
+                                    marginTop: "10px"
+                                }}>
+                                    <span style={{ 
+                                        fontSize: "14px", 
+                                        color: "#666",
+                                        display: "block",
+                                        marginBottom: "5px"
+                                    }}>
+                                        Logged in as: {getUserRoleDisplay()}
+                                    </span>
+                                    <button
+                                        onClick={handleLogout}
+                                        disabled={isLoggingOut}
+                                        style={{
+                                            background: "transparent",
+                                            border: "1px solid #ff4d30",
+                                            color: "#ff4d30",
+                                            padding: "8px 16px",
+                                            borderRadius: "3px",
+                                            width: "100%",
+                                            cursor: isLoggingOut ? "not-allowed" : "pointer"
+                                        }}
+                                    >
+                                        {isLoggingOut ? "Logging out..." : "Logout"}
+                                    </button>
+                                </div>
+                            </li>
+                        )}
                     </ul>
                 </div>
 
                 {/* desktop */}
-
                 <div className="navbar">
                     <div className="navbar__img">
                         <Link to="/" onClick={() => window.scrollTo(0, 0)}>
@@ -152,48 +172,46 @@ function Navbar() {
                             </Link>
                         </li>
                         <li>
-                            {" "}
                             <Link className="about-link" to="/about">
                                 About
                             </Link>
                         </li>
                         <li>
-                            {" "}
                             <Link className="models-link" to="/models">
                                 Our Models
                             </Link>
                         </li>
                         <li>
-                            {" "}
                             <Link className="testi-link" to="/testimonials">
                                 Testimonials
                             </Link>
                         </li>
                         <li>
-                            {" "}
                             <Link className="team-link" to="/team">
                                 Our Team
                             </Link>
                         </li>
                         <li>
-                            {" "}
                             <Link className="contact-link" to="/contact">
                                 Contact
                             </Link>
                         </li>
                     </ul>
 
-
-                    {/* hide auth buttons when logged in */}
+                    {/* Auth buttons */}
                     {isLoggedIn ? (
-                        <div className="navbar__buttons">
-                            {(userRole === "EVRenter" || userRole === 0) && (
+                        <div className="navbar__buttons" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            
+
+                            {/* Customer (0) */}
+                            {(userData?.role === "EVRenter") && (
                                 <Link className="navbar__buttons__sign-in" to="/account">
                                     Profile
                                 </Link>
                             )}
 
-                            {(userRole === "Staff" || userRole === 1) && (
+                            {/* Staff (1) */}
+                            {(userData?.role === "Staff") && (
                                 <button
                                     className="navbar__buttons__register"
                                     onClick={handleStaffNavigation}
@@ -202,23 +220,24 @@ function Navbar() {
                                         border: "1px solid #ff4d30",
                                         color: "white",
                                         cursor: "pointer",
-                                        marginRight: "10px"
+                                        padding: "10px 15px"
                                     }}
                                 >
                                     Staff Portal
                                 </button>
                             )}
 
-                            {(userRole === "Admin" || userRole === 2) && (
+                            {/* Admin (2) */}
+                            {(userData?.role === "Admin") && (
                                 <button
                                     className="navbar__buttons__register"
-                                    onClick={handleAdminLogin}
+                                    onClick={handleAdminNavigation}
                                     style={{
                                         background: "#ff4d30",
                                         border: "1px solid #ff4d30",
                                         color: "white",
                                         cursor: "pointer",
-                                        marginRight: "10px"
+                                        padding: "10px 15px"
                                     }}
                                 >
                                     Admin Portal
@@ -238,9 +257,9 @@ function Navbar() {
                                     display: "flex",
                                     alignItems: "center",
                                     justifyContent: "center",
-                                    gap: "8px"
+                                    gap: "8px",
+                                    padding: "10px 15px"
                                 }}
-
                             >
                                 {isLoggingOut ? (
                                     <>
@@ -270,12 +289,22 @@ function Navbar() {
                         </div>
                     )}
 
-                    {/* mobile */}
+                    {/* mobile hamburger */}
                     <div className="mobile-hamb" onClick={openNav}>
                         <i className="fa-solid fa-bars"></i>
                     </div>
                 </div>
             </nav>
+
+            {/* Add spin animation for logout spinner */}
+            <style>
+                {`
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `}
+            </style>
         </>
     );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import Profile from './Profile';
@@ -38,12 +38,21 @@ const tabs = [
 function AccountTabs() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
-  const { isAuthenticated } = useAuth();
-  
+  const { isAuthenticated, getCurrentUser } = useAuth();
 
+  // Check authentication and get user data
+  useEffect(() => {
+    if (!isAuthenticated()) {
+      navigate("/login", { replace: true });
+      return;
+    }
+    
+    // Optionally fetch current user if needed in future
+    getCurrentUser();
+  }, [isAuthenticated, navigate, getCurrentUser]);
 
+  // Show nothing while checking authentication
   if (!isAuthenticated()) {
-    navigate("/login");
     return null;
   }
 
@@ -54,7 +63,12 @@ function AccountTabs() {
       const TabComponent = activeTabConfig.component;
       return <TabComponent />;
     }
-    return <div>Tab content not found</div>;
+    return (
+      <div className="tab-not-found">
+        <h3>Tab content not found</h3>
+        <p>Please select a valid tab from the navigation.</p>
+      </div>
+    );
   };
 
   return (
@@ -62,6 +76,12 @@ function AccountTabs() {
       {/* Main Content */}
       <div className="account-main">
         <div className="main-content">
+          {/* Header */}
+          <div className="account-header">
+            <h1>My Account</h1>
+            <p>Manage your profile, contracts, and invoices</p>
+          </div>
+
           {/* Tab Navigation */}
           <div className="tab-navigation">
             {tabs.map((tab) => (
@@ -69,15 +89,17 @@ function AccountTabs() {
                 key={tab.id}
                 className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
                 onClick={() => setActiveTab(tab.id)}
+                aria-selected={activeTab === tab.id}
+                role="tab"
               >
-                <span className="tab-icon">{tab.icon}</span>
+                <span className="tab-icon" aria-hidden="true">{tab.icon}</span>
                 <span className="tab-label">{tab.label}</span>
               </button>
             ))}
           </div>
 
           {/* Tab Content */}
-          <div className="tab-content">
+          <div className="tab-content" role="tabpanel">
             {renderTabContent()}
           </div>
         </div>

@@ -14,8 +14,8 @@ export default function StaffApp() {
     return (
         <ChakraProvider theme={initialTheme}>
             <Routes>
-                <Route path="/" element={<StaffLayout />}>
-                    <Route index element={<Navigate to="/staff/dashboard" replace />} />
+                <Route element={<StaffLayout />}>
+                    <Route index element={<Navigate to="dashboard" replace />} />
                     <Route path="dashboard" element={<StaffDashboard />} />
                     <Route path="renters" element={<RenterList />} />
                     <Route path="vehicles" element={<VehicleList />} />

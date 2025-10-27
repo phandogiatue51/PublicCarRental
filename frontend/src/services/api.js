@@ -264,7 +264,14 @@ export const renterAPI = {
 
   // Filter renters by parameter
   filterByParam: (param) => apiRequest(`/EVRenter/filter-by-param/${param}`),
-
+  
+  filter: (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    if (filters.search) queryParams.append('param', filters.search);
+    if (filters.status !== undefined && filters.status !== "") queryParams.append('status', filters.status);
+    const queryString = queryParams.toString();
+    return apiRequest(`/EVRenter/filter${queryString ? `?${queryString}` : ''}`);
+  },
   // Update renter
   updateRenter: (id, renterData) => apiRequest(`/EVRenter/update-renter/${id}`, {
     method: 'PUT',
@@ -499,6 +506,17 @@ export const invoiceAPI = {
 
   // Get invoices by station ID
   getByStation: (stationId) => apiRequest(`/Invoice/get-by-station/${stationId}`),
+
+  // 🔍 Filter invoices (new)
+  filter: (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    if (filters.contractId) queryParams.append('contractId', filters.contractId);
+    if (filters.orderCode) queryParams.append('orderCode', filters.orderCode);
+    if (filters.stationId) queryParams.append('stationId', filters.stationId);
+
+    const queryString = queryParams.toString();
+    return apiRequest(`/Invoice/filter${queryString ? `?${queryString}` : ''}`);
+  },
 
   // Cancel invoice by order code
   cancelInvoice: (orderCode) => apiRequest(`/Invoice/cancel-invoice/${orderCode}`, {
