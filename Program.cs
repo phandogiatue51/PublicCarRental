@@ -302,17 +302,6 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-var gmailEmail = Environment.GetEnvironmentVariable("GMAIL_EMAIL");
-var gmailPassword = Environment.GetEnvironmentVariable("GMAIL_APP_PASSWORD");
-
-builder.Services.AddFluentEmail(gmailEmail)
-    .AddSmtpSender(new SmtpClient("smtp.gmail.com")
-    {
-        Port = 587,
-        Credentials = new NetworkCredential(gmailEmail, gmailPassword),
-        EnableSsl = true,
-    });
-
 
 var app = builder.Build();
 

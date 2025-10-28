@@ -1,19 +1,18 @@
-﻿using FluentEmail.Core;
-using FluentEmail.Core.Models;
-using System.Net;
-using System.Net.Mail;
+﻿using System.Text.Json;
 
 namespace PublicCarRental.Application.Service.Email
 {
     public class EmailService : IEmailService
     {
         private readonly ILogger<EmailService> _logger;
-        private readonly IFluentEmail _fluentEmail;
+        private readonly HttpClient _httpClient;
+        private readonly string _apiKey;
 
-        public EmailService(ILogger<EmailService> logger, IFluentEmail fluentEmail)
+        public EmailService(ILogger<EmailService> logger, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
-            _fluentEmail = fluentEmail;
+            _httpClient = httpClientFactory.CreateClient();
+            _apiKey = Environment.GetEnvironmentVariable("RESEND_API_KEY");
         }
 
         public async Task SendEmail(string toEmail, string subject, string htmlBody)
@@ -37,25 +36,37 @@ namespace PublicCarRental.Application.Service.Email
         {
             try
             {
-                var response = await _fluentEmail
-                    .To(toEmail) 
-                    .Subject(subject)
-                    .Body(htmlBody, isHtml: true)
-                    .SendAsync();
-
-                if (response.Successful)
+                var payload = new
                 {
-                    _logger.LogInformation($"✅ Email sent to {toEmail}");
+                    from = "Car777 <noreply@car777.shop>", // ✅ Your verified domain!
+                    to = new[] { toEmail },
+                    subject = subject,
+                    html = htmlBody
+                };
+
+                var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails")
+                {
+                    Content = JsonContent.Create(payload)
+                };
+
+                request.Headers.Add("Authorization", $"Bearer {_apiKey}");
+
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation($"✅ Resend: Email sent to {toEmail}");
                 }
                 else
                 {
-                    _logger.LogError($"❌ Email failed for {toEmail}: {string.Join(", ", response.ErrorMessages)}");
-                    throw new Exception($"Email failed: {string.Join(", ", response.ErrorMessages)}");
+                    var error = await response.Content.ReadAsStringAsync();
+                    _logger.LogError($"❌ Resend failed: {error}");
+                    throw new Exception($"Resend API error: {error}");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"❌ Email failed for {toEmail}: {ex.Message}");
+                _logger.LogError($"❌ Resend failed for {toEmail}: {ex.Message}");
                 throw;
             }
         }
@@ -64,42 +75,58 @@ namespace PublicCarRental.Application.Service.Email
         {
             try
             {
-                var response = await _fluentEmail
-                    .To(toEmail)
-                    .Subject(subject)
-                    .Body(htmlBody, isHtml: true)
-                    .Attach(new FluentEmail.Core.Models.Attachment
-                    {
-                        Data = new MemoryStream(pdfBytes),
-                        Filename = fileName,
-                        ContentType = "application/pdf"
-                    })
-                    .SendAsync();
+                var base64Pdf = Convert.ToBase64String(pdfBytes);
 
-                if (response.Successful)
+                var payload = new
                 {
-                    _logger.LogInformation($"✅ Email with PDF sent to {toEmail}");
+                    from = "Car777 <noreply@car777.shop>", // ✅ Your verified domain!
+                    to = new[] { toEmail },
+                    subject = subject,
+                    html = htmlBody,
+                    attachments = new[]
+                    {
+                        new
+                        {
+                            filename = fileName,
+                            content = base64Pdf
+                        }
+                    }
+                };
+
+                var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails")
+                {
+                    Content = JsonContent.Create(payload)
+                };
+
+                request.Headers.Add("Authorization", $"Bearer {_apiKey}");
+
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation($"✅ Resend: Email with PDF sent to {toEmail}");
                 }
                 else
                 {
-                    _logger.LogError($"❌ Email with PDF failed for {toEmail}: {string.Join(", ", response.ErrorMessages)}");
-                    throw new Exception($"Email failed: {string.Join(", ", response.ErrorMessages)}");
+                    var error = await response.Content.ReadAsStringAsync();
+                    _logger.LogError($"❌ Resend with PDF failed: {error}");
+                    throw new Exception($"Resend API error: {error}");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"❌ Email with PDF failed for {toEmail}: {ex.Message}");
+                _logger.LogError($"❌ Resend with PDF failed for {toEmail}: {ex.Message}");
                 throw;
             }
         }
 
         public async Task SendVerificationEmail(string toEmail, string token)
         {
-            var verificationLink = $"https://publiccarrental-production-b7c5.up.railway.app/api/Account/verify-email?token={token}";
+            var verificationLink = $"https://car777.shop/api/Account/verify-email?token={token}"; // ✅ Your domain!
 
             var htmlContent = $@"
                 <div style='font-family: Times New Roman, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>
-                    <h2 style='color: #007bff;'>Welcome to PublicCarRental!</h2>
+                    <h2 style='color: #007bff;'>Welcome to Car777!</h2>
                     <p>Hi {toEmail},</p>
                     <p>Thanks for registering. Please verify your email by clicking the button below:</p>
                     <a href='{verificationLink}' 
@@ -107,7 +134,7 @@ namespace PublicCarRental.Application.Service.Email
                        Verify Email
                     </a>
                     <p style='margin-top: 20px;'>If you didn't request this, you can safely ignore it.</p>
-                    <p>— PublicCarRental Team</p>
+                    <p>— Car777 Team</p>
                 </div>";
 
             await SendEmailAsync(toEmail, "Verify your email", htmlContent);
@@ -115,7 +142,7 @@ namespace PublicCarRental.Application.Service.Email
 
         public async Task SendPasswordResetEmail(string toEmail, string token)
         {
-            var resetLink = $"https://publiccarrental-production-b7c5.up.railway.app/api/Account/reset-password?token={token}";
+            var resetLink = $"https://publiccarrental-production-b7c5.up.railway.app/api/Account/reset-password?token={token}"; // ✅ Your domain!
 
             var htmlContent = $@"
                 <div style='font-family: Times New Roman, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>
@@ -127,7 +154,7 @@ namespace PublicCarRental.Application.Service.Email
                        Reset Password
                     </a>
                     <p style='margin-top: 20px;'>If you didn't request this, you can safely ignore it.</p>
-                    <p>— PublicCarRental Team</p>
+                    <p>— Car777 Team</p>
                 </div>";
 
             await SendEmailAsync(toEmail, "Reset your password", htmlContent);
