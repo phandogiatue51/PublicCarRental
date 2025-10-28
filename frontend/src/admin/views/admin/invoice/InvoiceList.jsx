@@ -366,18 +366,21 @@ const columns = useMemo(
             value={contractId}
             onChange={(e) => setContractId(e.target.value)}
             width="150px"
+            flex={1}
           />
           <Input
             placeholder="Order Code"
             value={orderCode}
             onChange={(e) => setOrderCode(e.target.value)}
             width="150px"
+            flex={1}
           />
           <Input
             placeholder="Station ID"
             value={stationId}
             onChange={(e) => setStationId(e.target.value)}
             width="150px"
+            flex={1}
           />
           <Button
             leftIcon={<Icon as={MdFilterAlt} />}

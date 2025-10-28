@@ -1,7 +1,5 @@
-/* eslint-disable */
-
 import {
-  Box,
+  Box, SimpleGrid,
   Button,
   Flex,
   Icon,
@@ -14,10 +12,6 @@ import {
   Tr,
   useColorModeValue,
   Spinner,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   Select,
   HStack,
   useToast,
@@ -30,7 +24,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { renterAPI } from "../../../../services/api";
 import {
   MdChevronLeft,
@@ -41,7 +35,6 @@ import {
   MdDriveEta,
   MdToggleOn,
   MdToggleOff,
-  MdRefresh,
   MdVisibility,
   MdSearch,
   MdClear,
@@ -291,49 +284,41 @@ export default function RenterList() {
 
   return (
     <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
-      {/* 🔍 Filter Section */}
       <Card>
-        <Flex
-          justify="space-between"
-          align="center"
-          flexWrap="wrap"
-          gap={3}
-          p={4}
-        >
-          <Input
-            placeholder="Search by name, email, or phone..."
-            value={param}
-            onChange={(e) => setParam(e.target.value)}
-            width={{ base: "100%", md: "300px" }}
-          />
-          <Select
-            width={{ base: "100%", md: "150px" }}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
-          </Select>
-          <HStack>
-            <Button
-              colorScheme="teal"
-              leftIcon={<Icon as={MdSearch} />}
-              onClick={handleFilter}
-            >
-              Search
-            </Button>
-            <Button
-              variant="outline"
-              colorScheme="gray"
-              leftIcon={<Icon as={MdClear} />}
-              onClick={handleClear}
-            >
-              Clear
-            </Button>
-          </HStack>
-        </Flex>
-      </Card>
+  <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
+    <Input
+      placeholder="Search by name, email, or phone..."
+      value={param}
+      onChange={(e) => setParam(e.target.value)}
+    />
+    <Select
+      value={statusFilter}
+      onChange={(e) => setStatusFilter(e.target.value)}
+    >
+      <option value="all">All Status</option>
+      <option value="active">Active</option>
+      <option value="inactive">Inactive</option>
+    </Select>
+    <HStack justify="flex-start">
+      <Button
+        colorScheme="teal"
+        leftIcon={<Icon as={MdSearch} />}
+        onClick={handleFilter}
+      >
+        Search
+      </Button>
+      <Button
+        variant="outline"
+        colorScheme="gray"
+        leftIcon={<Icon as={MdClear} />}
+        onClick={handleClear}
+      >
+        Clear
+      </Button>
+    </HStack>
+  </SimpleGrid>
+</Card>
+
 
       {/* 🧾 Table Section */}
       <Card mt={5}>

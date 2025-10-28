@@ -466,18 +466,23 @@ export const vehicleAPI = {
     return apiRequest(`/Vehicle/available-vehicles?${queryParams.toString()}`);
   },
 
-  // Filter vehicles
-  filter: (filters) => {
-    const queryParams = new URLSearchParams();
-    if (filters.stationId) queryParams.append('stationId', filters.stationId);
-    if (filters.status !== undefined) queryParams.append('status', filters.status);
-    if (filters.modelId) queryParams.append('modelId', filters.modelId);
-    if (filters.typeId) queryParams.append('typeId', filters.typeId);
-    if (filters.brandId) queryParams.append('brandId', filters.brandId);
+filter: (filters) => {
+  const queryParams = new URLSearchParams();
+  
+  if (filters.stationId !== undefined && filters.stationId !== null) 
+    queryParams.append('stationId', filters.stationId);
+  if (filters.status !== undefined && filters.status !== null) 
+    queryParams.append('status', filters.status);
+  if (filters.modelId !== undefined && filters.modelId !== null) 
+    queryParams.append('modelId', filters.modelId);
+  if (filters.typeId !== undefined && filters.typeId !== null) 
+    queryParams.append('typeId', filters.typeId);
+  if (filters.brandId !== undefined && filters.brandId !== null) 
+    queryParams.append('brandId', filters.brandId);
 
-    const queryString = queryParams.toString();
-    return apiRequest(`/Vehicle/filter-vehicle${queryString ? `?${queryString}` : ''}`);
-  },
+  const queryString = queryParams.toString();
+  return apiRequest(`/Vehicle/filter-vehicle${queryString ? `?${queryString}` : ''}`);
+},
 };
 
 // Invoice API services
@@ -526,44 +531,25 @@ export const bookingAPI = {
   getBookingSummary: (bookingToken) => apiRequest(`/Booking/summary/${bookingToken}`),
 };
 
-// Document API services
 export const documentAPI = {
-  // Get all documents
   getAll: () => apiRequest('/Document/get-all'),
 
-  // Get documents by renter ID
   getByRenterId: (renterId) => apiRequest(`/Document/get-by-renter-id/${renterId}`),
 
-  // Get documents by staff ID
   getByStaffId: (staffId) => apiRequest(`/Document/get-by-staff-id/${staffId}`),
 
-  // Upload staff identity card
-  uploadStaffId: (staffId, formData) => apiRequest('/Document/upload-staff-id', {
-    method: 'POST',
-    body: formData,
-  }),
+  uploadStaffId: (staffId, formData) => {
+    const url = `/Document/upload-staff-id?staffId=${staffId}`;
+    return apiRequest(url, {
+      method: 'POST',
+      body: formData,
+    });
+  },
 
-  // Upload all renter documents
   uploadRenterAll: (renterId, formData) => apiRequest(`/Document/upload-renter-all/${renterId}`, {
     method: 'POST',
     body: formData,
   }),
-
-  // Staff verify renter documents
-  staffVerifyRenter: (staffId, verifyData) => apiRequest(`/Document/staff-verify-renter/${staffId}`, {
-    method: 'POST',
-    body: JSON.stringify(verifyData),
-  }),
-
-  // Filter documents by verification status
-  filterDocument: (isVerified) => {
-    const queryParams = new URLSearchParams();
-    if (isVerified !== null && isVerified !== undefined) {
-      queryParams.append('isVerified', isVerified);
-    }
-    const queryString = queryParams.toString();
-    return apiRequest(`/Document/filter-document${queryString ? `?${queryString}` : ''}`);
-  },
 };
 
 export const transactionAPI = {

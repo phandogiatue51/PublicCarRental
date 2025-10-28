@@ -380,7 +380,6 @@ export default function ModelList() {
   return (
     <Box >
       <Flex direction="column" gap="20px" me="auto">
-        {/* Header */}
         <Flex
           mt="45px"
           justifyContent="space-between"

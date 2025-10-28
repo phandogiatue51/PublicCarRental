@@ -28,6 +28,8 @@ namespace PublicCarRental.Presentation.Controllers
         {
             var role = AccountRole.EVRenter;
             var result = await _documentService.GetUserDocumentsAsync(renterId, role);
+            if (result == null)
+                return NotFound(new { message = "Renter not found." });
             return Ok(result);
         }
 
@@ -36,6 +38,8 @@ namespace PublicCarRental.Presentation.Controllers
         {
             var role = AccountRole.Staff;
             var result = await _documentService.GetUserDocumentsAsync(staffId, role);
+            if (result == null)
+                return NotFound(new { message = "Staff not found." });
             return Ok(result);
         }
 
@@ -57,20 +61,6 @@ namespace PublicCarRental.Presentation.Controllers
                 return BadRequest(new { message = result.Message });
 
             return Ok(new { message = result.Message });
-        }
-
-        [HttpPost("staff-verify-renter/{staffId}")]
-        public async Task<IActionResult> VerifyRenterDocuments(int staffId, [FromBody] VerifyDocumentsDto dto)
-        {
-            var result = await _documentService.VerifyDocumentsAsync(dto.RenterId, staffId, dto.DocumentType);
-            return Ok(new { success = result });
-        }
-
-        [HttpGet("filter-document")]
-        public async Task<IActionResult> GetDocuments([FromQuery] bool? isVerified = null)
-        {
-            var result = await _documentService.GetAllDocumentsByStatusAsync(isVerified);
-            return Ok(result);
         }
     }
 }

@@ -1,15 +1,13 @@
-/* eslint-disable */
-
 import {
   Box,  Button,  Flex,  Icon,  Table,  Tbody,  Td,  Text,  Th,  Thead,  Tr,  useColorModeValue,  Spinner,  Alert,  AlertIcon,
-  AlertTitle,  AlertDescription
+  AlertTitle,  AlertDescription, HStack
 } from '@chakra-ui/react';
 import {
   createColumnHelper,  flexRender,  getCoreRowModel,  getSortedRowModel,  useReactTable
 } from '@tanstack/react-table';
 import { useState, useEffect } from 'react';
 import { brandAPI } from '../../../../services/api';
-import { MdEdit, MdDelete, MdAdd } from 'react-icons/md';
+import { MdEdit, MdDelete, MdAdd, MdRefresh} from 'react-icons/md';
 import BrandModal from './BrandModal';
 
 // Custom components
@@ -224,25 +222,22 @@ export default function BrandList() {
   return (
     <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
       <Flex direction="column" gap="20px" me="auto">
-        {/* Header */}
-        <Flex
-          mt="45px"
-          justifyContent="space-between"
-          direction={{ base: 'column', md: 'row' }}
-          align={{ base: 'start', md: 'center' }}
-        >
-          <Text color={textColor} fontSize="2xl" ms="24px" fontWeight="700">
+        <Flex justify="space-between" align="center" mb={4}>
+          <Text fontSize="2xl" fontWeight="700" color={textColor}>
             Brand Management
           </Text>
-          <Button
-            leftIcon={<Icon as={MdAdd} />}
-            colorScheme="blue"
-            variant="solid"
-            onClick={handleAdd}
-            me="24px"
-          >
-            Add New Brand
-          </Button>
+          <HStack>
+            <Button leftIcon={<Icon as={MdRefresh} />} onClick={fetchBrands}>
+              Refresh
+            </Button>
+            <Button
+              leftIcon={<Icon as={MdAdd} />}
+              colorScheme="blue"
+              onClick={handleAdd}
+            >
+              Add New Brand
+            </Button>
+          </HStack>
         </Flex>
 
         {/* Table Card */}

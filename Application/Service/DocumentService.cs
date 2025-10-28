@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.EntityFrameworkCore;
 using PublicCarRental.Application.DTOs.Docu;
 using PublicCarRental.Application.Service.Image;
 using PublicCarRental.Infrastructure.Data.Models;
@@ -10,9 +11,7 @@ public interface IDocumentService
     Task<(bool Success, string Message)> UploadDocumentAsync(int accountId, UploadDocumentDto dto);
     Task<List<DocumentDto>> GetUserDocumentsAsync(int id, AccountRole role);
     Task<(bool Success, string Message)> UploadRenterDocumentsAsync(int renterAccountId, UploadRenterDocumentsDto dto);
-    Task<bool> VerifyDocumentsAsync(int accountId, int staffVerifierId, DocumentType? documentType = null);
     Task<bool> DeleteDocumentAsync(int documentId);
-    Task<List<DocumentDto>> GetAllDocumentsByStatusAsync(bool? isVerified = null);
     Task<IEnumerable<DocumentDto>> GetAllAsync();
     Task<(bool Success, string Message)> UploadStaffIdentityCardAsync(int staffId, UploadStaffDocumentDto dto);
 
@@ -61,20 +60,25 @@ public class DocumentService : IDocumentService
 
     public async Task<List<DocumentDto>> GetUserDocumentsAsync(int id, AccountRole role)
     {
-        var accountId = 0;
+        int? accountId = null;
+
         if (role == AccountRole.EVRenter)
         {
             var renter = await _eVRenterRepository.GetByIdAsync(id);
-            accountId = renter.AccountId;
+            if (renter != null)
+                accountId = renter.AccountId;
         }
         else if (role == AccountRole.Staff)
         {
             var staff = _staffRepository.GetById(id);
-            accountId = staff.AccountId;
+            if (staff != null)
+                accountId = staff.AccountId;
         }
 
-        var query = _documentRepository.GetAll().Where(d => d.AccountId == accountId);
+        if (accountId == null)
+            return null;
 
+        var query = _documentRepository.GetAll().Where(d => d.AccountId == accountId.Value);
         var documents = query.OrderByDescending(d => d.UploadedAt).ToList();
         return documents.Select(MapToDto).ToList();
     }
@@ -124,29 +128,6 @@ public class DocumentService : IDocumentService
         }
     }
 
-    public async Task<bool> VerifyDocumentsAsync(int renterId, int staffVerifierId, DocumentType? documentType = null)
-    {
-        var renter = await _eVRenterRepository.GetByIdAsync(renterId);
-        var accountId = renter.AccountId;
-
-        var documents = _documentRepository.GetAll()
-            .Where(d => d.AccountId == accountId && !d.IsVerified);
-
-        if (documentType.HasValue)
-            documents = documents.Where(d => d.Type == documentType.Value);
-
-        var documentList = documents.ToList(); 
-
-        foreach (var doc in documentList)
-        {
-            doc.IsVerified = true;
-            doc.VerifiedAt = DateTime.UtcNow;
-        }
-
-        _documentRepository.UpdateRange(documentList);
-        return true;
-    }
-
     public async Task<bool> DeleteDocumentAsync(int documentId)
     {
         var document = _documentRepository.GetAll()
@@ -157,21 +138,6 @@ public class DocumentService : IDocumentService
         _documentRepository.DeleteDocument(document);
 
         return true;
-    }
-
-    public async Task<List<DocumentDto>> GetAllDocumentsByStatusAsync(bool? isVerified = null)
-    {
-        var query = _documentRepository.GetAll();
-        if (isVerified.HasValue)
-        {
-            query = query.Where(d => d.IsVerified == isVerified.Value);
-        }
-
-        var documents = await query
-            .OrderByDescending(d => d.UploadedAt)
-            .ToListAsync();
-
-        return documents.Select(MapToDto).ToList();
     }
 
     public async Task<IEnumerable<DocumentDto>> GetAllAsync()

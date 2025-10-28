@@ -1,7 +1,5 @@
-/* eslint-disable */
-
 import {
-  Box,
+  Box, SimpleGrid,
   Button,
   Flex,
   Icon,
@@ -305,15 +303,6 @@ export default function ContractList() {
     );
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    if (amount === null || amount === undefined) return "N/A";
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
-
   const columns = useMemo(
     () => [
       columnHelper.accessor("contractId", {
@@ -356,28 +345,6 @@ export default function ContractList() {
           </Flex>
         ),
       }),
-
-      // columnHelper.accessor('stationName', {
-      //   id: 'station',
-      //   header: () => (
-      //     <Text
-      //       justifyContent="space-between"
-      //       align="center"
-      //       fontSize={{ sm: '10px', lg: '12px' }}
-      //       color="gray.400"
-      //     >
-      //       STATION
-      //     </Text>
-      //   ),
-      //   cell: (info) => (
-      //     <Flex align="center" gap={2}>
-      //       <Icon as={MdLocationOn} color="gray.500" />
-      //       <Text color={textColor} fontSize="sm">
-      //         {info.getValue()}
-      //       </Text>
-      //     </Flex>
-      //   ),
-      // }),
 
       columnHelper.accessor("startTime", {
         id: "startTime",
@@ -606,165 +573,102 @@ export default function ContractList() {
   return (
     <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
       <Flex direction="column" gap="20px" me="auto">
-        {/* Header */}
-        <Flex
-          mt="45px"
-          justifyContent="space-between"
-          direction={{ base: "column", md: "row" }}
-          align={{ base: "start", md: "center" }}
-        >
-          <Text color={textColor} fontSize="2xl" ms="24px" fontWeight="700">
+        <Flex justify="space-between" align="center" mb={4}>
+          <Text fontSize="2xl" fontWeight="700" color={textColor}>
             Contract Management
           </Text>
-          <HStack spacing={2}>
-            <Button
-              leftIcon={<Icon as={MdRefresh} />}
-              colorScheme="gray"
-              variant="outline"
-              onClick={handleRefresh}
-            >
+          <HStack>
+            <Button leftIcon={<Icon as={MdRefresh} />} onClick={handleRefresh}>
               Refresh
             </Button>
           </HStack>
         </Flex>
-        {/* 🔍 FILTER SECTION */}
 
-        <Card p={4}>
-          <HStack spacing={4} alignItems="flex-end" width="100%">
-            {/* Station ID */}
-            <Box flex="1">
-            
-              <Input
-                type="number"
-                value={stationId}
-                onChange={(e) => setStationId(e.target.value)}
-                placeholder="Station ID"
-                size="sm"
-              />
-            </Box>
-
-            {/* Status */}
-            <Box flex="1">
-            
-              <Select
-                placeholder="Select status"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                size="sm"
-              >
-                <option value="0">To Be Confirmed</option>
-                <option value="1">Active</option>
-                <option value="2">Completed</option>
-                <option value="3">Cancelled</option>
-                <option value="4">Confirmed</option>
-              </Select>
-            </Box>
-
-            {/* Renter ID */}
-            <Box flex="1">
-           
-              <Input
-                type="number"
-                value={renterId}
-                onChange={(e) => setRenterId(e.target.value)}
-                placeholder="Renter ID"
-                size="sm"
-              />
-            </Box>
-
-            {/* Staff ID */}
-            <Box flex="1">
-        
-              <Input
-                type="number"
-                value={staffId}
-                onChange={(e) => setStaffId(e.target.value)}
-                placeholder="Staff ID"
-                size="sm"
-              />
-            </Box>
-
-            {/* Vehicle ID */}
-            <Box flex="1">
-     
-              <Input
-                type="number"
-                value={vehicleId}
-                onChange={(e) => setVehicleId(e.target.value)}
-                placeholder="Vehicle ID"
-                size="sm"
-              />
-            </Box>
-
-            {/* Action Buttons */}
-            <Box>
-              <HStack spacing={2}>
-                <Button colorScheme="blue" onClick={handleFilter} size="sm">
-                  Apply
-                </Button>
-                <Button variant="outline" onClick={handleClearFilter} size="sm">
-                  Clear
-                </Button>
-              </HStack>
-            </Box>
-          </HStack>
+        <Card mb={4} p={4}>
+          <Flex gap={3} wrap="nowrap" overflowX="auto">
+            <Input
+              placeholder="Station ID"
+              value={stationId}
+              onChange={(e) => setStationId(e.target.value)}
+              size="sm"
+              flex={1}
+              width="120px"
+            />
+            <Select
+              placeholder="Status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              size="sm"
+              flex={1}
+              width="150px"
+            >
+              <option value="0">To Be Confirmed</option>
+              <option value="1">Active</option>
+              <option value="2">Completed</option>
+              <option value="3">Cancelled</option>
+              <option value="4">Confirmed</option>
+            </Select>
+            <Input
+              placeholder="Renter ID"
+              value={renterId}
+              onChange={(e) => setRenterId(e.target.value)}
+              size="sm"
+              flex={1}
+              width="120px"
+            />
+            <Input
+              placeholder="Staff ID"
+              value={staffId}
+              onChange={(e) => setStaffId(e.target.value)}
+              size="sm"
+              flex={1}
+              width="120px"
+            />
+            <Input
+              placeholder="Vehicle ID"
+              value={vehicleId}
+              onChange={(e) => setVehicleId(e.target.value)}
+              size="sm"
+              width="120px"
+              flex={1}
+            />
+            <Button colorScheme="blue" onClick={handleFilter} size="sm">
+              Apply
+            </Button>
+            <Button variant="outline" onClick={handleClearFilter} size="sm">
+              Clear
+            </Button>
+          </Flex>
         </Card>
 
-        {/* Table Card */}
         <Card>
-          <Box>
-            <Table variant="simple" color="gray.500" mb="24px" mt="12px">
-              <Thead>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <Tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <Th
-                        key={header.id}
-                        colSpan={header.colSpan}
-                        pe="10px"
-                        borderColor={borderColor}
-                        cursor="pointer"
-                        onClick={header.column.getToggleSortingHandler()}
-                      >
-                        <Flex
-                          justifyContent="space-between"
-                          align="center"
-                          fontSize={{ sm: "10px", lg: "12px" }}
-                          color="gray.400"
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </Flex>
-                      </Th>
-                    ))}
-                  </Tr>
-                ))}
-              </Thead>
-              <Tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <Tr key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <Td
-                        key={cell.id}
-                        fontSize={{ sm: "14px" }}
-                        minW={{ sm: "150px", md: "200px", lg: "auto" }}
-                        borderColor="transparent"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </Td>
-                    ))}
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </Box>
+          <Table variant="simple" color="gray.500" mb="24px" mt="12px">
+            <Thead>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <Tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <Th key={header.id} borderColor={borderColor}>
+                      {flexRender(
+                        header.column.columnDef.header,
+                        header.getContext()
+                      )}
+                    </Th>
+                  ))}
+                </Tr>
+              ))}
+            </Thead>
+            <Tbody>
+              {table.getRowModel().rows.map((row) => (
+                <Tr key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <Td key={cell.id} borderColor="transparent">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </Td>
+                  ))}
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
         </Card>
 
         {/* Pagination Controls */}

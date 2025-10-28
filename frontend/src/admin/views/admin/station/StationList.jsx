@@ -413,31 +413,18 @@ export default function StationList() {
   return (
     <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
       <Flex direction="column" gap="20px" me="auto">
-        {/* Header */}
-        <Flex
-          mt="45px"
-          justifyContent="space-between"
-          direction={{ base: 'column', md: 'row' }}
-          align={{ base: 'start', md: 'center' }}
-        >
-          <Text color={textColor} fontSize="2xl" ms="24px" fontWeight="700">
+        <Flex justify="space-between" align="center" mb={4}>
+          <Text fontSize="2xl" fontWeight="700" color={textColor}>
             Station Management
           </Text>
-          <HStack spacing={2}>
-            <Button
-              leftIcon={<Icon as={MdRefresh} />}
-              colorScheme="gray"
-              variant="outline"
-              onClick={handleRefresh}
-            >
+          <HStack>
+            <Button leftIcon={<Icon as={MdRefresh} />} onClick={handleRefresh}>
               Refresh
             </Button>
             <Button
               leftIcon={<Icon as={MdAdd} />}
               colorScheme="blue"
-              variant="solid"
               onClick={handleAdd}
-              me="24px"
             >
               Add New Station
             </Button>
