@@ -27,5 +27,6 @@ namespace PublicCarRental.Application.DTOs.Cont
         public string? Notes { get; set; }
         public string? ImageIn { get; set; }
         public string? ImageOut { get; set; }
+        public bool? IsRated { get; set; }
     }
 }

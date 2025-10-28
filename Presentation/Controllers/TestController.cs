@@ -18,7 +18,7 @@ public class TestController : ControllerBase
         try
         {
             await _emailService.SendEmail(
-                "phandogiatue51@gmail.com",
+                "tuedo51@gmail.com",
                 "Test Email from HttpClient",
                 "<h1>It works! 🎉</h1><p>This email was sent via HttpClient + Resend API</p>"
             );

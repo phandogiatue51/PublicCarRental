@@ -86,6 +86,10 @@ namespace PublicCarRental.Application.Service
                     acc.ImageUrl = await _imageStorageService.UploadImageAsync(dto.ImageUrl);
                 }
 
+                var vehicle = _vehicleRepository.GetById(acc.VehicleId);
+                vehicle.Status = VehicleStatus.ToBeCheckup;
+                _vehicleRepository.Update(vehicle);
+
                 _accidentRepository.CreateAcc(acc);
 
                 await _accidentEventProducerService.PublishAccidentReportedAsync(acc);
@@ -112,6 +116,8 @@ namespace PublicCarRental.Application.Service
                 };
 
                 var vehicle = _vehicleRepository.GetById(dto.VehicleId);
+                vehicle.Status = VehicleStatus.ToBeCheckup;
+                _vehicleRepository.Update(vehicle);
                 acc.Location = vehicle.Station.Name;
 
                 if (dto.ImageUrl != null && dto.ImageUrl.Length > 0)
@@ -167,6 +173,15 @@ namespace PublicCarRental.Application.Service
                 acc.Status = newStatus;
                 _accidentRepository.UpdateAcc(acc);
 
+                if (newStatus == AccidentStatus.Repaired)
+                {
+                    var vehicle = _vehicleRepository.GetById(acc.VehicleId);
+                    vehicle.Status = VehicleStatus.ToBeRented;
+                    _vehicleRepository.Update(vehicle);
+
+                    //Notify staff
+                }
+                
                 return (true, $"Accident report status updated to {newStatus}");
             }
             catch (Exception ex)

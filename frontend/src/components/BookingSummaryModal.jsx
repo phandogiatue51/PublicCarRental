@@ -91,7 +91,7 @@ const BookingSummaryModal = ({ isOpen, onClose, bookingSummary, onConfirm }) => 
         }
     };
     return (
-        <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
+        <Modal isOpen={isOpen} onClose={onClose} size="xxl" isCentered>
             <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(10px)" />
             <ModalContent className="booking-summary-modal-content">
                 <ModalHeader className="booking-summary-modal-header">

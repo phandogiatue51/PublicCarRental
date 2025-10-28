@@ -73,7 +73,8 @@ namespace PublicCarRental.Application.Service.Cont
                 Status = contract.Status,
                 ImageIn = contract.ImageUrlIn,
                 ImageOut = contract.ImageUrlOut,
-                Notes = contract.Note
+                Notes = contract.Note,
+                IsRated = contract.IsRated
             });
         }
 
@@ -340,7 +341,8 @@ namespace PublicCarRental.Application.Service.Cont
                 StartTime = contract.StartTime,
                 EndTime = contract.EndTime,
                 TotalCost = contract.TotalCost,
-                Status = contract.Status
+                Status = contract.Status,
+                IsRated = contract.IsRated
             });
         }
 

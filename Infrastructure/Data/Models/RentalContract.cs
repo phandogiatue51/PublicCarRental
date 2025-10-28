@@ -39,6 +39,7 @@ namespace PublicCarRental.Infrastructure.Data.Models
         public string? ImageUrlIn { get; set; }
         public string? ImageUrlOut { get; set; }
         public string? Note {  get; set; }
+        public bool IsRated { get; set; } = false;
         public Rating Rating { get; set; }
     }
 }

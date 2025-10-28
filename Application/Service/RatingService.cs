@@ -91,6 +91,10 @@ public class RatingService : IRatingService
                 CreatedAt = DateTime.UtcNow
             };
 
+            var contract = _contractRepository.GetById(createDto.ContractId);
+            contract.IsRated = true;
+
+            _contractRepository.Update(contract);
             _ratingRepository.Add(rating);
             return (true, "Rating created successfully");
         }
