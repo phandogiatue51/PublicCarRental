@@ -5,7 +5,7 @@ import {
     MdDashboard, MdPerson, MdDriveEta, MdAssignment, MdReceipt, MdMenu, MdLogout, MdHome
 } from 'react-icons/md';
 import signalRService from '../../services/signalRService';
-import { useAuth } from '../../hooks/useAuth'; // ADD THIS
+import { useAuth } from '../../hooks/useAuth';
 
 const StaffLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -65,7 +65,8 @@ const StaffLayout = () => {
         { path: '/vehicles', label: 'Vehicles', icon: MdDriveEta },
         { path: '/contracts', label: 'Contracts', icon: MdAssignment },
         { path: '/invoices', label: 'Invoices', icon: MdReceipt },
-        { path: '/models', label: 'Models', icon: MdDriveEta }
+        { path: '/models', label: 'Models', icon: MdDriveEta },
+        { path: '/issues', label: 'Issues', icon: MdAssignment }
     ];
 
     const isActive = (path) => {

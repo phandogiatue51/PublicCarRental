@@ -9,6 +9,7 @@ namespace PublicCarRental.Application.DTOs.Accident
         public int? ContractId { get; set; }
         public int? StaffId { get; set; }
         public string Description { get; set; }
+        public int? StationId { get; set; }
         public string Location { get; set; }
         public DateTime ReportedAt { get; set; }
         public AccidentStatus Status { get; set; }

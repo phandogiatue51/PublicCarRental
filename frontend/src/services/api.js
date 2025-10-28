@@ -1,3 +1,5 @@
+import { filter } from "@chakra-ui/react";
+
 const API_BASE_URL = process.env.NODE_ENV === 'development'
   ? 'https://localhost:7230/api'
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
@@ -559,40 +561,70 @@ export const transactionAPI = {
 export const accidentAPI = {
   getAll: async () => {
     const data = await apiRequest('/Accident/get-all');
-    return data.map(accident => ({
-      ...accident,
-      status: mapStatusNumberToString(accident.status)
-    }));
+    return data;
   },
 
   getById: async (id) => {
     const data = await apiRequest(`/Accident/${id}`);
-    return {
-      ...data,
-      status: mapStatusNumberToString(data.status)
-    };
+    return data;
   },
 
-  createContractReport: (formData) => apiRequest('/Accident/create-contract-report', {
-    method: 'POST',
-    body: formData,
-  }),
+    createVehicleAccident: async (formData) => {
+    try {
+      const response = await fetch(`${BASE_URL}/Accident/vehicle-report`, {
+        method: 'POST',
+        body: formData,
+      });
 
-  createVehicleReport: (formData) => apiRequest('/Accident/create-vehicle-report', {
-    method: 'POST',
-    body: formData,
-  }),
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-  deleteReport: (id) => apiRequest(`/Accident/delete-report/${id}`, {
+      const responseText = await response.text();
+      console.log('Vehicle accident raw response:', responseText);
+
+      // Since backend returns plain text, assume success if we get a 200 response
+      return { success: true, message: responseText };
+    } catch (error) {
+      console.error('Vehicle accident API call failed:', error);
+      throw error;
+    }
+  },
+
+  createContractAccident: async (formData) => {
+    try {
+      const response = await fetch(`${BASE_URL}/Accident/contract-report`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const responseText = await response.text();
+      console.log('Contract accident raw response:', responseText);
+
+      // Since backend returns plain text, assume success if we get a 200 response
+      return { success: true, message: responseText };
+    } catch (error) {
+      console.error('Contract accident API call failed:', error);
+      throw error;
+    }
+  },
+
+  deleteAcc: (id) => apiRequest(`/Accident/${id}`, {
     method: 'DELETE',
   }),
 
-  updateReportStatus: async (id, newStatus) => {
-    const statusNumber = mapStatusStringToNumber(newStatus);
-    return apiRequest(`/Accident/update-report-status/${id}?newStatus=${statusNumber}`, {
-      method: 'PATCH',
-    });
-  },
+  updateAccStatus: (id, newStatus) => apiRequest(`/Accident/${id}/status?newStatus=${newStatus}`, {
+    method: 'PATCH',
+  }),
+
+  filter: (filters) => apiRequest('/Accident/filter', {
+    method: 'GET',
+    queryParams: filters
+  }),
 };
 
 export const ratingsAPI = {

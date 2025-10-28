@@ -38,6 +38,7 @@ namespace PublicCarRental.Application.Service
                      ContractId = m.ContractId,
                      StaffId = m.StaffId,
                      Description = m.Description,
+                     StationId = m.Vehicle.StationId,
                      Location = m.Vehicle.Station.Name,
                      ImageUrl = m.ImageUrl,
                      Status = m.Status
@@ -58,6 +59,7 @@ namespace PublicCarRental.Application.Service
                 ContractId = acc.ContractId,
                 StaffId = acc.StaffId,
                 Description = acc.Description,
+                StationId = acc.Vehicle.StationId,
                 Location = acc.Vehicle.Station.Name,
                 ImageUrl = acc.ImageUrl,
                 Status = acc.Status
@@ -189,6 +191,26 @@ namespace PublicCarRental.Application.Service
                 return (false, ex.Message);
             }
         }
+
+        public IEnumerable<AccidentDto?> FilterAccidents(AccidentStatus? status, int? stationId)
+        {
+            return _accidentRepository.GetAll()
+                .Where(a => (!status.HasValue || a.Status == status.Value) &&
+                            (!stationId.HasValue || a.Vehicle.StationId == stationId.Value))
+                .Select(a => new AccidentDto
+                {
+                    AccidentId = a.AccidentId,
+                    VehicleId = a.VehicleId,
+                    ContractId = a.ContractId,
+                    StaffId = a.StaffId,
+                    Description = a.Description,
+                    StationId = a.Vehicle.StationId,
+                    Location = a.Vehicle.Station.Name,
+                    ImageUrl = a.ImageUrl,
+                    Status = a.Status
+                })
+                .ToList();
+        }
     }
 
     public interface IAccidentService
@@ -199,6 +221,7 @@ namespace PublicCarRental.Application.Service
         Task<(bool Success, string Message)> CreateVehicleAccAsync(VehicleAcc dto);
         Task<(bool Success, string Message)> DeleteAccAsync(int id); 
         Task<(bool Success, string Message)> UpdateAccStatusAsync(int id, AccidentStatus newStatus);
+        public IEnumerable<AccidentDto?> FilterAccidents(AccidentStatus? status, int? stationId);
 
     }
 }

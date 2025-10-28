@@ -71,7 +71,7 @@ const routes = [
     component: <VehicleList />,
   },
    {
-    name: 'Vehicle Issue',
+    name: 'Issues',
     layout: '/admin',
     path: '/issue',
     icon: <Icon as={MdBarChart} width="20px" height="20px" color="inherit" />,
