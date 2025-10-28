@@ -62,7 +62,7 @@ export default function ContractDetailModal({ isOpen, onClose, contract }) {
           <Flex align="center" gap={3}>
             <Icon as={MdAssignment} color="blue.500" boxSize={6} />
             <Text fontSize="xl" fontWeight="bold" color={textColor}>
-              Contract Details
+              Contract Details #{contract.contractId}
             </Text>
             <Badge
               colorScheme={getStatusColor(contract.status)}
@@ -81,18 +81,6 @@ export default function ContractDetailModal({ isOpen, onClose, contract }) {
         
         <ModalBody pb={6}>
         <Grid templateColumns="repeat(2, 1fr)" gap={6}>
-            <GridItem colSpan={1}>                
-              <Text fontSize="lg" fontWeight="bold" color={textColor} mb={3}>
-                Contract Information
-              </Text>
-              <Box w="100%" p={4} bg={useColorModeValue('gray.50', 'gray.700')} borderRadius="md">
-                <HStack justify="space-between" mb={2}>
-                  <Text fontWeight="semibold" color={textColor}>Contract ID:</Text>
-                  <Text color={textColor}>{contract.contractId}</Text>
-                </HStack>
-              </Box>
-            </GridItem>
-
             <GridItem colSpan={2}>                
               <Text fontSize="lg" fontWeight="bold" color={textColor} mb={3}>
                 Rental Period

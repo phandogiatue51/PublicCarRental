@@ -76,11 +76,6 @@ function AccountTabs() {
       {/* Main Content */}
       <div className="account-main">
         <div className="main-content">
-          {/* Header */}
-          <div className="account-header">
-            <h1>My Account</h1>
-            <p>Manage your profile, contracts, and invoices</p>
-          </div>
 
           {/* Tab Navigation */}
           <div className="tab-navigation">

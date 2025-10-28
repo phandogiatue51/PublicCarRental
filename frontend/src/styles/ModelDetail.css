@@ -187,10 +187,6 @@
     font-family: 'Rubik', sans-serif;
     font-size: 1.6rem;
     color: #2d3748;
-    background: #f7fafc;
-    border-radius: 1rem;
-    padding: 1.5rem;
-    margin-top: 0.5rem;
     font-weight: 600;
     flex-grow: 1;
     display: flex;
@@ -200,31 +196,19 @@
     letter-spacing: 0.2px;
 }
 
-.model-detail-description b {
-    font-family: 'Poppins', sans-serif;
-    font-weight: 700;
-    font-size: 1.7rem;
-    color: #1a202c;
-    letter-spacing: 0.3px;
-}
-
-/* Right column styles */
 .right-column {
     flex: 1 1 0%;
     max-width: 50%;
     min-width: 400px;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
     width: 100%;
 }
 
-/* Stations section styles */
 .stations-section {
     background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
     border-radius: 1.5rem;
-    padding: 2rem;
-    margin-top: 2rem;
+    padding: 1.25rem;
     height: auto;
     max-height: none;
     border: 2px solid #e2e8f0;
@@ -239,7 +223,7 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 6px;
+    height: 3px;
     
 }
 
@@ -247,7 +231,7 @@
     font-family: 'Poppins', sans-serif;
     font-size: 2rem;
     font-weight: 700;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
     color: #2d3748;
     position: relative;
     padding-left: 1rem;

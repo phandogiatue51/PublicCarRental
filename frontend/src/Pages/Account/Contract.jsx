@@ -1,5 +1,6 @@
-// Contract.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { contractAPI, renterAPI } from "../../services/api"; 
+import RateModal from "./RateModal";
 import "../../styles/Account/Contract.css";
 
 function Contract() {
@@ -11,50 +12,49 @@ function Contract() {
   const [selectedContract, setSelectedContract] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showRateModal, setShowRateModal] = useState(false);
+  const [selectedContractForRating, setSelectedContractForRating] = useState(null);
+  
   const isAuthenticated = () => {
     return !!localStorage.getItem("jwtToken"); 
   };
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [contractsPerPage] = useState(3); // Show 3 contracts per page
+  const [contractsPerPage] = useState(3);
+
+  const loadContracts = useCallback(async () => {
+    if (!renterId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const data = await renterAPI.getContracts(renterId);
+      setContracts(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setError(e.message || "Failed to load contracts");
+    } finally {
+      setLoading(false);
+    }
+  }, [renterId]); 
 
   useEffect(() => {
     const controller = new AbortController();
-    async function loadContracts() {
-      if (!renterId) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setError("");
-      try {
-        // Fetch contracts for the specific renter
-        const response = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/EVRenter/${renterId}/contracts`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
-          },
-          signal: controller.signal
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setContracts(Array.isArray(data) ? data : []);
-      } catch (e) {
-        if (e.name !== "AbortError") {
-          setError(e.message || "Failed to load contracts");
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
     loadContracts();
     return () => controller.abort();
-  }, [renterId]);
+  }, [loadContracts]); 
+
+  const handleRateExperience = (contract) => {
+    setSelectedContractForRating(contract);
+    setShowRateModal(true);
+  };
+
+  const handleRatingSubmitted = () => {
+    // Refresh contracts to update isRated status
+    loadContracts();
+  };
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -73,11 +73,11 @@ function Contract() {
 
   const getStatusBadge = (status) => {
     const statusMap = {
-      0: { text: 'Pending', class: 'pending' },
-      1: { text: 'Confirmed', class: 'confirmed' },
-      2: { text: 'Active', class: 'active' },
-      3: { text: 'Completed', class: 'completed' },
-      4: { text: 'Cancelled', class: 'cancelled' }
+      0: { text: 'To Be Confirmed', class: 'tobeconfirmed' },
+      1: { text: 'Active', class: 'active' },
+      2: { text: 'Completed', class: 'completed' },
+      3: { text: 'Cancelled', class: 'cancelled' },
+      4: { text: 'Confirmed', class: 'confirmed' }
     };
     const statusInfo = statusMap[status] || { text: 'Unknown', class: 'unknown' };
     return (
@@ -91,19 +91,7 @@ function Contract() {
     setDetailLoading(true);
     setError("");
     try {
-      const response = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/Contract/${contractId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const contractDetail = await response.json();
+      const contractDetail = await contractAPI.getById(contractId);
       setSelectedContract(contractDetail);
       setShowDetailModal(true);
     } catch (e) {
@@ -196,47 +184,52 @@ function Contract() {
         <>
           <div className="contracts-list">
             {currentContracts.map((contract) => (
-            <div key={contract.contractId} className="contract-card">
-              <div className="contract-header-card">
-                <h3>Contract #{contract.contractId}</h3>
-                {getStatusBadge(contract.status)}
-              </div>
-              
-              <div className="contract-details">
-                <div className="detail-row">
-                  <span className="label">Vehicle:</span>
-                  <span className="value">{contract.vehicleLicensePlate}</span>
+              <div key={contract.contractId} className="contract-card">
+                <div className="contract-header-card">
+                  <h3>Contract #{contract.contractId}</h3>
+                  {getStatusBadge(contract.status)}
                 </div>
-                <div className="detail-row">
-                  <span className="label">Rental Period:</span>
-                  <span className="value">{formatDate(contract.startTime)} - {formatDate(contract.endTime)}</span>
+                
+                <div className="contract-details">
+                  <div className="detail-row">
+                    <span className="label">Vehicle:</span>
+                    <span className="value">{contract.vehicleLicensePlate}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="label">Rental Period:</span>
+                    <span className="value">{formatDate(contract.startTime)} - {formatDate(contract.endTime)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="label">Total Cost:</span>
+                    <span className="value">₫{contract.totalCost?.toLocaleString() || '0'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="label">Station:</span>
+                    <span className="value">{contract.stationName || 'N/A'}</span>
+                  </div>
                 </div>
-                <div className="detail-row">
-                  <span className="label">Total Cost:</span>
-                  <span className="value">₫{contract.totalCost?.toLocaleString() || '0'}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Station:</span>
-                  <span className="value">{contract.stationName || 'N/A'}</span>
-                </div>
-              </div>
 
-              <div className="contract-actions">
-                <button 
-                  className="view-details-btn"
-                  onClick={() => handleViewDetails(contract.contractId)}
-                  disabled={detailLoading}
-                >
-                  {detailLoading ? 'Loading...' : 'View Details'}
-                </button>
-                {contract.status === 0 && (
-                  <button className="cancel-contract-btn">
-                    Cancel Contract
+                <div className="contract-actions">
+                  <button 
+                    className="view-details-btn"
+                    onClick={() => handleViewDetails(contract.contractId)}
+                    disabled={detailLoading}
+                  >
+                    {detailLoading ? 'Loading...' : 'View Details'}
                   </button>
-                )}
+                  
+                  {/* Show Rate button only for completed contracts that haven't been rated */}
+                  {contract.status === 2 && !contract.isRated && (
+                    <button 
+                      className="rate-experience-btn"
+                      onClick={() => handleRateExperience(contract)}
+                    >
+                      ⭐ Rate Your Experience
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
           </div>
 
           {/* Pagination */}
@@ -280,119 +273,196 @@ function Contract() {
         </>
       )}
 
-      {/* Contract Detail Modal */}
       {showDetailModal && selectedContract && (
+      <div 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '20px'
+        }}
+        onClick={closeDetailModal}
+      >
         <div 
           style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: '20px'
+            background: 'white',
+            borderRadius: '30px',
+            maxWidth: '700px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
           }}
-          onClick={closeDetailModal}
+          onClick={(e) => e.stopPropagation()}
         >
-          <div 
-            style={{
-              background: 'white',
-              borderRadius: '30px',
-              maxWidth: '600px',
-              width: '100%',
-              maxHeight: '80vh',
-              overflow: 'auto',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '20px',
-              borderBottom: '1px solid #e0e0e0',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '100px 100px 0 0'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <h3 style={{ margin: 0, color: '#333', fontSize: '1.5rem' }}>Contract Details #{selectedContract.contractId}</h3>
-                {getStatusBadge(selectedContract.status)}
-              </div>
-              <button 
-                onClick={closeDetailModal}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '24px',
-                  cursor: 'pointer',
-                  color: '#666',
-                  padding: '5px',
-                  borderRadius: '50%'
-                }}
-              >
-                ×
-              </button>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '20px',
+            borderBottom: '1px solid #e0e0e0',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '100px 100px 0 0'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <h3 style={{ margin: 0, color: '#333', fontSize: '1.5rem' }}>Contract Details #{selectedContract.contractId}</h3>
+              {getStatusBadge(selectedContract.status)}
             </div>
-            
-            <div style={{ padding: '25px' }}>
-              <div>
-                <div style={{ marginBottom: '30px' }}>
-                  <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Contract Information</h4>
-                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Invoice ID:</strong> {selectedContract.invoiceId || 'N/A'}</p>
-                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Station:</strong> {selectedContract.stationName}</p>
-                </div>
-
-                <div style={{ marginBottom: '30px' }}>
-                  <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Rental Information</h4>
-                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Start Time:</strong> {formatDate(selectedContract.startTime)}</p>
-                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>End Time:</strong> {formatDate(selectedContract.endTime)}</p>
-                </div>
-
-                <div>
-                  <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Staff Information</h4>
-                  <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Staff Name:</strong> {selectedContract.staffName || 'Not assigned'}</p>
-                </div>
-              </div>
+            <button 
+              onClick={closeDetailModal}
+              style={{
+                background: 'none',
+                border: 'none',
+                fontSize: '24px',
+                cursor: 'pointer',
+                color: '#666',
+                padding: '5px',
+                borderRadius: '50%'
+              }}
+            >
+              ×
+            </button>
+          </div>
+          
+          <div style={{ padding: '25px' }}>
+            {/* Contract Information */}
+            <div style={{ marginBottom: '30px' }}>
+              <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Contract Information</h4>
+              <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Station:</strong> {selectedContract.stationName}</p>
+              <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Vehicle:</strong> {selectedContract.vehicleLicensePlate}</p>
             </div>
 
-            <div style={{
-              padding: '25px',
-              borderTop: '1px solid #e0e0e0',
-              backgroundColor: '#f8f9fa',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              borderRadius: '0 0 100px 100px'
-            }}>
-              <div style={{
-                fontSize: '1.4rem',
-                fontWeight: 'bold',
-                color: '#28a745'
+            {/* Rental Information */}
+            <div style={{ marginBottom: '30px' }}>
+              <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Rental Information</h4>
+              <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Start Time:</strong> {formatDate(selectedContract.startTime)}</p>
+              <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>End Time:</strong> {formatDate(selectedContract.endTime)}</p>
+            </div>
+
+            {/* Staff Information */}
+            <div style={{ marginBottom: '30px' }}>
+              <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Staff Information</h4>
+              <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Staff Name:</strong> {selectedContract.staffName || 'Not assigned'}</p>
+            </div>
+
+            {/* Invoices Section */}
+            {selectedContract.invoices && selectedContract.invoices.length > 0 && (
+              <div style={{ marginBottom: '30px' }}>
+                <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Invoices</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                  {selectedContract.invoices.map((invoice) => (
+                    <div 
+                      key={invoice.invoiceId}
+                      style={{
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '10px',
+                        padding: '15px',
+                        backgroundColor: '#f8f9fa'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                        <div>
+                          <strong style={{ fontSize: '1.1rem', color: '#333' }}>Invoice #{invoice.invoiceId}</strong>
+                          <div style={{ fontSize: '0.9rem', color: '#666', marginTop: '5px' }}>
+                            Order Code: {invoice.orderCode}
+                          </div>
+                        </div>
+                        <div style={{ 
+                          padding: '4px 8px', 
+                          borderRadius: '12px', 
+                          fontSize: '0.8rem',
+                          fontWeight: 'bold',
+                          backgroundColor: invoice.status === 1 ? '#d4edda' : '#fff3cd',
+                          color: invoice.status === 1 ? '#155724' : '#856404'
+                        }}>
+                          {invoice.status === 1 ? 'PAID' : 'PENDING'}
+                        </div>
+                      </div>
+                      
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontSize: '1rem', marginBottom: '5px' }}>
+                            <strong>Amount Paid:</strong> ₫{invoice.amountPaid?.toLocaleString() || '0'}
+                          </div>
+                          {invoice.note && (
+                            <div style={{ fontSize: '0.9rem', color: '#666', fontStyle: 'italic' }}>
+                              Note: {invoice.note}
+                            </div>
+                          )}
+                          <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '5px' }}>
+                            Paid: {formatDate(invoice.paidAt)}
+                          </div>
+                        </div>
+                    
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* No Invoices Message */}
+            {(!selectedContract.invoices || selectedContract.invoices.length === 0) && (
+              <div style={{ 
+                textAlign: 'center', 
+                padding: '20px', 
+                backgroundColor: '#f8f9fa', 
+                borderRadius: '10px',
+                color: '#666'
               }}>
-                Total Cost: ₫{selectedContract.totalCost?.toLocaleString() || '0'} 🤑
+                No invoices available for this contract
               </div>
-              <button 
-                onClick={closeDetailModal}
-                style={{
-                  backgroundColor: '#6c757d',
-                  color: 'white',
-                  border: 'none',
-                  padding: '10px 20px',
-                  borderRadius: '5px',
-                  cursor: 'pointer'
-                }}
-              >
-                Close
-              </button>
+            )}
+          </div>
+
+          <div style={{
+            padding: '25px',
+            borderTop: '1px solid #e0e0e0',
+            backgroundColor: '#f8f9fa',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            borderRadius: '0 0 100px 100px'
+          }}>
+            <div style={{
+              fontSize: '1.4rem',
+              fontWeight: 'bold',
+              color: '#28a745'
+            }}>
+              Total Cost: ₫{selectedContract.totalCost?.toLocaleString() || '0'}
             </div>
+            <button 
+              onClick={closeDetailModal}
+              style={{
+                backgroundColor: '#6c757d',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '5px',
+                cursor: 'pointer'
+              }}
+            >
+              Close
+            </button>
           </div>
         </div>
-      )}
+      </div>
+    )}  
+      {/* Rate Modal */}
+      <RateModal
+        contract={selectedContractForRating}
+        isOpen={showRateModal}
+        onClose={() => setShowRateModal(false)}
+        onRatingSubmitted={handleRatingSubmitted}
+      />
+      
     </div>
   );
 }

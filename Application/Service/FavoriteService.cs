@@ -29,6 +29,7 @@ namespace PublicCarRental.Application.Service
                 return _favoriteRepo.GetFavoritesByAccountId(accountId)
                     .Select(favorite => new ModelViewDto
                     {
+                        ModelId = favorite.VehicleModel.ModelId,
                         Name = favorite.VehicleModel.Name,
                         BrandName = favorite.VehicleModel.Brand.Name,
                         TypeName = favorite.VehicleModel.Type.Name,

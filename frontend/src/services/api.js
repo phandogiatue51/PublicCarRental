@@ -158,16 +158,6 @@ getStationFromModel: async (modelId) => {
     method: 'DELETE',
   }),
 
-  filterModels: (brandId, typeId, stationId) => {
-    const queryParams = new URLSearchParams();
-    if (brandId) queryParams.append('brandId', brandId);
-    if (typeId) queryParams.append('typeId', typeId);
-    if (stationId) queryParams.append('stationId', stationId);
-
-    const queryString = queryParams.toString();
-    return apiRequest(`/Model/filter-models${queryString ? `?${queryString}` : ''}`);
-  },
-
   getAvailableCount: async (modelId, stationId, startTime, endTime) => {
     try {
         const response = await apiRequest('/Model/get-available-count', {
@@ -617,6 +607,48 @@ export const accidentAPI = {
       method: 'PATCH',
     });
   },
+};
+
+export const ratingsAPI = {
+  getAll: () => apiRequest('/Ratings'),
+
+  getById: (id) => apiRequest(`/Ratings/${id}`),
+
+  create: (ratingData) => apiRequest('/Ratings', {
+    method: 'POST',
+    body: JSON.stringify(ratingData),
+  }),
+
+  update: (id, ratingData) => apiRequest(`/Ratings/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(ratingData),
+  }),
+
+  delete: (id) => apiRequest(`/Ratings/${id}`, {
+    method: 'DELETE',
+  }),
+
+  getByContract: (contractId) => apiRequest(`/Ratings/contract/${contractId}`),
+
+  getByRenter: (renterId) => apiRequest(`/Ratings/renter/${renterId}`),
+
+  getByModel: (modelId) => apiRequest(`/Ratings/model/${modelId}`),
+
+  getByVehicle: (vehicleId) => apiRequest(`/Ratings/vehicle/${vehicleId}`),
+
+  getModelStatistics: (modelId) => apiRequest(`/Ratings/model/${modelId}/statistics`),
+
+  getRenterStatistics: (renterId) => apiRequest(`/Ratings/renter/${renterId}/statistics`),
+
+  getRecent: (count = 10) => apiRequest(`/Ratings/recent?count=${count}`),
+
+  getByStar: (starRating) => apiRequest(`/Ratings/stars/${starRating}`),
+
+  canRateContract: (contractId, renterId) => 
+    apiRequest(`/Ratings/contract/${contractId}/can-rate/${renterId}`),
+
+  hasRatedContract: (contractId, renterId) => 
+    apiRequest(`/Ratings/contract/${contractId}/has-rated/${renterId}`),
 };
 
 const mapStatusNumberToString = (statusNumber) => {

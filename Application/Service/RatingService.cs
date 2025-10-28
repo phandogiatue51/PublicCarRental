@@ -50,6 +50,7 @@ public class RatingService : IRatingService
                 Stars = r.Stars,
                 Comment = r.Comment,
                 CreatedAt = r.CreatedAt,
+                RenterId = r.Contract.EVRenterId,
                 RenterName = r.Contract.EVRenter.Account.FullName,
                 StartDate = r.Contract.StartTime,
                 EndDate = r.Contract.EndTime
@@ -68,6 +69,7 @@ public class RatingService : IRatingService
             Stars = rating.Stars,
             Comment = rating.Comment,
             CreatedAt = rating.CreatedAt,
+            RenterId = rating.Contract.EVRenterId,
             RenterName = rating.Contract.EVRenter.Account.FullName,
             StartDate = rating.Contract.StartTime,
             EndDate = rating.Contract.EndTime
@@ -158,6 +160,7 @@ public class RatingService : IRatingService
                 Stars = r.Stars,
                 Comment = r.Comment,
                 CreatedAt = r.CreatedAt,
+                RenterId = r.Contract.EVRenterId,
                 RenterName = r.Contract.EVRenter.Account.FullName,
                 StartDate = r.Contract.StartTime,
                 EndDate = r.Contract.EndTime
@@ -174,6 +177,7 @@ public class RatingService : IRatingService
                 Stars = r.Stars,
                 Comment = r.Comment,
                 CreatedAt = r.CreatedAt,
+                RenterId = r.Contract.EVRenterId,
                 RenterName = r.Contract.EVRenter.Account.FullName,
                 StartDate = r.Contract.StartTime,
                 EndDate = r.Contract.EndTime
@@ -190,6 +194,7 @@ public class RatingService : IRatingService
                 Stars = r.Stars,
                 Comment = r.Comment,
                 CreatedAt = r.CreatedAt,
+                RenterId = r.Contract.EVRenterId,
                 RenterName = r.Contract.EVRenter.Account.FullName,
                 StartDate = r.Contract.StartTime,
                 EndDate = r.Contract.EndTime
@@ -206,6 +211,7 @@ public class RatingService : IRatingService
                 Stars = r.Stars,
                 Comment = r.Comment,
                 CreatedAt = r.CreatedAt,
+                RenterId = r.Contract.EVRenterId,
                 RenterName = r.Contract.EVRenter.Account.FullName,
                 StartDate = r.Contract.StartTime,
                 EndDate = r.Contract.EndTime
@@ -266,6 +272,7 @@ public class RatingService : IRatingService
                 Stars = r.Stars,
                 Comment = r.Comment,
                 CreatedAt = r.CreatedAt,
+                RenterId = r.Contract.EVRenterId,
                 RenterName = r.Contract.EVRenter.Account.FullName,
                 StartDate = r.Contract.StartTime,
                 EndDate = r.Contract.EndTime
@@ -282,6 +289,7 @@ public class RatingService : IRatingService
                 Stars = r.Stars,
                 Comment = r.Comment,
                 CreatedAt = r.CreatedAt,
+                RenterId = r.Contract.EVRenterId,
                 RenterName = r.Contract.EVRenter.Account.FullName,
                 StartDate = r.Contract.StartTime,
                 EndDate = r.Contract.EndTime

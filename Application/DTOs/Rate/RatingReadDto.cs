@@ -10,6 +10,7 @@ namespace PublicCarRental.Application.DTOs.Rate
         public string Comment { get; set; }
         public DateTime CreatedAt { get; set; }
 
+        public int RenterId { get; set; }
         public string RenterName { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }

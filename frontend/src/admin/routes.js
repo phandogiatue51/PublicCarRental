@@ -15,6 +15,7 @@ import InvoiceList from './../admin/views/admin/invoice/InvoiceList';
 import StaffList from './../admin/views/admin/staff/StaffList';
 import StationList from './../admin/views/admin/station/StationList';
 import AccidentList from './../admin/views/admin/accident/AccidentList';
+import RatingList from './../admin/views/admin/RatingList';
 
 import Home from 'Pages/Home';
 
@@ -89,6 +90,13 @@ const routes = [
     path: '/station',
     icon: <Icon as={MdBarChart} width="20px" height="20px" color="inherit" />,
     component: <StationList />,
+  },
+  {
+    name: 'Rating',
+    layout: '/admin',
+    path: '/rating',
+    icon: <Icon as={MdBarChart} width="20px" height="20px" color="inherit" />,
+    component: <RatingList />,
   },
   {
     name: 'Return to Home',

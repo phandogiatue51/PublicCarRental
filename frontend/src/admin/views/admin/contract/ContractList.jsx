@@ -31,7 +31,9 @@ import {
   ModalCloseButton,
   Image,
   Grid,
+  Input
 } from "@chakra-ui/react";
+
 import {
   createColumnHelper,
   flexRender,
@@ -626,35 +628,29 @@ export default function ContractList() {
           </HStack>
         </Flex>
         {/* 🔍 FILTER SECTION */}
-        <Card>
-          <HStack spacing={4} p={4} wrap="wrap">
-            <Box>
-              <Text fontSize="sm" mb={1}>
-                Station ID
-              </Text>
-              <input
+
+        <Card p={4}>
+          <HStack spacing={4} alignItems="flex-end" width="100%">
+            {/* Station ID */}
+            <Box flex="1">
+            
+              <Input
                 type="number"
                 value={stationId}
                 onChange={(e) => setStationId(e.target.value)}
-                placeholder="Enter station ID"
-                style={{
-                  border: "1px solid #ccc",
-                  borderRadius: "6px",
-                  padding: "6px 10px",
-                  width: "140px",
-                }}
+                placeholder="Station ID"
+                size="sm"
               />
             </Box>
 
-            <Box>
-              <Text fontSize="sm" mb={1}>
-                Status
-              </Text>
+            {/* Status */}
+            <Box flex="1">
+            
               <Select
                 placeholder="Select status"
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                width="160px"
+                size="sm"
               >
                 <option value="0">To Be Confirmed</option>
                 <option value="1">Active</option>
@@ -664,68 +660,53 @@ export default function ContractList() {
               </Select>
             </Box>
 
-            <Box>
-              <Text fontSize="sm" mb={1}>
-                Renter ID
-              </Text>
-              <input
+            {/* Renter ID */}
+            <Box flex="1">
+           
+              <Input
                 type="number"
                 value={renterId}
                 onChange={(e) => setRenterId(e.target.value)}
-                placeholder="Enter renter ID"
-                style={{
-                  border: "1px solid #ccc",
-                  borderRadius: "6px",
-                  padding: "6px 10px",
-                  width: "140px",
-                }}
+                placeholder="Renter ID"
+                size="sm"
               />
             </Box>
 
-            <Box>
-              <Text fontSize="sm" mb={1}>
-                Staff ID
-              </Text>
-              <input
+            {/* Staff ID */}
+            <Box flex="1">
+        
+              <Input
                 type="number"
                 value={staffId}
                 onChange={(e) => setStaffId(e.target.value)}
-                placeholder="Enter staff ID"
-                style={{
-                  border: "1px solid #ccc",
-                  borderRadius: "6px",
-                  padding: "6px 10px",
-                  width: "140px",
-                }}
+                placeholder="Staff ID"
+                size="sm"
               />
             </Box>
 
-            <Box>
-              <Text fontSize="sm" mb={1}>
-                Vehicle ID
-              </Text>
-              <input
+            {/* Vehicle ID */}
+            <Box flex="1">
+     
+              <Input
                 type="number"
                 value={vehicleId}
                 onChange={(e) => setVehicleId(e.target.value)}
-                placeholder="Enter vehicle ID"
-                style={{
-                  border: "1px solid #ccc",
-                  borderRadius: "6px",
-                  padding: "6px 10px",
-                  width: "140px",
-                }}
+                placeholder="Vehicle ID"
+                size="sm"
               />
             </Box>
 
-            <HStack spacing={3} alignSelf="flex-end">
-              <Button colorScheme="blue" onClick={handleFilter}>
-                Apply Filter
-              </Button>
-              <Button variant="outline" onClick={handleClearFilter}>
-                Clear
-              </Button>
-            </HStack>
+            {/* Action Buttons */}
+            <Box>
+              <HStack spacing={2}>
+                <Button colorScheme="blue" onClick={handleFilter} size="sm">
+                  Apply
+                </Button>
+                <Button variant="outline" onClick={handleClearFilter} size="sm">
+                  Clear
+                </Button>
+              </HStack>
+            </Box>
           </HStack>
         </Card>
 

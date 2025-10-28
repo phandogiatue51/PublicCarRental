@@ -226,7 +226,6 @@
   flex: 1;
 }
 
-/* Contract Actions */
 .contract-actions {
   display: flex;
   gap: 10px;
@@ -235,37 +234,29 @@
   border-top: 1px solid #e0e0e0;
 }
 
-.view-details-btn {
-  background-color: #007bff;
-  color: white;
+.view-details-btn,
+.rate-experience-btn {
+  flex: 1; 
+  min-width: 120px; 
+  text-align: center;
   border: none;
-  padding: 8px 16px;
+  padding: 10px 16px;
   border-radius: 5px;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: background-color 0.3s;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.view-details-btn {
+  background-color: #007bff;
+  color: white;
 }
 
 .view-details-btn:hover {
   background-color: #0056b3;
 }
 
-.cancel-contract-btn {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.3s;
-}
-
-.cancel-contract-btn:hover {
-  background-color: #c82333;
-}
-
-/* Pagination Styles */
 .pagination-container {
   margin-top: 30px;
   display: flex;
@@ -510,14 +501,6 @@
     text-align: left;
   }
   
-  .contract-actions {
-    flex-direction: column;
-  }
-  
-  .contract-actions button {
-    width: 100%;
-  }
-
   /* Modal responsive */
   .modal-overlay {
     padding: 10px;
@@ -588,3 +571,17 @@
   }
 }
 
+.rate-experience-btn {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #8b7500;
+  box-shadow: 0 2px 4px rgba(255, 215, 0, 0.3);
+}
+
+.rate-experience-btn:hover {
+  background: linear-gradient(135deg, #ffed4e, #ffd700);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 215, 0, 0.4);
+}
+.rate-experience-btn:active {
+  transform: translateY(0);
+}

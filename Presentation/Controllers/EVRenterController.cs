@@ -77,9 +77,9 @@ public class EVRenterController : ControllerBase
     }
 
     [HttpGet("{renterId}/favorites")]
-    public IActionResult GetFavorites(int renterId)
+    public async Task<IActionResult> GetFavoritesAsync(int renterId)
     {
-        var favorites = _favoriteService.GetFavoriteAsync(renterId);
+        var favorites = await _favoriteService.GetFavoriteAsync(renterId);
         if (favorites == null)
             return NotFound(new { message = "Renter not found!" });
         return Ok(favorites);

@@ -1,6 +1,6 @@
-// Favorite.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { renterAPI} from "../../services/api"; 
 import "../../styles/Account/Favorite.css";
 
 function Favorite() {
@@ -13,51 +13,37 @@ function Favorite() {
   const [selectedFavorite, setSelectedFavorite] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  
   const isAuthenticated = () => {
     return !!localStorage.getItem("jwtToken"); 
   };
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [favoritesPerPage] = useState(4); // Show 3 favorites per page
+  const [favoritesPerPage] = useState(4);
+
+  const loadFavorites = useCallback(async () => {
+    if (!renterId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const data = await renterAPI.getFavorites(renterId);
+      setFavorites(Array.isArray(data) ? data : []);
+    } catch (e) {
+      setError(e.message || "Failed to load favorites");
+    } finally {
+      setLoading(false);
+    }
+  }, [renterId]);
 
   useEffect(() => {
     const controller = new AbortController();
-    async function loadFavorites() {
-      if (!renterId) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setError("");
-      try {
-        // Fetch favorites for the specific renter
-        const response = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/EVRenter/${renterId}/favorites`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
-          },
-          signal: controller.signal
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setFavorites(Array.isArray(data) ? data : []);
-      } catch (e) {
-        if (e.name !== "AbortError") {
-          setError(e.message || "Failed to load favorites");
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
     loadFavorites();
     return () => controller.abort();
-  }, [renterId]);
-
+  }, [loadFavorites]);
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -74,30 +60,21 @@ function Favorite() {
     );
   };
 
-
   const closeDetailModal = () => {
     setShowDetailModal(false);
     setSelectedFavorite(null);
   };
 
-  const handleRemoveFavorite = async (favoriteId) => {
-    try {
-      const response = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/Favorite/${favoriteId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
-        }
-      });
-      
-      if (response.ok) {
-        // Remove from local state
-        setFavorites(favorites.filter(fav => fav.favoriteId !== favoriteId));
-      }
-    } catch (e) {
-      setError(e.message || "Failed to remove favorite");
-    }
-  };
+  const handleRemoveFavorite = async (favorite) => {
+  try {
+    // Use favorite.modelId directly since it's now in the API response
+    await renterAPI.removeFavorite(renterId, favorite.modelId);
+    
+    setFavorites(favorites.filter(fav => fav.favoriteId !== favorite.favoriteId));
+  } catch (e) {
+    setError(e.message || "Failed to remove favorite");
+  }
+};
 
   // Pagination logic
   const indexOfLastFavorite = currentPage * favoritesPerPage;
@@ -122,7 +99,6 @@ function Favorite() {
     }
   };
 
-  // Reset to first page when favorites change
   useEffect(() => {
     setCurrentPage(1);
   }, [favorites]);
@@ -169,57 +145,54 @@ function Favorite() {
           <div className="empty-icon">❤️</div>
           <h3>No Favorites Yet</h3>
           <p>Start adding vehicles to your favorites by clicking the heart icon on any vehicle.</p>
-          <button className="primary-btn">
-            Browse Vehicles
-          </button>
         </div>
       ) : (
         <>
           <div className="favorites-grid">
             {currentFavorites.map((favorite) => (
-            <div key={favorite.favoriteId} className="favorite-card">
-              <div className="favorite-image-container">
-                <img 
-                  src={favorite.imageUrl} 
-                  alt={`${favorite.brandName} ${favorite.name}`}
-                  className="favorite-image"
-                  onError={(e) => {
-                    e.target.src = '/placeholder-car.png';
-                  }}
-                />
-                <div className="favorite-overlay">
-                  <button 
-                    className="remove-favorite-btn-overlay"
-                    onClick={() => handleRemoveFavorite(favorite.favoriteId)}
-                    title="Remove from favorites"
-                  >
-                    ❤️
-                  </button>
+              <div key={favorite.favoriteId} className="favorite-card">
+                <div className="favorite-image-container">
+                  <img 
+                    src={favorite.imageUrl} 
+                    alt={`${favorite.brandName} ${favorite.name}`}
+                    className="favorite-image"
+                    onError={(e) => {
+                      e.target.src = '/placeholder-car.png';
+                    }}
+                  />
+                  <div className="favorite-overlay">
+                    <button 
+                      className="remove-favorite-btn-overlay"
+                      onClick={() => handleRemoveFavorite(favorite)}
+                      title="Remove from favorites"
+                    >
+                      ❤️
+                    </button>
+                  </div>
                 </div>
-              </div>
-              
+                
                 <div className="favorite-content">
-                <div className="favorite-header">
-                  <h3 className="favorite-title">{favorite.brandName} {favorite.name}</h3>
-                  <span className="favorite-type">{favorite.typeName}</span>
-                </div>
-                
-                <div className="favorite-price">
-                  <span className="price-label">Price per hour</span>
-                  <span className="price-value">₫{favorite.pricePerHour?.toLocaleString() || '0'}</span>
-                </div>
-                
-                <div className="favorite-actions">
-                  <button 
-                    className="view-details-btn"
-                    onClick={() => navigate(`/models?vehicleId=${favorite.vehicleId || favorite.id}`)}
-                  >
-                    Rent Now
-                  </button>
+                  <div className="favorite-header">
+                    <h3 className="favorite-title">{favorite.brandName} {favorite.name}</h3>
+                    <span className="favorite-type">{favorite.typeName}</span>
+                  </div>
+                  
+                  <div className="favorite-price">
+                    <span className="price-label">Price per hour</span>
+                    <span className="price-value">₫{favorite.pricePerHour?.toLocaleString() || '0'}</span>
+                  </div>
+                  
+                  <div className="favorite-actions">
+                    <button 
+                      className="view-details-btn"
+                      onClick={() => navigate(`/models/${favorite.modelId}`)}
+                    >
+                      Rent Now
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
           </div>
 
           {/* Pagination */}
@@ -263,7 +236,6 @@ function Favorite() {
         </>
       )}
 
-      {/* Vehicle Detail Modal */}
       {showDetailModal && selectedFavorite && (
         <div 
           style={{
