@@ -108,7 +108,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowReactApp", policy =>
     {
         policy.WithOrigins(
-            "https://fortunate-art-production.up.railway.app", 
+            "https://car777.shop",         
+            "https://www.car777.shop",      
             "https://publiccarrental-production-b7c5.up.railway.app",
             "http://localhost:3000", 
             "https://localhost:3000",
