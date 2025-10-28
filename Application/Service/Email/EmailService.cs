@@ -1,18 +1,19 @@
-﻿using System.Text.Json;
+﻿using FluentEmail.Core;
+using FluentEmail.Core.Models;
+using System.Net;
+using System.Net.Mail;
 
 namespace PublicCarRental.Application.Service.Email
 {
     public class EmailService : IEmailService
     {
         private readonly ILogger<EmailService> _logger;
-        private readonly HttpClient _httpClient;
-        private readonly string _apiKey;
+        private readonly IFluentEmail _fluentEmail;
 
-        public EmailService(ILogger<EmailService> logger, IHttpClientFactory httpClientFactory)
+        public EmailService(ILogger<EmailService> logger, IFluentEmail fluentEmail)
         {
             _logger = logger;
-            _httpClient = httpClientFactory.CreateClient();
-            _apiKey = Environment.GetEnvironmentVariable("RESEND_API_KEY");
+            _fluentEmail = fluentEmail;
         }
 
         public async Task SendEmail(string toEmail, string subject, string htmlBody)
@@ -36,37 +37,25 @@ namespace PublicCarRental.Application.Service.Email
         {
             try
             {
-                var payload = new
+                var response = await _fluentEmail
+                    .To(toEmail) 
+                    .Subject(subject)
+                    .Body(htmlBody, isHtml: true)
+                    .SendAsync();
+
+                if (response.Successful)
                 {
-                    from = "Car777 <onboarding@resend.dev>",
-                    to = new[] { toEmail },
-                    subject = subject,
-                    html = htmlBody
-                };
-
-                var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails")
-                {
-                    Content = JsonContent.Create(payload)
-                };
-
-                request.Headers.Add("Authorization", $"Bearer {_apiKey}");
-
-                var response = await _httpClient.SendAsync(request);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    _logger.LogInformation($"✅ Resend: Email sent to {toEmail}");
+                    _logger.LogInformation($"✅ Email sent to {toEmail}");
                 }
                 else
                 {
-                    var error = await response.Content.ReadAsStringAsync();
-                    _logger.LogError($"❌ Resend failed: {error}");
-                    throw new Exception($"Resend API error: {error}");
+                    _logger.LogError($"❌ Email failed for {toEmail}: {string.Join(", ", response.ErrorMessages)}");
+                    throw new Exception($"Email failed: {string.Join(", ", response.ErrorMessages)}");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"❌ Resend failed for {toEmail}: {ex.Message}");
+                _logger.LogError($"❌ Email failed for {toEmail}: {ex.Message}");
                 throw;
             }
         }
@@ -75,47 +64,31 @@ namespace PublicCarRental.Application.Service.Email
         {
             try
             {
-                var base64Pdf = Convert.ToBase64String(pdfBytes);
-
-                var payload = new
-                {
-                    from = "Car777 <onboarding@resend.dev>",
-                    to = new[] { toEmail },
-                    subject = subject,
-                    html = htmlBody,
-                    attachments = new[]
+                var response = await _fluentEmail
+                    .To(toEmail)
+                    .Subject(subject)
+                    .Body(htmlBody, isHtml: true)
+                    .Attach(new FluentEmail.Core.Models.Attachment
                     {
-                        new
-                        {
-                            filename = fileName,
-                            content = base64Pdf
-                        }
-                    }
-                };
+                        Data = new MemoryStream(pdfBytes),
+                        Filename = fileName,
+                        ContentType = "application/pdf"
+                    })
+                    .SendAsync();
 
-                var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails")
+                if (response.Successful)
                 {
-                    Content = JsonContent.Create(payload)
-                };
-
-                request.Headers.Add("Authorization", $"Bearer {_apiKey}");
-
-                var response = await _httpClient.SendAsync(request);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    _logger.LogInformation($"✅ Resend: Email with PDF sent to {toEmail}");
+                    _logger.LogInformation($"✅ Email with PDF sent to {toEmail}");
                 }
                 else
                 {
-                    var error = await response.Content.ReadAsStringAsync();
-                    _logger.LogError($"❌ Resend with PDF failed: {error}");
-                    throw new Exception($"Resend API error: {error}");
+                    _logger.LogError($"❌ Email with PDF failed for {toEmail}: {string.Join(", ", response.ErrorMessages)}");
+                    throw new Exception($"Email failed: {string.Join(", ", response.ErrorMessages)}");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError($"❌ Resend with PDF failed for {toEmail}: {ex.Message}");
+                _logger.LogError($"❌ Email with PDF failed for {toEmail}: {ex.Message}");
                 throw;
             }
         }

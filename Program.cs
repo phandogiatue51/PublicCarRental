@@ -1,7 +1,5 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -43,12 +41,12 @@ using PublicCarRental.Infrastructure.Helpers;
 using PublicCarRental.Infrastructure.Signal;
 using QuestPDF;
 using QuestPDF.Infrastructure;
-using SendGrid.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using System.Net.Mail;
 using System.Text.Json.Serialization;
 using Task = System.Threading.Tasks.Task;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -190,10 +188,7 @@ builder.Services.AddScoped<IPaymentProcessingService, PaymentProcessingService>(
 builder.Services.AddScoped<IStaffDashboardService, StaffDashboardService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 
-builder.Services.AddSendGrid(options =>
-{
-    options.ApiKey = builder.Configuration["EmailSettings:Password"];
-});
+
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var key = jwtSettings["Key"];
@@ -306,6 +301,18 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+
+var gmailEmail = Environment.GetEnvironmentVariable("GMAIL_EMAIL");
+var gmailPassword = Environment.GetEnvironmentVariable("GMAIL_APP_PASSWORD");
+
+builder.Services.AddFluentEmail(gmailEmail)
+    .AddSmtpSender(new SmtpClient("smtp.gmail.com")
+    {
+        Port = 587,
+        Credentials = new NetworkCredential(gmailEmail, gmailPassword),
+        EnableSsl = true,
+    });
+
 
 var app = builder.Build();
 
