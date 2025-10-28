@@ -8,7 +8,7 @@ import {
   ModalBody,
   ModalCloseButton,
   Button,
-  FormControl,
+  FormControl, HStack,
   FormLabel,
   Textarea,
   Input,
@@ -16,17 +16,17 @@ import {
   Text,
   Image,
   Box,
-  useToast,
+  useToast, Badge,
   Alert,
   AlertIcon,
   Select,
 } from '@chakra-ui/react';
 import { accidentAPI, vehicleAPI } from '../../../services/api';
 
-const VehicleAccidentModal = ({ 
-  isOpen, 
-  onClose, 
-  onSuccess 
+const VehicleAccidentModal = ({
+  isOpen,
+  onClose,
+  onSuccess
 }) => {
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState('');
@@ -94,7 +94,7 @@ const VehicleAccidentModal = ({
       }
 
       setImage(file);
-      
+
       const reader = new FileReader();
       reader.onload = (e) => {
         setImagePreview(e.target.result);
@@ -131,27 +131,27 @@ const VehicleAccidentModal = ({
       formData.append('ImageUrl', image);
 
       const result = await accidentAPI.createVehicleAccident(formData);
-      
+
       if (result.success) {
         toast({
           title: 'Accident Reported',
-          description: 'Vehicle accident report has been submitted successfully.',
+          description: 'Vehicle issue has been submitted successfully.',
           status: 'success',
           duration: 5000,
           isClosable: true,
         });
-        
+
         onSuccess();
         handleClose();
       } else {
-        setError(result.message || 'Failed to submit accident report');
+        setError(result.message || 'Failed to submit vehicle issue');
       }
     } catch (err) {
-      console.error('Error submitting accident report:', err);
-      setError('Failed to submit accident report. Please try again.');
+      console.error('Error submitting vehicle issue:', err);
+      setError('Failed to submit vehicle issue. Please try again.');
       toast({
         title: 'Error',
-        description: 'Failed to submit accident report',
+        description: 'Failed to submit vehicle issue',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -162,111 +162,146 @@ const VehicleAccidentModal = ({
   };
 
   const handleClose = () => {
-  console.log('Closing modal, calling parent onClose...');
-  setSelectedVehicleId('');
-  setDescription('');
-  setImage(null);
-  setImagePreview(null);
-  setError('');
-  setLoading(false);
-  onClose();
-};
+    console.log('Closing modal, calling parent onClose...');
+    setSelectedVehicleId('');
+    setDescription('');
+    setImage(null);
+    setImagePreview(null);
+    setError('');
+    setLoading(false);
+    onClose();
+  };
 
   const getSelectedVehicle = () => {
     return vehicles.find(v => v.vehicleId === parseInt(selectedVehicleId));
   };
 
   const selectedVehicle = getSelectedVehicle();
+  const vehicleStatusMap = [
+    "ToBeRented",    // 0
+    "Renting",       // 1
+    "Charging",      // 2
+    "ToBeCheckup",   // 3
+    "InMaintenance", // 4
+    "Available"      // 5
+  ];
+
+  const getVehicleStatusText = (status) => {
+    const statusText = vehicleStatusMap[status] || "Unknown";
+    return statusText.replace(/([A-Z])/g, ' $1').trim(); // Convert "ToBeRented" to "To Be Rented"
+  };
+
+  const getVehicleStatusColor = (status) => {
+    switch (status) {
+      case 0: return "orange";    // ToBeRented
+      case 1: return "blue";      // Renting
+      case 2: return "yellow";    // Charging
+      case 3: return "purple";    // ToBeCheckup
+      case 4: return "red";       // InMaintenance
+      case 5: return "green";     // Available
+      default: return "gray";
+    }
+  };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} size="3xl">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Report Vehicle Accident</ModalHeader>
+        <ModalHeader>Report Vehicle Issue</ModalHeader>
         <ModalCloseButton />
-        
+
         <ModalBody>
-          <VStack spacing={4} align="stretch">
-            <FormControl isRequired>
-              <FormLabel>Select Vehicle</FormLabel>
-              <Select
-                value={selectedVehicleId}
-                onChange={(e) => setSelectedVehicleId(e.target.value)}
-                placeholder={fetchingVehicles ? "Loading vehicles..." : "Choose a vehicle"}
-                isDisabled={fetchingVehicles}
-              >
-                {vehicles.map(vehicle => (
-                  <option key={vehicle.vehicleId} value={vehicle.vehicleId}>
-                    {vehicle.modelName} - {vehicle.licensePlate} (ID: {vehicle.vehicleId})
-                  </option>
-                ))}
-              </Select>
-              {vehicles.length === 0 && !fetchingVehicles && (
-                <Text fontSize="sm" color="gray.500" mt={1}>
-                  No vehicles found at this station
-                </Text>
+          <HStack spacing={6} align="start">
+            {/* Left Column: Vehicle Info and Description */}
+            <VStack spacing={4} align="stretch" flex={1}>
+              <FormControl isRequired>
+                <FormLabel>Select Vehicle</FormLabel>
+                <Select
+                  value={selectedVehicleId}
+                  onChange={(e) => setSelectedVehicleId(e.target.value)}
+                  placeholder={fetchingVehicles ? "Loading vehicles..." : "Choose a vehicle"}
+                  isDisabled={fetchingVehicles}
+                >
+                  {vehicles.map(vehicle => (
+                    <option key={vehicle.vehicleId} value={vehicle.vehicleId}>
+                      {vehicle.modelName} - {vehicle.licensePlate} (ID: {vehicle.vehicleId})
+                    </option>
+                  ))}
+                </Select>
+                {vehicles.length === 0 && !fetchingVehicles && (
+                  <Text fontSize="sm" color="gray.500" mt={1}>
+                    No vehicles found at this station
+                  </Text>
+                )}
+              </FormControl>
+
+              {selectedVehicle && (
+                <Box p={3} bg="gray.50" borderRadius="md">
+                  <Text fontWeight="bold">Vehicle Details</Text>
+                  <Text>Model: {selectedVehicle.modelName}</Text>
+                  <Text>License Plate: {selectedVehicle.licensePlate}</Text>
+                  <Text>Battery: {selectedVehicle.batteryLevel}%</Text>
+                  <Text>
+                    Status: <Badge colorScheme={getVehicleStatusColor(selectedVehicle.status)}>
+                      {getVehicleStatusText(selectedVehicle.status)}
+                    </Badge>
+                  </Text>
+                </Box>
               )}
-            </FormControl>
 
-            {selectedVehicle && (
-              <Box p={3} bg="gray.50" borderRadius="md">
-                <Text fontWeight="bold">Vehicle Details</Text>
-                <Text>Model: {selectedVehicle.modelName}</Text>
-                <Text>License Plate: {selectedVehicle.licensePlate}</Text>
-                <Text>Battery: {selectedVehicle.batteryLevel}%</Text>
-                <Text>Status: {selectedVehicle.status}</Text>
-              </Box>
-            )}
+              {error && (
+                <Alert status="error">
+                  <AlertIcon />
+                  {error}
+                </Alert>
+              )}
 
-            {error && (
-              <Alert status="error">
-                <AlertIcon />
-                {error}
-              </Alert>
-            )}
-
-            <FormControl>
-              <FormLabel>Accident Description (Optional)</FormLabel>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the accident details, damage, location, etc."
-                size="sm"
-                resize="vertical"
-                rows={3}
-              />
-            </FormControl>
-
-            <FormControl isRequired>
-              <FormLabel>Accident Image</FormLabel>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                size="sm"
-              />
-              <Text fontSize="sm" color="gray.600" mt={1}>
-                Please upload a clear photo showing the damage (max 5MB)
-              </Text>
-            </FormControl>
-
-            {imagePreview && (
-              <Box>
-                <Text fontSize="sm" fontWeight="medium" mb={2}>
-                  Image Preview:
-                </Text>
-                <Image
-                  src={imagePreview}
-                  alt="Accident preview"
-                  maxH="200px"
-                  objectFit="contain"
-                  borderRadius="md"
-                  border="1px"
-                  borderColor="gray.200"
+              <FormControl>
+                <FormLabel>Accident Description (Optional)</FormLabel>
+                <Textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe the issue details, damage, etc."
+                  size="sm"
+                  resize="vertical"
+                  rows={3}
                 />
-              </Box>
-            )}
-          </VStack>
+              </FormControl>
+            </VStack>
+
+            {/* Right Column: Image Upload and Preview */}
+            <VStack spacing={4} align="stretch" flex={1}>
+              <FormControl isRequired>
+                <FormLabel>Image</FormLabel>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  size="sm"
+                />
+                <Text fontSize="sm" color="gray.600" mt={1}>
+                  Please upload a clear photo showing the damage (max 5MB)
+                </Text>
+              </FormControl>
+
+              {imagePreview && (
+                <Box>
+                  <Text fontSize="sm" fontWeight="medium" mb={2}>
+                    Image Preview:
+                  </Text>
+                  <Image
+                    src={imagePreview}
+                    alt="Accident preview"
+                    maxH="200px"
+                    objectFit="contain"
+                    borderRadius="md"
+                    border="1px"
+                    borderColor="gray.200"
+                  />
+                </Box>
+              )}
+            </VStack>
+          </HStack>
         </ModalBody>
 
         <ModalFooter>
@@ -280,7 +315,7 @@ const VehicleAccidentModal = ({
             isDisabled={!selectedVehicleId || !image}
             loadingText="Submitting..."
           >
-            Report Accident
+            Report Issue
           </Button>
         </ModalFooter>
       </ModalContent>

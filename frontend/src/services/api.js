@@ -568,50 +568,48 @@ export const accidentAPI = {
     const data = await apiRequest(`/Accident/${id}`);
     return data;
   },
+  
+createVehicleAccident: async (formData) => {
+  try {
+    const response = await apiRequest('/Accident/vehicle-report', {
+      method: 'POST',
+      body: formData,
+    });
 
-    createVehicleAccident: async (formData) => {
-    try {
-      const response = await fetch(`${BASE_URL}/Accident/vehicle-report`, {
-        method: 'POST',
-        body: formData,
-      });
+    console.log('Vehicle accident response:', response);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const responseText = await response.text();
-      console.log('Vehicle accident raw response:', responseText);
-
-      // Since backend returns plain text, assume success if we get a 200 response
-      return { success: true, message: responseText };
-    } catch (error) {
-      console.error('Vehicle accident API call failed:', error);
-      throw error;
+    // Handle the actual response structure from your backend
+    if (response && response.status === 200) {
+      return { success: true, message: response.message };
     }
-  },
+    
+    return { success: false, message: response.message || 'Unknown error' };
+  } catch (error) {
+    console.error('Vehicle accident API call failed:', error);
+    throw error;
+  }
+},
 
-  createContractAccident: async (formData) => {
-    try {
-      const response = await fetch(`${BASE_URL}/Accident/contract-report`, {
-        method: 'POST',
-        body: formData,
-      });
+createContractAccident: async (formData) => {
+  try {
+    const response = await apiRequest('/Accident/contract-report', {
+      method: 'POST',
+      body: formData,
+    });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+    console.log('Contract accident response:', response);
 
-      const responseText = await response.text();
-      console.log('Contract accident raw response:', responseText);
-
-      // Since backend returns plain text, assume success if we get a 200 response
-      return { success: true, message: responseText };
-    } catch (error) {
-      console.error('Contract accident API call failed:', error);
-      throw error;
+    // Handle the actual response structure from your backend
+    if (response && response.status === 200) {
+      return { success: true, message: response.message };
     }
-  },
+    
+    return { success: false, message: response.message || 'Unknown error' };
+  } catch (error) {
+    console.error('Contract accident API call failed:', error);
+    throw error;
+  }
+},
 
   deleteAcc: (id) => apiRequest(`/Accident/${id}`, {
     method: 'DELETE',

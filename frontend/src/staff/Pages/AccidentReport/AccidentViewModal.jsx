@@ -1,16 +1,22 @@
 import {
-  Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, 
-  ModalBody, ModalCloseButton, Button, VStack, Text, 
+  Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter,
+  ModalBody, ModalCloseButton, Button, VStack, Text,
   Box, Badge, HStack, Divider, Image, Grid, Alert, AlertIcon,
-  Spinner
+  Spinner, Select, FormControl, FormLabel, useToast // ADD THESE IMPORTS
 } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
 import { accidentAPI } from '../../../services/api';
 
-export default function AccidentViewModal({ isOpen, onClose, accident }) {
+export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess }) { // ADD onSuccess prop
   const [accidentDetails, setAccidentDetails] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [updating, setUpdating] = useState(false); // ADD updating state
   const [error, setError] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState(''); // ADD status state
+  const toast = useToast();
+
+  // CHECK IF USER IS ADMIN
+  const isAdmin = localStorage.getItem("isAdmin") === "true";
 
   useEffect(() => {
     if (isOpen && accident?.accidentId) {
@@ -20,13 +26,14 @@ export default function AccidentViewModal({ isOpen, onClose, accident }) {
 
   const fetchAccidentDetails = async () => {
     if (!accident) return;
-    
+
     setLoading(true);
     setError('');
-    
+
     try {
       const details = await accidentAPI.getById(accident.accidentId);
       setAccidentDetails(details);
+      setSelectedStatus(details.status); // SET INITIAL STATUS
     } catch (err) {
       console.error('Error fetching accident details:', err);
       setError('Failed to load accident details');
@@ -35,11 +42,48 @@ export default function AccidentViewModal({ isOpen, onClose, accident }) {
     }
   };
 
+  // ADD STATUS UPDATE HANDLER
+  const handleStatusUpdate = async () => {
+    if (!accidentDetails || !selectedStatus) return;
+
+    setUpdating(true);
+    setError('');
+
+    try {
+      await accidentAPI.updateAccStatus(accidentDetails.accidentId, parseInt(selectedStatus));
+      
+      toast({
+        title: 'Status Updated',
+        description: 'Issue status has been updated successfully.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+
+      if (onSuccess) {
+        onSuccess(); // Refresh the parent list
+      }
+      handleClose();
+    } catch (err) {
+      console.error('Error updating status:', err);
+      setError('Failed to update status');
+      toast({
+        title: 'Error',
+        description: 'Failed to update accident status',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const getStatusColor = (status) => {
-    const statusValue = typeof status === 'number' 
-      ? mapStatusNumberToString(status) 
+    const statusValue = typeof status === 'number'
+      ? mapStatusNumberToString(status)
       : status;
-    
+
     const colors = {
       'Reported': 'blue',
       'UnderInvestigation': 'orange',
@@ -64,32 +108,34 @@ export default function AccidentViewModal({ isOpen, onClose, accident }) {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
-      hour: '2-digit', minute: '2-digit' 
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {
+      hour: '2-digit', minute: '2-digit'
     });
   };
 
   const handleClose = () => {
     setAccidentDetails(null);
+    setSelectedStatus('');
     setError('');
     setLoading(false);
+    setUpdating(false);
     onClose();
   };
 
   if (!accident) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="xl" isCentered>
+    <Modal isOpen={isOpen} onClose={handleClose} size="5xl" isCentered>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Accident Report Details</ModalHeader>
+        <ModalHeader>Issue Report Details</ModalHeader>
         <ModalCloseButton />
-        
+
         <ModalBody>
           {loading && (
             <Box textAlign="center" py={8}>
               <Spinner size="xl" />
-              <Text mt={4}>Loading accident details...</Text>
+              <Text mt={4}>Loading issue details...</Text>
             </Box>
           )}
 
@@ -101,81 +147,105 @@ export default function AccidentViewModal({ isOpen, onClose, accident }) {
           )}
 
           {accidentDetails && !loading && (
-            <VStack spacing={4} align="stretch">
-              {/* Header Information */}
-              <Box p={4} bg="blue.50" borderRadius="md">
-                <Grid templateColumns="1fr auto" gap={4} alignItems="center">
-                  <Box>
-                    <Text fontWeight="bold" fontSize="xl">
-                      Accident Report #{accidentDetails.accidentId}
-                    </Text>
-                    <Text color="gray.600">
-                      Reported on {formatDate(accidentDetails.reportedAt)}
-                    </Text>
-                  </Box>
-                  <Badge 
-                    colorScheme={getStatusColor(accidentDetails.status)}
-                    fontSize="md"
-                    px={3}
-                    py={2}
-                    borderRadius="full"
-                  >
-                    {mapStatusNumberToString(accidentDetails.status).replace(/([A-Z])/g, ' $1').trim()}
-                  </Badge>
-                </Grid>
-              </Box>
-
-              <Divider />
-
-              {/* Vehicle and Contract Information */}
-              <Box p={4} border="1px" borderColor="gray.200" borderRadius="md">
-                <Text fontWeight="bold" fontSize="lg" mb={3}>Vehicle Information</Text>
-                <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                  <Box>
-                    <Text><strong>Vehicle ID:</strong> VEH-{accidentDetails.vehicleId}</Text>
-                    <Text><strong>Location:</strong> {accidentDetails.location || 'Not specified'}</Text>
-                  </Box>
-                  <Box>
-                    <Text><strong>Contract ID:</strong> {accidentDetails.contractId ? `CONT-${accidentDetails.contractId}` : 'N/A'}</Text>
-                    <Text><strong>Staff ID:</strong> {accidentDetails.staffId || 'Not specified'}</Text>
-                  </Box>
-                </Grid>
-              </Box>
-
-              {/* Accident Description */}
-              <Box p={4} border="1px" borderColor="gray.200" borderRadius="md">
-                <Text fontWeight="bold" fontSize="lg" mb={3}>Accident Details</Text>
-                <Text>
-                  {accidentDetails.description || 'No description provided'}
-                </Text>
-              </Box>
-
-              {/* Accident Image */}
-              {accidentDetails.imageUrl && (
-                <Box p={4} border="1px" borderColor="gray.200" borderRadius="md">
-                  <Text fontWeight="bold" fontSize="lg" mb={3}>Accident Evidence</Text>
-                  <Image
-                    src={accidentDetails.imageUrl}
-                    alt="Accident damage"
-                    maxH="400px"
-                    objectFit="contain"
-                    borderRadius="md"
-                    mx="auto"
-                    border="1px"
-                    borderColor="gray.200"
-                  />
+            <HStack spacing={6} align="start">
+              {/* Left Column: Textual Details */}
+              <VStack spacing={4} align="stretch" flex={1}>
+                {/* Report Header */}
+                <Box p={4} bg="blue.50" borderRadius="md">
+                  <Grid templateColumns="1fr auto" gap={4} alignItems="center">
+                    <Box>
+                      <Text fontWeight="bold" fontSize="xl">
+                        Issue Report #{accidentDetails.accidentId}
+                      </Text>
+                      <Text color="gray.600">
+                        Reported on {formatDate(accidentDetails.reportedAt)}
+                      </Text>
+                    </Box>
+                    <Badge
+                      colorScheme={getStatusColor(accidentDetails.status)}
+                      fontSize="md"
+                      px={3}
+                      py={2}
+                      borderRadius="full"
+                    >
+                      {mapStatusNumberToString(accidentDetails.status).replace(/([A-Z])/g, ' $1').trim()}
+                    </Badge>
+                  </Grid>
                 </Box>
-              )}
 
-              {/* Report Summary */}
-              <Box p={4} bg="gray.50" borderRadius="md">
-                <Text fontWeight="bold" mb={2}>Report Summary</Text>
-                <Grid templateColumns="repeat(2, 1fr)" gap={2}>
-                  <Text><strong>Report Type:</strong> {accidentDetails.contractId ? 'Contract Accident' : 'Vehicle Accident'}</Text>
-                  <Text><strong>Reported At:</strong> {formatDate(accidentDetails.reportedAt)}</Text>
-                </Grid>
-              </Box>
-            </VStack>
+                <Divider />
+
+                {/* ADMIN STATUS UPDATE SECTION */}
+                {isAdmin && (
+                  <Box p={4} border="1px" borderColor="blue.200" borderRadius="md" bg="blue.50">
+                    <Text fontWeight="bold" fontSize="lg" mb={3}>Update Status (Admin)</Text>
+                    <FormControl>
+                      <FormLabel>Change Status</FormLabel>
+                      <Select
+                        value={selectedStatus}
+                        onChange={(e) => setSelectedStatus(e.target.value)}
+                        placeholder="Select status"
+                      >
+                        <option value={0}>Reported</option>
+                        <option value={1}>Under Investigation</option>
+                        <option value={2}>Repair Approved</option>
+                        <option value={3}>Under Repair</option>
+                        <option value={4}>Repaired</option>
+                      </Select>
+                    </FormControl>
+                  </Box>
+                )}
+
+                {/* Vehicle Info */}
+                <Box p={4} border="1px" borderColor="gray.200" borderRadius="md">
+                  <Text fontWeight="bold" fontSize="lg" mb={3}>Vehicle Information</Text>
+                  <Grid templateColumns="repeat(2, 1fr)" gap={4}>
+                    <Box>
+                      <Text><strong>License Plate:</strong> {accidentDetails.licensePlate}</Text>
+                      <Text><strong>Location:</strong> {accidentDetails.location || 'Not specified'}</Text>
+                    </Box>
+                    <Box>
+                      <Text><strong>Contract ID:</strong> {accidentDetails.contractId ? accidentDetails.contractId : 'N/A'}</Text>
+                      <Text><strong>Staff:</strong> {accidentDetails.staffName || 'Not specified'}</Text>
+                    </Box>
+                  </Grid>
+                </Box>
+
+                {/* Description */}
+                <Box p={4} border="1px" borderColor="gray.200" borderRadius="md">
+                  <Text fontWeight="bold" fontSize="lg" mb={3}>Description</Text>
+                  <Text>{accidentDetails.description || 'No description provided'}</Text>
+                </Box>
+              </VStack>
+
+              {/* Right Column: Image + Summary */}
+              <VStack spacing={4} align="stretch" flex={1}>
+                {/* Accident Image */}
+                {accidentDetails.imageUrl && (
+                  <Box border="1px" borderColor="gray.200" borderRadius="md">
+                    <Image
+                      src={accidentDetails.imageUrl}
+                      alt="Accident damage"
+                      maxH="400px"
+                      objectFit="contain"
+                      borderRadius="md"
+                      mx="auto"
+                      border="1px"
+                      borderColor="gray.200"
+                    />
+                  </Box>
+                )}
+
+                {/* Report Summary */}
+                <Box p={4} bg="gray.50" borderRadius="md">
+                  <Text fontWeight="bold" mb={2}>Report Summary</Text>
+                  <Grid templateColumns="repeat(2, 1fr)" gap={2}>
+                    <Text><strong>Report Type:</strong> {accidentDetails.contractId ? 'Contract Issue' : 'Vehicle Issue'}</Text>
+                    <Text><strong>Reported At:</strong> {formatDate(accidentDetails.reportedAt)}</Text>
+                  </Grid>
+                </Box>
+              </VStack>
+            </HStack>
           )}
 
           {!accidentDetails && !loading && !error && (
@@ -186,9 +256,20 @@ export default function AccidentViewModal({ isOpen, onClose, accident }) {
         </ModalBody>
 
         <ModalFooter>
-          <Button colorScheme="blue" onClick={handleClose}>
+          <Button variant="outline" mr={3} onClick={handleClose}>
             Close
           </Button>
+          {/* SHOW UPDATE BUTTON ONLY FOR ADMINS */}
+          {isAdmin && accidentDetails && (
+            <Button
+              colorScheme="blue"
+              onClick={handleStatusUpdate}
+              isLoading={updating}
+              isDisabled={!selectedStatus || selectedStatus === accidentDetails.status.toString()}
+            >
+              Update Status
+            </Button>
+          )}
         </ModalFooter>
       </ModalContent>
     </Modal>

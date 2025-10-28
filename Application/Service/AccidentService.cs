@@ -5,6 +5,7 @@ using PublicCarRental.Application.Service.Image;
 using PublicCarRental.Application.Service.Rabbit;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Cont;
+using PublicCarRental.Infrastructure.Data.Repository.Staf;
 using PublicCarRental.Infrastructure.Data.Repository.Vehi;
 using System.Linq.Expressions;
 
@@ -17,32 +18,43 @@ namespace PublicCarRental.Application.Service
         private readonly IVehicleRepository _vehicleRepository;
         private readonly IContractRepository _contractRepository;
         private readonly AccidentEventProducerService _accidentEventProducerService;
+        private readonly IStaffRepository _staffRepository;
 
         public AccidentService(IAccidentRepository accidentRepository, IImageStorageService imageStorageService,
-            IVehicleRepository vehicleRepository, IContractRepository contractRepository, AccidentEventProducerService accidentEventProducerService)
+            IVehicleRepository vehicleRepository, IContractRepository contractRepository, 
+            AccidentEventProducerService accidentEventProducerService, IStaffRepository staffRepository)
         {
             _accidentRepository = accidentRepository;
             _imageStorageService = imageStorageService;
             _vehicleRepository = vehicleRepository;
             _contractRepository = contractRepository;
             _accidentEventProducerService = accidentEventProducerService;
+            _staffRepository = staffRepository;
         }
 
         public async Task<IEnumerable<AccidentDto>> GetAllAsync()
         {
-            return _accidentRepository.GetAll()
-                 .Select(m => new AccidentDto
-                 {
-                     AccidentId = m.AccidentId,
-                     VehicleId = m.VehicleId,
-                     ContractId = m.ContractId,
-                     StaffId = m.StaffId,
-                     Description = m.Description,
-                     StationId = m.Vehicle.StationId,
-                     Location = m.Vehicle.Station.Name,
-                     ImageUrl = m.ImageUrl,
-                     Status = m.Status
-                 }).ToList();
+            var accidents = _accidentRepository.GetAll().ToList();
+            var staffs = _staffRepository.GetAll()
+                .Where(s => s.Account != null)
+                .ToDictionary(s => s.StaffId, s => s.Account.FullName);
+
+            return accidents.Select(m => new AccidentDto
+            {
+                AccidentId = m.AccidentId,
+                VehicleId = m.VehicleId,
+                LicensePlate = m.Vehicle.LicensePlate,
+                ContractId = m.ContractId,
+                StaffId = m.StaffId,
+                StaffName = m.StaffId.HasValue && staffs.ContainsKey(m.StaffId.Value)
+                    ? staffs[m.StaffId.Value]
+                    : null,
+                Description = m.Description,
+                StationId = m.Vehicle.StationId,
+                Location = m.Vehicle.Station.Name,
+                ImageUrl = m.ImageUrl,
+                Status = m.Status
+            }).ToList();
         }
 
         public async Task<AccidentDto?> GetByIdAsync(int id)
@@ -52,12 +64,15 @@ namespace PublicCarRental.Application.Service
 
             if (acc == null) return null;
 
+            var staff = _staffRepository.GetById((int)acc.StaffId);
             return new AccidentDto
             {
                 AccidentId = acc.AccidentId,
                 VehicleId = acc.VehicleId,
+                LicensePlate = acc.Vehicle.LicensePlate,
                 ContractId = acc.ContractId,
                 StaffId = acc.StaffId,
+                StaffName = staff.Account.FullName,
                 Description = acc.Description,
                 StationId = acc.Vehicle.StationId,
                 Location = acc.Vehicle.Station.Name,
@@ -200,6 +215,7 @@ namespace PublicCarRental.Application.Service
                 .Select(a => new AccidentDto
                 {
                     AccidentId = a.AccidentId,
+                    LicensePlate = a.Vehicle.LicensePlate,
                     VehicleId = a.VehicleId,
                     ContractId = a.ContractId,
                     StaffId = a.StaffId,
