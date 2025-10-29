@@ -26,7 +26,8 @@ import { accidentAPI, contractAPI } from '../../../services/api';
 const ContractAccidentModal = ({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  contract
 }) => {
   const [contracts, setContracts] = useState([]);
   const [selectedContractId, setSelectedContractId] = useState('');
@@ -42,10 +43,12 @@ const ContractAccidentModal = ({
   const stationId = parseInt(localStorage.getItem('stationId'));
 
   useEffect(() => {
-    if (isOpen && stationId) {
+    if (isOpen && contract) {
+      setSelectedContractId(contract.contractId);
+    } else if (isOpen && stationId) {
       fetchContracts();
     }
-  }, [isOpen, stationId]);
+  }, [isOpen, contract, stationId]);
 
   const fetchContracts = async () => {
     setFetchingContracts(true);
@@ -231,8 +234,14 @@ const ContractAccidentModal = ({
                 <Select
                   value={selectedContractId}
                   onChange={(e) => setSelectedContractId(e.target.value)}
-                  placeholder={fetchingContracts ? "Loading contracts..." : "Choose a contract"}
-                  isDisabled={fetchingContracts}
+                  placeholder={
+                    contract
+                      ? `Contract #${contract.contractId} - ${contract.vehicleLicensePlate}`
+                      : fetchingContracts
+                        ? "Loading contracts..."
+                        : "Choose a contract"
+                  }
+                  isDisabled={!!contract || fetchingContracts} // Disable if contract is passed
                 >
                   {contracts.map(contract => (
                     <option key={contract.contractId} value={contract.contractId}>
@@ -240,7 +249,8 @@ const ContractAccidentModal = ({
                     </option>
                   ))}
                 </Select>
-                {contracts.length === 0 && !fetchingContracts && (
+
+                {contracts.length === 0 && !fetchingContracts && !contract && (
                   <Text fontSize="sm" color="gray.500" mt={1}>
                     No contracts found at this station
                   </Text>

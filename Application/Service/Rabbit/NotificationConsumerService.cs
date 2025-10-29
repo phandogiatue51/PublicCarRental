@@ -118,6 +118,10 @@ namespace PublicCarRental.Application.Service.Rabbit
                                             var bookingConfirmed = JsonSerializer.Deserialize<BookingConfirmedEvent>(messageJson);
                                             await ProcessBookingConfirmedNotificationAsync(hubContext, bookingConfirmed);
                                             break;
+                                        case "VehicleReady": 
+                                            var vehicleReady = JsonSerializer.Deserialize<VehicleReadyEvent>(messageJson);
+                                            await ProcessVehicleReadyAsync(hubContext, vehicleReady);
+                                            break;
                                         default:
                                             _logger.LogWarning("Unhandled EventType: {EventType}", eventType);
                                             break;
@@ -231,5 +235,24 @@ namespace PublicCarRental.Application.Service.Rabbit
 
             _logger.LogInformation("Booking confirmed notification sent for booking {BookingId}", bookingEvent.BookingId);
         }
+
+        private async Task ProcessVehicleReadyAsync(IHubContext<NotificationHub> hubContext, VehicleReadyEvent vehicleEvent)
+        {
+            if (vehicleEvent == null) return;
+
+            await hubContext.Clients.Group($"station-{vehicleEvent.StationId}")
+                .SendAsync("ReceiveVehicleReadyNotification", new
+                {
+                    Type = "VehicleReadyForPickup",
+                    VehicleId = vehicleEvent.VehicleId,
+                    LicensePlate = vehicleEvent.LicensePlate,
+                    StationId = vehicleEvent.StationId,
+                    Message = $"Vehicle {vehicleEvent.LicensePlate} has been repaired and is ready for pickup",
+                    Timestamp = vehicleEvent.ReadyAt
+                });
+
+            _logger.LogInformation("📢 Vehicle ready notification sent to station {StationId}", vehicleEvent.StationId);
+        }
+
     }
 }

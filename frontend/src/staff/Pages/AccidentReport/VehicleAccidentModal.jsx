@@ -26,10 +26,11 @@ import { accidentAPI, vehicleAPI } from '../../../services/api';
 const VehicleAccidentModal = ({
   isOpen,
   onClose,
-  onSuccess
+  onSuccess,
+  vehicle
 }) => {
   const [vehicles, setVehicles] = useState([]);
-  const [selectedVehicleId, setSelectedVehicleId] = useState('');
+  const [selectedVehicleId, setSelectedVehicleId] = useState(vehicle?.vehicleId || '');
   const [description, setDescription] = useState('');
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -42,10 +43,22 @@ const VehicleAccidentModal = ({
   const stationId = parseInt(localStorage.getItem('stationId'));
 
   useEffect(() => {
-    if (isOpen && stationId) {
-      fetchVehicles();
+    if (isOpen) {
+      if (vehicle) {
+        setSelectedVehicleId(vehicle.vehicleId);
+      } else if (stationId) {
+        fetchVehicles();
+      }
     }
-  }, [isOpen, stationId]);
+  }, [isOpen, vehicle, stationId]);
+
+  useEffect(() => {
+    if (vehicle) {
+      setSelectedVehicleId(vehicle.vehicleId);
+    }
+  }, [vehicle]);
+
+  const isVehicleSelectorDisabled = !!vehicle || fetchingVehicles;
 
   const fetchVehicles = async () => {
     setFetchingVehicles(true);
@@ -219,8 +232,14 @@ const VehicleAccidentModal = ({
                 <Select
                   value={selectedVehicleId}
                   onChange={(e) => setSelectedVehicleId(e.target.value)}
-                  placeholder={fetchingVehicles ? "Loading vehicles..." : "Choose a vehicle"}
-                  isDisabled={fetchingVehicles}
+                  placeholder={
+                    vehicle
+                      ? `${vehicle.modelName} - ${vehicle.licensePlate}`
+                      : fetchingVehicles
+                        ? "Loading vehicles..."
+                        : "Choose a vehicle"
+                  }
+                  isDisabled={isVehicleSelectorDisabled}
                 >
                   {vehicles.map(vehicle => (
                     <option key={vehicle.vehicleId} value={vehicle.vehicleId}>
@@ -228,22 +247,23 @@ const VehicleAccidentModal = ({
                     </option>
                   ))}
                 </Select>
-                {vehicles.length === 0 && !fetchingVehicles && (
+          
+                {vehicles.length === 0 && !fetchingVehicles && !vehicle && (
                   <Text fontSize="sm" color="gray.500" mt={1}>
                     No vehicles found at this station
                   </Text>
                 )}
               </FormControl>
 
-              {selectedVehicle && (
+              {(selectedVehicle || vehicle) && (
                 <Box p={3} bg="gray.50" borderRadius="md">
                   <Text fontWeight="bold">Vehicle Details</Text>
-                  <Text>Model: {selectedVehicle.modelName}</Text>
-                  <Text>License Plate: {selectedVehicle.licensePlate}</Text>
-                  <Text>Battery: {selectedVehicle.batteryLevel}%</Text>
+                  <Text>Model: {(selectedVehicle || vehicle).modelName}</Text>
+                  <Text>License Plate: {(selectedVehicle || vehicle).licensePlate}</Text>
+                  <Text>Battery: {(selectedVehicle || vehicle).batteryLevel}%</Text>
                   <Text>
-                    Status: <Badge colorScheme={getVehicleStatusColor(selectedVehicle.status)}>
-                      {getVehicleStatusText(selectedVehicle.status)}
+                    Status: <Badge colorScheme={getVehicleStatusColor((selectedVehicle || vehicle).status)}>
+                      {getVehicleStatusText((selectedVehicle || vehicle).status)}
                     </Badge>
                   </Text>
                 </Box>

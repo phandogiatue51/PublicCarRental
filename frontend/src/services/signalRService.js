@@ -6,19 +6,10 @@ class SignalRService {
         this.notificationHandlers = [];
     }
 
-    // getBackendUrl() {
-    //     if (window.location.hostname === 'localhost') {
-    //         return 'https://localhost:7230';
-    //     } else {
-    //         return 'https://publiccarrental-production-b7c5.up.railway.app';
-    //     }
-    // }
-
     getBackendUrl() {
         return 'https://publiccarrental-production-b7c5.up.railway.app';
     }
 
-    // NEW: Get user data from JWT token (same as your useAuth hook)
     getCurrentUser() {
         const token = localStorage.getItem("jwtToken");
         if (!token) return null;
@@ -90,6 +81,15 @@ class SignalRService {
                 
                 this.notifyHandlers({
                     type: 'BookingConfirmed',
+                    ...notification 
+                });
+            });
+
+            this.connection.off('ReceiveVehicleReadyNotification');
+            this.connection.on('ReceiveVehicleReadyNotification', (notification) => {
+                console.log('🚗 Raw vehicle ready notification from server:', notification);
+                this.notifyHandlers({
+                    type: 'VehicleReadyForPickup',
                     ...notification 
                 });
             });

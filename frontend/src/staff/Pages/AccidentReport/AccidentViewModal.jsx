@@ -51,7 +51,7 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
 
     try {
       await accidentAPI.updateAccStatus(accidentDetails.accidentId, parseInt(selectedStatus));
-      
+
       toast({
         title: 'Status Updated',
         description: 'Issue status has been updated successfully.',
@@ -123,7 +123,31 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
   };
 
   if (!accident) return null;
+  const getNextStatusOptions = (currentStatus) => {
+    const statusOptions = [
+      { value: 0, label: 'Reported' },
+      { value: 1, label: 'Under Investigation' },
+      { value: 2, label: 'Repair Approved' },
+      { value: 3, label: 'Under Repair' },
+      { value: 4, label: 'Repaired' }
+    ];
 
+    switch (currentStatus) {
+      case 0: // Reported
+        return statusOptions.filter(opt => opt.value === 1 || opt.value === 2); // UnderInvestigation or RepairApproved
+      case 1: // UnderInvestigation
+        return statusOptions.filter(opt => opt.value === 2); // RepairApproved
+      case 2: // RepairApproved
+        return statusOptions.filter(opt => opt.value === 3); // UnderRepair
+      case 3: // UnderRepair
+        return statusOptions.filter(opt => opt.value === 4); // Repaired
+      case 4: // Repaired
+        return []; // No further status changes
+      default:
+        return statusOptions;
+    }
+  };
+  
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="5xl" isCentered>
       <ModalOverlay />
@@ -175,7 +199,6 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
 
                 <Divider />
 
-                {/* ADMIN STATUS UPDATE SECTION */}
                 {isAdmin && (
                   <Box p={4} border="1px" borderColor="blue.200" borderRadius="md" bg="blue.50">
                     <Text fontWeight="bold" fontSize="lg" mb={3}>Update Status (Admin)</Text>
@@ -184,19 +207,18 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
                       <Select
                         value={selectedStatus}
                         onChange={(e) => setSelectedStatus(e.target.value)}
-                        placeholder="Select status"
+                        placeholder="Select next status"
                       >
-                        <option value={0}>Reported</option>
-                        <option value={1}>Under Investigation</option>
-                        <option value={2}>Repair Approved</option>
-                        <option value={3}>Under Repair</option>
-                        <option value={4}>Repaired</option>
+                        {getNextStatusOptions(accidentDetails.status).map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
                       </Select>
                     </FormControl>
                   </Box>
                 )}
 
-                {/* Vehicle Info */}
                 <Box p={4} border="1px" borderColor="gray.200" borderRadius="md">
                   <Text fontWeight="bold" fontSize="lg" mb={3}>Vehicle Information</Text>
                   <Grid templateColumns="repeat(2, 1fr)" gap={4}>

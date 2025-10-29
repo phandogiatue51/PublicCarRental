@@ -5,7 +5,7 @@ import initialTheme from '../admin/theme/theme';
 import StaffLayout from './layouts/StaffLayout';
 import StaffDashboard from './Pages/StaffDashboard';
 import RenterList from './Pages/RenterList';
-import VehicleList from './Pages/VehicleList';
+import VehicleList from './Pages/Vehicle/VehicleList';
 import ContractList from './Pages/Contract/ContractList';
 import InvoiceList from './Pages/InvoiceList';
 import ModelList from './Pages/ModelList';

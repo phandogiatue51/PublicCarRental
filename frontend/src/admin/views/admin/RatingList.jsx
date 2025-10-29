@@ -4,8 +4,8 @@ import {
   Input, Select, Card, Spinner, Alert, AlertIcon, useDisclosure,
   Icon, useColorModeValue, Flex, Tooltip, AlertTitle, AlertDescription
 } from '@chakra-ui/react';
-import { 
-  MdSearch, MdFilterList, MdAssignment, MdRefresh
+import {
+  MdSearch, MdFilterList, MdAssignment, MdRefresh, MdDelete
 } from 'react-icons/md';
 import { ratingsAPI, contractAPI } from '../../../services/api';
 
@@ -51,10 +51,10 @@ export default function RatingList() {
   // Filter ratings based on criteria
   const filteredRatings = useMemo(() => {
     return ratings.filter(rating => {
-      const matchesSearch = !filters.search || 
+      const matchesSearch = !filters.search ||
         rating.renterName?.toLowerCase().includes(filters.search.toLowerCase()) ||
         rating.comment?.toLowerCase().includes(filters.search.toLowerCase());
-      
+
       const matchesStar = !filters.starRating || rating.stars == filters.starRating;
       const matchesModel = !filters.modelId || rating.modelId == filters.modelId;
       const matchesRenter = !filters.renterId || rating.renterId == filters.renterId;
@@ -90,6 +90,18 @@ export default function RatingList() {
     } catch (err) {
       console.error('Error fetching contract:', err);
       setError('Failed to load contract details');
+    }
+  };
+
+  const handleDeleteRating = async (ratingId) => {
+    if (window.confirm('Are you sure you want to delete this rating?')) {
+      try {
+        await ratingsAPI.delete(ratingId);
+        await fetchRatings(); // Refresh the list
+      } catch (err) {
+        console.error('Error deleting rating:', err);
+        setError('Failed to delete rating');
+      }
     }
   };
 
@@ -154,7 +166,7 @@ export default function RatingList() {
             Filter Ratings
           </Text>
         </Flex>
-        
+
         <HStack spacing={4} alignItems="flex-end">
           {/* Search */}
           <Box flex="1">
@@ -264,9 +276,9 @@ export default function RatingList() {
                 </Td>
                 <Td borderColor="transparent">
                   <Tooltip label={rating.comment || 'No comment'} hasArrow>
-                    <Text 
-                      maxW="300px" 
-                      noOfLines={2} 
+                    <Text
+                      maxW="300px"
+                      noOfLines={2}
                       color={textColor}
                     >
                       {rating.comment || 'No comment'}
@@ -287,6 +299,15 @@ export default function RatingList() {
                       onClick={() => handleViewContract(rating.contractId)}
                     >
                       View Contract
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      colorScheme="red"
+                      leftIcon={<Icon as={MdDelete} />}
+                      onClick={() => handleDeleteRating(rating.ratingId)}
+                    >
+                      Delete
                     </Button>
                   </HStack>
                 </Td>

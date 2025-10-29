@@ -50,5 +50,24 @@ namespace PublicCarRental.Application.Service.Rabbit
             _logger.LogWarning("🚨 AccidentReported event published to {QueueName} for accident {AccidentId}",
                 _rabbitMqSettings.QueueNames.AccidentQueue, accident.AccidentId);
         }
+        public async Task PublishVehicleReadyAsync(AccidentReport accident)
+        {
+            var vehicleReadyEvent = new VehicleReadyEvent
+            {
+                AccidentId = accident.AccidentId,
+                VehicleId = accident.VehicleId,
+                LicensePlate = accident.Vehicle?.LicensePlate ?? "Unknown",
+                StationId = accident.Vehicle?.StationId ?? 0
+            };
+
+            await _messageProducer.PublishMessageAsync(
+                vehicleReadyEvent,
+                _rabbitMqSettings.QueueNames.NotificationQueue 
+            );
+
+            _logger.LogInformation("🚗 VehicleReady event published for vehicle {VehicleId} at station {StationId}",
+                accident.VehicleId, accident.Vehicle?.StationId);
+        }
+
     }
 }

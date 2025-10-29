@@ -49,6 +49,17 @@ const StaffLayout = () => {
                     position: "top-right"
                 });
             }
+
+            if (notification?.type === 'VehicleReadyForPickup') {
+            toast({
+                title: "🔧 Vehicle Ready",
+                description: notification.message || `Vehicle ${notification.licensePlate} is ready for pickup`,
+                status: "success",
+                duration: 6000,
+                isClosable: true,
+                position: "top-right"
+            });
+            }
         };
 
         signalRService.registerNotificationHandler(handleNotification);

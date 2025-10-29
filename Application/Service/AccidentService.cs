@@ -90,7 +90,6 @@ namespace PublicCarRental.Application.Service
                     ContractId = dto.ContractId,
                     StaffId = dto.StaffId,
                     Description = dto.Description,
-                    ReportedAt = DateTime.UtcNow,
                     Status = AccidentStatus.Reported,
                 };
 
@@ -128,7 +127,6 @@ namespace PublicCarRental.Application.Service
                     VehicleId = dto.VehicleId,
                     StaffId = dto.StaffId,
                     Description = dto.Description,
-                    ReportedAt = DateTime.UtcNow,
                     Status = AccidentStatus.Reported
                 };
 
@@ -180,26 +178,30 @@ namespace PublicCarRental.Application.Service
             try
             {
                 var acc = await _accidentRepository.GetAll()
+                    .Include(a => a.Vehicle)
                     .FirstOrDefaultAsync(a => a.AccidentId == id);
 
-                if (acc == null)
-                    return (false, "Accident report not found!");
-                if (newStatus <= acc.Status)
-                    return (false, $"Cannot transition backwards from {acc.Status} to {newStatus}");
+                if (acc == null) return (false, "Accident report not found!");
 
                 acc.Status = newStatus;
                 _accidentRepository.UpdateAcc(acc);
 
-                if (newStatus == AccidentStatus.Repaired)
+                switch (newStatus)
                 {
-                    var vehicle = _vehicleRepository.GetById(acc.VehicleId);
-                    vehicle.Status = VehicleStatus.ToBeRented;
-                    _vehicleRepository.Update(vehicle);
+                    case AccidentStatus.UnderInvestigation:
+                    case AccidentStatus.RepairApproved:
+                    case AccidentStatus.UnderRepair:
+                        acc.Vehicle.Status = VehicleStatus.InMaintenance;
+                        break;
+                    case AccidentStatus.Repaired:
+                        acc.Vehicle.Status = VehicleStatus.ToBeRented;
+                        await _accidentEventProducerService.PublishVehicleReadyAsync(acc);
 
-                    //Notify staff
+                        break;
                 }
-                
-                return (true, $"Accident report status updated to {newStatus}");
+
+                _accidentRepository.UpdateAcc(acc);
+                return (true, $"Accident status updated to {newStatus}");
             }
             catch (Exception ex)
             {

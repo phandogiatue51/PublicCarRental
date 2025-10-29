@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.Application.DTOs.StaffDashboard;
+using PublicCarRental.Application.DTOs.Veh;
 using PublicCarRental.Application.Service.Dashboard;
+using PublicCarRental.Application.Service.Veh;
 
 namespace PublicCarRental.Presentation.Controllers
 {
@@ -11,10 +13,12 @@ namespace PublicCarRental.Presentation.Controllers
     public class StaffDashboardController : ControllerBase
     {
         private readonly IStaffDashboardService _staffDashboardService;
+        private readonly IVehicleService _vehicleService;
 
-        public StaffDashboardController(IStaffDashboardService staffDashboardService)
+        public StaffDashboardController(IStaffDashboardService staffDashboardService, IVehicleService vehicleService)
         {
             _staffDashboardService = staffDashboardService;
+            _vehicleService = vehicleService;
         }
 
         [HttpGet("station/{stationId}/overview")]
@@ -84,6 +88,25 @@ namespace PublicCarRental.Presentation.Controllers
             {
                 var lowBatteryVehicles = await _staffDashboardService.GetLowBatteryVehiclesAsync(stationId);
                 return Ok(lowBatteryVehicles);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("station/{stationId}/available-vehicles")]
+        public async Task<ActionResult> GetAvailableVehicles(int stationId)
+        {
+            try
+            {
+                // Use UTC and specify DateTimeKind
+                var todayUtc = DateTime.UtcNow.Date;
+                var startTime = new DateTime(todayUtc.Year, todayUtc.Month, todayUtc.Day, 1, 0, 0, DateTimeKind.Utc); // 1:00 AM UTC
+                var endTime = new DateTime(todayUtc.Year, todayUtc.Month, todayUtc.Day, 23, 59, 59, DateTimeKind.Utc); // 11:59:59 PM UTC
+
+                var availableVehicles = await _vehicleService.GetAvailableAsync(startTime, endTime, stationId);
+                return Ok(availableVehicles);
             }
             catch (Exception ex)
             {

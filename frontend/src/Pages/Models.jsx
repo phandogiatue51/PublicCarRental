@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { useToast } from "@chakra-ui/react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { useToast, Button } from "@chakra-ui/react";
 import HeroPages from "../components/HeroPages";
 import Footer from "../components/Footer";
 import { brandAPI, typeAPI, modelAPI } from "../services/api";
-import "../styles/Model.css"; 
+import "../styles/Model.css";
+
 
 function Models() {
   const [models, setModels] = useState([]);
@@ -14,6 +15,7 @@ function Models() {
   const [selectedType, setSelectedType] = useState(null);
   const [loading, setLoading] = useState(false);
   const toast = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch brands and types for dropdowns
@@ -36,7 +38,7 @@ function Models() {
         });
       }
     };
-    
+
     fetchInitialData();
   }, [toast]);
 
@@ -81,12 +83,12 @@ function Models() {
               <h2 className="filters-title">Find Your Perfect Vehicle</h2>
               <p className="filters-subtitle">Filter by brand and type to find your ideal ride</p>
             </div>
-            
+
             <div className="filters-container">
               <div className="filter-group">
                 <div className="filter-input-wrapper">
                   <i className="fa-solid fa-car filter-icon"></i>
-                  <select 
+                  <select
                     className="filter-select"
                     onChange={(e) => setSelectedBrand(e.target.value || null)}
                     value={selectedBrand || ''}
@@ -105,7 +107,7 @@ function Models() {
               <div className="filter-group">
                 <div className="filter-input-wrapper">
                   <i className="fa-solid fa-tag filter-icon"></i>
-                  <select 
+                  <select
                     className="filter-select"
                     onChange={(e) => setSelectedType(e.target.value || null)}
                     value={selectedType || ''}
@@ -121,7 +123,7 @@ function Models() {
                 </div>
               </div>
 
-              <button 
+              <button
                 className="clear-filters-btn"
                 onClick={clearFilters}
               >
@@ -133,10 +135,10 @@ function Models() {
 
           <div className="models-div">
             {loading ? (
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
                 minHeight: '200px',
                 fontSize: '18px',
                 color: '#666'
@@ -144,10 +146,10 @@ function Models() {
                 Loading vehicle models...
               </div>
             ) : models.length === 0 ? (
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                alignItems: 'center', 
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
                 minHeight: '200px',
                 fontSize: '18px',
                 color: '#666'
@@ -174,10 +176,12 @@ function Models() {
                           <p>per hour</p>
                         </div>
                       </div>
-                      <div className="models-div__box__descr__name-price__btn">
-                        <Link onClick={() => window.scrollTo(0, 0)} to="/">
-                          Book Ride
-                        </Link>
+                      <div
+                        className="models-div__box__descr__name-price__btn"
+                        onClick={() => navigate(`/models/${model.modelId}`)}
+                        style={{ cursor: "pointer", fontWeight: "bold", color: "white" }}
+                      >
+                        Book Ride
                       </div>
                     </div>
                   </div>
