@@ -5,7 +5,7 @@ import {
     MdDashboard, MdPerson, MdDriveEta, MdAssignment, MdReceipt, MdMenu, MdLogout, MdHome
 } from 'react-icons/md';
 import signalRService from '../../services/signalRService';
-import { useAuth } from '../../hooks/useAuth'; // ADD THIS
+import { useAuth } from '../../hooks/useAuth';
 
 const StaffLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -49,6 +49,17 @@ const StaffLayout = () => {
                     position: "top-right"
                 });
             }
+
+            if (notification?.type === 'VehicleReadyForPickup') {
+            toast({
+                title: "🔧 Vehicle Ready",
+                description: notification.message || `Vehicle ${notification.licensePlate} is ready for pickup`,
+                status: "success",
+                duration: 6000,
+                isClosable: true,
+                position: "top-right"
+            });
+            }
         };
 
         signalRService.registerNotificationHandler(handleNotification);
@@ -65,7 +76,8 @@ const StaffLayout = () => {
         { path: '/vehicles', label: 'Vehicles', icon: MdDriveEta },
         { path: '/contracts', label: 'Contracts', icon: MdAssignment },
         { path: '/invoices', label: 'Invoices', icon: MdReceipt },
-        { path: '/models', label: 'Models', icon: MdDriveEta }
+        { path: '/models', label: 'Models', icon: MdDriveEta },
+        { path: '/issues', label: 'Issues', icon: MdAssignment }
     ];
 
     const isActive = (path) => {

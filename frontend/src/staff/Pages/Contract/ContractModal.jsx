@@ -28,6 +28,10 @@ const ContractModal = ({
         }).format(amount);
     };
 
+    const getStaffId = () => {
+        return localStorage.getItem("staffId");
+    };
+
     // Handle file upload
     const handleFileChange = useCallback((event) => {
         const selectedFile = event.target.files[0];
@@ -50,7 +54,6 @@ const ContractModal = ({
         onClose();
     }, [onClose]);
 
-    // Handle confirm action
     const handleConfirm = useCallback(async () => {
         if (!file) {
             toast({
@@ -66,22 +69,32 @@ const ContractModal = ({
         try {
             setIsLoading(true);
             
+            const staffId = getStaffId();
+            if (!staffId) {
+                toast({
+                    title: 'Error',
+                    description: 'Staff ID not found. Please log in again.',
+                    status: 'error',
+                    duration: 3000,
+                    isClosable: true,
+                });
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('ContractId', contract.contractId.toString());
+            
             let response;
             
             if (action === 'handover') {
-                // For now, using a hardcoded staff ID. In a real app, this would come from authentication
-                const staffId = 1; // TODO: Get from authentication context
+                formData.append('StaffId', staffId);
+                formData.append('ImageFile', file);
                 
-                response = await contractAPI.handoverVehicle(
-                    contract.contractId,
-                    staffId,
-                    file
-                );
+                response = await contractAPI.activeContract(formData);
             } else if (action === 'return') {
-                response = await contractAPI.returnVehicle(
-                    contract.contractId,
-                    file
-                );
+                formData.append('ImageFile', file);
+                
+                response = await contractAPI.finishContract(formData);
             }
 
             console.log(`${action} response:`, response);
@@ -94,7 +107,6 @@ const ContractModal = ({
                 isClosable: true,
             });
 
-            // Show additional information for return action
             if (action === 'return' && response.totalCost) {
                 toast({
                     title: 'Contract Details',
@@ -105,7 +117,6 @@ const ContractModal = ({
                 });
             }
 
-            // Call success callback to refresh data
             if (onSuccess) {
                 await onSuccess();
             }
@@ -123,9 +134,8 @@ const ContractModal = ({
         } finally {
             setIsLoading(false);
         }
-    }, [file, contract, action, toast, onSuccess, handleClose, formatCurrency]);
+    }, [file, contract, action, toast, onSuccess, handleClose]);
 
-    // Cleanup preview URL when component unmounts or file changes
     useEffect(() => {
         return () => {
             if (previewUrl) {

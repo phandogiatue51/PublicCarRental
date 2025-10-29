@@ -1,19 +1,16 @@
 import {
-  Box, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, 
-  useColorModeValue, Spinner, Alert, AlertIcon, AlertTitle, 
-  AlertDescription, Badge, Image, Menu, MenuButton, MenuList, 
-  MenuItem, useDisclosure, Modal, ModalOverlay, ModalContent, 
-  ModalHeader, ModalBody, ModalCloseButton
+  Box, Button, Flex, Table, Tbody, Td, Text, Th, Thead, Tr,
+  useColorModeValue, Spinner, Alert, AlertIcon, AlertTitle,
+  AlertDescription, Badge, HStack, IconButton
 } from '@chakra-ui/react';
 import {
-  createColumnHelper, flexRender, getCoreRowModel, 
+  createColumnHelper, flexRender, getCoreRowModel,
   getSortedRowModel, useReactTable
 } from '@tanstack/react-table';
 import { useState, useEffect } from 'react';
 import { accidentAPI } from '../../../../services/api';
-import { MdEdit, MdDelete, MdAdd, MdVisibility, MdMoreVert } from 'react-icons/md';
-import AccidentModal from './AccidentModal';
-import StatusUpdateModal from './StatusUpdateModal';
+import { MdDelete, MdVisibility } from 'react-icons/md';
+import AccidentViewModal from '../../../../staff/Pages/AccidentReport/AccidentViewModal';
 
 import Card from '../../../components/card/Card';
 
@@ -24,82 +21,77 @@ export default function AccidentList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sorting, setSorting] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
   const [selectedAccident, setSelectedAccident] = useState(null);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [imagePreview, setImagePreview] = useState(null);
-  const { isOpen: isImageModalOpen, onOpen: onImageModalOpen, onClose: onImageModalClose } = useDisclosure();
-  
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const brandColor = useColorModeValue('brand.500', 'white');
 
-const fetchAccidents = async () => {
-  try {
-    setLoading(true);
-    setError(null);
-    console.log('Fetching accidents from API...');
-    const data = await accidentAPI.getAll();
-    console.log('Accidents fetched successfully:', data);
-    
-    const formattedData = data.map(accident => ({
-      ...accident,
-      reportedAt: accident.reportedAt === '0001-01-01T00:00:00' 
-        ? new Date().toISOString() 
-        : accident.reportedAt
-    }));
-    
-    setAccidents(formattedData);
-  } catch (err) {
-    console.error('Error fetching accidents:', err);
-    let errorMessage = 'Failed to fetch accident reports';
-    
-    if (err.message.includes('404')) {
-      errorMessage = 'Accident API endpoint not found. Please check the backend URL.';
-    } else if (err.message.includes('Unable to connect')) {
-      errorMessage = 'Cannot connect to the server. Please check if the backend is running';
-    } else if (err.message.includes('CORS')) {
-      errorMessage = 'CORS error. Please check backend CORS configuration.';
-    } else if (err.message) {
-      errorMessage = err.message;
+  const fetchAccidents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Fetching accidents from API...');
+      const data = await accidentAPI.getAll();
+      console.log('Issues fetched successfully:', data);
+
+      const formattedData = data.map(accident => ({
+        ...accident,
+        reportedAt: accident.reportedAt === '0001-01-01T00:00:00'
+          ? new Date().toISOString()
+          : accident.reportedAt
+      }));
+
+      setAccidents(formattedData);
+    } catch (err) {
+      console.error('Error fetching accidents:', err);
+      let errorMessage = 'Failed to fetch accident reports';
+
+      if (err.message.includes('404')) {
+        errorMessage = 'Accident API endpoint not found. Please check the backend URL.';
+      } else if (err.message.includes('Unable to connect')) {
+        errorMessage = 'Cannot connect to the server. Please check if the backend is running';
+      } else if (err.message.includes('CORS')) {
+        errorMessage = 'CORS error. Please check backend CORS configuration.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
-    
-    setError(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     fetchAccidents();
   }, []);
 
-const getStatusColor = (status) => {
-  const statusValue = typeof status === 'number' 
-    ? mapStatusNumberToString(status) 
-    : status;
-  
-  const colors = {
-    'Reported': 'blue',
-    'UnderInvestigation': 'orange',
-    'RepairApproved': 'yellow',
-    'UnderRepair': 'purple',
-    'Repaired': 'green'
-  };
-  return colors[statusValue] || 'gray';
-};
+  const getStatusColor = (status) => {
+    const statusValue = typeof status === 'number'
+      ? mapStatusNumberToString(status)
+      : status;
 
-const mapStatusNumberToString = (statusNumber) => {
-  const statusMap = {
-    0: 'Reported',
-    1: 'UnderInvestigation',
-    2: 'RepairApproved',
-    3: 'UnderRepair',
-    4: 'Repaired'
+    const colors = {
+      'Reported': 'blue',
+      'UnderInvestigation': 'orange',
+      'RepairApproved': 'yellow',
+      'UnderRepair': 'purple',
+      'Repaired': 'green'
+    };
+    return colors[statusValue] || 'gray';
   };
-  return statusMap[statusNumber] || 'Reported';
-};
+
+  const mapStatusNumberToString = (statusNumber) => {
+    const statusMap = {
+      0: 'Reported',
+      1: 'UnderInvestigation',
+      2: 'RepairApproved',
+      3: 'UnderRepair',
+      4: 'Repaired'
+    };
+    return statusMap[statusNumber] || 'Reported';
+  };
 
   const columns = [
     columnHelper.accessor('accidentId', {
@@ -111,7 +103,7 @@ const mapStatusNumberToString = (statusNumber) => {
       ),
       cell: (info) => (
         <Text color={textColor} fontSize="sm" fontWeight="700">
-          #{info.getValue()}
+          {info.getValue()}
         </Text>
       ),
     }),
@@ -124,7 +116,7 @@ const mapStatusNumberToString = (statusNumber) => {
       ),
       cell: (info) => (
         <Text color={textColor} fontSize="sm" fontWeight="600">
-          VEH-{info.getValue()}
+          {info.getValue()}
         </Text>
       ),
     }),
@@ -137,23 +129,11 @@ const mapStatusNumberToString = (statusNumber) => {
       ),
       cell: (info) => (
         <Text color={textColor} fontSize="sm">
-          {info.getValue() ? `CONT-${info.getValue()}` : 'N/A'}
+          {info.getValue() ? info.getValue() : 'N/A'}
         </Text>
       ),
     }),
-    columnHelper.accessor('description', {
-      id: 'description',
-      header: () => (
-        <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
-          DESCRIPTION
-        </Text>
-      ),
-      cell: (info) => (
-        <Text color={textColor} fontSize="sm" noOfLines={2} maxW="200px">
-          {info.getValue() || 'No description'}
-        </Text>
-      ),
-    }),
+
     columnHelper.accessor('location', {
       id: 'location',
       header: () => (
@@ -181,58 +161,32 @@ const mapStatusNumberToString = (statusNumber) => {
       ),
     }),
     columnHelper.accessor('status', {
-    id: 'status',
-    header: () => (
-        <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
-        STATUS
-        </Text>
-    ),
-    cell: (info) => {
-        const statusValue = info.getValue();
-        const statusText = typeof statusValue === 'number' 
-        ? mapStatusNumberToString(statusValue) 
-        : statusValue;
-        
-        return (
-        <Badge 
-            colorScheme={getStatusColor(statusValue)} 
-            fontSize="xs" 
-            px={2} 
-            py={1} 
-            borderRadius="full"
-        >
-            {statusText.replace(/([A-Z])/g, ' $1').trim()}
-        </Badge>
-        );
-    },
-    }),
-    columnHelper.accessor('imageUrl', {
-      id: 'image',
+      id: 'status',
       header: () => (
         <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
-          IMAGE
+          STATUS
         </Text>
       ),
-      cell: (info) => (
-        info.getValue() ? (
-          <Image
-            src={info.getValue()}
-            alt="Accident"
-            boxSize="40px"
-            objectFit="cover"
-            borderRadius="md"
-            cursor="pointer"
-            onClick={() => {
-              setImagePreview(info.getValue());
-              onImageModalOpen();
-            }}
-            _hover={{ opacity: 0.8 }}
-          />
-        ) : (
-          <Text color="gray.500" fontSize="sm">No Image</Text>
-        )
-      ),
+      cell: (info) => {
+        const statusValue = info.getValue();
+        const statusText = typeof statusValue === 'number'
+          ? mapStatusNumberToString(statusValue)
+          : statusValue;
+
+        return (
+          <Badge
+            colorScheme={getStatusColor(statusValue)}
+            fontSize="xs"
+            px={2}
+            py={1}
+            borderRadius="full"
+          >
+            {statusText.replace(/([A-Z])/g, ' $1').trim()}
+          </Badge>
+        );
+      },
     }),
+
     columnHelper.accessor('actions', {
       id: 'actions',
       header: () => (
@@ -241,39 +195,27 @@ const mapStatusNumberToString = (statusNumber) => {
         </Text>
       ),
       cell: (info) => (
-        <Menu>
-          <MenuButton
-            as={Button}
-            variant="ghost"
+        <HStack spacing={2}>
+          <Button
             size="sm"
-            px={2}
+            variant="outline"
+            colorScheme="blue"
+            onClick={() => handleView(info.row.original)}
           >
-            <Icon as={MdMoreVert} />
-          </MenuButton>
-          <MenuList>
-            <MenuItem 
-              icon={<MdVisibility />}
-              onClick={() => handleView(info.row.original)}
-            >
-              View Details
-            </MenuItem>
-            <MenuItem 
-              icon={<MdEdit />}
-              onClick={() => handleStatusUpdate(info.row.original)}
-            >
-              Update Status
-            </MenuItem>
-            <MenuItem 
-              icon={<MdDelete />}
-              color="red.500"
-              onClick={() => handleDelete(info.row.original.accidentId)}
-            >
-              Delete Report
-            </MenuItem>
-          </MenuList>
-        </Menu>
+            View Details
+          </Button>
+          <Button
+            aria-label="Delete Report"
+            icon={<MdDelete />}
+            size="sm"
+            variant="ghost"
+            colorScheme="red"
+            onClick={() => handleDelete(info.row.original.accidentId)}
+          >Delete</Button>
+        </HStack>
       ),
     }),
+
   ];
 
   const table = useReactTable({
@@ -290,42 +232,29 @@ const mapStatusNumberToString = (statusNumber) => {
 
   const handleView = (accident) => {
     setSelectedAccident(accident);
-    setIsEditMode(true);
-    setIsModalOpen(true);
+    setIsViewModalOpen(true); // Change this from setIsModalOpen
   };
 
-  const handleStatusUpdate = (accident) => {
-    setSelectedAccident(accident);
-    setIsStatusModalOpen(true);
+  const handleModalClose = () => {
+    setIsViewModalOpen(false);
+    setSelectedAccident(null);
+  };
+
+  const handleModalSuccess = () => {
+    fetchAccidents(); // Refresh the list after status update
   };
 
   const handleDelete = async (accidentId) => {
-    if (window.confirm('Are you sure you want to delete this accident report?')) {
+    if (window.confirm('Are you sure you want to delete this issue report?')) {
       try {
         await accidentAPI.deleteReport(accidentId);
-        await fetchAccidents(); 
+        await fetchAccidents();
       } catch (err) {
-        setError(err.message || 'Failed to delete accident report');
+        setError(err.message || 'Failed to delete issue report');
       }
     }
   };
 
-  const handleAdd = () => {
-    setSelectedAccident(null);
-    setIsEditMode(false);
-    setIsModalOpen(true);
-  };
-
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    setIsStatusModalOpen(false);
-    setSelectedAccident(null);
-    setIsEditMode(false);
-  };
-
-  const handleModalSuccess = () => {
-    fetchAccidents();
-  };
 
   if (loading) {
     return (
@@ -371,17 +300,8 @@ const mapStatusNumberToString = (statusNumber) => {
           align={{ base: 'start', md: 'center' }}
         >
           <Text color={textColor} fontSize="2xl" ms="24px" fontWeight="700">
-            Accident Report Management
+            Issue Report Management
           </Text>
-          <Button
-            leftIcon={<Icon as={MdAdd} />}
-            colorScheme="blue"
-            variant="solid"
-            onClick={handleAdd}
-            me="24px"
-          >
-            Create New Report
-          </Button>
         </Flex>
 
         <Flex gap="4" wrap="wrap">
@@ -434,9 +354,9 @@ const mapStatusNumberToString = (statusNumber) => {
                           {header.isPlaceholder
                             ? null
                             : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                         </Flex>
                       </Th>
                     ))}
@@ -466,37 +386,12 @@ const mapStatusNumberToString = (statusNumber) => {
         </Card>
       </Flex>
 
-      <AccidentModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        onSuccess={handleModalSuccess}
-        accident={selectedAccident}
-        isEdit={isEditMode}
-      />
-
-      <StatusUpdateModal
-        isOpen={isStatusModalOpen}
+      <AccidentViewModal
+        isOpen={isViewModalOpen}
         onClose={handleModalClose}
         onSuccess={handleModalSuccess}
         accident={selectedAccident}
       />
-
-      <Modal isOpen={isImageModalOpen} onClose={onImageModalClose} size="xl" isCentered>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Accident Image</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <Image
-              src={imagePreview}
-              alt="Accident Preview"
-              w="100%"
-              h="auto"
-              borderRadius="md"
-            />
-          </ModalBody>
-        </ModalContent>
-      </Modal>
     </Box>
   );
 }

@@ -112,5 +112,20 @@ namespace PublicCarRental.Presentation.Controllers
                 return StatusCode(500, "An error occurred while updating the accident report status");
             }
         }
+
+        [HttpGet("filter")]
+        public IActionResult FilterAccidents([FromQuery] AccidentStatus? status, [FromQuery] int? stationId)
+        {
+            try
+            {
+                var result = _accidentService.FilterAccidents(status, stationId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error filtering accident reports");
+                return StatusCode(500, "An error occurred while filtering accident reports");
+            }
+        }
     }
 }

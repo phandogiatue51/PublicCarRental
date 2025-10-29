@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue, Spinner, Alert,
     AlertIcon, AlertTitle, AlertDescription, Badge, Select, HStack, Modal, ModalOverlay, ModalContent,
-    ModalHeader, ModalBody, ModalCloseButton, VStack, Divider, Progress
+    ModalHeader, ModalBody, ModalCloseButton, VStack, Divider, Progress, Tooltip
 } from '@chakra-ui/react';
 import {
     createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable
@@ -10,8 +10,10 @@ import {
 import {
     MdChevronLeft, MdChevronRight, MdDriveEta, MdLocationOn, MdRefresh, MdBattery6Bar
 } from 'react-icons/md';
-import { vehicleAPI, modelAPI, brandAPI, typeAPI, stationAPI } from '../../services/api';
-
+import { vehicleAPI, modelAPI, brandAPI, typeAPI, stationAPI } from '../../../services/api';
+import { MdUpdate, MdReportProblem } from 'react-icons/md';
+import VehicleAccidentModal from './../AccidentReport/VehicleAccidentModal';
+import VehicleUpdateModal from './VehicleUpdateModal';
 const columnHelper = createColumnHelper();
 
 const VehicleList = () => {
@@ -21,7 +23,9 @@ const VehicleList = () => {
     const [sorting, setSorting] = useState([]);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [selectedVehicle, setSelectedVehicle] = useState(null);
-
+    const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+    const [isAccidentModalOpen, setIsAccidentModalOpen] = useState(false);
+    const [selectedVehicleForAction, setSelectedVehicleForAction] = useState(null);
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
@@ -42,6 +46,33 @@ const VehicleList = () => {
 
     // Detect staff stationId from localStorage/sessionStorage (hide station selector if present)
     const presetStationId = (typeof window !== 'undefined') ? (localStorage.getItem('stationId') || sessionStorage.getItem('stationId')) : '';
+    // Handle update battery
+    const handleUpdate = useCallback((vehicle) => {
+        setSelectedVehicleForAction(vehicle);
+        setIsUpdateModalOpen(true);
+    }, []);
+
+    // Handle report issue
+    const handleReportIssue = useCallback((vehicle) => {
+        setSelectedVehicleForAction(vehicle);
+        setIsAccidentModalOpen(true);
+    }, []);
+
+    // Handle modal close
+    const handleUpdateModalClose = useCallback(() => {
+        setIsUpdateModalOpen(false);
+        setSelectedVehicleForAction(null);
+    }, []);
+
+    const handleAccidentModalClose = useCallback(() => {
+        setIsAccidentModalOpen(false);
+        setSelectedVehicleForAction(null);
+    }, []);
+
+    // Handle modal success
+    const handleModalSuccess = useCallback(async () => {
+        await fetchVehicles();
+    }, []);
 
     // Fetch vehicles from API
     const fetchVehicles = async () => {
@@ -341,6 +372,52 @@ const VehicleList = () => {
                 );
             },
         }),
+        columnHelper.display({
+            id: "actions",
+            header: () => (
+                <Text
+                    justifyContent="space-between"
+                    align="center"
+                    fontSize={{ sm: '10px', lg: '12px' }}
+                    color="gray.400"
+                >
+                    ACTIONS
+                </Text>
+            ),
+            cell: (info) => {
+                const vehicle = info.row.original;
+                const canUpdate = vehicle.status !== 1 && vehicle.status !== 2; // Not Renting or Charging
+
+                return (
+                    <Flex align="center" gap={2} wrap="wrap">
+                        <Tooltip label="Update Battery">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                colorScheme="blue"
+                                leftIcon={<Icon as={MdUpdate} />}
+                                onClick={() => handleUpdate(vehicle)}
+                                isDisabled={!canUpdate}
+                            >
+                                Update
+                            </Button>
+                        </Tooltip>
+
+                        <Tooltip label="Report Issue">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                colorScheme="red"
+                                leftIcon={<Icon as={MdReportProblem} />}
+                                onClick={() => handleReportIssue(vehicle)}
+                            >
+                                Report Issue
+                            </Button>
+                        </Tooltip>
+                    </Flex>
+                );
+            },
+        }),
 
     ], [textColor, handleView]);
 
@@ -624,7 +701,20 @@ const VehicleList = () => {
                 </Box>
             </Flex>
 
-            {/* Vehicle Detail Modal */}
+            <VehicleUpdateModal
+                isOpen={isUpdateModalOpen}
+                onClose={handleUpdateModalClose}
+                vehicle={selectedVehicleForAction}
+                onSuccess={handleModalSuccess}
+            />
+
+            <VehicleAccidentModal
+                isOpen={isAccidentModalOpen}
+                onClose={handleAccidentModalClose}
+                vehicle={selectedVehicleForAction}
+                onSuccess={handleModalSuccess}
+            />
+
             <Modal isOpen={isDetailModalOpen} onClose={handleDetailModalClose} size="lg" isCentered>
                 <ModalOverlay />
                 <ModalContent>

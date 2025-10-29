@@ -218,7 +218,7 @@ namespace PublicCarRental.Application.Service.Veh
             return await _repo.GetAll()
                 .Where(v => v.ModelId == modelId &&
                            v.StationId == stationId &&
-                           v.Status == VehicleStatus.Available &&
+                           v.Status == VehicleStatus.Available || v.Status == VehicleStatus.Renting &&
                            !v.RentalContracts.Any(c =>
                                (c.Status == RentalStatus.Confirmed ||
                                 c.Status == RentalStatus.Active ||
@@ -251,6 +251,39 @@ namespace PublicCarRental.Application.Service.Veh
                     .Distinct()
                     .ToList();
             }, TimeSpan.FromMinutes(15));
+        }
+
+        public async Task<List<VehicleDto>> GetAvailableAsync(DateTime startTime, DateTime endTime, int? stationId = null)
+        {
+            var query = _repo.GetAll()
+                .Where(v => (v.Status == VehicleStatus.Available || v.Status == VehicleStatus.Renting) &&
+                           !v.RentalContracts.Any(c =>
+                               (c.Status == RentalStatus.Confirmed ||
+                                c.Status == RentalStatus.Active ||
+                                c.Status == RentalStatus.ToBeConfirmed) &&
+                               startTime < c.EndTime &&
+                               endTime > c.StartTime));
+
+            if (stationId != 0)
+                query = query.Where(v => v.StationId == stationId.Value);
+
+            var vehicles = await query.ToListAsync();
+
+            if (vehicles == null || !vehicles.Any())
+                return new List<VehicleDto>();
+
+            return vehicles.Select(v => new VehicleDto
+            {
+                VehicleId = v.VehicleId,
+                LicensePlate = v.LicensePlate,
+                BatteryLevel = v.BatteryLevel,
+                Status = v.Status,
+                PricePerHour = v.Model?.PricePerHour ?? 0, // Added null check
+                StationId = v.StationId,
+                StationName = v.Station?.Name,
+                ModelId = v.ModelId,
+                ModelName = v.Model?.Name
+            }).ToList();
         }
     }
 }

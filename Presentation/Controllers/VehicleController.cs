@@ -71,5 +71,12 @@ namespace PublicCarRental.Presentation.Controllers
             var vehicles = await _service.GetVehiclesByFiltersAsync(modelId, status, stationId, typeId, brandId);
             return Ok(vehicles);
         }
+
+        [HttpPost("check-availability")]
+        public async Task<IActionResult> CheckAvailabilityAsync(FilterAvailable dto)
+        {
+            var isAvailable = await _service.GetAvailableAsync(dto.StartTime, dto.EndTime, dto.StationId);
+            return Ok(isAvailable);
+        }
     }
 }

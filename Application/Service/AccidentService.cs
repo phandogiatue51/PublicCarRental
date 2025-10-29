@@ -5,6 +5,7 @@ using PublicCarRental.Application.Service.Image;
 using PublicCarRental.Application.Service.Rabbit;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Cont;
+using PublicCarRental.Infrastructure.Data.Repository.Staf;
 using PublicCarRental.Infrastructure.Data.Repository.Vehi;
 using System.Linq.Expressions;
 
@@ -17,31 +18,43 @@ namespace PublicCarRental.Application.Service
         private readonly IVehicleRepository _vehicleRepository;
         private readonly IContractRepository _contractRepository;
         private readonly AccidentEventProducerService _accidentEventProducerService;
+        private readonly IStaffRepository _staffRepository;
 
         public AccidentService(IAccidentRepository accidentRepository, IImageStorageService imageStorageService,
-            IVehicleRepository vehicleRepository, IContractRepository contractRepository, AccidentEventProducerService accidentEventProducerService)
+            IVehicleRepository vehicleRepository, IContractRepository contractRepository, 
+            AccidentEventProducerService accidentEventProducerService, IStaffRepository staffRepository)
         {
             _accidentRepository = accidentRepository;
             _imageStorageService = imageStorageService;
             _vehicleRepository = vehicleRepository;
             _contractRepository = contractRepository;
             _accidentEventProducerService = accidentEventProducerService;
+            _staffRepository = staffRepository;
         }
 
         public async Task<IEnumerable<AccidentDto>> GetAllAsync()
         {
-            return _accidentRepository.GetAll()
-                 .Select(m => new AccidentDto
-                 {
-                     AccidentId = m.AccidentId,
-                     VehicleId = m.VehicleId,
-                     ContractId = m.ContractId,
-                     StaffId = m.StaffId,
-                     Description = m.Description,
-                     Location = m.Vehicle.Station.Name,
-                     ImageUrl = m.ImageUrl,
-                     Status = m.Status
-                 }).ToList();
+            var accidents = _accidentRepository.GetAll().ToList();
+            var staffs = _staffRepository.GetAll()
+                .Where(s => s.Account != null)
+                .ToDictionary(s => s.StaffId, s => s.Account.FullName);
+
+            return accidents.Select(m => new AccidentDto
+            {
+                AccidentId = m.AccidentId,
+                VehicleId = m.VehicleId,
+                LicensePlate = m.Vehicle.LicensePlate,
+                ContractId = m.ContractId,
+                StaffId = m.StaffId,
+                StaffName = m.StaffId.HasValue && staffs.ContainsKey(m.StaffId.Value)
+                    ? staffs[m.StaffId.Value]
+                    : null,
+                Description = m.Description,
+                StationId = m.Vehicle.StationId,
+                Location = m.Vehicle.Station.Name,
+                ImageUrl = m.ImageUrl,
+                Status = m.Status
+            }).ToList();
         }
 
         public async Task<AccidentDto?> GetByIdAsync(int id)
@@ -51,13 +64,17 @@ namespace PublicCarRental.Application.Service
 
             if (acc == null) return null;
 
+            var staff = _staffRepository.GetById((int)acc.StaffId);
             return new AccidentDto
             {
                 AccidentId = acc.AccidentId,
                 VehicleId = acc.VehicleId,
+                LicensePlate = acc.Vehicle.LicensePlate,
                 ContractId = acc.ContractId,
                 StaffId = acc.StaffId,
+                StaffName = staff.Account.FullName,
                 Description = acc.Description,
+                StationId = acc.Vehicle.StationId,
                 Location = acc.Vehicle.Station.Name,
                 ImageUrl = acc.ImageUrl,
                 Status = acc.Status
@@ -73,7 +90,6 @@ namespace PublicCarRental.Application.Service
                     ContractId = dto.ContractId,
                     StaffId = dto.StaffId,
                     Description = dto.Description,
-                    ReportedAt = DateTime.UtcNow,
                     Status = AccidentStatus.Reported,
                 };
 
@@ -111,7 +127,6 @@ namespace PublicCarRental.Application.Service
                     VehicleId = dto.VehicleId,
                     StaffId = dto.StaffId,
                     Description = dto.Description,
-                    ReportedAt = DateTime.UtcNow,
                     Status = AccidentStatus.Reported
                 };
 
@@ -163,31 +178,56 @@ namespace PublicCarRental.Application.Service
             try
             {
                 var acc = await _accidentRepository.GetAll()
+                    .Include(a => a.Vehicle)
                     .FirstOrDefaultAsync(a => a.AccidentId == id);
 
-                if (acc == null)
-                    return (false, "Accident report not found!");
-                if (newStatus <= acc.Status)
-                    return (false, $"Cannot transition backwards from {acc.Status} to {newStatus}");
+                if (acc == null) return (false, "Accident report not found!");
 
                 acc.Status = newStatus;
                 _accidentRepository.UpdateAcc(acc);
 
-                if (newStatus == AccidentStatus.Repaired)
+                switch (newStatus)
                 {
-                    var vehicle = _vehicleRepository.GetById(acc.VehicleId);
-                    vehicle.Status = VehicleStatus.ToBeRented;
-                    _vehicleRepository.Update(vehicle);
+                    case AccidentStatus.UnderInvestigation:
+                    case AccidentStatus.RepairApproved:
+                    case AccidentStatus.UnderRepair:
+                        acc.Vehicle.Status = VehicleStatus.InMaintenance;
+                        break;
+                    case AccidentStatus.Repaired:
+                        acc.Vehicle.Status = VehicleStatus.ToBeRented;
+                        await _accidentEventProducerService.PublishVehicleReadyAsync(acc);
 
-                    //Notify staff
+                        break;
                 }
-                
-                return (true, $"Accident report status updated to {newStatus}");
+
+                _accidentRepository.UpdateAcc(acc);
+                return (true, $"Accident status updated to {newStatus}");
             }
             catch (Exception ex)
             {
                 return (false, ex.Message);
             }
+        }
+
+        public IEnumerable<AccidentDto?> FilterAccidents(AccidentStatus? status, int? stationId)
+        {
+            return _accidentRepository.GetAll()
+                .Where(a => (!status.HasValue || a.Status == status.Value) &&
+                            (!stationId.HasValue || a.Vehicle.StationId == stationId.Value))
+                .Select(a => new AccidentDto
+                {
+                    AccidentId = a.AccidentId,
+                    LicensePlate = a.Vehicle.LicensePlate,
+                    VehicleId = a.VehicleId,
+                    ContractId = a.ContractId,
+                    StaffId = a.StaffId,
+                    Description = a.Description,
+                    StationId = a.Vehicle.StationId,
+                    Location = a.Vehicle.Station.Name,
+                    ImageUrl = a.ImageUrl,
+                    Status = a.Status
+                })
+                .ToList();
         }
     }
 
@@ -199,6 +239,7 @@ namespace PublicCarRental.Application.Service
         Task<(bool Success, string Message)> CreateVehicleAccAsync(VehicleAcc dto);
         Task<(bool Success, string Message)> DeleteAccAsync(int id); 
         Task<(bool Success, string Message)> UpdateAccStatusAsync(int id, AccidentStatus newStatus);
+        public IEnumerable<AccidentDto?> FilterAccidents(AccidentStatus? status, int? stationId);
 
     }
 }

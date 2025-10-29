@@ -5,10 +5,11 @@ import initialTheme from '../admin/theme/theme';
 import StaffLayout from './layouts/StaffLayout';
 import StaffDashboard from './Pages/StaffDashboard';
 import RenterList from './Pages/RenterList';
-import VehicleList from './Pages/VehicleList';
+import VehicleList from './Pages/Vehicle/VehicleList';
 import ContractList from './Pages/Contract/ContractList';
 import InvoiceList from './Pages/InvoiceList';
 import ModelList from './Pages/ModelList';
+import AccidentList from './Pages/AccidentReport/AccidentList';
 
 export default function StaffApp() {
     return (
@@ -22,6 +23,7 @@ export default function StaffApp() {
                     <Route path="contracts" element={<ContractList />} />
                     <Route path="invoices" element={<InvoiceList />} />
                     <Route path="models" element={<ModelList />} />
+                    <Route path="issues" element={<AccidentList/>} />
                 </Route>
             </Routes>
         </ChakraProvider>
