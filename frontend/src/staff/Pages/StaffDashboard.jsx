@@ -7,6 +7,10 @@ import {
     MdPerson, MdDriveEta, MdAssignment, MdReceipt
 } from 'react-icons/md';
 import { renterAPI, vehicleAPI, contractAPI, invoiceAPI } from '../../services/api';
+import IncomingCheckins from '../components/Dashboard/IncomingCheckins';
+import IncomingCheckouts from '../components/Dashboard/IncomingCheckouts';
+import MaintenanceQueue from '../components/Dashboard/MaintenanceQueue';
+import LowBatteryVehicles from '../components/Dashboard/LowBatteryVehicles';
 
 const StaffDashboard = () => {
     const [stats, setStats] = useState({
@@ -208,6 +212,23 @@ const StaffDashboard = () => {
                         </Text>
                     </CardBody>
                 </Card>
+            </Box>
+
+            <Box mt={8}>
+                <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
+                    <GridItem>
+                        <IncomingCheckins stationId={stationId} count={5} />
+                    </GridItem>
+                    <GridItem>
+                        <IncomingCheckouts stationId={stationId} count={5} />
+                    </GridItem>
+                    <GridItem>
+                        <MaintenanceQueue stationId={stationId} />
+                    </GridItem>
+                    <GridItem>
+                        <LowBatteryVehicles stationId={stationId} />
+                    </GridItem>
+                </Grid>
             </Box>
         </Box>
     );

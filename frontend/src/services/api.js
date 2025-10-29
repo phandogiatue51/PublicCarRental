@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'https://localhost:7230/api'
+  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
 
 // Generic API request function
@@ -664,6 +664,26 @@ export const paymentAPI = {
     method: 'POST',
     body: JSON.stringify(paymentData)
   }),
+};
+
+
+// Staff Dashboard API services
+export const staffDashboardAPI = {
+  // Upcoming check-ins for a station
+  getIncomingCheckins: (stationId, count = 5) =>
+    apiRequest(`/StaffDashboard/station/${stationId}/incoming-checkins?count=${count}`),
+
+  // Upcoming check-outs for a station
+  getIncomingCheckouts: (stationId, count = 5) =>
+    apiRequest(`/StaffDashboard/station/${stationId}/incoming-checkouts?count=${count}`),
+
+  // Maintenance queue for a station
+  getMaintenanceQueue: (stationId) =>
+    apiRequest(`/StaffDashboard/station/${stationId}/maintenance-queue`),
+
+  // Low-battery vehicles for a station
+  getLowBatteryVehicles: (stationId) =>
+    apiRequest(`/StaffDashboard/station/${stationId}/low-battery-vehicles`),
 };
 
 
