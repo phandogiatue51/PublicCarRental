@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardBody, Box, Text, Spinner, Alert, AlertIcon, VStack, HStack, Badge, Button } from '@chakra-ui/react';
+import { Card, CardBody, Box, Text, Spinner, Alert, AlertIcon, VStack, HStack, Badge, Button, SimpleGrid } from '@chakra-ui/react';
 import { staffDashboardAPI } from '../../../services/api';
 
 const MaintenanceQueue = ({ stationId }) => {
@@ -7,7 +7,7 @@ const MaintenanceQueue = ({ stationId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
-  const pageSize = 5; // items per page
+  const pageSize = 9; // 3 rows x 3 columns per page
 
   useEffect(() => {
     let isActive = true;
@@ -53,33 +53,35 @@ const MaintenanceQueue = ({ stationId }) => {
             {items.length === 0 && (
               <Text color="gray.500">No vehicles in maintenance queue.</Text>
             )}
-            {items
-              .slice((page - 1) * pageSize, page * pageSize)
-              .map((item, idx) => (
-              <Box key={item.vehicleId || item.id || idx} p={3} borderWidth="1px" borderRadius="md">
-                <HStack justify="space-between" align="start">
-                  <Box>
-                    <HStack spacing={3}>
-                      <Text fontWeight="medium">{item.licensePlate || 'N/A'}</Text>
-                      {typeof item.batteryLevel === 'number' && (
-                        <Badge colorScheme={item.batteryLevel <= 15 ? 'red' : item.batteryLevel <= 30 ? 'orange' : 'yellow'}>
-                          {item.batteryLevel}%
-                        </Badge>
-                      )}
-                    </HStack>
-                    <Text fontSize="sm" color="gray.600">
-                      {item.vehicleModel || 'Unknown Model'} {item.brand ? `(${item.brand})` : ''}
-                    </Text>
-                    <Text fontSize="sm" color="gray.500">
-                      Last maintenance: {item.lastMaintenanceDate ? new Date(item.lastMaintenanceDate).toLocaleString() : 'N/A'}
-                    </Text>
-                    <Text fontSize="sm" color="gray.500">
-                      Current rental contract: {item.currentRentalContractId ?? 'None'}
-                    </Text>
-                  </Box>
-                </HStack>
-              </Box>
-            ))}
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3}>
+              {items
+                .slice((page - 1) * pageSize, page * pageSize)
+                .map((item, idx) => (
+                <Box key={item.vehicleId || item.id || idx} p={3} borderWidth="1px" borderRadius="md">
+                  <HStack justify="space-between" align="start">
+                    <Box>
+                      <HStack spacing={3}>
+                        <Text fontWeight="medium">{item.licensePlate || 'N/A'}</Text>
+                        {typeof item.batteryLevel === 'number' && (
+                          <Badge colorScheme={item.batteryLevel <= 15 ? 'red' : item.batteryLevel <= 30 ? 'orange' : 'yellow'}>
+                            {item.batteryLevel}%
+                          </Badge>
+                        )}
+                      </HStack>
+                      <Text fontSize="sm" color="gray.600">
+                        {item.vehicleModel || 'Unknown Model'} {item.brand ? `(${item.brand})` : ''}
+                      </Text>
+                      <Text fontSize="sm" color="gray.500">
+                        Last maintenance: {item.lastMaintenanceDate ? new Date(item.lastMaintenanceDate).toLocaleString() : 'N/A'}
+                      </Text>
+                      <Text fontSize="sm" color="gray.500">
+                        Current rental contract: {item.currentRentalContractId ?? 'None'}
+                      </Text>
+                    </Box>
+                  </HStack>
+                </Box>
+              ))}
+            </SimpleGrid>
             {items.length > pageSize && (
               <HStack justify="center" pt={2} spacing={2}>
                 {Array.from({ length: Math.ceil(items.length / pageSize) }, (_, i) => i + 1).map(p => (

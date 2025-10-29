@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardBody, Box, Text, Spinner, Alert, AlertIcon, VStack, HStack, Badge, Progress, Button } from '@chakra-ui/react';
+import { Card, CardBody, Box, Text, Spinner, Alert, AlertIcon, VStack, HStack, Badge, Progress, Button, SimpleGrid } from '@chakra-ui/react';
 import { staffDashboardAPI } from '../../../services/api';
 
 const LowBatteryVehicles = ({ stationId }) => {
@@ -7,7 +7,7 @@ const LowBatteryVehicles = ({ stationId }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
-  const pageSize = 5; // items per page
+  const pageSize = 9; // 3 rows x 3 columns per page
 
   useEffect(() => {
     let isActive = true;
@@ -58,33 +58,35 @@ const LowBatteryVehicles = ({ stationId }) => {
             {items.length === 0 && (
               <Text color="gray.500">No vehicles need charging.</Text>
             )}
-            {items
-              .slice((page - 1) * pageSize, page * pageSize)
-              .map((item, idx) => {
-                const percent = (typeof item.batteryLevel === 'number') ? item.batteryLevel : 0;
-                return (
-                  <Box key={item.vehicleId || idx} p={3} borderWidth="1px" borderRadius="md">
-                    <HStack justify="space-between" align="start">
-                      <Box>
-                        <Text fontWeight="medium">{item.licensePlate || 'N/A'}</Text>
-                        <Text fontSize="sm" color="gray.600">
-                          {item.vehicleModel || 'Unknown Model'}{item.brand ? ` (${item.brand})` : ''}
-                        </Text>
-                        <Text fontSize="sm" color="gray.500">
-                          Last maintenance: {item.lastMaintenanceDate ? new Date(item.lastMaintenanceDate).toLocaleString() : 'N/A'}
-                        </Text>
-                        <Text fontSize="sm" color="gray.500">
-                          Current rental contract: {item.currentRentalContractId ?? 'None'}
-                        </Text>
-                      </Box>
-                      <Box ml={2} minW="58px" textAlign="right">
-                        <Badge colorScheme={getColor(percent)} mb={1}>{percent}%</Badge>
-                        <Progress size="xs" mt={1} colorScheme={getColor(percent)} value={percent} />
-                      </Box>
-                    </HStack>
-                  </Box>
-                );
-              })}
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3}>
+              {items
+                .slice((page - 1) * pageSize, page * pageSize)
+                .map((item, idx) => {
+                  const percent = (typeof item.batteryLevel === 'number') ? item.batteryLevel : 0;
+                  return (
+                    <Box key={item.vehicleId || idx} p={3} borderWidth="1px" borderRadius="md">
+                      <HStack justify="space-between" align="start">
+                        <Box>
+                          <Text fontWeight="medium">{item.licensePlate || 'N/A'}</Text>
+                          <Text fontSize="sm" color="gray.600">
+                            {item.vehicleModel || 'Unknown Model'}{item.brand ? ` (${item.brand})` : ''}
+                          </Text>
+                          <Text fontSize="sm" color="gray.500">
+                            Last maintenance: {item.lastMaintenanceDate ? new Date(item.lastMaintenanceDate).toLocaleString() : 'N/A'}
+                          </Text>
+                          <Text fontSize="sm" color="gray.500">
+                            Current rental: {item.currentRentalContractId ?? 'None'}
+                          </Text>
+                        </Box>
+                        <Box ml={2} minW="58px" textAlign="right">
+                          <Badge colorScheme={getColor(percent)} mb={1}>{percent}%</Badge>
+                          <Progress size="xs" mt={1} colorScheme={getColor(percent)} value={percent} />
+                        </Box>
+                      </HStack>
+                    </Box>
+                  );
+                })}
+            </SimpleGrid>
             {items.length > pageSize && (
               <HStack justify="center" pt={2} spacing={2}>
                 {Array.from({ length: Math.ceil(items.length / pageSize) }, (_, i) => i + 1).map(p => (
