@@ -8,7 +8,6 @@ namespace PublicCarRental.Application.DTOs.Veh
         public string LicensePlate { get; set; }
         public int BatteryLevel { get; set; }
         public VehicleStatus Status { get; set; }
-        public decimal PricePerHour { get; set; }
 
         public int? StationId { get; set; }
         public string? StationName { get; set; }

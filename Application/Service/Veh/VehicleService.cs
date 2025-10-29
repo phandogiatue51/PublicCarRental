@@ -253,7 +253,7 @@ namespace PublicCarRental.Application.Service.Veh
             }, TimeSpan.FromMinutes(15));
         }
 
-        public async Task<List<VehicleDto>> GetAvailableAsync(DateTime startTime, DateTime endTime, int? stationId = null)
+        public async Task<List<VehicleDto>> GetAvailableAsync(DateTime? startTime = null, DateTime? endTime = null, int? stationId = null)
         {
             var query = _repo.GetAll()
                 .Where(v => (v.Status == VehicleStatus.Available || v.Status == VehicleStatus.Renting) &&
@@ -264,7 +264,7 @@ namespace PublicCarRental.Application.Service.Veh
                                startTime < c.EndTime &&
                                endTime > c.StartTime));
 
-            if (stationId != 0)
+            if (stationId.HasValue)
                 query = query.Where(v => v.StationId == stationId.Value);
 
             var vehicles = await query.ToListAsync();
@@ -278,7 +278,6 @@ namespace PublicCarRental.Application.Service.Veh
                 LicensePlate = v.LicensePlate,
                 BatteryLevel = v.BatteryLevel,
                 Status = v.Status,
-                PricePerHour = v.Model?.PricePerHour ?? 0, // Added null check
                 StationId = v.StationId,
                 StationName = v.Station?.Name,
                 ModelId = v.ModelId,

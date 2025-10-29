@@ -88,14 +88,72 @@ export default function StaffModal({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation logic here...
-    
+    // Validation logic
+    if (!formData.fullName.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Full name is required",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Email is required",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!isEdit && !formData.password.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Password is required for new staff",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Phone number is required",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!formData.identityCardNumber.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Identity card number is required",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       const staffData = { ...formData };
-      if (!staffData.password.trim()) {
+      
+      // Remove password if empty in edit mode
+      if (isEdit && !staffData.password.trim()) {
         delete staffData.password;
       }
+      
+      // Convert stationId to number if it exists
       if (staffData.stationId) {
         staffData.stationId = parseInt(staffData.stationId);
       }
@@ -151,22 +209,86 @@ export default function StaffModal({
         <form onSubmit={handleSubmit}>
           <ModalBody>
             <VStack spacing={4}>
-              {/* Form fields here - same as before */}
               <FormControl isRequired>
                 <FormLabel>Full Name</FormLabel>
                 <Input
                   value={formData.fullName}
                   onChange={(e) => handleInputChange('fullName', e.target.value)}
                   placeholder={fetchingStaff ? "Loading staff data..." : "Enter full name"}
+                  maxLength={100}
                   isDisabled={fetchingStaff}
                 />
               </FormControl>
-              {/* Add other form fields similarly */}
+
+              <FormControl isRequired>
+                <FormLabel>Email</FormLabel>
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  placeholder="Enter email address"
+                  isDisabled={fetchingStaff}
+                />
+              </FormControl>
+
+              <FormControl isRequired={!isEdit}>
+                <FormLabel>
+                  Password {isEdit && "(Leave blank to keep current)"}
+                </FormLabel>
+                <Input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => handleInputChange('password', e.target.value)}
+                  placeholder={isEdit ? "Enter new password (optional)" : "Enter password"}
+                  isDisabled={fetchingStaff}
+                />
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel>Phone Number</FormLabel>
+                <Input
+                  value={formData.phoneNumber}
+                  onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                  placeholder="Enter phone number"
+                  isDisabled={fetchingStaff}
+                />
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel>Identity Card Number</FormLabel>
+                <Input
+                  value={formData.identityCardNumber}
+                  onChange={(e) => handleInputChange('identityCardNumber', e.target.value)}
+                  placeholder="Enter identity card number"
+                  isDisabled={fetchingStaff}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Station (Optional)</FormLabel>
+                <Select
+                  value={formData.stationId}
+                  onChange={(e) => handleInputChange('stationId', e.target.value)}
+                  placeholder="Select station"
+                  isDisabled={fetchingStaff}
+                >
+                  {stations.map((station) => (
+                    <option key={station.stationId} value={station.stationId}>
+                      {station.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
             </VStack>
           </ModalBody>
 
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={handleClose} disabled={loading || fetchingStaff}>
+            <Button
+              variant="ghost"
+              mr={3}
+              onClick={handleClose}
+              disabled={loading || fetchingStaff}
+            >
               Cancel
             </Button>
             <Button

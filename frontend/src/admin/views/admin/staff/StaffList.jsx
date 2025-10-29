@@ -287,15 +287,7 @@ export default function StaffList() {
         </Flex>
       ),
     }),
-    columnHelper.accessor("email", {
-      header: () => <Text color="gray.400" fontSize="12px">EMAIL</Text>,
-      cell: (info) => (
-        <Flex align="center" gap={2}>
-          <Icon as={MdEmail} color="gray.500" />
-          <Text color={textColor} fontSize="sm">{info.getValue()}</Text>
-        </Flex>
-      ),
-    }),
+   
     columnHelper.accessor("phoneNumber", {
       header: () => <Text color="gray.400" fontSize="12px">PHONE</Text>,
       cell: (info) => (

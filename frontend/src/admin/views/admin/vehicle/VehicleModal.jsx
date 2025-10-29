@@ -43,7 +43,6 @@ export default function VehicleModal({ isOpen, onClose, onSuccess, vehicle = nul
       const vehicleData = await vehicleAPI.getById(vehicle.vehicleId);
       setLicensePlate(vehicleData.licensePlate || '');
       setBatteryLevel(vehicleData.batteryLevel || '');
-      setPricePerHour(vehicleData.pricePerHour || '');
       setStationId(vehicleData.stationId || '');
       setModelId(vehicleData.modelId || '');
     } catch (error) {
@@ -80,7 +79,6 @@ export default function VehicleModal({ isOpen, onClose, onSuccess, vehicle = nul
   const resetForm = () => {
     setLicensePlate('');
     setBatteryLevel('');
-    setPricePerHour('');
     setStationId('');
     setModelId('');
   };
@@ -103,17 +101,6 @@ export default function VehicleModal({ isOpen, onClose, onSuccess, vehicle = nul
       toast({
         title: 'Validation Error',
         description: 'Battery level must be between 0 and 100',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    if (!pricePerHour || pricePerHour <= 0) {
-      toast({
-        title: 'Validation Error',
-        description: 'Price per hour must be greater than 0',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -149,7 +136,6 @@ export default function VehicleModal({ isOpen, onClose, onSuccess, vehicle = nul
       const vehicleData = {
         licensePlate: licensePlate.trim(),
         batteryLevel: parseInt(batteryLevel),
-        pricePerHour: parseInt(pricePerHour),
         stationId: parseInt(stationId),
         modelId: parseInt(modelId),
       };
@@ -225,18 +211,6 @@ export default function VehicleModal({ isOpen, onClose, onSuccess, vehicle = nul
                   placeholder="Enter battery level (0-100)"
                   min="0"
                   max="100"
-                  isDisabled={fetchingVehicle}
-                />
-              </FormControl>
-
-              <FormControl isRequired>
-                <FormLabel>Price per Hour (VND)</FormLabel>
-                <Input
-                  type="number"
-                  value={pricePerHour}
-                  onChange={(e) => setPricePerHour(e.target.value)}
-                  placeholder="Enter price per hour"
-                  min="1"
                   isDisabled={fetchingVehicle}
                 />
               </FormControl>

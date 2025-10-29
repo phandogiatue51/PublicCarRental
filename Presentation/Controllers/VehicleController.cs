@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PublicCarRental.Application.DTOs.Veh;
 using PublicCarRental.Application.Service.Veh;
 
@@ -73,9 +74,13 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpPost("check-availability")]
-        public async Task<IActionResult> CheckAvailabilityAsync(FilterAvailable dto)
+        public async Task<IActionResult> CheckAvailabilityAsync([FromQuery] DateTime? startDate = null, 
+            [FromQuery] DateTime? endDate = null,
+            [FromQuery] int? stationId = null)
         {
-            var isAvailable = await _service.GetAvailableAsync(dto.StartTime, dto.EndTime, dto.StationId);
+            startDate ??= DateTime.UtcNow;
+            endDate ??= DateTime.UtcNow.AddDays(1);
+            var isAvailable = await _service.GetAvailableAsync(startDate, endDate, stationId);
             return Ok(isAvailable);
         }
     }

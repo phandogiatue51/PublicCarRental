@@ -8,11 +8,11 @@ import {
   getSortedRowModel, useReactTable
 } from '@tanstack/react-table';
 import { useState, useEffect } from 'react';
-import { accidentAPI } from '../../../../services/api';
-import { MdDelete, MdVisibility } from 'react-icons/md';
-import AccidentViewModal from '../../../../staff/Pages/AccidentReport/AccidentViewModal';
+import { accidentAPI } from '../../../services/api';
+import { MdDelete } from 'react-icons/md';
+import AccidentViewModal from '../../../staff/Pages/AccidentReport/AccidentViewModal';
 
-import Card from '../../../components/card/Card';
+import Card from './../../components/card/Card';
 
 const columnHelper = createColumnHelper();
 

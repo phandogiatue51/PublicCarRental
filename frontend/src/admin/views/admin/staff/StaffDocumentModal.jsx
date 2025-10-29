@@ -169,9 +169,7 @@ export default function StaffDocumentModals({
                               as={doc.isVerified ? MdCheckCircle : MdCancel} 
                               color={doc.isVerified ? "green.500" : "red.500"} 
                             />
-                            <Text fontSize="sm">
-                              {doc.isVerified ? "Verified" : "Not Verified"}
-                            </Text>
+                           
                           </Flex>
                         </VStack>
                       </VStack>

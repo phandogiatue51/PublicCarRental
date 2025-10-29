@@ -48,7 +48,7 @@ const Pagination = ({
   const goToPreviousPage = () => onPageChange(Math.max(currentPage - 1, 1));
   const goToNextPage = () => onPageChange(Math.min(currentPage + 1, totalPages));
 
-  if (totalPages <= 1) return null;
+  if (totalItems === 0) return null; 
 
   return (
     <Flex

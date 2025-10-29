@@ -1,5 +1,3 @@
-import { filter } from "@chakra-ui/react";
-
 const API_BASE_URL = process.env.NODE_ENV === 'development'
   ? 'https://localhost:7230/api'
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
@@ -485,6 +483,19 @@ filter: (filters) => {
   const queryString = queryParams.toString();
   return apiRequest(`/Vehicle/filter-vehicle${queryString ? `?${queryString}` : ''}`);
 },
+
+ getAvaiable: (stationId, startTime, endTime) => {
+    const queryParams = new URLSearchParams();
+    if (stationId) queryParams.append('stationId', stationId);
+    if (startTime) queryParams.append('startDate', startTime);
+    if (endTime) queryParams.append('endDate', endTime);
+    
+    return apiRequest(`/Vehicle/check-availability?${queryParams.toString()}`, {
+      method: 'POST', // This should be POST, not GET
+      // If your backend expects a body, you might need this instead:
+      // body: JSON.stringify({ stationId, startTime, endTime }),
+    });
+  }
 };
 
 // Invoice API services

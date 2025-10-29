@@ -135,9 +135,9 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
     switch (currentStatus) {
       case 0: // Reported
         return statusOptions.filter(opt => opt.value === 1 || opt.value === 2); // UnderInvestigation or RepairApproved
-      case 1: // UnderInvestigation
-        return statusOptions.filter(opt => opt.value === 2); // RepairApproved
       case 2: // RepairApproved
+        return statusOptions.filter(opt => opt.value === 1); // UnderInvestigation
+      case 1: // UnderInvestigation
         return statusOptions.filter(opt => opt.value === 3); // UnderRepair
       case 3: // UnderRepair
         return statusOptions.filter(opt => opt.value === 4); // Repaired
