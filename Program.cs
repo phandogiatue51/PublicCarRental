@@ -23,6 +23,7 @@ using PublicCarRental.Application.Service.Typ;
 using PublicCarRental.Application.Service.Veh;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Models.Configuration;
+using PublicCarRental.Infrastructure.Data.Repository;
 using PublicCarRental.Infrastructure.Data.Repository.Acc;
 using PublicCarRental.Infrastructure.Data.Repository.Bran;
 using PublicCarRental.Infrastructure.Data.Repository.Cont;
@@ -167,7 +168,9 @@ builder.Services.AddScoped<IAccidentRepository, AccidentRepository>();
 builder.Services.AddScoped<IAccidentService, AccidentService>();
 builder.Services.AddScoped<IRatingRepository, RatingRepository>();
 builder.Services.AddScoped<IRatingService, RatingService>();
-
+builder.Services.AddScoped<IRefundRepository, RefundRepository>();
+builder.Services.AddScoped<IRefundService, RefundService>();
+builder.Services.AddScoped<IPayOSPayoutService, PayOSPayoutService>();
 builder.Services.AddHostedService<AccidentConsumerService>();
 builder.Services.AddScoped<AccidentEventProducerService>();
 builder.Services.AddHostedService<NotificationConsumerService>();

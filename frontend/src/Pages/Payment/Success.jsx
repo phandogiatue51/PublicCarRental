@@ -20,7 +20,7 @@ function Success() {
                     Thank you for your payment. Your booking request has been confirmed.
                 </p>
                 <p style={{ marginBottom: '15px' }}>
-                    A receipt has been sent to your email address (even in Spam). 
+                    A receipt has been sent to your email address (even in Spam).
                 </p>
                 <p style={{ marginBottom: '15px' }}>
                     To start your renting, you will have to present your receipt.
@@ -30,9 +30,21 @@ function Success() {
                         Order Code: {orderCode}
                     </p>
                 )}
-                <a href="/" style={{ marginBottom: '15px', display: 'inline-block' }}>
+                <a
+                    href="/"
+                    style={{
+                        marginBottom: '15px',
+                        display: 'inline-block',
+                        backgroundColor: '#007BFF', 
+                        color: '#fff',
+                        padding: '10px 20px',
+                        borderRadius: '5px',
+                        textDecoration: 'none'
+                    }}
+                >
                     Return to Home
                 </a>
+
             </div>
         </div>
     );

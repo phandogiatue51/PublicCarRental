@@ -28,9 +28,9 @@ namespace PublicCarRental.Application.Service.Pay
         public PayOSService(IConfiguration configuration, IInvoiceService invoiceService, IEVRenterService renterService,
             IBookingService bookingService, ILogger<PayOSService> logger, IContractService contractService)
         {
-            var clientId = configuration["PayOS:ClientId"];
-            var apiKey = configuration["PayOS:ApiKey"];
-            var checksumKey = configuration["PayOS:ChecksumKey"];
+            var clientId = configuration["PayOS:PaymentClientId"];
+            var apiKey = configuration["PayOS:PaymentApiKey"];
+            var checksumKey = configuration["PayOS:PaymentChecksumKey"];
 
             _payOS = new PayOS(clientId, apiKey, checksumKey);
             _invoiceService = invoiceService;

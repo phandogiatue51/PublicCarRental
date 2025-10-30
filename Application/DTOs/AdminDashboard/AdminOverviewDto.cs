@@ -9,7 +9,6 @@
         public int ActiveRentals { get; set; }
         public decimal TodayRevenue { get; set; }
         public decimal MonthlyRevenue { get; set; }
-        public double SystemUtilizationRate { get; set; } 
     }
 
 }

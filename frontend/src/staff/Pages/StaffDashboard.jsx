@@ -7,6 +7,13 @@ import {
     MdPerson, MdDriveEta, MdAssignment, MdReceipt
 } from 'react-icons/md';
 import { renterAPI, vehicleAPI, contractAPI, invoiceAPI } from '../../services/api';
+import IncomingCheckins from '../components/Dashboard/IncomingCheckins';
+import IncomingCheckouts from '../components/Dashboard/IncomingCheckouts';
+import MaintenanceQueue from '../components/Dashboard/MaintenanceQueue';
+import LowBatteryVehicles from '../components/Dashboard/LowBatteryVehicles';
+import AvailableVehicles from '../components/Dashboard/AvailableVehicles';
+import CheckinsCheckoutsByDay from '../components/Dashboard/Charts/CheckinsCheckoutsByDay';
+import AvailableByModelBar from '../components/Dashboard/Charts/AvailableByModelBar';
 
 const StaffDashboard = () => {
     const [stats, setStats] = useState({
@@ -197,18 +204,37 @@ const StaffDashboard = () => {
             </Grid>
 
             <Box mt={8}>
-                <Card bg={cardBg} border="1px" borderColor={borderColor}>
-                    <CardBody>
-                        <Text fontSize="lg" fontWeight="bold" color={textColor} mb={4}>
-                            Quick Actions
-                        </Text>
-                        <Text color={textColor} fontSize="sm">
-                            Use the navigation menu to view detailed information about renters, vehicles, contracts, and invoices.
-                            All data is filtered by your assigned station.
-                        </Text>
-                    </CardBody>
-                </Card>
+                <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
+                    <GridItem>
+                        <CheckinsCheckoutsByDay stationId={stationId} days={7} count={200} />
+                    </GridItem>
+                    <GridItem>
+                        <AvailableByModelBar stationId={stationId} top={8} />
+                    </GridItem>
+                </Grid>
             </Box>
+
+            <Box mt={8}>
+                <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
+                    <GridItem>
+                        <IncomingCheckins stationId={stationId} count={5} />
+                    </GridItem>
+                    <GridItem>
+                        <IncomingCheckouts stationId={stationId} count={5} />
+                    </GridItem>
+                    <GridItem>
+                        <MaintenanceQueue stationId={stationId} />
+                    </GridItem>
+                    <GridItem>
+                        <LowBatteryVehicles stationId={stationId} />
+                    </GridItem>
+                    <GridItem colSpan={{ base: 1, md: 2 }}>
+                        <AvailableVehicles stationId={stationId} />
+                    </GridItem>
+                </Grid>
+            </Box>
+
+            
         </Box>
     );
 };

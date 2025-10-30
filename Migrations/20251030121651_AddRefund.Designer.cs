@@ -12,8 +12,8 @@ using PublicCarRental.Infrastructure.Data.Models;
 namespace PublicCarRental.Migrations
 {
     [DbContext(typeof(EVRentalDbContext))]
-    [Migration("20251030073003_HandleRefund")]
-    partial class HandleRefund
+    [Migration("20251030121651_AddRefund")]
+    partial class AddRefund
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

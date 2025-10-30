@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.Application.Service;
+using PublicCarRental.Infrastructure.Data.Models;
 
 namespace PublicCarRental.Presentation.Controllers
 {
@@ -19,6 +20,14 @@ namespace PublicCarRental.Presentation.Controllers
         {
             var models = _transactionSerivce.GetAll();
             return Ok(models);
+        }
+
+        [HttpPost("create/{invoiceId}")]
+        public IActionResult CreateTransaction(int invoiceId)
+        {
+            string note = $"Payment received for invoice #{invoiceId} created!";
+            _transactionSerivce.CreateTransaction(invoiceId, TransactionType.Income, note);
+            return Ok();
         }
     }
 }
