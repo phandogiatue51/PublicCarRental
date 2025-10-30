@@ -5,6 +5,6 @@
         public string VehicleType { get; set; }
         public decimal Revenue { get; set; }
         public int RentalCount { get; set; }
-        public double MarketShare { get; set; }
+        public decimal MarketShare { get; set; }
     }
 }

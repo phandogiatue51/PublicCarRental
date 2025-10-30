@@ -58,7 +58,7 @@ const BookingSummaryModal = ({ isOpen, onClose, bookingSummary, onConfirm }) => 
             // Prepare payment data with invoiceId and renterId
             const paymentData = {
                 invoiceId: bookingSummary.invoiceId,
-                renterId: bookingSummary.renterId || 1 // Default to 1 if not provided
+                renterId: bookingSummary.renterId 
             };
             
             console.log('Creating payment with:', paymentData);

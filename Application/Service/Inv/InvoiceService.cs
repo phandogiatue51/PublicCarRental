@@ -148,23 +148,15 @@ namespace PublicCarRental.Application.Service.Inv
                     _logger.LogInformation("Invoice {InvoiceId} - AmountPaid: {AmountPaid}, ContractId: {ContractId}",
                         invoiceId, invoice.AmountPaid, invoice.ContractId);
 
-                    if (invoice.ContractId.HasValue)
+                    try
                     {
-                        try
-                        {
-                            _transactionService.CreateTransaction(invoiceId, TransactionType.Income, $"Transaction for invoice #{invoice.InvoiceId} created!");
-                            _logger.LogInformation("Transaction created for contract {ContractId}",
-                                invoice.ContractId.Value);
-                        }
-                        catch (Exception transEx)
-                        {
-                            _logger.LogError(transEx, "Failed to create transaction for contract {ContractId}",
-                                invoice.ContractId.Value);
-                        }
+                        string note = $"Payment received for invoice #{invoice.InvoiceId} created!";
+                        _transactionService.CreateTransaction(invoiceId, TransactionType.Income, note);
+                        _logger.LogInformation("✅ Transaction created for invoice {InvoiceId}", invoiceId);
                     }
-                    else
+                    catch (Exception transEx)
                     {
-                        _logger.LogWarning("Invoice {InvoiceId} has no ContractId associated", invoiceId);
+                        _logger.LogError(transEx, "⚠️ Transaction creation failed for invoice {InvoiceId}, but invoice will still be marked as Paid", invoiceId);
                     }
                 }
                 else if (status == InvoiceStatus.Cancelled)

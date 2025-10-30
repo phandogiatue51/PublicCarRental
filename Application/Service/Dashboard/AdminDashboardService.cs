@@ -30,6 +30,7 @@ namespace PublicCarRental.Application.Service.Dashboard
         private readonly IRatingRepository _ratingRepository;
         private readonly IStaffRepository _staffRepository;
         private readonly IAccidentRepository _accidentRepository;
+        private readonly ITransactionService _transactionService;
 
         private DateTime today => DateTime.UtcNow.Date;
         private DateTime firstDayOfMonth => new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -37,7 +38,7 @@ namespace PublicCarRental.Application.Service.Dashboard
         public AdminDashboardService(IStationRepository stationRepository,IVehicleRepository vehicleRepository, IAccountRepository accountRepository,
             IContractRepository contractRepository, IInvoiceRepository invoiceRepository, IModelRepository vehicleModelRepository,
             IHelperService helperService, IEVRenterRepository renterRepository, IRatingRepository ratingRepository, IStaffRepository staffRepository,
-            IAccidentRepository accidentRepository)
+            IAccidentRepository accidentRepository, ITransactionService transactionService)
         {
             _stationRepository = stationRepository;
             _vehicleRepository = vehicleRepository;
@@ -50,6 +51,7 @@ namespace PublicCarRental.Application.Service.Dashboard
             _ratingRepository = ratingRepository;
             _staffRepository = staffRepository;
             _accidentRepository = accidentRepository;
+            _transactionService = transactionService;
         }
 
         public async Task<AdminOverviewDto> GetSystemOverviewAsync()
@@ -73,8 +75,6 @@ namespace PublicCarRental.Application.Service.Dashboard
                 .Where(i => i.PaidAt >= firstDayOfMonth && i.Status == InvoiceStatus.Paid)
                 .Sum(i => i.AmountPaid ?? 0);
 
-            var utilizationRate = totalVehicles > 0 ? (double)activeRentals / totalVehicles * 100 : 0;
-
             return new AdminOverviewDto
             {
                 TotalStations = totalStations,
@@ -84,7 +84,6 @@ namespace PublicCarRental.Application.Service.Dashboard
                 ActiveRentals = activeRentals,
                 TodayRevenue = todayRevenue,
                 MonthlyRevenue = monthlyRevenue,
-                SystemUtilizationRate = Math.Round(utilizationRate, 2)
             };
         }
 
@@ -328,75 +327,9 @@ namespace PublicCarRental.Application.Service.Dashboard
                 AverageCheckOutsPerStaff = Math.Round(averageCheckOuts, 2)
             };
         }
-
         public async Task<FinancialReportDto> GetFinancialReportAsync(DateRange dateRange)
         {
-            var paidInvoices = await _invoiceRepository.GetAll()
-                .Where(i => i.PaidAt >= dateRange.StartDate &&
-                           i.PaidAt <= dateRange.EndDate &&
-                           i.Status == InvoiceStatus.Paid)
-                .Include(i => i.Contract)
-                .ThenInclude(c => c.Station)
-                .Include(i => i.Contract.Vehicle.Model)
-                .ThenInclude(t => t.Type)
-                .ToListAsync();
-
-            var totalRevenue = paidInvoices.Sum(i => i.AmountPaid ?? 0);
-            var totalDeposits = paidInvoices.Where(i => i.Note != null &&
-                i.Note.Contains("deposit", StringComparison.OrdinalIgnoreCase))
-                .Sum(i => i.AmountPaid ?? 0);
-            var totalRefunds = paidInvoices.Where(i => i.Note != null &&
-                i.Note.Contains("refund", StringComparison.OrdinalIgnoreCase))
-                .Sum(i => i.AmountPaid ?? 0);
-
-            var revenueByStation = paidInvoices
-                .Where(i => i.Contract?.StationId != null)
-                .GroupBy(i => new { i.Contract.StationId, i.Contract.Station.Name })
-                .Select(g => new RevenueByStationDto
-                {
-                    StationId = (int)g.Key.StationId,
-                    StationName = g.Key.Name,
-                    Revenue = g.Sum(i => i.AmountPaid ?? 0),
-                    TotalRentals = g.Count()
-                })
-                .OrderByDescending(r => r.Revenue)
-                .ToList();
-
-            var dailyRevenue = paidInvoices
-                .GroupBy(i => i.PaidAt.Value.Date)
-                .Select(g => new DailyRevenueDto
-                {
-                    Date = g.Key,
-                    Revenue = g.Sum(i => i.AmountPaid ?? 0),
-                    RentalCount = g.Count()
-                })
-                .OrderBy(d => d.Date)
-                .ToList();
-
-            var revenueByVehicleType = paidInvoices
-                .Where(i => i.Contract?.Vehicle?.Model != null)
-                .GroupBy(i => i.Contract.Vehicle.Model.Type.Name)
-                .Select(g => new RevenueByVehicleTypeDto
-                {
-                    VehicleType = g.Key,
-                    Revenue = g.Sum(i => i.AmountPaid ?? 0),
-                    RentalCount = g.Count(),
-                    MarketShare = totalRevenue > 0 ? (double)(g.Sum(i => i.AmountPaid ?? 0) / totalRevenue * 100) : 0
-                })
-                .OrderByDescending(r => r.Revenue)
-                .ToList();
-
-            return new FinancialReportDto
-            {
-                Period = dateRange,
-                TotalRevenue = totalRevenue,
-                TotalDeposits = totalDeposits,
-                TotalRefunds = totalRefunds,
-                NetRevenue = totalRevenue - totalRefunds,
-                RevenueByStation = revenueByStation,
-                DailyRevenue = dailyRevenue,
-                RevenueByVehicleType = revenueByVehicleType
-            };
+            return await _transactionService.GetFinancialReportAsync(dateRange);
         }
 
         public async Task<RatingAnalyticsDto> GetRatingAnalyticsAsync()
@@ -409,7 +342,6 @@ namespace PublicCarRental.Application.Service.Dashboard
                 .Include(r => r.Contract.EVRenter.Account)
                 .ToListAsync();
 
-            // Model performance analysis
             var modelRatings = ratings
                 .Where(r => r.Contract?.Vehicle?.Model != null)
                 .GroupBy(r => r.Contract.Vehicle.Model)
@@ -431,13 +363,11 @@ namespace PublicCarRental.Application.Service.Dashboard
                 .ThenByDescending(m => m.TotalRatings)
                 .ToList();
 
-            // Top performing models (highest rated with sufficient reviews)
             var topPerformingModels = modelRatings
-                .Where(m => m.TotalRatings >= 5) // At least 5 ratings to be considered
+                .Where(m => m.TotalRatings >= 5)
                 .Take(5)
                 .ToList();
 
-            // Most reviewed models
             var mostReviewedModels = modelRatings
                 .OrderByDescending(m => m.TotalRatings)
                 .Take(5)
@@ -448,13 +378,13 @@ namespace PublicCarRental.Application.Service.Dashboard
                 TotalRatings = ratings.Count,
                 AverageRating = ratings.Any() ? Math.Round(ratings.Average(r => (int)r.Stars), 2) : 0,
                 RatingDistribution = new List<RatingDistributionDto>
-        {
-            new() { Stars = 5, Count = ratings.Count(r => r.Stars == RatingLabel.Excellent), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Excellent) / ratings.Count * 100 : 0 },
-            new() { Stars = 4, Count = ratings.Count(r => r.Stars == RatingLabel.Good), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Good) / ratings.Count * 100 : 0 },
-            new() { Stars = 3, Count = ratings.Count(r => r.Stars == RatingLabel.Normal), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Normal) / ratings.Count * 100 : 0 },
-            new() { Stars = 2, Count = ratings.Count(r => r.Stars == RatingLabel.Bad), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Bad) / ratings.Count * 100 : 0 },
-            new() { Stars = 1, Count = ratings.Count(r => r.Stars == RatingLabel.VeryBad), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.VeryBad) / ratings.Count * 100 : 0 }
-        },
+                {
+                    new() { Stars = 5, Count = ratings.Count(r => r.Stars == RatingLabel.Excellent), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Excellent) / ratings.Count * 100 : 0 },
+                    new() { Stars = 4, Count = ratings.Count(r => r.Stars == RatingLabel.Good), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Good) / ratings.Count * 100 : 0 },
+                    new() { Stars = 3, Count = ratings.Count(r => r.Stars == RatingLabel.Normal), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Normal) / ratings.Count * 100 : 0 },
+                    new() { Stars = 2, Count = ratings.Count(r => r.Stars == RatingLabel.Bad), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.Bad) / ratings.Count * 100 : 0 },
+                    new() { Stars = 1, Count = ratings.Count(r => r.Stars == RatingLabel.VeryBad), Percentage = ratings.Count > 0 ? (double)ratings.Count(r => r.Stars == RatingLabel.VeryBad) / ratings.Count * 100 : 0 }
+                },
                 RecentComments = ratings
                     .Where(r => !string.IsNullOrEmpty(r.Comment))
                     .OrderByDescending(r => r.CreatedAt)
