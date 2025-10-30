@@ -76,7 +76,7 @@ const IncomingCheckins = ({ stationId, count = 5 }) => {
                 bg="white" 
                 _dark={{ bg: 'gray.800' }}
                 borderColor="gray.200"
-                _dark={{ borderColor: 'gray.700' }}
+                
                 transition="all 0.2s"
                 _hover={{ 
                   shadow: 'md', 

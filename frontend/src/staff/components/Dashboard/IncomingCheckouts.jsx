@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardBody, Box, Text, Spinner, Alert, AlertIcon, VStack, HStack, Badge, SimpleGrid, Button } from '@chakra-ui/react';
+import { Card, CardBody, Box, Text, Spinner, Alert, AlertIcon, VStack, HStack, Badge, Button } from '@chakra-ui/react';
 import { staffDashboardAPI } from '../../../services/api';
 
 const IncomingCheckouts = ({ stationId, count = 5 }) => {
@@ -7,7 +7,7 @@ const IncomingCheckouts = ({ stationId, count = 5 }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
-  const pageSize = 9; // 3 rows x 3 columns
+  const pageSize = 10; // 2 boxes per row, 5 rows
 
   useEffect(() => {
     let isActive = true;
@@ -32,48 +32,136 @@ const IncomingCheckouts = ({ stationId, count = 5 }) => {
   }, [items]);
 
   return (
-    <Card>
+    <Card shadow="md" borderRadius="lg">
       <CardBody>
-        <Text fontWeight="bold" mb={3}>Incoming Check-outs</Text>
+        <Text fontSize="lg" fontWeight="bold" mb={4} color="gray.700" _dark={{ color: 'gray.200' }}>
+          Incoming Check-outs
+        </Text>
+        
         {loading && (
-          <HStack>
-            <Spinner size="sm" />
-            <Text>Loading...</Text>
+          <HStack spacing={3} justify="center" py={8}>
+            <Spinner size="md" color="purple.500" thickness="3px" />
+            <Text color="gray.600">Loading...</Text>
           </HStack>
         )}
+        
         {!loading && error && (
-          <Alert status="error">
+          <Alert status="error" borderRadius="md">
             <AlertIcon />
             {error}
           </Alert>
         )}
+        
         {!loading && !error && (
-          <VStack align="stretch" spacing={3}>
+          <VStack align="stretch" spacing={4}>
             {items.length === 0 && (
-              <Text color="gray.500">No upcoming check-outs.</Text>
+              <Box textAlign="center" py={8}>
+                <Text color="gray.500" fontSize="md">No upcoming check-outs.</Text>
+              </Box>
             )}
-            {items
-              .slice((page - 1) * pageSize, page * pageSize)
-              .map((item, idx) => (
-              <Box key={item.contractId || idx} p={4} borderWidth="1px" borderRadius="lg" bg="white" _dark={{ bg: 'gray.800' }}>
-                <HStack spacing={6} wrap="wrap" justify="space-between" align="center">
-                  <HStack spacing={8} flex="1 1 auto" minW={0}>
-                    <Text fontWeight="extrabold" fontSize="lg" whiteSpace="nowrap">{item.licensePlate || 'N/A'}</Text>
-                    <Text color="gray.700" _dark={{ color: 'gray.300' }} fontSize="md" noOfLines={1}>{item.vehicleModel || 'Unknown Model'}</Text>
-                    <Text color="gray.600" fontSize="md" whiteSpace="nowrap">Customer: {item.customerName || 'N/A'}</Text>
-                    <Text color="gray.600" fontSize="md" whiteSpace="nowrap">Phone: {item.customerPhone || 'N/A'}</Text>
-                    <Text color="gray.600" fontSize="md" whiteSpace="nowrap">License: {item.licenseNumber || 'N/A'}</Text>
+            
+            <Box 
+              display="grid" 
+              gridTemplateColumns="repeat(2, 1fr)" 
+              gap={4}
+            >
+              {items
+                .slice((page - 1) * pageSize, page * pageSize)
+                .map((item, idx) => (
+              <Box 
+                key={item.contractId || idx} 
+                p={4} 
+                borderWidth="1px" 
+                borderRadius="md" 
+                bg="white" 
+                _dark={{ bg: 'gray.800' }}
+                borderColor="gray.200"
+               
+                transition="all 0.2s"
+                _hover={{ 
+                  shadow: 'md', 
+                  borderColor: 'purple.300',
+                  transform: 'translateY(-2px)'
+                }}
+              >
+                <VStack align="stretch" spacing={3}>
+                  <HStack justify="space-between" align="center">
+                    <Text 
+                      fontWeight="bold" 
+                      fontSize="lg" 
+                      color="purple.600"
+                      _dark={{ color: 'purple.400' }}
+                    >
+                      {item.licensePlate || 'N/A'}
+                    </Text>
+                    
+                    <Badge 
+                      colorScheme="purple" 
+                      variant="subtle" 
+                      borderRadius="full" 
+                      px={3} 
+                      py={1} 
+                      fontSize="xs"
+                      fontWeight="semibold"
+                    >
+                      {item.scheduledTime ? new Date(item.scheduledTime).toLocaleString() : 'Soon'}
+                    </Badge>
                   </HStack>
-                  <Badge colorScheme="purple" variant="subtle" borderRadius="full" px={4} py={1.5} fontSize="0.8rem">
-                    {item.scheduledTime ? new Date(item.scheduledTime).toLocaleString() : 'Soon'}
-                  </Badge>
-                </HStack>
+                  
+                  <Text 
+                    color="gray.700" 
+                    _dark={{ color: 'gray.300' }} 
+                    fontSize="sm" 
+                    noOfLines={1}
+                  >
+                    {item.vehicleModel || 'Unknown Model'}
+                  </Text>
+                  
+                  <VStack align="stretch" spacing={1}>
+                    <Text 
+                      color="gray.600" 
+                      _dark={{ color: 'gray.400' }}
+                      fontSize="sm"
+                    >
+                      Customer: <Text as="span" fontWeight="medium">{item.customerName || 'N/A'}</Text>
+                    </Text>
+                    
+                    <Text 
+                      color="gray.600" 
+                      _dark={{ color: 'gray.400' }}
+                      fontSize="sm"
+                    >
+                      Phone: <Text as="span" fontWeight="medium">{item.customerPhone || 'N/A'}</Text>
+                    </Text>
+                    
+                    <Text 
+                      color="gray.600" 
+                      _dark={{ color: 'gray.400' }}
+                      fontSize="sm"
+                    >
+                      License: <Text as="span" fontWeight="medium">{item.licenseNumber || 'N/A'}</Text>
+                    </Text>
+                  </VStack>
+                </VStack>
               </Box>
             ))}
+            </Box>
+            
             {items.length > pageSize && (
-              <HStack justify="center" pt={2} spacing={2}>
+              <HStack justify="center" pt={4} spacing={2}>
                 {Array.from({ length: Math.ceil(items.length / pageSize) }, (_, i) => i + 1).map(p => (
-                  <Button key={p} size="sm" onClick={() => setPage(p)} variant={p === page ? 'solid' : 'outline'} colorScheme={p === page ? 'blue' : 'gray'}>
+                  <Button 
+                    key={p} 
+                    size="sm" 
+                    onClick={() => setPage(p)} 
+                    colorScheme={p === page ? 'purple' : 'gray'}
+                    variant={p === page ? 'solid' : 'outline'}
+                    minW="35px"
+                    _hover={{
+                      transform: 'translateY(-2px)',
+                      shadow: 'sm'
+                    }}
+                  >
                     {p}
                   </Button>
                 ))}
@@ -86,6 +174,4 @@ const IncomingCheckouts = ({ stationId, count = 5 }) => {
   );
 };
 
-export default IncomingCheckouts;
-
-
+export default IncomingCheckouts; 

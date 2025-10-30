@@ -684,6 +684,10 @@ export const staffDashboardAPI = {
   // Low-battery vehicles for a station
   getLowBatteryVehicles: (stationId) =>
     apiRequest(`/StaffDashboard/station/${stationId}/low-battery-vehicles`),
+
+  // Available vehicles at a station
+  getAvailableVehicles: (stationId) =>
+    apiRequest(`/StaffDashboard/station/${stationId}/available-vehicles`),
 };
 
 
