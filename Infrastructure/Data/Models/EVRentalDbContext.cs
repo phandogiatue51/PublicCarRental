@@ -23,6 +23,7 @@ namespace PublicCarRental.Infrastructure.Data.Models
         public DbSet<Rating> Ratings { get; set; }
         public DbSet<AccountDocument> AccountDocuments { get; set; }
         public DbSet<AccidentReport> AccidentReports { get; set; }
+        public DbSet<Refund> Refunds { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -116,6 +117,12 @@ namespace PublicCarRental.Infrastructure.Data.Models
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Invoice>()
+              .HasOne(i => i.Transaction)
+              .WithOne(t => t.Invoice)
+              .HasForeignKey<Transaction>(t => t.InvoiceId)
+              .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Invoice>()
                 .Property(i => i.Status)
                 .HasConversion<int>();
 
@@ -133,10 +140,12 @@ namespace PublicCarRental.Infrastructure.Data.Models
             {
                 entity.ToTable("Transactions");
 
-                entity.HasOne(t => t.Contract)
-                      .WithMany()
-                      .HasForeignKey(t => t.ContractId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(t => t.Invoice)
+                       .WithOne(i => i.Transaction)
+                       .HasForeignKey<Transaction>(t => t.InvoiceId)
+                       .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(t => t.InvoiceId);
 
                 entity.Property(t => t.Amount)
                       .HasColumnType("decimal(15,2)")
@@ -144,6 +153,12 @@ namespace PublicCarRental.Infrastructure.Data.Models
 
                 entity.Property(t => t.Note)
                       .HasMaxLength(1000);
+
+                entity.Property(t => t.Type)
+                      .HasConversion<int>();  
+
+                entity.HasIndex(t => t.Timestamp);
+                entity.HasIndex(t => t.Type);
             });
 
             modelBuilder.Entity<Rating>()
@@ -177,14 +192,14 @@ namespace PublicCarRental.Infrastructure.Data.Models
                 entity.HasKey(e => e.AccidentId);
 
                 entity.HasOne(ar => ar.Vehicle)
-                      .WithMany(v => v.AccidentReports) 
+                      .WithMany(v => v.AccidentReports)
                       .HasForeignKey(ar => ar.VehicleId)
-                      .OnDelete(DeleteBehavior.Restrict); 
+                      .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(ar => ar.Contract)
-                      .WithMany() 
+                      .WithMany()
                       .HasForeignKey(ar => ar.ContractId)
-                      .OnDelete(DeleteBehavior.SetNull); 
+                      .OnDelete(DeleteBehavior.SetNull);
 
                 entity.HasIndex(ar => ar.VehicleId);
                 entity.HasIndex(ar => ar.ContractId);
@@ -195,6 +210,44 @@ namespace PublicCarRental.Infrastructure.Data.Models
                 entity.Property(ar => ar.Status)
                       .HasConversion<int>();
             });
+
+            modelBuilder.Entity<Refund>(entity =>
+            {
+                entity.HasKey(r => r.RefundId);
+
+                entity.HasOne(r => r.Staff)
+                      .WithMany()
+                      .HasForeignKey(r => r.StaffId)
+                      .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(r => r.Invoice)
+                       .WithOne(i => i.Refund)  
+                       .HasForeignKey<Refund>(r => r.InvoiceId)
+                       .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(r => r.Status)
+                      .HasConversion<int>();
+
+                entity.Property(r => r.Amount)
+                      .HasColumnType("decimal(15,2)")
+                      .IsRequired();
+
+                entity.Property(r => r.Reason)
+                      .HasMaxLength(500)
+                      .IsRequired();
+
+                entity.Property(r => r.Note)
+                      .HasMaxLength(1000);
+
+                entity.Property(r => r.PayoutTransactionId)
+                      .HasMaxLength(100);
+
+                entity.HasIndex(r => r.InvoiceId);
+                entity.HasIndex(r => r.StaffId);
+                entity.HasIndex(r => r.Status);
+                entity.HasIndex(r => r.RequestedDate);
+            });
+
         }
     }
 }

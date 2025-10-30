@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.Application.DTOs.Cont;
 using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Application.Service.PDF;
-using PublicCarRental.Application.Service.Trans;
 using PublicCarRental.Infrastructure.Data.Models;
 
 namespace PublicCarRental.Presentation.Controllers
@@ -33,20 +32,6 @@ namespace PublicCarRental.Presentation.Controllers
             var contract = _contractService.GetById(id);
             if (contract == null) return NotFound();
             return Ok(contract);
-        }
-
-        [HttpPost("update-contract/{id}")]
-        public async Task<IActionResult> UpdateContractAsync(int id, [FromBody] UpdateContractDto dto)
-        {
-            var result = await _contractService.UpdateContractAsync(id, dto);
-            if (result.Success)
-            {
-                return Ok(new { message = result.Message });
-            }
-            else
-            {
-                return BadRequest(new { error = result.Message });
-            }
         }
 
         [HttpPost("active-contract")]

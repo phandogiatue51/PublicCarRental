@@ -259,7 +259,19 @@ namespace PublicCarRental.Migrations
                     b.Property<DateTime?>("PaidAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<decimal?>("RefundAmount")
+                        .HasColumnType("numeric");
+
+                    b.Property<int?>("RefundId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("RefundedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TransactionId")
                         .HasColumnType("integer");
 
                     b.HasKey("InvoiceId");
@@ -296,6 +308,59 @@ namespace PublicCarRental.Migrations
                         .IsUnique();
 
                     b.ToTable("Ratings");
+                });
+
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Refund", b =>
+                {
+                    b.Property<int>("RefundId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RefundId"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(15,2)");
+
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("PayoutTransactionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("ProcessedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime>("RequestedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("StaffId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("RefundId");
+
+                    b.HasIndex("InvoiceId")
+                        .IsUnique();
+
+                    b.HasIndex("RequestedDate");
+
+                    b.HasIndex("StaffId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("Refunds");
                 });
 
             modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.RentalContract", b =>
@@ -420,7 +485,7 @@ namespace PublicCarRental.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(15,2)");
 
-                    b.Property<int>("ContractId")
+                    b.Property<int>("InvoiceId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Note")
@@ -436,7 +501,12 @@ namespace PublicCarRental.Migrations
 
                     b.HasKey("TransactionId");
 
-                    b.HasIndex("ContractId");
+                    b.HasIndex("InvoiceId")
+                        .IsUnique();
+
+                    b.HasIndex("Timestamp");
+
+                    b.HasIndex("Type");
 
                     b.ToTable("Transactions", (string)null);
                 });
@@ -630,6 +700,25 @@ namespace PublicCarRental.Migrations
                     b.Navigation("Contract");
                 });
 
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Refund", b =>
+                {
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Invoice", "Invoice")
+                        .WithOne("Refund")
+                        .HasForeignKey("PublicCarRental.Infrastructure.Data.Models.Refund", "InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Staff", "Staff")
+                        .WithMany()
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
+
+                    b.Navigation("Staff");
+                });
+
             modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.RentalContract", b =>
                 {
                     b.HasOne("PublicCarRental.Infrastructure.Data.Models.EVRenter", "EVRenter")
@@ -678,13 +767,13 @@ namespace PublicCarRental.Migrations
 
             modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Transaction", b =>
                 {
-                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.RentalContract", "Contract")
-                        .WithMany()
-                        .HasForeignKey("ContractId")
+                    b.HasOne("PublicCarRental.Infrastructure.Data.Models.Invoice", "Invoice")
+                        .WithOne("Transaction")
+                        .HasForeignKey("PublicCarRental.Infrastructure.Data.Models.Transaction", "InvoiceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Contract");
+                    b.Navigation("Invoice");
                 });
 
             modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Vehicle", b =>
@@ -733,6 +822,13 @@ namespace PublicCarRental.Migrations
             modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.EVRenter", b =>
                 {
                     b.Navigation("RentalContracts");
+                });
+
+            modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.Invoice", b =>
+                {
+                    b.Navigation("Refund");
+
+                    b.Navigation("Transaction");
                 });
 
             modelBuilder.Entity("PublicCarRental.Infrastructure.Data.Models.RentalContract", b =>

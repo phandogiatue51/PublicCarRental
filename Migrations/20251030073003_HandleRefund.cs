@@ -5,7 +5,7 @@
 namespace PublicCarRental.Migrations
 {
     /// <inheritdoc />
-    public partial class FixNullStaff : Migration
+    public partial class HandleRefund : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

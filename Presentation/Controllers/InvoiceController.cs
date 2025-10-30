@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Redis;
-using PublicCarRental.Application.Service.Trans;
 
 namespace PublicCarRental.Presentation.Controllers
 {

@@ -19,7 +19,6 @@ using PublicCarRental.Application.Service.Redis;
 using PublicCarRental.Application.Service.Ren;
 using PublicCarRental.Application.Service.Staf;
 using PublicCarRental.Application.Service.Stat;
-using PublicCarRental.Application.Service.Trans;
 using PublicCarRental.Application.Service.Typ;
 using PublicCarRental.Application.Service.Veh;
 using PublicCarRental.Infrastructure.Data.Models;

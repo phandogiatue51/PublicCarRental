@@ -7,7 +7,7 @@ namespace PublicCarRental.Application.DTOs
     {
         public int TransactionId { get; set; }
 
-        public int ContractId { get; set; }
+        public int InvoiceId { get; set; }
         public TransactionType Type { get; set; }
         public decimal Amount { get; set; }
         public DateTime Timestamp { get; set; }

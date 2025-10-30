@@ -2,6 +2,7 @@
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Redis;
 using PublicCarRental.Infrastructure.Data.Models;
+using System.Diagnostics.Contracts;
 using System.Text.Json;
 
 namespace PublicCarRental.Application.Service.Pay
@@ -19,8 +20,8 @@ namespace PublicCarRental.Application.Service.Pay
         private readonly IBookingService _bookingService;
         private readonly ILogger<PaymentProcessingService> _logger;
 
-        public PaymentProcessingService(IInvoiceService invoiceService, IContractService contractService, IBookingService bookingService,
-            ILogger<PaymentProcessingService> logger)
+        public PaymentProcessingService(IInvoiceService invoiceService, IContractService contractService, 
+            IBookingService bookingService, ILogger<PaymentProcessingService> logger)
         {
             _invoiceService = invoiceService;
             _contractService = contractService;

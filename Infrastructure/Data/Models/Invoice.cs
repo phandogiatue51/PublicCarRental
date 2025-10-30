@@ -8,8 +8,11 @@ namespace PublicCarRental.Infrastructure.Data.Models
         Pending,
         Paid,
         Overdue,
-        Cancelled
+        Cancelled,
+        Refunded,
+        PartiallyRefunded
     }
+
     public class Invoice
     {
         [Key]
@@ -28,5 +31,12 @@ namespace PublicCarRental.Infrastructure.Data.Models
 
         public string? BookingToken { get; set; }
         public string? Note { get; set; }
+        public decimal? RefundAmount { get; set; }
+        public DateTime? RefundedAt { get; set; }
+
+        public int? TransactionId { get; set; }
+        public Transaction? Transaction { get; set; }
+        public int? RefundId { get; set; }
+        public Refund? Refund { get; set; }
     }
 }

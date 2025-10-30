@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using PublicCarRental.Application.Service.Trans;
+using PublicCarRental.Application.Service;
 
 namespace PublicCarRental.Presentation.Controllers
 {

@@ -1,5 +1,4 @@
 ﻿using PublicCarRental.Application.DTOs.Inv;
-using PublicCarRental.Application.Service.Trans;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Inv;
 
@@ -153,7 +152,7 @@ namespace PublicCarRental.Application.Service.Inv
                     {
                         try
                         {
-                            _transactionService.CreateTransaction(invoice.ContractId.Value);
+                            _transactionService.CreateTransaction(invoiceId, TransactionType.Income, $"Transaction for invoice #{invoice.InvoiceId} created!");
                             _logger.LogInformation("Transaction created for contract {ContractId}",
                                 invoice.ContractId.Value);
                         }

@@ -7,7 +7,6 @@ using PublicCarRental.Application.Service.Rabbit;
 using PublicCarRental.Application.Service.Redis;
 using PublicCarRental.Application.Service.Ren;
 using PublicCarRental.Application.Service.Staf;
-using PublicCarRental.Application.Service.Trans;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Cont;
 using PublicCarRental.Infrastructure.Data.Repository.Inv;
@@ -29,13 +28,12 @@ namespace PublicCarRental.Application.Service.Cont
         private readonly IStaffService _staffService;
         private readonly IReceiptGenerationProducerService _receiptGenerationProducerService;
         private readonly IContractGenerationProducerService _contractGenerationProducer;
-        private readonly ITransactionService _transactionService;
 
         public ContractService(IContractRepository repo, IVehicleRepository vehicleRepo, IEVRenterService eVRenterService, 
             BookingEventProducerService bookingEventProducerService, IImageStorageService imageStorageService,
             ILogger<ContractService> logger, IDistributedLockService distributedLock, IStaffService staffService,
             IInvoiceRepository invoiceRepository, IBookingService bookingService, IReceiptGenerationProducerService receiptGenerationProducerService, 
-            IContractGenerationProducerService contractGenerationProducer, ITransactionService transactionService)
+            IContractGenerationProducerService contractGenerationProducer)
         {
             _contractRepo = repo;
             _vehicleRepo = vehicleRepo;
@@ -49,7 +47,6 @@ namespace PublicCarRental.Application.Service.Cont
             _staffService = staffService;
             _receiptGenerationProducerService = receiptGenerationProducerService;
             _contractGenerationProducer = contractGenerationProducer;
-            _transactionService = transactionService;
         }
 
         public IEnumerable<ContractDto> GetAll()
@@ -149,15 +146,6 @@ namespace PublicCarRental.Application.Service.Cont
             invoice.ContractId = contract.ContractId;
             _invoiceRepository.Update(invoice);
 
-            try
-            {
-                _transactionService.CreateTransaction(contract.ContractId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to create transaction for contract {ContractId}", contract.ContractId);
-            }
-
             _bookingService.RemoveBookingRequest(invoice.BookingToken);
 
             var lockKey = $"vehicle_booking:{bookingRequest.VehicleId}:{bookingRequest.StartTime:yyyyMMddHHmm}_{bookingRequest.EndTime:yyyyMMddHHmm}";
@@ -203,30 +191,6 @@ namespace PublicCarRental.Application.Service.Cont
             });
 
             return (true, "Booking confirmed! Contract created.", contract.ContractId);
-        }
-
-        public async Task<(bool Success, string Message)> UpdateContractAsync(int id, UpdateContractDto updatedContract)
-        {
-            var existing = _contractRepo.GetById(id);
-            if (existing == null) return (false, "Vehicle not found!");
-            if (existing.Status != RentalStatus.ToBeConfirmed)
-                return (false, "Couldn't change contract. Refund or start a new contract instead.");
-
-            var vehicle = await _vehicleRepo.GetFirstAvailableVehicleByModelAsync(updatedContract.ModelId, updatedContract.StationId, updatedContract.StartTime, updatedContract.EndTime);
-            if (vehicle == null)
-                return (false, "Model not available. Choose another time, station, or model.");
-
-            existing.VehicleId = vehicle.VehicleId;
-            existing.StaffId = updatedContract.StaffId;
-            existing.StationId = updatedContract.StationId;
-            existing.StartTime = updatedContract.StartTime;
-            existing.EndTime = updatedContract.EndTime;
-
-            var duration = (existing.EndTime - existing.StartTime).TotalHours;
-            existing.TotalCost = (decimal)duration * vehicle.Model.PricePerHour;
-
-            _contractRepo.Update(existing);
-            return (true, "Contract updated successfully!");
         }
 
         public async Task<bool> ReturnVehicleAsync(FinishContractDto dto)

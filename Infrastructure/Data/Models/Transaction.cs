@@ -8,9 +8,8 @@ namespace PublicCarRental.Infrastructure.Data.Models
     {
         Income,
         Refund,
-        Deposit,
-        Withdrawal,
-        Adjustment
+        Deposit, //In
+        Withdrawal //Out
     }
 
     public class Transaction
@@ -19,9 +18,9 @@ namespace PublicCarRental.Infrastructure.Data.Models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int TransactionId { get; set; }
 
-        public int ContractId { get; set; }
-        [ForeignKey("ContractId")]
-        public RentalContract Contract { get; set; }
+        public int InvoiceId { get; set; }
+        [ForeignKey("InvoiceId")]
+        public Invoice Invoice { get; set; }
 
         public TransactionType Type { get; set; }
         public decimal Amount { get; set; }
