@@ -42,7 +42,6 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Vehi
             var availableStatuses = new[]
                 {
                 VehicleStatus.Available,
-                VehicleStatus.Renting
             };
 
             var availableVehicles = await _context.Vehicles
