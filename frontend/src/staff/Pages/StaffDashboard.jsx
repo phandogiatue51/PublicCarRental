@@ -13,7 +13,6 @@ import MaintenanceQueue from '../components/Dashboard/MaintenanceQueue';
 import LowBatteryVehicles from '../components/Dashboard/LowBatteryVehicles';
 import AvailableVehicles from '../components/Dashboard/AvailableVehicles';
 import CheckinsCheckoutsByDay from '../components/Dashboard/Charts/CheckinsCheckoutsByDay';
-import BatteryDistributionDonut from '../components/Dashboard/Charts/BatteryDistributionDonut';
 import AvailableByModelBar from '../components/Dashboard/Charts/AvailableByModelBar';
 
 const StaffDashboard = () => {
@@ -205,12 +204,9 @@ const StaffDashboard = () => {
             </Grid>
 
             <Box mt={8}>
-                <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={6}>
+                <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={6}>
                     <GridItem>
                         <CheckinsCheckoutsByDay stationId={stationId} days={7} count={200} />
-                    </GridItem>
-                    <GridItem>
-                        <BatteryDistributionDonut stationId={stationId} />
                     </GridItem>
                     <GridItem>
                         <AvailableByModelBar stationId={stationId} top={8} />
