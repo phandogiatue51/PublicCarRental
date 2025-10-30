@@ -24,6 +24,7 @@ const StaffRoute = ({ children }) => {
                     description: "Please log in to access staff portal",
                     status: "error",
                     duration: 5000,
+                    position: "bottom-right",
                 });
                 navigate('/login', { replace: true });
                 return;
@@ -38,7 +39,7 @@ const StaffRoute = ({ children }) => {
                     description: "You don't have permission to access staff portal",
                     status: "error",
                     duration: 5000,
-                    position: "top-right",
+                    position: "bottom-right",
                 });
                 navigate('/', { replace: true });
                 return;

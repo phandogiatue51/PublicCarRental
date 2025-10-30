@@ -27,7 +27,7 @@ const AdminRoute = ({ children }) => {
                     description: "Please log in to access admin portal",
                     status: "error",
                     duration: 5000,
-                    position: "top-right",
+                    position: "bottom-right",
                 });
                 navigate('/login', { replace: true });
                 return;
@@ -47,7 +47,7 @@ const AdminRoute = ({ children }) => {
                     description: "You don't have permission to access admin portal",
                     status: "error",
                     duration: 5000,
-                    position: "top-right",
+                    position: "bottom-right",
                 });
                 navigate('/', { replace: true });
                 return;
