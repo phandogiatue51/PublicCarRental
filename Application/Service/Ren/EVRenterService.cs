@@ -165,8 +165,8 @@ namespace PublicCarRental.Application.Service.Ren
                 };
 
                 _renterRepo.Create(renter);
-                var token = _tokenRepository.GenerateToken(renter.Account, TokenPurpose.EmailVerification);
-                await _emailProducer.QueueVerificationEmailAsync(renter.Account.Email, token);
+                //var token = _tokenRepository.GenerateToken(renter.Account, TokenPurpose.EmailVerification);
+                //await _emailProducer.QueueVerificationEmailAsync(renter.Account.Email, token);
 
                 return (true, "Renter created successfully.");
             }

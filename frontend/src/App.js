@@ -18,11 +18,12 @@ import Success from './Pages/Payment/Success';
 import Cancel from './Pages/Payment/Cancel';
 import AdminRoute from "./admin/AdminRoute";
 import StaffRoute from "./staff/components/StaffRoute";
-import { ChakraProvider } from "@chakra-ui/react"; 
+import { ChakraProvider } from "@chakra-ui/react";
+import ResetPassword from "./Pages/Account/ResetPassword";
 
 function App() {
   return (
-    <ChakraProvider> 
+    <ChakraProvider>
       <Routes>
         <Route path="admin/*" element={
           <AdminRoute>
@@ -48,9 +49,11 @@ function App() {
               <Route path="login" element={<Login />} />
               <Route path="sign-up" element={<SignUp />} />
               <Route path="account" element={<AccountTabs />} />
-              <Route path="forgot-password" element={<ForgotPassword />} />
               <Route path="/payment/success" element={<Success />} />
               <Route path="/payment/cancel" element={<Cancel />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+
             </Routes>
           </>
         } />

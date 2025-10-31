@@ -1,22 +1,17 @@
 const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'
+  ? 'https://localhost:7230/api'
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
 
-// Generic API request function
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  // Determine if we're sending FormData
   const isFormData = options.body instanceof FormData;
 
-  // Inject Authorization header from stored JWT by default
   const token = typeof window !== 'undefined' ? localStorage.getItem('jwtToken') : null;
   const config = {
     headers: {
-      // Only set Content-Type for JSON, let browser set it for FormData
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       'accept': '*/*',
-      // Attach Authorization header unless caller opts out via skipAuth
       ...(!options.skipAuth && token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...options.headers,
     },
@@ -28,13 +23,12 @@ const apiRequest = async (endpoint, options = {}) => {
   try {
     console.log('Making API request to:', url, 'with config:', config);
 
-    // Debug FormData if it's FormData
     if (config.body instanceof FormData) {
       console.log('Sending FormData with entries:');
       for (let [key, value] of config.body.entries()) {
         console.log(`${key}:`, value);
         if (value instanceof File) {
-          console.log(`  File details:`, {
+          console.log(`  File details:`, {
             name: value.name,
             size: value.size,
             type: value.type
@@ -52,21 +46,25 @@ const apiRequest = async (endpoint, options = {}) => {
       throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
     }
 
-    // Handle empty responses (like DELETE operations)
+
     const contentType = response.headers.get('content-type');
+
     if (contentType && contentType.includes('application/json')) {
-      const data = await response.json();
-      console.log('API Response:', data);
-      return data;
+      try {
+        const data = await response.json();
+        console.log('API Response (JSON):', data);
+        return data;
+      } catch (e) {
+        console.warn('Warning: Response was application/json but parsing failed. Assuming success with generic message.', e);
+        return { message: 'Operation successful, but response format was unexpected.', status: response.status };
+      }
     } else {
-      // For non-JSON responses, return the response object
-      console.log('API Response (non-JSON):', response);
+      console.log('API Response (Non-JSON/Empty):', response);
       return { message: 'Operation successful', status: response.status };
     }
   } catch (error) {
     console.error('API request failed:', error);
 
-    // More specific error messages
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
       throw new Error('Unable to connect to the server. Please check if the backend is running and accessible.');
     }
@@ -133,16 +131,16 @@ export const modelAPI = {
     }
   },
 
-getStationFromModel: async (modelId) => {
+  getStationFromModel: async (modelId) => {
     try {
-        const response = await apiRequest(`/Model/get-station-from-model/${modelId}`);
-        console.log('Raw API response:', response); 
-        return response || [];
+      const response = await apiRequest(`/Model/get-station-from-model/${modelId}`);
+      console.log('Raw API response:', response);
+      return response || [];
     } catch (error) {
-        console.error('Error fetching stations from model:', error);
-        return [];
+      console.error('Error fetching stations from model:', error);
+      return [];
     }
-},
+  },
 
   create: (modelData) => apiRequest('/Model/create-model', {
     method: 'POST',
@@ -151,7 +149,7 @@ getStationFromModel: async (modelId) => {
 
   update: (id, modelData) => apiRequest(`/Model/update-model/${id}`, {
     method: 'PUT',
-    body: modelData, 
+    body: modelData,
   }),
 
   delete: (id) => apiRequest(`/Model/delete-model/${id}`, {
@@ -160,19 +158,19 @@ getStationFromModel: async (modelId) => {
 
   getAvailableCount: async (modelId, stationId, startTime, endTime) => {
     try {
-        const response = await apiRequest('/Model/get-available-count', {
-            method: 'POST',
-            body: JSON.stringify({
-                modelId: modelId,
-                stationId: stationId,
-                startTime: startTime,
-                endTime: endTime
-            })
-        });
-        return response.result || response || 0;
+      const response = await apiRequest('/Model/get-available-count', {
+        method: 'POST',
+        body: JSON.stringify({
+          modelId: modelId,
+          stationId: stationId,
+          startTime: startTime,
+          endTime: endTime
+        })
+      });
+      return response.result || response || 0;
     } catch (error) {
-        console.error('Error fetching available count:', error);
-        return 0;
+      console.error('Error fetching available count:', error);
+      return 0;
     }
   }
 };
@@ -254,7 +252,7 @@ export const renterAPI = {
 
   // Filter renters by parameter
   filterByParam: (param) => apiRequest(`/EVRenter/filter-by-param/${param}`),
-  
+
   filter: (filters = {}) => {
     const queryParams = new URLSearchParams();
     if (filters.search) queryParams.append('param', filters.search);
@@ -267,6 +265,18 @@ export const renterAPI = {
     method: 'PUT',
     body: JSON.stringify(renterData),
   }),
+
+  changePassword: (id, passwordData) => {
+    const formData = new FormData();
+    formData.append('id', id);
+    formData.append('OldPassword', passwordData.currentPassword);
+    formData.append('NewPassword', passwordData.newPassword);
+    formData.append('ConfirmPassword', passwordData.confirmPassword);
+    return apiRequest('/EVRenter/change-password', {
+      method: 'POST',
+      body: formData,
+    });
+  },
 
   // Delete renter
   deleteRenter: (id) => apiRequest(`/EVRenter/delete-renter/${id}`, {
@@ -339,20 +349,6 @@ export const accountAPI = {
   // Verify email
   verifyEmail: (token) => apiRequest(`/Account/verify-email?token=${token}`),
 
-  // Change password
-  changePassword: (accountId, passwordData) => {
-    const formData = new FormData();
-    formData.append('accountId', accountId);
-    formData.append('CurrentPassword', passwordData.currentPassword);
-    formData.append('NewPassword', passwordData.newPassword);
-    formData.append('ConfirmPassword', passwordData.confirmPassword);
-
-    return apiRequest('/Account/change-password', {
-      method: 'POST',
-      body: formData,
-    });
-  },
-
   // Forgot password
   forgotPassword: (email) => {
     const formData = new FormData();
@@ -421,6 +417,8 @@ export const contractAPI = {
     if (filters.renterId) queryParams.append('renterId', filters.renterId);
     if (filters.staffId) queryParams.append('staffId', filters.staffId);
     if (filters.vehicleId) queryParams.append('vehicleId', filters.vehicleId);
+    if (filters.startDate) queryParams.append('startDate', filters.startDate);
+    if (filters.endDate) queryParams.append('endDate', filters.endDate);
 
     const queryString = queryParams.toString();
     return apiRequest(`/Contract/filter${queryString ? `?${queryString}` : ''}`);
@@ -466,30 +464,30 @@ export const vehicleAPI = {
     return apiRequest(`/Vehicle/available-vehicles?${queryParams.toString()}`);
   },
 
-filter: (filters) => {
-  const queryParams = new URLSearchParams();
-  
-  if (filters.stationId !== undefined && filters.stationId !== null) 
-    queryParams.append('stationId', filters.stationId);
-  if (filters.status !== undefined && filters.status !== null) 
-    queryParams.append('status', filters.status);
-  if (filters.modelId !== undefined && filters.modelId !== null) 
-    queryParams.append('modelId', filters.modelId);
-  if (filters.typeId !== undefined && filters.typeId !== null) 
-    queryParams.append('typeId', filters.typeId);
-  if (filters.brandId !== undefined && filters.brandId !== null) 
-    queryParams.append('brandId', filters.brandId);
+  filter: (filters) => {
+    const queryParams = new URLSearchParams();
 
-  const queryString = queryParams.toString();
-  return apiRequest(`/Vehicle/filter-vehicle${queryString ? `?${queryString}` : ''}`);
-},
+    if (filters.stationId !== undefined && filters.stationId !== null)
+      queryParams.append('stationId', filters.stationId);
+    if (filters.status !== undefined && filters.status !== null)
+      queryParams.append('status', filters.status);
+    if (filters.modelId !== undefined && filters.modelId !== null)
+      queryParams.append('modelId', filters.modelId);
+    if (filters.typeId !== undefined && filters.typeId !== null)
+      queryParams.append('typeId', filters.typeId);
+    if (filters.brandId !== undefined && filters.brandId !== null)
+      queryParams.append('brandId', filters.brandId);
 
- getAvaiable: (stationId, startTime, endTime) => {
+    const queryString = queryParams.toString();
+    return apiRequest(`/Vehicle/filter-vehicle${queryString ? `?${queryString}` : ''}`);
+  },
+
+  getAvaiable: (stationId, startTime, endTime) => {
     const queryParams = new URLSearchParams();
     if (stationId) queryParams.append('stationId', stationId);
     if (startTime) queryParams.append('startDate', startTime);
     if (endTime) queryParams.append('endDate', endTime);
-    
+
     return apiRequest(`/Vehicle/check-availability?${queryParams.toString()}`, {
       method: 'POST', // This should be POST, not GET
       // If your backend expects a body, you might need this instead:
@@ -579,48 +577,48 @@ export const accidentAPI = {
     const data = await apiRequest(`/Accident/${id}`);
     return data;
   },
-  
-createVehicleAccident: async (formData) => {
-  try {
-    const response = await apiRequest('/Accident/vehicle-report', {
-      method: 'POST',
-      body: formData,
-    });
 
-    console.log('Vehicle accident response:', response);
+  createVehicleAccident: async (formData) => {
+    try {
+      const response = await apiRequest('/Accident/vehicle-report', {
+        method: 'POST',
+        body: formData,
+      });
 
-    // Handle the actual response structure from your backend
-    if (response && response.status === 200) {
-      return { success: true, message: response.message };
+      console.log('Vehicle accident response:', response);
+
+      // Handle the actual response structure from your backend
+      if (response && response.status === 200) {
+        return { success: true, message: response.message };
+      }
+
+      return { success: false, message: response.message || 'Unknown error' };
+    } catch (error) {
+      console.error('Vehicle accident API call failed:', error);
+      throw error;
     }
-    
-    return { success: false, message: response.message || 'Unknown error' };
-  } catch (error) {
-    console.error('Vehicle accident API call failed:', error);
-    throw error;
-  }
-},
+  },
 
-createContractAccident: async (formData) => {
-  try {
-    const response = await apiRequest('/Accident/contract-report', {
-      method: 'POST',
-      body: formData,
-    });
+  createContractAccident: async (formData) => {
+    try {
+      const response = await apiRequest('/Accident/contract-report', {
+        method: 'POST',
+        body: formData,
+      });
 
-    console.log('Contract accident response:', response);
+      console.log('Contract accident response:', response);
 
-    // Handle the actual response structure from your backend
-    if (response && response.status === 200) {
-      return { success: true, message: response.message };
+      // Handle the actual response structure from your backend
+      if (response && response.status === 200) {
+        return { success: true, message: response.message };
+      }
+
+      return { success: false, message: response.message || 'Unknown error' };
+    } catch (error) {
+      console.error('Contract accident API call failed:', error);
+      throw error;
     }
-    
-    return { success: false, message: response.message || 'Unknown error' };
-  } catch (error) {
-    console.error('Contract accident API call failed:', error);
-    throw error;
-  }
-},
+  },
 
   deleteAcc: (id) => apiRequest(`/Accident/${id}`, {
     method: 'DELETE',
@@ -671,10 +669,10 @@ export const ratingsAPI = {
 
   getByStar: (starRating) => apiRequest(`/Ratings/stars/${starRating}`),
 
-  canRateContract: (contractId, renterId) => 
+  canRateContract: (contractId, renterId) =>
     apiRequest(`/Ratings/contract/${contractId}/can-rate/${renterId}`),
 
-  hasRatedContract: (contractId, renterId) => 
+  hasRatedContract: (contractId, renterId) =>
     apiRequest(`/Ratings/contract/${contractId}/has-rated/${renterId}`),
 };
 

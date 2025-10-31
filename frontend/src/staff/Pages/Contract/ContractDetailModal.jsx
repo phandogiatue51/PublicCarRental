@@ -200,6 +200,67 @@ const ContractDetailModal = ({ isOpen, onClose, contract }) => {
                             </Box>
                         </GridItem>
 
+                        {/* Invoices Section */}
+                        <GridItem colSpan={3}>
+                            <Text fontSize="lg" fontWeight="bold" color={textColor} mb={3}>
+                                Invoices
+                            </Text>
+
+                            {contract.invoices && contract.invoices.length > 0 ? (
+                                <Box w="100%" p={4} bg={cardBg} borderRadius="md">
+                                    {contract.invoices.map((invoice) => (
+                                        <Box
+                                            key={invoice.invoiceId}
+                                            p={3}
+                                            mb={3}
+                                            border="1px"
+                                            borderColor="gray.200"
+                                            borderRadius="md"
+                                            bg="white"
+                                        >
+                                            <HStack justify="space-between" mb={2}>
+                                                <Text fontWeight="bold" color={textColor}>
+                                                    Invoice #{invoice.invoiceId}
+                                                </Text>
+                                                <Badge
+                                                    colorScheme={invoice.status === 1 ? 'green' : 'yellow'}
+                                                    variant="solid"
+                                                >
+                                                    {invoice.status === 1 ? 'PAID' : 'PENDING'}
+                                                </Badge>
+                                            </HStack>
+
+                                            <HStack mb={1}>
+                                                <Text fontWeight="semibold" color={textColor}>Order Code:</Text>
+                                                <Text color={textColor}>{invoice.orderCode}</Text>
+                                            </HStack>
+
+                                            <HStack mb={1}>
+                                                <Text fontWeight="semibold" color={textColor}>Amount Paid:</Text>
+                                                <Text color={textColor}>{formatCurrency(invoice.amountPaid)}</Text>
+                                            </HStack>
+
+                                            {invoice.note && (
+                                                <HStack mb={1}>
+                                                    <Text fontWeight="semibold" color={textColor}>Note:</Text>
+                                                    <Text color={textColor} fontStyle="italic">{invoice.note}</Text>
+                                                </HStack>
+                                            )}
+
+                                            <HStack>
+                                                <Text fontWeight="semibold" color={textColor}>Paid At:</Text>
+                                                <Text color={textColor}>{formatDate(invoice.paidAt)}</Text>
+                                            </HStack>
+                                        </Box>
+                                    ))}
+                                </Box>
+                            ) : (
+                                <Box w="100%" p={4} bg={cardBg} borderRadius="md" textAlign="center">
+                                    <Text color="gray.500">No invoices available for this contract</Text>
+                                </Box>
+                            )}
+                        </GridItem>
+
                         <GridItem colSpan={3}>
                             <Text fontSize="lg" fontWeight="bold" color={textColor} mb={3}>
                                 Financial Information

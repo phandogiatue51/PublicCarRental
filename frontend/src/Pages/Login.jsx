@@ -2,20 +2,44 @@ import React, { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import loginImg from "../images/login/login.jpg";
 import "../styles/Login.css";
+import { useToast } from "@chakra-ui/react";
 
 function Login() {
     const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
     const { login, loading, error, setError } = useAuth();
 
+    const toast = useToast();
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
-        
+
         try {
             await login(identifier, password);
         } catch (err) {
             console.error("Login error:", err);
+
+            let displayMessage = "An unexpected error occurred during login.";
+
+            try {
+                const errorJsonString = err.message.match(/\{.*\}/);
+                if (errorJsonString) {
+                    const errorObj = JSON.parse(errorJsonString[0]);
+                    displayMessage = errorObj.message || displayMessage;
+                }
+            } catch (parseError) {
+                displayMessage = err.message || displayMessage;
+            }
+
+            toast({
+                title: "Login Failed ⚠️",
+                description: displayMessage,
+                status: "error",
+                duration: 6000,
+                isClosable: true,
+                position: "top"
+            });
         }
     };
 
@@ -27,7 +51,7 @@ function Login() {
             </div>
 
             {/* Left Column (Image) */}
-            <div 
+            <div
                 className="login-image"
                 style={{ backgroundImage: `url(${loginImg})` }}
             />
@@ -72,6 +96,12 @@ function Login() {
                         />
                     </div>
 
+                    <div className="forgot-password-link">
+                        <a href="/forgot-password" className="forgot-link">
+                            Forgot your password?
+                        </a>
+                    </div>
+
                     {error && (
                         <div className="error-message">
                             {error}
@@ -86,7 +116,6 @@ function Login() {
                         >
                             {loading ? (
                                 <>
-                                    <span className="loading-spinner"></span>
                                     Logging in...
                                 </>
                             ) : (

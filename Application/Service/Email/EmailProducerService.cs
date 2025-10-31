@@ -22,12 +22,12 @@ namespace PublicCarRental.Application.Service.Email
 
         public async Task QueueVerificationEmailAsync(string toEmail, string token)
         {
-            var verificationLink = $"https://publiccarrental-production-b7c5.up.railway.app/api/Account/verify-email?token={token}";
+            var verificationLink = $"https://car777.shop/Account/verify-email?token={token}";
             var message = new EmailMessage
             {
                 ToEmail = toEmail,
                 Subject = "Verify Your Email",
-                Body = $@"<h2>Welcome to PublicCarRental!</h2><p>Click <a href='{verificationLink}'>here</a> to verify your email.</p>",
+                Body = $@"<h2>Welcome to Car777!</h2><p>Click <a href='{verificationLink}'>here</a> to verify your email.</p>",
                 MessageType = "Verification",
                 Token = token
             };
@@ -38,7 +38,7 @@ namespace PublicCarRental.Application.Service.Email
 
         public async Task QueuePasswordResetEmailAsync(string toEmail, string token)
         {
-            var resetLink = $"https://publiccarrental-production-b7c5.up.railway.app/api/Account/reset-password?token={token}";
+            var resetLink = $"https://car777.shop/Account/reset-password?token={token}";
             var message = new EmailMessage
             {
                 ToEmail = toEmail,

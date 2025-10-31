@@ -1,69 +1,69 @@
 import React, { useState } from "react";
+import { accountAPI } from "../../services/api";
+import "./../../styles/ForgotPassword.css";
+import { useNavigate } from "react-router-dom";
 
-const ForgotPassword = () => {
+function ForgotPassword() {
   const [email, setEmail] = useState("");
-
-  const handleSubmit = (e) => {
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add your forgot password logic here
-    alert(`Password reset link sent to ${email}`);
+    setLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      await accountAPI.forgotPassword(email);
+      setMessage("Password reset email sent! Check your inbox.");
+      setTimeout(() => {
+        navigate("/login");
+      }, 3000);
+    } catch (err) {
+      setError(err.message || "Failed to send reset email.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "#f5f5f5",
-      }}
-    >
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          background: "#fff",
-          padding: "2rem",
-          borderRadius: "8px",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          minWidth: "300px",
-        }}
-      >
-        <h2>Forgot Password</h2>
-        <input
-          type="email"
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{
-            margin: "1rem 0",
-            padding: "0.5rem",
-            width: "100%",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-          }}
-        />
-        <button
-          type="submit"
-          style={{
-            padding: "0.5rem 2rem",
-            borderRadius: "4px",
-            border: "none",
-            background: "#007bff",
-            color: "#fff",
-            fontWeight: "bold",
-            cursor: "pointer",
-          }}
-        >
-          Confirm
-        </button>
-      </form>
+    <div className="forgot-password-container">
+      <div className="forgot-password-card">
+        <strong>Enter your email address and we'll send you a link to reset your password.</strong>
+
+        <form onSubmit={handleSubmit} className="forgot-password-form">
+          <div className="form-field">
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              className="form-input"
+            />
+          </div>
+
+          {error && <div className="error-message">{error}</div>}
+          {message && <div className="success-message">{message}</div>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="submit-button"
+          >
+            {loading ? "Sending..." : "Send Reset Link"}
+          </button>
+        </form>
+
+        <div className="back-to-login">
+          <a href="/login" className="back-link">← Back to Login</a>
+        </div>
+      </div>
     </div>
   );
-};
+}
 
 export default ForgotPassword;

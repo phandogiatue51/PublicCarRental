@@ -232,16 +232,24 @@ public class PayOSPayoutService : IPayOSPayoutService
         });
 
         var dataDict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
-        var sortedKeys = dataDict.Keys.OrderBy(k => k).ToList();
 
-        var queryString = string.Join("&", sortedKeys.Select(key =>
+        var sortedData = dataDict.OrderBy(kv => kv.Key).ToDictionary(kv => kv.Key, kv => kv.Value);
+
+        var queryString = string.Join("&", sortedData.Select(kv =>
         {
-            var value = dataDict[key];
-            var valueStr = value.ValueKind == JsonValueKind.String ? value.GetString() : value.ToString();
-            return $"{key}={valueStr}";
+            var key = Uri.EscapeDataString(kv.Key);
+            var value = kv.Value.ValueKind switch
+            {
+                JsonValueKind.Array => Uri.EscapeDataString(kv.Value.ToString()),
+                JsonValueKind.Object => Uri.EscapeDataString(kv.Value.ToString()),   
+                JsonValueKind.String => Uri.EscapeDataString(kv.Value.GetString() ?? ""),
+                _ => Uri.EscapeDataString(kv.Value.ToString())
+            };
+            return $"{key}={value}";
         }));
 
-        using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(_payoutCheckSumKey));
+        var checksumKey = _payoutCheckSumKey;
+        using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(checksumKey));
         var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(queryString));
         return BitConverter.ToString(hash).Replace("-", "").ToLower();
     }

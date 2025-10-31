@@ -61,8 +61,13 @@ namespace PublicCarRental.Presentation.Controllers
             var renterResult = await _renterService.CreateRenterAsync((int)accountResult.AccountId, dto.LicenseNumber);
 
             if (!renterResult.Success)
-                return BadRequest(new { message = renterResult.Message });
+            {
+                _accountService.DeleteAccount((int)accountResult.AccountId);
 
+                return BadRequest(new { message = renterResult.Message });
+            }
+
+            // Success
             return Ok(new { message = "EVRenter registered successfully", accountId = accountResult.AccountId });
         }
 
@@ -169,17 +174,6 @@ namespace PublicCarRental.Presentation.Controllers
                 return Ok(new { message = "Email verified successfully." });
             else
                 return BadRequest(new { error = "Invalid or expired token." });
-        }
-
-        [HttpPost("change-password")]
-        public IActionResult ChangePassword([FromForm] int accountId, [FromForm] ChangePasswordDto dto)
-        {
-            var result = _accountService.ChangePassword(accountId, dto);
-
-            if (result.success)
-                return Ok(new { result.message });
-            else
-                return BadRequest(new { error = result.message });
         }
 
         [HttpPost("forgot-password")]

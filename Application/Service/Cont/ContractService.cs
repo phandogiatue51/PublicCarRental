@@ -370,7 +370,8 @@ namespace PublicCarRental.Application.Service.Cont
             });
         }
 
-        public IEnumerable<ContractDto> FilterContracts(int? stationId, RentalStatus? status, int? renterId, int? staffId, int? vehicleId)
+        public IEnumerable<ContractDto> FilterContracts(int? stationId, RentalStatus? status, int? renterId, int? staffId, 
+            int? vehicleId, DateTime? startTime, DateTime? endTime)
         {
             var query = _contractRepo.GetAll().AsQueryable();
 
@@ -388,6 +389,12 @@ namespace PublicCarRental.Application.Service.Cont
 
             if (vehicleId.HasValue)
                 query = query.Where(c => c.VehicleId == vehicleId.Value);
+
+            if (startTime.HasValue)
+                query = query.Where(c => c.StartTime >= startTime.Value);
+
+            if (endTime.HasValue)
+                query = query.Where(c => c.EndTime <= endTime.Value);
 
             var contracts = query.ToList();
 

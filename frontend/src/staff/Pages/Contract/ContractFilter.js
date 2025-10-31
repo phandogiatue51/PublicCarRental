@@ -1,6 +1,6 @@
 // components/ContractFilters.js
 import React from 'react';
-import { Grid, FormControl, Select, HStack, Button, Icon } from '@chakra-ui/react';
+import { Grid, FormControl, Select, HStack, Button, Icon, FormLabel, Input } from '@chakra-ui/react';
 import { MdFilterList, MdClear } from 'react-icons/md';
 
 const ContractFilters = ({
@@ -13,21 +13,8 @@ const ContractFilters = ({
   loading
 }) => {
   return (
-    <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" }} gap={4}>
-      {/* Status Filter */}
-      <FormControl>
-        <Select
-          value={filters.status}
-          onChange={(e) => onFilterChange('status', e.target.value)}
-          placeholder="All Status"
-        >
-          {filterOptions.statuses.map(status => (
-            <option key={status.value} value={status.value}>
-              {status.label}
-            </option>
-          ))}
-        </Select>
-      </FormControl>
+    <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr auto auto auto auto auto" }} gap={4}>
+
 
       {/* Renter Filter */}
       <FormControl>
@@ -58,7 +45,39 @@ const ContractFilters = ({
           ))}
         </Select>
       </FormControl>
-      
+
+      <FormControl>
+        <Input
+          type="date"
+          placeholder='Start Date'
+          value={filters.startDate || ''}
+          onChange={(e) => onFilterChange('startDate', e.target.value)}
+        />
+      </FormControl>
+
+      <FormControl>
+        <Input
+          type="date"
+          placeholder='End Date'
+          value={filters.endDate || ''}
+          onChange={(e) => onFilterChange('endDate', e.target.value)}
+        />
+      </FormControl>
+
+      <FormControl>
+        <Select
+          value={filters.status}
+          onChange={(e) => onFilterChange('status', e.target.value)}
+          placeholder="All Status"
+        >
+          {filterOptions.statuses.map(status => (
+            <option key={status.value} value={status.value}>
+              {status.label}
+            </option>
+          ))}
+        </Select>
+      </FormControl>
+
       <HStack>
         <Button
           leftIcon={<Icon as={MdFilterList} />}

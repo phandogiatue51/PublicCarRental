@@ -212,9 +212,6 @@ namespace PublicCarRental.Application.Service.Acc
             if (account == null)
                 return (false, "Account not found.");
 
-            if (!account.IsEmailVerified)
-                return (false, "Please verify your email before changing your password.");
-
             if (!_passwordHelper.VerifyPassword(dto.OldPassword, account.PasswordHash))
                 return (false, "Old password is incorrect.");
 

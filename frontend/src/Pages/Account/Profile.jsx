@@ -1,7 +1,8 @@
-// Profile.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react"; 
 import { renterAPI } from "../../services/api";
 import "../../styles/Account/Profile.css";
+import EditProfileModal from "./EditProfileModal"; 
+import ChangePasswordModal from "./ChangePasswordModal"; 
 
 function Profile() {
   const storedFullName = localStorage.getItem("fullName");
@@ -22,39 +23,41 @@ function Profile() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+
+  const loadProfile = useCallback(async () => {
+    if (!renterId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const data = await renterAPI.getById(renterId);
+      setProfileData({
+        fullName: data.fullName || storedFullName || "",
+        email: data.email || storedEmail || "",
+        phoneNumber: data.phoneNumber || storedPhoneNumber || "",
+        identityCardNumber: data.identityCardNumber || "",
+        licenseNumber: data.licenseNumber || "",
+        status: data.status !== undefined ? data.status : 0
+      });
+      if (data.fullName) localStorage.setItem("fullName", data.fullName);
+      if (data.email) localStorage.setItem("email", data.email);
+      if (data.phoneNumber) localStorage.setItem("phoneNumber", data.phoneNumber);
+    } catch (e) {
+      if (e.name !== "AbortError") setError(e.message || "Failed to load profile");
+    } finally {
+      setLoading(false);
+    }
+  }, [renterId, storedEmail, storedFullName, storedPhoneNumber]); 
 
   useEffect(() => {
     const controller = new AbortController();
-    async function loadProfile() {
-      if (!renterId) {
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setError("");
-      try {
-        const data = await renterAPI.getById(renterId);
-        setProfileData({
-          fullName: data.fullName || storedFullName || "",
-          email: data.email || storedEmail || "",
-          phoneNumber: data.phoneNumber || storedPhoneNumber || "",
-          identityCardNumber: data.identityCardNumber || "",
-          licenseNumber: data.licenseNumber || "",
-          status: data.status !== undefined ? data.status : 0
-        });
-        // cache for later sessions
-        if (data.fullName) localStorage.setItem("fullName", data.fullName);
-        if (data.email) localStorage.setItem("email", data.email);
-        if (data.phoneNumber) localStorage.setItem("phoneNumber", data.phoneNumber);
-      } catch (e) {
-        if (e.name !== "AbortError") setError(e.message || "Failed to load profile");
-      } finally {
-        setLoading(false);
-      }
-    }
     loadProfile();
     return () => controller.abort();
-  }, [renterId, storedEmail, storedFullName, storedPhoneNumber]);
+  }, [loadProfile]); 
 
   if (loading) {
     return (
@@ -82,65 +85,97 @@ function Profile() {
       </div>
     );
   }
-
+  
   return (
-    <div className="profile-content">
-      <div className="profile-header">
-        <h2>Profile Information</h2>
-        <p>Manage your personal details and account settings</p>
-      </div>
-
-      <div className="profile-details">
-        <div className="detail-group">
-          <h3>Personal Information</h3>
-          <div className="detail-grid">
-            <div className="detail-item">
-              <label>Full Name</label>
-              <div className="detail-value">{profileData.fullName}</div>
-            </div>
-            <div className="detail-item">
-              <label>Email</label>
-              <div className="detail-value">{profileData.email}</div>
-            </div>
-            <div className="detail-item">
-              <label>Phone Number</label>
-              <div className="detail-value">{profileData.phoneNumber}</div>
-            </div>
-          </div>
+    <>
+      <div className="profile-content">
+        <div className="profile-header">
+          <h2>Profile Information</h2>
+          <p>Manage your personal details and account settings</p>
         </div>
 
-        <div className="detail-group">
-          <h3>Identity Information</h3>
-          <div className="detail-grid">
-            <div className="detail-item">
-              <label>Identity Card Number</label>
-              <div className="detail-value">{profileData.identityCardNumber}</div>
+        <div className="profile-details">
+          <div className="detail-group">
+            <h3>Personal Information</h3>
+            <div className="detail-grid">
+              <div className="detail-item">
+                <label>Full Name</label>
+                <div className="detail-value">{profileData.fullName}</div>
+              </div>
+              <div className="detail-item">
+                <label>Email</label>
+                <div className="detail-value">{profileData.email}</div>
+              </div>
+              <div className="detail-item">
+                <label>Phone Number</label>
+                <div className="detail-value">{profileData.phoneNumber}</div>
+              </div>
             </div>
-            <div className="detail-item">
-              <label>License Number</label>
-              <div className="detail-value">{profileData.licenseNumber}</div>
-            </div>
-            <div className="detail-item">
-              <label>Account Status</label>
-              <div className="detail-value">
-                <span className={`status-badge ${profileData.status === 0 ? 'active' : 'inactive'}`}>
-                  {profileData.status === 0 ? 'Active' : 'Inactive'}
-                </span>
+          </div>
+
+          <div className="detail-group">
+            <h3>Identity Information</h3>
+            <div className="detail-grid">
+              <div className="detail-item">
+                <label>Identity Card Number</label>
+                <div className="detail-value">{profileData.identityCardNumber}</div>
+              </div>
+              <div className="detail-item">
+                <label>License Number</label>
+                <div className="detail-value">{profileData.licenseNumber}</div>
+              </div>
+              <div className="detail-item">
+                <label>Account Status</label>
+                <div className="detail-value">
+                  <span className={`status-badge ${profileData.status === 0 ? 'active' : 'inactive'}`}>
+                    {profileData.status === 0 ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        <div className="profile-actions">
+          <button 
+            className="edit-profile-btn" 
+            onClick={() => setIsEditModalOpen(true)}
+          >
+            Edit Profile
+          </button>
+          <button 
+            className="change-password-btn"
+            onClick={() => setIsPasswordModalOpen(true)}
+          >
+            Change Password
+          </button>
+        </div>
       </div>
 
-      <div className="profile-actions">
-        <button className="edit-profile-btn">
-          Edit Profile
-        </button>
-        <button className="change-password-btn">
-          Change Password
-        </button>
-      </div>
-    </div>
+      {isEditModalOpen && (
+        <EditProfileModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          initialData={{ 
+            fullName: profileData.fullName,
+            email: profileData.email,
+            phoneNumber: profileData.phoneNumber,
+            identityCardNumber: profileData.identityCardNumber,
+            licenseNumber: profileData.licenseNumber,
+          }}
+          renterId={renterId}
+          onSuccess={loadProfile}
+        />
+      )}
+
+      {isPasswordModalOpen && (
+        <ChangePasswordModal
+          isOpen={isPasswordModalOpen}
+          onClose={() => setIsPasswordModalOpen(false)}
+          renterId={renterId}
+        />
+      )}
+    </>
   );
 }
 

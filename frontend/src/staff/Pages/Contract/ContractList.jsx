@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Grid, Image,
-  Button,
+  Button, FormLabel,
   Flex,
   Text,
   useColorModeValue,
@@ -72,6 +72,8 @@ const ContractList = () => {
     status: "",
     renterId: "",
     vehicleId: "",
+    startDate: "",
+    endDate: "",
   });
 
   const [filterOptions, setFilterOptions] = useState({
@@ -137,6 +139,8 @@ const ContractList = () => {
       if (filters.status !== "") filterParams.status = parseInt(filters.status);
       if (filters.renterId) filterParams.renterId = parseInt(filters.renterId);
       if (filters.vehicleId) filterParams.vehicleId = parseInt(filters.vehicleId);
+      if (filters.startDate) filterParams.startDate = filters.startDate;
+      if (filters.endDate) filterParams.endDate = filters.endDate;
 
       const response = await contractAPI.filter(filterParams);
       setContracts(response || []);
@@ -185,7 +189,7 @@ const ContractList = () => {
   }, [fetchContracts]);
 
   const handleClearFilter = useCallback(() => {
-    setFilters({ status: "", renterId: "", vehicleId: "" });
+    setFilters({ status: "", renterId: "", vehicleId: "" , startDate: "", endDate: "" });
     setCurrentPage(1);
     fetchContracts();
   }, [fetchContracts]);

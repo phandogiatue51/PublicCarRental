@@ -91,9 +91,12 @@ namespace PublicCarRental.Presentation.Controllers
 
         [HttpGet("filter")]
         public IActionResult FilterContracts([FromQuery] int? stationId, [FromQuery] RentalStatus? status, 
-            [FromQuery] int? renterId, [FromQuery] int? staffId, [FromQuery] int? vehicleId)
+            [FromQuery] int? renterId, [FromQuery] int? staffId, [FromQuery] int? vehicleId, [FromQuery] DateOnly? startDate, [FromQuery] DateOnly? endDate)
         {
-            var contracts = _contractService.FilterContracts(stationId, status, renterId, staffId, vehicleId);
+            var startTime = startDate.HasValue ? DateTime.SpecifyKind(startDate.Value.ToDateTime(new TimeOnly(0, 0)), DateTimeKind.Utc) : (DateTime?)null;
+            var endTime = endDate.HasValue ? DateTime.SpecifyKind(endDate.Value.ToDateTime(new TimeOnly(23, 59)), DateTimeKind.Utc) : (DateTime?)null;
+
+            var contracts = _contractService.FilterContracts(stationId, status, renterId, staffId, vehicleId, startTime, endTime);
             return Ok(contracts);
         }
 

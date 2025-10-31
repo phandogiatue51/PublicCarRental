@@ -18,7 +18,7 @@
     display: flex;
     align-items: center;
     padding: 0 20px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     z-index: 10;
 }
 
@@ -162,6 +162,17 @@
     box-shadow: none;
 }
 
+.forgot-link {
+    text-decoration: none;
+    transition: color 0.2s ease;
+    font-size: 16px;
+    color: #6b7280;
+}
+
+.forgot-link:hover {
+    text-decoration: underline;
+}
+
 .signup-redirect {
     margin-top: 18px;
     color: #6b7280;
@@ -194,7 +205,9 @@
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Responsive Design */
@@ -202,23 +215,23 @@
     .login-container {
         grid-template-columns: 1fr;
     }
-    
+
     .login-image {
         display: none;
     }
-    
+
     .login-form {
         padding: 20px;
     }
-    
+
     .submit-button {
         width: 100%;
     }
-    
+
     .form-header h1 {
         font-size: 28px;
     }
-    
+
     .form-header p {
         font-size: 16px;
     }
@@ -229,16 +242,16 @@
     .login-form {
         padding: 16px;
     }
-    
+
     .form-header h1 {
         font-size: 24px;
     }
-    
+
     .form-input {
         padding: 12px 14px;
         font-size: 14px;
     }
-    
+
     .submit-button {
         padding: 12px 14px;
         font-size: 14px;

@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.Application.DTOs.Acc;
 using PublicCarRental.Application.Service;
+using PublicCarRental.Application.Service.Acc;
 using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Ren;
-using PublicCarRental.Infrastructure.Data.Models;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -14,14 +14,16 @@ public class EVRenterController : ControllerBase
     private readonly IContractService _contractService;
     private readonly IInvoiceService _invoiceService;
     private readonly IFavoriteService _favoriteService;
+    private readonly IAccountService _accountService;
 
     public EVRenterController(IEVRenterService eVRenterService, IContractService contractService,
-        IInvoiceService invoiceService, IFavoriteService favoriteService)
+        IInvoiceService invoiceService, IFavoriteService favoriteService, IAccountService accountService)
     {
         _eVRenterService = eVRenterService;
         _contractService = contractService;
         _invoiceService = invoiceService;
         _favoriteService = favoriteService;
+        _accountService = accountService;
     }
 
     [HttpGet("all-renters")]
@@ -56,6 +58,18 @@ public class EVRenterController : ControllerBase
             return BadRequest(new { message = result.Message });
 
         return Ok(new { message = result.Message, renterId = id });
+    }
+
+    [HttpPost("change-password")]
+    public IActionResult ChangePassword([FromForm] int id, [FromForm] ChangePasswordDto dto)
+    {
+        var accountId = _eVRenterService.GetEntityByIdAsync(id).Result.AccountId;
+        var result = _accountService.ChangePassword(accountId, dto);
+
+        if (result.success)
+            return Ok(new { result.message });
+        else
+            return BadRequest(new { error = result.message });
     }
 
     [HttpDelete("delete-renter/{id}")]
