@@ -52,46 +52,83 @@ public class PayOSPayoutService : IPayOSPayoutService
                 payoutRequest,
                 idempotencyKey: payoutRequest.referenceId
             );
+            var responseContent = await response.Content.ReadAsStringAsync();
+            _logger.LogInformation($"✅ PayOS Payout Response: {responseContent}");
+
+            if (!string.IsNullOrEmpty(responseContent))
+            {
+                try
+                {
+                    var jsonResponse = JsonSerializer.Deserialize<JsonElement>(responseContent);
+
+                    if (jsonResponse.TryGetProperty("code", out var codeElement) &&
+                        jsonResponse.TryGetProperty("desc", out var descElement))
+                    {
+                        var errorCode = codeElement.GetString();
+                        var errorDesc = descElement.GetString();
+
+                        return new PayoutResult
+                        {
+                            Success = false,
+                            Message = errorDesc,
+                            ErrorCode = errorCode,
+                        };
+                    }
+                }
+                catch (JsonException)
+                {
+                    _logger.LogWarning("Failed to parse PayOS response as JSON");
+                }
+            }
 
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation($"✅ PayOS Payout Response: {content}");
-
-                var payoutResponse = JsonSerializer.Deserialize<PayOSPayoutResponse>(content, new JsonSerializerOptions
+                try
                 {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-                });
+                    var content = await response.Content.ReadAsStringAsync();
+                    _logger.LogInformation($"✅ PayOS Payout Response: {content}");
 
-                if (payoutResponse?.Data != null)
-                {
-                    return new PayoutResult
+                    var payoutResponse = JsonSerializer.Deserialize<PayOSPayoutResponse>(content, new JsonSerializerOptions
                     {
-                        Success = true,
-                        TransactionId = payoutResponse.Data.Id,
-                        Status = payoutResponse.Data.ApprovalState,
-                        Message = "Payout initiated successfully"
-                    };
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                    });
+
+                    if (payoutResponse?.Data != null)
+                    {
+                        return new PayoutResult
+                        {
+                            Success = true,
+                            TransactionId = payoutResponse.Data.Id,
+                            Message = "Payout initiated successfully"
+                        };
+                    }
+                    else
+                    {
+                        _logger.LogError($"❌ PayOS response data is null: {content}");
+                        return new PayoutResult
+                        {
+                            Success = false,
+                            Message = "PayOS response data is null"
+                        };
+                    }
                 }
-                else
+                catch (JsonException ex)
                 {
-                    _logger.LogError($"❌ PayOS response data is null: {content}");
+                    _logger.LogError(ex, $"❌ Failed to parse PayOS success response: {responseContent}");
                     return new PayoutResult
                     {
                         Success = false,
-                        Message = "PayOS response data is null"
+                        Message = "Failed to parse PayOS response"
                     };
                 }
             }
             else
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError($"❌ PayOS payout failed: {response.StatusCode} - {errorContent}");
-
+                _logger.LogError($"❌ PayOS payout failed: {response.StatusCode} - {responseContent}");
                 return new PayoutResult
                 {
                     Success = false,
-                    Message = $"PayOS API error: {response.StatusCode} - {errorContent}"
+                    Message = $"PayOS API error: {response.StatusCode} - {responseContent}"
                 };
             }
         }
@@ -241,7 +278,7 @@ public class PayOSPayoutService : IPayOSPayoutService
             var value = kv.Value.ValueKind switch
             {
                 JsonValueKind.Array => Uri.EscapeDataString(kv.Value.ToString()),
-                JsonValueKind.Object => Uri.EscapeDataString(kv.Value.ToString()),   
+                JsonValueKind.Object => Uri.EscapeDataString(kv.Value.ToString()),
                 JsonValueKind.String => Uri.EscapeDataString(kv.Value.GetString() ?? ""),
                 _ => Uri.EscapeDataString(kv.Value.ToString())
             };

@@ -36,7 +36,6 @@ namespace PublicCarRental.Infrastructure.Data.Models
 
         public int? TransactionId { get; set; }
         public Transaction? Transaction { get; set; }
-        public int? RefundId { get; set; }
-        public Refund? Refund { get; set; }
+        public ICollection<Refund> Refunds { get; set; } = new List<Refund>();
     }
 }

@@ -3,6 +3,7 @@ using PublicCarRental.Application.DTOs.Refund;
 using PublicCarRental.Application.Service.Pay;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository;
+using PublicCarRental.Infrastructure.Data.Repository.Cont;
 using PublicCarRental.Infrastructure.Data.Repository.Inv;
 
 namespace PublicCarRental.Application.Service
@@ -17,55 +18,60 @@ namespace PublicCarRental.Application.Service
         Task<RefundDto> GetRefundByIdAsync(int refundId);
         Task<bool> CanRefundBeProcessedAsync(int invoiceId);
         Task<decimal> CalculateMaxRefundAmountAsync(int invoiceId);
+        Task<bool> HasInsufficientBalanceError(int refundId);
+        Task<RefundResultDto> RetryFailedRefundAsync(int originalRefundId, BankAccountInfo bankInfo);
     }
 
     public class RefundService : IRefundService
     {
         private readonly IRefundRepository _refundRepository;
-        private readonly IInvoiceRepository _invoiceRepository;
         private readonly ITransactionService _transactionService;
         private readonly IPayOSPayoutService _payoutService;
         private readonly ILogger<RefundService> _logger;
+        private readonly IContractRepository _contractRepository;
+        private readonly IInvoiceRepository _invoiceRepository;
 
-        public RefundService(
-            IRefundRepository refundRepository,
-            IInvoiceRepository invoiceRepository,
-            ITransactionService transactionService,
-            IPayOSPayoutService payoutService,
-            ILogger<RefundService> logger)
+        public RefundService(IRefundRepository refundRepository, IInvoiceRepository invoiceRepository, ITransactionService transactionService,
+            IPayOSPayoutService payoutService, ILogger<RefundService> logger, IContractRepository contractRepository)
         {
             _refundRepository = refundRepository;
-            _invoiceRepository = invoiceRepository;
             _transactionService = transactionService;
             _payoutService = payoutService;
             _logger = logger;
+            _contractRepository = contractRepository;
+            _invoiceRepository = invoiceRepository;
         }
 
         public async Task<RefundResultDto> RequestRefundAsync(CreateRefundRequestDto request)
         {
             try
             {
-                var invoice = _invoiceRepository.GetById(request.InvoiceId);
-                if (invoice == null)
-                    return new RefundResultDto { Success = false, Message = "Invoice not found" };
+                var contract = _contractRepository.GetById(request.ContractId);
+                if (contract == null)
+                    return new RefundResultDto { Success = false, Message = "Contract not found" };
 
-                // Check if invoice is eligible for refund
-                if (!await CanRefundBeProcessedAsync(request.InvoiceId))
-                    return new RefundResultDto { Success = false, Message = "Invoice is not eligible for refund" };
+                var originalInvoice = contract.Invoices.FirstOrDefault(i =>
+                    i.Status == InvoiceStatus.Paid && i.AmountPaid > 0);
 
-                // Check if refund amount is valid
-                var maxRefundAmount = await CalculateMaxRefundAmountAsync(request.InvoiceId);
-                if (request.Amount > maxRefundAmount)
-                    return new RefundResultDto { Success = false, Message = $"Refund amount cannot exceed {maxRefundAmount}" };
+                if (originalInvoice == null)
+                    return new RefundResultDto { Success = false, Message = "No paid invoice found for this contract" };
 
-                // Check if invoice already has a refund
-                var existingRefund = _refundRepository.GetByInvoiceId(request.InvoiceId);
-                if (existingRefund != null)
-                    return new RefundResultDto { Success = false, Message = "Refund already exists for this invoice" };
+                var refundInvoice = new Invoice
+                {
+                    ContractId = request.ContractId,
+                    IssuedAt = DateTime.UtcNow,
+                    AmountDue = -request.Amount, 
+                    Status = InvoiceStatus.Pending, 
+                    Note = $"Refund request: {request.Reason}",
+                    BookingToken = $"REFUND_{originalInvoice.InvoiceId}_{DateTime.UtcNow:yyyyMMddHHmmss}"
+                };
+
+                _invoiceRepository.Create(refundInvoice);
+                var invoice = _invoiceRepository.GetById(refundInvoice.InvoiceId);
 
                 var refund = new Refund
                 {
-                    InvoiceId = request.InvoiceId,
+                    InvoiceId = invoice.InvoiceId,
                     Amount = request.Amount,
                     Reason = request.Reason,
                     Status = RefundStatus.Pending,
@@ -76,7 +82,7 @@ namespace PublicCarRental.Application.Service
 
                 _refundRepository.Create(refund);
 
-                _logger.LogInformation($"✅ Refund requested: #{refund.RefundId} for invoice #{request.InvoiceId}");
+                _logger.LogInformation($"✅ Refund requested: #{refund.RefundId}, Refund Invoice: #{refundInvoice.InvoiceId}");
 
                 return new RefundResultDto
                 {
@@ -88,7 +94,7 @@ namespace PublicCarRental.Application.Service
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"❌ Failed to request refund for invoice #{request.InvoiceId}");
+                _logger.LogError(ex, $"❌ Failed to request refund for contract #{request.ContractId}");
                 return new RefundResultDto { Success = false, Message = ex.Message };
             }
         }
@@ -143,6 +149,8 @@ namespace PublicCarRental.Application.Service
                     refund.Status = RefundStatus.Completed;
                     refund.ProcessedDate = DateTime.UtcNow;
                     refund.PayoutTransactionId = payoutResult.TransactionId;
+                    refund.Note = $"Refund processed successfully. Transaction: {payoutResult.TransactionId}";
+
                     _refundRepository.Update(refund);
 
                     var invoice = _invoiceRepository.GetById(refund.InvoiceId);
@@ -170,9 +178,9 @@ namespace PublicCarRental.Application.Service
                 }
                 else
                 {
-                    // Payout failed
                     refund.Status = RefundStatus.Failed;
                     refund.Note = $"Payout failed: {payoutResult.Message}";
+
                     _refundRepository.Update(refund);
 
                     return new RefundResultDto
@@ -194,6 +202,7 @@ namespace PublicCarRental.Application.Service
                 {
                     refund.Status = RefundStatus.Failed;
                     refund.Note = $"Processing error: {ex.Message}";
+
                     _refundRepository.Update(refund);
                 }
 
@@ -231,6 +240,37 @@ namespace PublicCarRental.Application.Service
             }
         }
 
+        public async Task<RefundResultDto> RetryFailedRefundAsync(int originalRefundId, BankAccountInfo bankInfo)
+        {
+            var originalRefund = _refundRepository.GetById(originalRefundId);
+            if (originalRefund == null)
+                return new RefundResultDto { Success = false, Message = "Original refund not found" };
+
+            if (originalRefund.Status != RefundStatus.Failed)
+                return new RefundResultDto { Success = false, Message = "Can only retry failed refunds" };
+
+            var retryRefund = new Refund
+            {
+                InvoiceId = originalRefund.InvoiceId,
+                Amount = originalRefund.Amount,
+                Reason = $"[RETRY] {originalRefund.Reason}",
+                Status = RefundStatus.Approved,
+                StaffId = originalRefund.StaffId,
+                RequestedDate = DateTime.UtcNow,
+                Note = $"Retry attempt for failed refund #{originalRefund.RefundId}"
+            };
+
+            _refundRepository.Create(retryRefund);
+
+            return await ProcessRefundAsync(retryRefund.RefundId, bankInfo);
+        }
+
+        public async Task<bool> HasInsufficientBalanceError(int refundId)
+        {
+            var refund = _refundRepository.GetById(refundId);
+            return refund?.Note?.Contains("Số dư tài khoản không đủ") ?? false;
+        }
+
         public async Task<IEnumerable<RefundDto>> GetPendingRefundsAsync()
         {
             var refunds = _refundRepository.GetByStatus(RefundStatus.Pending);
@@ -247,11 +287,10 @@ namespace PublicCarRental.Application.Service
         {
             var invoice = _invoiceRepository.GetById(invoiceId);
 
-            // Check conditions for refund eligibility
             return invoice != null &&
                    invoice.Status == InvoiceStatus.Paid &&
                    invoice.AmountPaid > 0 &&
-                   invoice.RefundAmount == null; // No existing refund
+                   invoice.RefundAmount == null; 
         }
 
         public async Task<decimal> CalculateMaxRefundAmountAsync(int invoiceId)

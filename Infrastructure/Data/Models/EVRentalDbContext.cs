@@ -221,9 +221,9 @@ namespace PublicCarRental.Infrastructure.Data.Models
                       .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(r => r.Invoice)
-                       .WithOne(i => i.Refund)  
-                       .HasForeignKey<Refund>(r => r.InvoiceId)
-                       .OnDelete(DeleteBehavior.Cascade);
+                      .WithMany(i => i.Refunds) 
+                      .HasForeignKey(r => r.InvoiceId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
                 entity.Property(r => r.Status)
                       .HasConversion<int>();

@@ -2,7 +2,7 @@
 {
     public class CreateRefundRequestDto
     {
-        public int InvoiceId { get; set; }
+        public int ContractId { get; set; }
         public decimal Amount { get; set; }
         public string Reason { get; set; }
         public int StaffId { get; set; }
