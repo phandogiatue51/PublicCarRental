@@ -8,24 +8,19 @@ public class PayOSPayoutService : IPayOSPayoutService
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<PayOSPayoutService> _logger;
-    private readonly IConfiguration _configuration;
-    private readonly IRefundService _refundService;
 
     private readonly string _payoutClientId;
     private readonly string _payoutApiKey;
     private readonly string _baseUrl = "https://api-merchant.payos.vn";
 
-    public PayOSPayoutService(IConfiguration configuration, IHttpClientFactory httpClientFactory, ILogger<PayOSPayoutService> logger,
-        IRefundService refundService)
+    public PayOSPayoutService(IConfiguration configuration, IHttpClientFactory httpClientFactory, ILogger<PayOSPayoutService> logger)
     {
         _httpClient = httpClientFactory.CreateClient();
         _logger = logger;
-        _configuration = configuration;
 
         _payoutClientId = configuration["PayOS:PayoutClientId"];
         _payoutApiKey = configuration["PayOS:PayoutApiKey"];
 
-        _refundService = refundService;
 
         if (string.IsNullOrEmpty(_payoutClientId) || string.IsNullOrEmpty(_payoutApiKey))
         {
@@ -41,7 +36,7 @@ public class PayOSPayoutService : IPayOSPayoutService
             var payoutRequest = new
             {
                 referenceId = $"refund_{refundId}_{DateTime.UtcNow:yyyyMMddHHmmss}",
-                amount = refundAmount,
+                amount = (int)refundAmount, 
                 description = $"Refund for rental #{refundId}",
                 toBin = GetBankBin(bankInfo.BankCode),
                 toAccountNumber = bankInfo.AccountNumber,
