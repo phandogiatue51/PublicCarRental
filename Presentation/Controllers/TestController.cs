@@ -52,8 +52,8 @@ public class TestController : ControllerBase
         return Ok("Station-related cache cleared");
     }
 
-    [HttpGet]
-    public async Task<IActionResult> Get()
+    [HttpGet("myip")]
+    public async Task<IActionResult> GetMyIp()
     {
         try
         {
