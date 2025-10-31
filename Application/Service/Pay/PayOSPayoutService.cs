@@ -1,6 +1,7 @@
 ﻿using PublicCarRental.Application.DTOs.Pay;
 using System.Text;
 using System.Text.Json;
+using static PublicCarRental.Application.DTOs.Pay.PayOSDto;
 namespace PublicCarRental.Application.Service.Pay;
 
 public class PayOSPayoutService : IPayOSPayoutService
@@ -8,15 +9,14 @@ public class PayOSPayoutService : IPayOSPayoutService
     private readonly HttpClient _httpClient;
     private readonly ILogger<PayOSPayoutService> _logger;
     private readonly IConfiguration _configuration;
+    private readonly IRefundService _refundService;
 
     private readonly string _payoutClientId;
     private readonly string _payoutApiKey;
     private readonly string _baseUrl = "https://api-merchant.payos.vn";
 
-    public PayOSPayoutService(
-        IConfiguration configuration,
-        IHttpClientFactory httpClientFactory,
-        ILogger<PayOSPayoutService> logger)
+    public PayOSPayoutService(IConfiguration configuration, IHttpClientFactory httpClientFactory, ILogger<PayOSPayoutService> logger,
+        IRefundService refundService)
     {
         _httpClient = httpClientFactory.CreateClient();
         _logger = logger;
@@ -25,20 +25,23 @@ public class PayOSPayoutService : IPayOSPayoutService
         _payoutClientId = configuration["PayOS:PayoutClientId"];
         _payoutApiKey = configuration["PayOS:PayoutApiKey"];
 
+        _refundService = refundService;
+
         if (string.IsNullOrEmpty(_payoutClientId) || string.IsNullOrEmpty(_payoutApiKey))
         {
             throw new InvalidOperationException("PayOS payout credentials are not configured");
         }
     }
 
-    public async Task<PayoutResult> CreateSinglePayoutAsync(int refundId, BankAccountInfo bankInfo)
+    public async Task<PayoutResult> CreateSinglePayoutAsync(int refundId, BankAccountInfo bankInfo, decimal refundAmount)
     {
         try
         {
+
             var payoutRequest = new
             {
                 referenceId = $"refund_{refundId}_{DateTime.UtcNow:yyyyMMddHHmmss}",
-                amount = (int)bankInfo.Amount,
+                amount = refundAmount,
                 description = $"Refund for rental #{refundId}",
                 toBin = GetBankBin(bankInfo.BankCode),
                 toAccountNumber = bankInfo.AccountNumber,
@@ -48,7 +51,11 @@ public class PayOSPayoutService : IPayOSPayoutService
             _logger.LogInformation($"🔍 Calling PayOS Payout: {_baseUrl}/v1/payouts");
             _logger.LogInformation($"📦 Request: {JsonSerializer.Serialize(payoutRequest)}");
 
-            var response = await SendPayOSRequestAsync("/v1/payouts", payoutRequest);
+            var response = await SendPayOSRequestAsync(
+                "/v1/payouts",
+                payoutRequest,
+                idempotencyKey: payoutRequest.referenceId
+            );
 
             if (response.IsSuccessStatusCode)
             {
@@ -60,13 +67,25 @@ public class PayOSPayoutService : IPayOSPayoutService
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 });
 
-                return new PayoutResult
+                if (payoutResponse?.Data != null)
                 {
-                    Success = true,
-                    TransactionId = payoutResponse.Data.Id, // ✅ Correct field name
-                    Status = payoutResponse.Data.ApprovalState, // ✅ Use ApprovalState
-                    Message = "Payout initiated successfully"
-                };
+                    return new PayoutResult
+                    {
+                        Success = true,
+                        TransactionId = payoutResponse.Data.Id,
+                        Status = payoutResponse.Data.ApprovalState,
+                        Message = "Payout initiated successfully"
+                    };
+                }
+                else
+                {
+                    _logger.LogError($"❌ PayOS response data is null: {content}");
+                    return new PayoutResult
+                    {
+                        Success = false,
+                        Message = "PayOS response data is null"
+                    };
+                }
             }
             else
             {
@@ -95,7 +114,6 @@ public class PayOSPayoutService : IPayOSPayoutService
     {
         try
         {
-            // ✅ Correct endpoint for getting payout status
             var response = await SendPayOSRequestAsync($"/v1/payouts/{payoutId}", null, HttpMethod.Get);
 
             if (response.IsSuccessStatusCode)
@@ -112,7 +130,7 @@ public class PayOSPayoutService : IPayOSPayoutService
                 return new PayoutInfo
                 {
                     TransactionId = payoutResponse.Data.Id,
-                    Status = transactionStatus, // Use transaction state
+                    Status = transactionStatus, 
                     Amount = latestTransaction?.Amount ?? payoutResponse.Data.Transactions?.FirstOrDefault()?.Amount ?? 0,
                     CreatedAt = payoutResponse.Data.CreatedAt,
                     CompletedAt = latestTransaction?.TransactionDatetime
@@ -144,7 +162,7 @@ public class PayOSPayoutService : IPayOSPayoutService
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 });
 
-                return decimal.Parse(balanceResponse.Data.Balance); // Balance is string in response
+                return decimal.Parse(balanceResponse.Data.Balance); 
             }
             else
             {
@@ -162,7 +180,6 @@ public class PayOSPayoutService : IPayOSPayoutService
     {
         try
         {
-            // ✅ Correct estimate credit endpoint with required format
             var estimateRequest = new
             {
                 referenceId = $"estimate_{DateTime.UtcNow:yyyyMMddHHmmss}",
@@ -175,8 +192,8 @@ public class PayOSPayoutService : IPayOSPayoutService
                         referenceId = $"payout_estimate_{DateTime.UtcNow:yyyyMMddHHmmss}",
                         amount = (int)amount,
                         description = "Refund estimate",
-                        toBin = "970436", // Default Vietcombank for estimation
-                        toAccountNumber = "000000000" // Dummy account for estimation
+                        toBin = "970436",
+                        toAccountNumber = "000000000"
                     }
                 }
             };
@@ -188,8 +205,6 @@ public class PayOSPayoutService : IPayOSPayoutService
                 var content = await response.Content.ReadAsStringAsync();
                 _logger.LogInformation($"✅ Estimate Credit Response: {content}");
 
-                // For estimate, we might just return the original amount
-                // since the response format isn't fully clear
                 return amount;
             }
             else
@@ -221,7 +236,7 @@ public class PayOSPayoutService : IPayOSPayoutService
         return bankBins.GetValueOrDefault(bankCode.ToUpper(), "970436");
     }
 
-    private async Task<HttpResponseMessage> SendPayOSRequestAsync(string endpoint, object data = null, HttpMethod method = null)
+    private async Task<HttpResponseMessage> SendPayOSRequestAsync(string endpoint, object data = null, HttpMethod method = null, string idempotencyKey = null)
     {
         method ??= data == null ? HttpMethod.Get : HttpMethod.Post;
         var url = $"{_baseUrl}{endpoint}";
@@ -230,6 +245,11 @@ public class PayOSPayoutService : IPayOSPayoutService
 
         request.Headers.Add("x-client-id", _payoutClientId);
         request.Headers.Add("x-api-key", _payoutApiKey);
+
+        if (!string.IsNullOrEmpty(idempotencyKey))
+        {
+            request.Headers.Add("Idempotency-Key", idempotencyKey);
+        }
 
         if (data != null)
         {
@@ -242,63 +262,4 @@ public class PayOSPayoutService : IPayOSPayoutService
 
         return await _httpClient.SendAsync(request);
     }
-}
-
-public class PayOSPayoutResponse
-{
-    public string Code { get; set; }
-    public string Desc { get; set; }
-    public PayoutData Data { get; set; }
-}
-
-public class PayOSPayoutDetailResponse
-{
-    public string Code { get; set; }
-    public string Desc { get; set; }
-    public PayoutDetailData Data { get; set; }
-}
-
-public class PayOSBalanceResponse
-{
-    public string Code { get; set; }
-    public string Desc { get; set; }
-    public BalanceData Data { get; set; }
-}
-
-public class PayoutData
-{
-    public string Id { get; set; }
-    public string ReferenceId { get; set; }
-    public string ApprovalState { get; set; } // "APPROVED", "PENDING", etc.
-    public DateTime CreatedAt { get; set; }
-}
-
-public class PayoutDetailData : PayoutData
-{
-    public List<PayoutTransaction> Transactions { get; set; }
-    public List<string> Category { get; set; }
-}
-
-public class PayoutTransaction
-{
-    public string Id { get; set; }
-    public string ReferenceId { get; set; }
-    public int Amount { get; set; }
-    public string Description { get; set; }
-    public string ToBin { get; set; }
-    public string ToAccountNumber { get; set; }
-    public string ToAccountName { get; set; }
-    public string Reference { get; set; }
-    public DateTime TransactionDatetime { get; set; }
-    public string ErrorMessage { get; set; }
-    public string ErrorCode { get; set; }
-    public string State { get; set; } // "SUCCEEDED", "FAILED", "PENDING"
-}
-
-public class BalanceData
-{
-    public string AccountNumber { get; set; }
-    public string AccountName { get; set; }
-    public string Currency { get; set; }
-    public string Balance { get; set; } // String in response
 }

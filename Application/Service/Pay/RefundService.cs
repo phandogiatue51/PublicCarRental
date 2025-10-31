@@ -133,29 +133,24 @@ namespace PublicCarRental.Application.Service
                 if (refund.Status != RefundStatus.Approved)
                     return new RefundResultDto { Success = false, Message = "Refund must be approved before processing" };
 
-                // Update status to processing
                 refund.Status = RefundStatus.Processing;
                 _refundRepository.Update(refund);
 
-                // Process payout via PayOS
-                var payoutResult = await _payoutService.CreateSinglePayoutAsync(refundId, bankInfo);
+                var payoutResult = await _payoutService.CreateSinglePayoutAsync(refundId, bankInfo, refund.Amount);
 
                 if (payoutResult.Success)
                 {
-                    // Update refund with payout info
                     refund.Status = RefundStatus.Completed;
                     refund.ProcessedDate = DateTime.UtcNow;
                     refund.PayoutTransactionId = payoutResult.TransactionId;
                     _refundRepository.Update(refund);
 
-                    // Update invoice refund status
                     var invoice = _invoiceRepository.GetById(refund.InvoiceId);
                     invoice.RefundAmount = refund.Amount;
                     invoice.RefundedAt = DateTime.UtcNow;
                     invoice.Status = refund.Amount == invoice.AmountPaid ? InvoiceStatus.Refunded : InvoiceStatus.PartiallyRefunded;
                     _invoiceRepository.Update(invoice);
 
-                    // Create refund transaction record
                     _transactionService.CreateTransaction(
                         refund.InvoiceId,
                         TransactionType.Refund,
@@ -264,8 +259,6 @@ namespace PublicCarRental.Application.Service
             var invoice = _invoiceRepository.GetById(invoiceId);
             if (invoice == null) return 0;
 
-            // For now, allow full refund of paid amount
-            // You can add business logic here for partial refunds, fees, etc.
             return invoice.AmountPaid ?? 0;
         }
 
