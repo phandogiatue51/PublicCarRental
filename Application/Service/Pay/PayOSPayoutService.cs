@@ -171,48 +171,6 @@ public class PayOSPayoutService : IPayOSPayoutService
         }
     }
 
-    public async Task<decimal> EstimateCreditAsync(decimal amount)
-    {
-        try
-        {
-            var estimateRequest = new
-            {
-                referenceId = $"estimate_{DateTime.UtcNow:yyyyMMddHHmmss}",
-                category = new[] { "refund" },
-                validateDestination = true,
-                payouts = new[]
-                {
-                    new
-                    {
-                        referenceId = $"payout_estimate_{DateTime.UtcNow:yyyyMMddHHmmss}",
-                        amount = (int)amount,
-                        description = "Refund estimate",
-                        toBin = "970436",
-                        toAccountNumber = "000000000"
-                    }
-                }
-            };
-
-            var response = await SendPayOSRequestAsync("/v1/payouts/estimate-credit", estimateRequest);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                _logger.LogInformation($"✅ Estimate Credit Response: {content}");
-
-                return amount;
-            }
-            else
-            {
-                throw new HttpRequestException($"Failed to estimate credit: {response.StatusCode}");
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"❌ Failed to estimate credit for amount {amount}");
-            throw;
-        }
-    }
 
     private string GetBankBin(string bankCode)
     {
@@ -243,8 +201,11 @@ public class PayOSPayoutService : IPayOSPayoutService
 
         if (!string.IsNullOrEmpty(idempotencyKey))
         {
-            request.Headers.Add("Idempotency-Key", idempotencyKey);
+            request.Headers.Add("x-idempotency-key", idempotencyKey);
         }
+
+        var signature = GenerateSignature(data, endpoint);
+        request.Headers.Add("x-signature", signature);
 
         if (data != null)
         {
@@ -255,6 +216,21 @@ public class PayOSPayoutService : IPayOSPayoutService
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
         }
 
+        _logger.LogInformation($"📤 Headers: x-idempotency-key: {idempotencyKey}, x-signature: {signature}");
+
         return await _httpClient.SendAsync(request);
+    }
+
+    private string GenerateSignature(object data, string endpoint)
+    {
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
+        var method = "POST"; // or get from request
+        var requestBody = data != null ? JsonSerializer.Serialize(data) : "";
+
+        var payload = $"{method}{endpoint}{requestBody}{timestamp}";
+
+        using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(_payoutApiKey));
+        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
+        return BitConverter.ToString(hash).Replace("-", "").ToLower();
     }
 }
