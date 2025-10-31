@@ -1,15 +1,17 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.Application.Service.Email;
+using System.Net.Http;
 
 [ApiController]
 [Route("api/[controller]")]
 public class TestController : ControllerBase
 {
     private readonly IEmailService _emailService;
-
-    public TestController(IEmailService emailService)
+    private readonly HttpClient _httpClient;
+    public TestController(IEmailService emailService, IHttpClientFactory httpClientFactory)
     {
         _emailService = emailService;
+        _httpClient = httpClientFactory.CreateClient();
     }
 
     [HttpPost("test-email")]
@@ -48,5 +50,19 @@ public class TestController : ControllerBase
     {
         await ClearCacheByPattern("stations*");
         return Ok("Station-related cache cleared");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Get()
+    {
+        try
+        {
+            var ip = await _httpClient.GetStringAsync("https://ifconfig.me");
+            return Ok(new { outboundIp = ip });
+        }
+        catch
+        {
+            return StatusCode(500, "Unable to fetch outbound IP");
+        }
     }
 }
