@@ -11,6 +11,7 @@ public class PayOSPayoutService : IPayOSPayoutService
 
     private readonly string _payoutClientId;
     private readonly string _payoutApiKey;
+    private readonly string _payoutCheckSumKey;
     private readonly string _baseUrl = "https://api-merchant.payos.vn";
 
     public PayOSPayoutService(IConfiguration configuration, IHttpClientFactory httpClientFactory, ILogger<PayOSPayoutService> logger)
@@ -20,7 +21,7 @@ public class PayOSPayoutService : IPayOSPayoutService
 
         _payoutClientId = configuration["PayOS:PayoutClientId"];
         _payoutApiKey = configuration["PayOS:PayoutApiKey"];
-
+        _payoutCheckSumKey = configuration["PayOS:PayoutChecksumKey"];
 
         if (string.IsNullOrEmpty(_payoutClientId) || string.IsNullOrEmpty(_payoutApiKey))
         {
@@ -204,7 +205,7 @@ public class PayOSPayoutService : IPayOSPayoutService
             request.Headers.Add("x-idempotency-key", idempotencyKey);
         }
 
-        var signature = GenerateSignature(data, endpoint);
+        var signature = GeneratePayoutSignature(data);
         request.Headers.Add("x-signature", signature);
 
         if (data != null)
@@ -221,16 +222,27 @@ public class PayOSPayoutService : IPayOSPayoutService
         return await _httpClient.SendAsync(request);
     }
 
-    private string GenerateSignature(object data, string endpoint)
+    private string GeneratePayoutSignature(object data)
     {
-        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-        var method = "POST"; // or get from request
-        var requestBody = data != null ? JsonSerializer.Serialize(data) : "";
+        if (data == null) return string.Empty;
 
-        var payload = $"{method}{endpoint}{requestBody}{timestamp}";
+        var json = JsonSerializer.Serialize(data, new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        });
 
-        using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(_payoutApiKey));
-        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(payload));
+        var dataDict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+        var sortedKeys = dataDict.Keys.OrderBy(k => k).ToList();
+
+        var queryString = string.Join("&", sortedKeys.Select(key =>
+        {
+            var value = dataDict[key];
+            var valueStr = value.ValueKind == JsonValueKind.String ? value.GetString() : value.ToString();
+            return $"{key}={valueStr}";
+        }));
+
+        using var hmac = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(_payoutCheckSumKey));
+        var hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(queryString));
         return BitConverter.ToString(hash).Replace("-", "").ToLower();
     }
 }
