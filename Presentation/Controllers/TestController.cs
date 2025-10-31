@@ -57,8 +57,13 @@ public class TestController : ControllerBase
     {
         try
         {
-            var ip = await _httpClient.GetStringAsync("https://ifconfig.me");
-            return Ok(new { outboundIp = ip });
+            var request = new HttpRequestMessage(HttpMethod.Get, "https://ifconfig.me");
+            request.Headers.Add("User-Agent", "curl"); // This tricks the server into returning plain text
+
+            var response = await _httpClient.SendAsync(request);
+            var ip = await response.Content.ReadAsStringAsync();
+
+            return Ok(new { outboundIp = ip.Trim() });
         }
         catch
         {
