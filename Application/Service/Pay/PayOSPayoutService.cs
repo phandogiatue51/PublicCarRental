@@ -11,7 +11,7 @@ public class PayOSPayoutService : IPayOSPayoutService
 
     private readonly string _payoutClientId;
     private readonly string _payoutApiKey;
-    private readonly string _pipedreamUrl = "https://eo6kk613tg6oiuz.m.pipedream.net"; 
+    private readonly string _baseUrl = "https://api-merchant.payos.vn";
 
     public PayOSPayoutService(IConfiguration configuration, IHttpClientFactory httpClientFactory, ILogger<PayOSPayoutService> logger)
     {
@@ -32,6 +32,7 @@ public class PayOSPayoutService : IPayOSPayoutService
     {
         try
         {
+
             var payoutRequest = new
             {
                 referenceId = $"refund_{refundId}_{DateTime.UtcNow:yyyyMMddHHmmss}",
@@ -42,7 +43,14 @@ public class PayOSPayoutService : IPayOSPayoutService
                 category = new[] { "refund" }
             };
 
-            var response = await SendPipedreamRequestAsync("/v1/payouts", payoutRequest);
+            _logger.LogInformation($"🔍 Calling PayOS Payout: {_baseUrl}/v1/payouts");
+            _logger.LogInformation($"📦 Request: {JsonSerializer.Serialize(payoutRequest)}");
+
+            var response = await SendPayOSRequestAsync(
+                "/v1/payouts",
+                payoutRequest,
+                idempotencyKey: payoutRequest.referenceId
+            );
 
             if (response.IsSuccessStatusCode)
             {
@@ -97,31 +105,11 @@ public class PayOSPayoutService : IPayOSPayoutService
         }
     }
 
-    private async Task<HttpResponseMessage> SendPipedreamRequestAsync(string endpoint, object data, HttpMethod method = null)
-    {
-        method ??= HttpMethod.Post;
-        var url = $"{_pipedreamUrl}{endpoint}";
-
-        using var request = new HttpRequestMessage(method, url);
-
-        if (data != null)
-        {
-            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
-        }
-
-        return await _httpClient.SendAsync(request);
-    }
-
     public async Task<PayoutInfo> GetPayoutStatusAsync(string payoutId)
     {
         try
         {
-            var response = await SendPipedreamRequestAsync($"/v1/payouts/{payoutId}", null, HttpMethod.Get);
-
+            var response = await SendPayOSRequestAsync($"/v1/payouts/{payoutId}", null, HttpMethod.Get);
 
             if (response.IsSuccessStatusCode)
             {
@@ -137,7 +125,7 @@ public class PayOSPayoutService : IPayOSPayoutService
                 return new PayoutInfo
                 {
                     TransactionId = payoutResponse.Data.Id,
-                    Status = transactionStatus, 
+                    Status = transactionStatus,
                     Amount = latestTransaction?.Amount ?? payoutResponse.Data.Transactions?.FirstOrDefault()?.Amount ?? 0,
                     CreatedAt = payoutResponse.Data.CreatedAt,
                     CompletedAt = latestTransaction?.TransactionDatetime
@@ -159,7 +147,7 @@ public class PayOSPayoutService : IPayOSPayoutService
     {
         try
         {
-            var response = await SendPipedreamRequestAsync("/v1/payouts-account/balance", null, HttpMethod.Get);
+            var response = await SendPayOSRequestAsync("/v1/payouts-account/balance", null, HttpMethod.Get);
 
             if (response.IsSuccessStatusCode)
             {
@@ -169,7 +157,7 @@ public class PayOSPayoutService : IPayOSPayoutService
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 });
 
-                return decimal.Parse(balanceResponse.Data.Balance); 
+                return decimal.Parse(balanceResponse.Data.Balance);
             }
             else
             {
@@ -205,7 +193,7 @@ public class PayOSPayoutService : IPayOSPayoutService
                 }
             };
 
-            var response = await SendPipedreamRequestAsync("/v1/payouts/estimate-credit", estimateRequest);
+            var response = await SendPayOSRequestAsync("/v1/payouts/estimate-credit", estimateRequest);
 
             if (response.IsSuccessStatusCode)
             {
@@ -241,5 +229,32 @@ public class PayOSPayoutService : IPayOSPayoutService
         };
 
         return bankBins.GetValueOrDefault(bankCode.ToUpper(), "970436");
+    }
+
+    private async Task<HttpResponseMessage> SendPayOSRequestAsync(string endpoint, object data = null, HttpMethod method = null, string idempotencyKey = null)
+    {
+        method ??= data == null ? HttpMethod.Get : HttpMethod.Post;
+        var url = $"{_baseUrl}{endpoint}";
+
+        using var request = new HttpRequestMessage(method, url);
+
+        request.Headers.Add("x-client-id", _payoutClientId);
+        request.Headers.Add("x-api-key", _payoutApiKey);
+
+        if (!string.IsNullOrEmpty(idempotencyKey))
+        {
+            request.Headers.Add("Idempotency-Key", idempotencyKey);
+        }
+
+        if (data != null)
+        {
+            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+        }
+
+        return await _httpClient.SendAsync(request);
     }
 }
