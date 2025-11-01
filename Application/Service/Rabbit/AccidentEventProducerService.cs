@@ -69,5 +69,30 @@ namespace PublicCarRental.Application.Service.Rabbit
                 accident.VehicleId, accident.Vehicle?.StationId);
         }
 
+        public async Task PublishActionMessage(AccidentReport accident)
+        {
+            var vehicle = _vehicleRepository.GetById(accident.VehicleId);
+
+            var actionEvent = new AccidentActionEvent
+            {
+                AccidentId = accident.AccidentId,
+                VehicleId = accident.VehicleId,
+                Status = accident.Status,
+                ActionTaken = accident.ActionTaken,
+                ResolutionNote = accident.ResolutionNote,
+                ResolvedAt = accident.ResolvedAt,
+                VehicleLicensePlate = vehicle?.LicensePlate ?? "Unknown",
+                StationId = vehicle?.StationId ?? 0, // ✅ Add station ID
+                StaffId = accident.StaffId // ✅ Include reporting staff
+            };
+
+            await _messageProducer.PublishMessageAsync(
+                actionEvent,
+                _rabbitMqSettings.QueueNames.NotificationQueue
+            );
+
+            _logger.LogInformation("📢 Accident action event published to station {StationId}: {AccidentId} - {Status}",
+                actionEvent.StationId, accident.AccidentId, accident.Status);
+        }
     }
 }

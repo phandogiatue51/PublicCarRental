@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PublicCarRental.Application.DTOs.Accident;
+using PublicCarRental.Application.DTOs.BadScenario;
 using PublicCarRental.Application.DTOs.Bran;
+using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Application.Service.Image;
 using PublicCarRental.Application.Service.Rabbit;
 using PublicCarRental.Infrastructure.Data.Models;
@@ -19,10 +21,14 @@ namespace PublicCarRental.Application.Service
         private readonly IContractRepository _contractRepository;
         private readonly AccidentEventProducerService _accidentEventProducerService;
         private readonly IStaffRepository _staffRepository;
+        private readonly IContractAccidentHandler _contractAccidentHandler;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IContractModificationService _modificationService;
 
         public AccidentService(IAccidentRepository accidentRepository, IImageStorageService imageStorageService,
             IVehicleRepository vehicleRepository, IContractRepository contractRepository, 
-            AccidentEventProducerService accidentEventProducerService, IStaffRepository staffRepository)
+            AccidentEventProducerService accidentEventProducerService, IStaffRepository staffRepository,
+            IContractAccidentHandler contractAccidentHandler, IServiceProvider serviceProvider, IContractModificationService modificationService)
         {
             _accidentRepository = accidentRepository;
             _imageStorageService = imageStorageService;
@@ -30,6 +36,9 @@ namespace PublicCarRental.Application.Service
             _contractRepository = contractRepository;
             _accidentEventProducerService = accidentEventProducerService;
             _staffRepository = staffRepository;
+            _contractAccidentHandler = contractAccidentHandler;
+            _serviceProvider = serviceProvider;
+            _modificationService = modificationService;
         }
 
         public async Task<IEnumerable<AccidentDto>> GetAllAsync()
@@ -80,6 +89,8 @@ namespace PublicCarRental.Application.Service
                 Status = acc.Status
             };
         }
+
+        public AccidentReport GetEntityById(int id) => _accidentRepository.GetAll().FirstOrDefault(a => a.AccidentId == id);
 
         public async Task<(bool Success, string Message)> CreateContractAccAsync(ContractAcc dto)
         {
@@ -142,6 +153,7 @@ namespace PublicCarRental.Application.Service
 
                 _accidentRepository.CreateAcc(acc);
 
+                await _contractAccidentHandler.HandleAffectedContracts(vehicle.VehicleId, (int)dto.StaffId, dto.Description);
                 await _accidentEventProducerService.PublishAccidentReportedAsync(acc);
 
                 return (true, $"Fixing report for vehicle {dto.VehicleId} created successfully!");
@@ -173,7 +185,7 @@ namespace PublicCarRental.Application.Service
             }
         }
 
-        public async Task<(bool Success, string Message)> UpdateAccStatusAsync(int id, AccidentStatus newStatus)
+        public async Task<(bool Success, string Message)> UpdateAccident(int id, AccidentUpdateDto dto)
         {
             try
             {
@@ -183,30 +195,85 @@ namespace PublicCarRental.Application.Service
 
                 if (acc == null) return (false, "Accident report not found!");
 
-                acc.Status = newStatus;
-                _accidentRepository.UpdateAcc(acc);
+                acc.Status = dto.Status;
+                acc.ActionTaken = dto.ActionTaken;
+                acc.ResolutionNote = dto.ResolutionNote;
+                acc.ResolvedAt = dto.ResolvedAt ?? DateTime.Now;
 
-                switch (newStatus)
+                if (dto.ActionTaken.HasValue)
+                {
+                    var actionResult = await ExecuteAccidentAction(acc, dto.ActionTaken.Value);
+                    acc.ResolutionNote += $"\nAction Result: {actionResult}";
+                }
+
+                // Handle status-specific logic
+                switch (dto.Status)
                 {
                     case AccidentStatus.UnderInvestigation:
                     case AccidentStatus.RepairApproved:
+                        await _accidentEventProducerService.PublishActionMessage(acc);
+                        break;
+
                     case AccidentStatus.UnderRepair:
                         acc.Vehicle.Status = VehicleStatus.InMaintenance;
                         break;
+
                     case AccidentStatus.Repaired:
                         acc.Vehicle.Status = VehicleStatus.ToBeRented;
                         await _accidentEventProducerService.PublishVehicleReadyAsync(acc);
-
                         break;
                 }
 
                 _accidentRepository.UpdateAcc(acc);
-                return (true, $"Accident status updated to {newStatus}");
+                return (true, $"Accident #{id} updated successfully");
             }
             catch (Exception ex)
             {
                 return (false, ex.Message);
             }
+        }
+
+        private async Task<string> ExecuteAccidentAction(AccidentReport accident, ActionType actionType)
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var contractHandler = scope.ServiceProvider.GetRequiredService<IContractAccidentHandler>();
+
+            return actionType switch
+            {
+                ActionType.Refund => await ProcessRefundAction(contractHandler, accident),
+                ActionType.Replace => await ProcessReplaceAction(contractHandler, accident),
+                ActionType.RepairOnly => "Repair only - no contract changes",
+                _ => "Unknown action type"
+            };
+        }
+
+        private async Task<string> ProcessRefundAction(IContractAccidentHandler handler, AccidentReport accident)
+        {
+            var affectedContracts = await handler.GetAffectedContractsAsync(accident.VehicleId);
+
+            if (!affectedContracts.Any())
+                return "No future contracts to refund";
+
+            foreach (var contract in affectedContracts)
+            {
+                var request = new StaffVehicleProblemRequest
+                {
+                    ProblemType = VehicleProblemType.Unavailable,
+                    StaffId = (int)accident.StaffId,
+                    Reason = $"Refund due to vehicle accident: {accident.Description}",
+                    Note = "Full refund per admin resolution"
+                };
+
+                await _modificationService.HandleStaffVehicleProblemAsync(contract.ContractId, request);
+            }
+
+            return $"Refunded {affectedContracts.Count} contracts";
+        }
+
+        private async Task<string> ProcessReplaceAction(IContractAccidentHandler handler, AccidentReport accident)
+        {
+            var result = await handler.ProcessApprovedAccidentAsync(accident.AccidentId, accident.StaffId ?? 1, "Admin initiated replacement");
+            return result.Message;
         }
 
         public IEnumerable<AccidentDto?> FilterAccidents(AccidentStatus? status, int? stationId)
@@ -235,11 +302,11 @@ namespace PublicCarRental.Application.Service
     {
         Task<IEnumerable<AccidentDto>> GetAllAsync();
         Task<AccidentDto?> GetByIdAsync(int id);
+        public AccidentReport GetEntityById(int id);
         Task<(bool Success, string Message)> CreateContractAccAsync(ContractAcc dto);
         Task<(bool Success, string Message)> CreateVehicleAccAsync(VehicleAcc dto);
-        Task<(bool Success, string Message)> DeleteAccAsync(int id); 
-        Task<(bool Success, string Message)> UpdateAccStatusAsync(int id, AccidentStatus newStatus);
+        Task<(bool Success, string Message)> DeleteAccAsync(int id);
+        Task<(bool Success, string Message)> UpdateAccident(int id, AccidentUpdateDto dto);
         public IEnumerable<AccidentDto?> FilterAccidents(AccidentStatus? status, int? stationId);
-
     }
 }

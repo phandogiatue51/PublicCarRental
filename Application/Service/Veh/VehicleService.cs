@@ -202,10 +202,9 @@ namespace PublicCarRental.Application.Service.Veh
             return true;
         }
 
-        public async Task<Vehicle> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd)
+        public async Task<Vehicle> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime startTime, DateTime endTime, int? excludeVehicleId = null)
         {
-
-                return await _repo.GetFirstAvailableVehicleByModelAsync(modelId, stationId, requestedStart, requestedEnd);
+            return await _repo.GetFirstAvailableVehicleByModelAsync(modelId, stationId, startTime, endTime, excludeVehicleId);
         }
 
         public async Task<bool> CheckVehicleAvailabilityAsync(int vehicleId, DateTime startTime, DateTime endTime)
@@ -228,8 +227,12 @@ namespace PublicCarRental.Application.Service.Veh
                 .CountAsync();
         }
 
-        public Vehicle GetEntityById(int id) => _repo.GetById(id);
+        public async Task<List<Vehicle>> GetAvailableVehiclesByModelAsync(int modelId, int stationId, DateTime startTime, DateTime endTime, int? excludeVehicleId = null)
+        {
+            return await _repo.GetAvailableVehiclesByModelAsync(modelId, stationId, startTime, endTime, excludeVehicleId);
+        }
 
+        public Vehicle GetEntityById(int id) => _repo.GetById(id);
 
         public async Task<IEnumerable<StationDtoForView>> GetStationFromModelAsync(int modelId)
         {

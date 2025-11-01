@@ -14,9 +14,10 @@ namespace PublicCarRental.Application.Service.Veh
         Task<(bool Success, string Message)> UpdateVehicleAsync(int id, VehicleUpdateDto updatedVehicle);
         Task<bool> DeleteVehicleAsync(int id);
         Task<bool> CheckVehicleAvailabilityAsync(int vehicleId, DateTime startTime, DateTime endTime);
-        Task<Vehicle> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime requestedStart, DateTime requestedEnd);
+        Task<Vehicle> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime startTime, DateTime endTime, int? excludeVehicleId = null);
         Task<int> GetAvailableVehicleCountByModelAsync(int modelId, int stationId, DateTime startTime, DateTime endTime);
         Task<IEnumerable<StationDtoForView>> GetStationFromModelAsync(int modelId);
         Task<List<VehicleDto>> GetAvailableAsync(DateTime? startTime = null, DateTime? endTime = null, int? stationId = null);
+        Task<List<Vehicle>> GetAvailableVehiclesByModelAsync(int modelId, int stationId, DateTime startTime, DateTime endTime, int? excludeVehicleId = null);
     }
 }

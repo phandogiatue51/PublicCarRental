@@ -97,12 +97,12 @@ namespace PublicCarRental.Presentation.Controllers
             }
         }
 
-        [HttpPatch("{id:int}/status")]
-        public async Task<IActionResult> UpdateStatus(int id, [FromQuery] AccidentStatus newStatus)
+        [HttpPatch("update-accident/{id}")]
+        public async Task<IActionResult> UpdateAccident(int id, AccidentUpdateDto dto)
         {
             try
             {
-                var result = await _accidentService.UpdateAccStatusAsync(id, newStatus);
+                var result = await _accidentService.UpdateAccident(id, dto);
                 if (!result.Success) return BadRequest(result.Message);
                 return Ok(result.Message);
             }

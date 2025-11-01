@@ -418,5 +418,12 @@ namespace PublicCarRental.Application.Service.Cont
                 ImageOut = contract.ImageUrlOut
             }).ToList();
         }
+
+        public List<RentalContract> GetConfirmedContractByVehicle(int vehicleId)
+        {
+            return _contractRepo.GetAll()
+                .Where(v => v.VehicleId == vehicleId && v.Status == RentalStatus.Confirmed)
+                .ToList(); 
+        }
     }
 }

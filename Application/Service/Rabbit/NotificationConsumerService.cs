@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Options;
 using PublicCarRental.Application.DTOs.Message;
+using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Models.Configuration;
 using PublicCarRental.Infrastructure.Signal;
 using RabbitMQ.Client;
@@ -118,9 +119,13 @@ namespace PublicCarRental.Application.Service.Rabbit
                                             var bookingConfirmed = JsonSerializer.Deserialize<BookingConfirmedEvent>(messageJson);
                                             await ProcessBookingConfirmedNotificationAsync(hubContext, bookingConfirmed);
                                             break;
-                                        case "VehicleReady": 
+                                        case "VehicleReady":
                                             var vehicleReady = JsonSerializer.Deserialize<VehicleReadyEvent>(messageJson);
                                             await ProcessVehicleReadyAsync(hubContext, vehicleReady);
+                                            break;
+                                        case "AccidentAction": // ✅ NEW: Handle accident actions
+                                            var accidentAction = JsonSerializer.Deserialize<AccidentActionEvent>(messageJson);
+                                            await ProcessAccidentActionAsync(hubContext, accidentAction);
                                             break;
                                         default:
                                             _logger.LogWarning("Unhandled EventType: {EventType}", eventType);
@@ -131,6 +136,11 @@ namespace PublicCarRental.Application.Service.Rabbit
                                 {
                                     var bookingCreated = JsonSerializer.Deserialize<BookingCreatedEvent>(messageJson);
                                     await ProcessBookingNotificationAsync(hubContext, bookingCreated);
+                                }
+                                else if (messageJson.Contains("AccidentId") && messageJson.Contains("Status")) // ✅ NEW: Detect accident actions
+                                {
+                                    var accidentAction = JsonSerializer.Deserialize<AccidentActionEvent>(messageJson);
+                                    await ProcessAccidentActionAsync(hubContext, accidentAction);
                                 }
                                 else
                                 {
@@ -254,5 +264,75 @@ namespace PublicCarRental.Application.Service.Rabbit
             _logger.LogInformation("📢 Vehicle ready notification sent to station {StationId}", vehicleEvent.StationId);
         }
 
+        // ✅ NEW: Process accident action notifications
+        private async Task ProcessAccidentActionAsync(IHubContext<NotificationHub> hubContext, AccidentActionEvent actionEvent)
+        {
+            if (actionEvent == null)
+            {
+                _logger.LogWarning("AccidentActionEvent is null");
+                return;
+            }
+
+            // Notify staff at the specific station
+            await hubContext.Clients.Group($"station-{actionEvent.StationId}")
+                .SendAsync("ReceiveAccidentAction", new
+                {
+                    Type = "AccidentAction",
+                    AccidentId = actionEvent.AccidentId,
+                    VehicleId = actionEvent.VehicleId,
+                    LicensePlate = actionEvent.VehicleLicensePlate,
+                    Status = actionEvent.Status.ToString(),
+                    ActionTaken = actionEvent.ActionTaken?.ToString(),
+                    ResolutionNote = actionEvent.ResolutionNote,
+                    ResolvedAt = actionEvent.ResolvedAt,
+                    Message = GetActionMessage(actionEvent.Status, actionEvent.ActionTaken),
+                    Priority = GetPriority(actionEvent.Status),
+                    StationId = actionEvent.StationId
+                });
+
+            // Also notify the specific staff member who reported it
+            if (actionEvent.StaffId.HasValue)
+            {
+                await hubContext.Clients.Group($"staff-{actionEvent.StaffId}")
+                    .SendAsync("ReceivePersonalAccidentUpdate", new
+                    {
+                        Type = "PersonalAccidentUpdate",
+                        AccidentId = actionEvent.AccidentId,
+                        VehicleId = actionEvent.VehicleId,
+                        Status = actionEvent.Status.ToString(),
+                        ResolutionNote = actionEvent.ResolutionNote,
+                        Message = $"Your accident report has been updated to: {actionEvent.Status}"
+                    });
+            }
+
+            _logger.LogInformation("📢 Accident action notification sent to station {StationId} for accident {AccidentId}",
+                actionEvent.StationId, actionEvent.AccidentId);
+        }
+
+        private string GetActionMessage(AccidentStatus status, ActionType? actionTaken)
+        {
+            return (status, actionTaken) switch
+            {
+                (AccidentStatus.RepairApproved, ActionType.Refund) => "Accident approved - refunds processed",
+                (AccidentStatus.RepairApproved, ActionType.Replace) => "Accident approved - vehicles replaced",
+                (AccidentStatus.RepairApproved, ActionType.RepairOnly) => "Accident approved - repair only",
+                (AccidentStatus.UnderInvestigation, _) => "Accident under investigation",
+                (AccidentStatus.UnderRepair, _) => "Vehicle under repair",
+                (AccidentStatus.Repaired, _) => "Vehicle repaired and ready",
+                _ => $"Accident status: {status}"
+            };
+        }
+
+        private string GetPriority(AccidentStatus status)
+        {
+            return status switch
+            {
+                AccidentStatus.RepairApproved => "HIGH",
+                AccidentStatus.UnderInvestigation => "MEDIUM",
+                AccidentStatus.UnderRepair => "LOW",
+                AccidentStatus.Repaired => "LOW",
+                _ => "MEDIUM"
+            };
+        }
     }
 }

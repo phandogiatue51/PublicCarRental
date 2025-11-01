@@ -175,7 +175,7 @@ builder.Services.AddHostedService<AccidentConsumerService>();
 builder.Services.AddScoped<AccidentEventProducerService>();
 builder.Services.AddHostedService<NotificationConsumerService>();
 builder.Services.AddScoped<IDistributedLockService, DistributedLockService>();
-
+builder.Services.AddScoped<IContractAccidentHandler, ContractAccidentHandler>();
 builder.Services.AddScoped<IPdfStorageService, PdfStorageService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
 

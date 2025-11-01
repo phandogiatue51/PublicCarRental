@@ -14,36 +14,17 @@ const decodeJWT = (token) => {
         }
 
         const payload = parts[1];
-
+        
         let base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
         switch (base64.length % 4) {
             case 2: base64 += '=='; break;
             case 3: base64 += '='; break;
         }
 
-        try {
-            const decodedPayload = atob(base64);
-            const utf8Payload = decodeURIComponent(
-                decodedPayload.split('').map(function (c) {
-                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-                }).join('')
-            );
-
-            const userData = JSON.parse(utf8Payload);
-            return userData;
-
-        } catch (parseError) {
-            console.error('❌ Error parsing JWT payload:', parseError);
-
-            try {
-                const decodedPayload = atob(base64);
-                const userData = JSON.parse(decodedPayload);
-                return userData;
-            } catch (fallbackError) {
-                console.error('❌ Fallback JWT parsing also failed:', fallbackError);
-                return null;
-            }
-        }
+        const decodedPayload = atob(base64);
+        const userData = JSON.parse(decodedPayload);
+                
+        return userData;
 
     } catch (error) {
         console.error("❌ JWT decoding error:", error);
@@ -81,13 +62,12 @@ export function useAuth() {
                 localStorage.setItem("userRole", userInfo.Role?.toString());
                 localStorage.setItem("accountId", userInfo.AccountId?.toString());
                 localStorage.setItem("email", userInfo.Email || "");
+                localStorage.setItem("fullName", data.fullName || ""); 
+                
                 localStorage.setItem("renterId", userInfo.RenterId?.toString() || "");
                 localStorage.setItem("staffId", userInfo.StaffId?.toString() || "");
                 localStorage.setItem("stationId", userInfo.StationId?.toString() || "");
                 localStorage.setItem("isAdmin", userInfo.IsAdmin?.toString() || "false");
-                localStorage.setItem("fullName", userInfo.FullName || "");
-                localStorage.setItem("phoneNumber", userInfo.PhoneNumber || "");
-
                 role = userInfo.Role?.toString();
             }
 
@@ -166,7 +146,6 @@ export function useAuth() {
     // Get current user data - with fallbacks
     const getCurrentUser = useCallback(() => {
         try {
-            // First try to get from JWT token
             const token = localStorage.getItem("jwtToken");
             if (token) {
                 const userData = decodeJWT(token);
@@ -174,18 +153,17 @@ export function useAuth() {
                     return {
                         accountId: userData.AccountId,
                         email: userData.Email,
-                        role: userData.Role?.toString(), // Ensure role is string
+                        role: userData.Role?.toString(),
                         renterId: userData.RenterId,
-                        staffId: userData.StaffId,
+                        staffId: userData.StaffId, 
                         stationId: userData.StationId,
                         isAdmin: userData.IsAdmin === "true" || userData.IsAdmin === true,
-                        fullName: userData.FullName,
-                        phoneNumber: userData.PhoneNumber
+                        fullName: localStorage.getItem("fullName"), 
+                        phoneNumber: "" 
                     };
                 }
             }
 
-            // Fallback to localStorage items
             const userRole = localStorage.getItem("userRole");
             if (userRole) {
                 return {
@@ -197,7 +175,7 @@ export function useAuth() {
                     stationId: localStorage.getItem("stationId"),
                     isAdmin: localStorage.getItem("isAdmin") === "true",
                     fullName: localStorage.getItem("fullName"),
-                    phoneNumber: localStorage.getItem("phoneNumber")
+                    phoneNumber: localStorage.getItem("phoneNumber") || ""
                 };
             }
 
@@ -208,7 +186,6 @@ export function useAuth() {
         }
     }, []);
 
-    // Check if user is authenticated
     const isAuthenticated = useCallback(() => {
         try {
             const token = localStorage.getItem("jwtToken");

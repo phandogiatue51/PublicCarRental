@@ -1,5 +1,7 @@
 ﻿using PublicCarRental.Application.DTOs.BadScenario;
 using PublicCarRental.Application.DTOs.Cont;
+using PublicCarRental.Application.DTOs.Refund;
+using PublicCarRental.Application.Service;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Veh;
 using PublicCarRental.Infrastructure.Data.Models;
@@ -10,22 +12,24 @@ public class ContractModificationService : IContractModificationService
     private readonly IContractRepository _contractRepository;
     private readonly IVehicleService _vehicleService;
     private readonly IInvoiceService _invoiceService;
+    private readonly IRefundService _refundService;
 
     public ContractModificationService(IContractRepository contractRepository, IVehicleService vehicleService,
-        IInvoiceService invoiceService)
+        IInvoiceService invoiceService, IRefundService refundService)
     {
         _contractRepository = contractRepository;
         _vehicleService = vehicleService;
         _invoiceService = invoiceService;
+        _refundService = refundService;
     }
 
-    public async Task<ModificationResultDto> ChangeModelAsync(int contractId, ChangeModelRequest request)
+    public async Task<ModificationResultDto> ChangeModelAsync(int contractId, RenterChangeRequest request)
     {
         var contract = _contractRepository.GetById(contractId);
         var totalPaid = await _invoiceService.GetTotalPaidAmountAsync(contractId);
 
         var newVehicle = await _vehicleService.GetFirstAvailableVehicleByModelAsync(
-            request.NewModelId, (int)contract.StationId, contract.StartTime, contract.EndTime);
+            (int)request.NewModelId, (int)contract.StationId, contract.StartTime, contract.EndTime);
 
         if (newVehicle == null)
             return new ModificationResultDto { Success = false, Message = "No available vehicles for selected model" };
@@ -73,23 +77,24 @@ public class ContractModificationService : IContractModificationService
         };
     }
 
-    public async Task<ModificationResultDto> ExtendTimeAsync(int contractId, ExtendTimeRequest request)
+    public async Task<ModificationResultDto> ExtendTimeAsync(int contractId, RenterChangeRequest request)
     {
         var contract = _contractRepository.GetById(contractId);
 
         var isAvailable = await _vehicleService.CheckVehicleAvailabilityAsync(
-            (int)contract.VehicleId, contract.EndTime, request.NewEndTime);
+            (int)contract.VehicleId, contract.EndTime, (DateTime)request.NewEndTime);
 
         if (!isAvailable)
             return new ModificationResultDto { Success = false, Message = "Vehicle not available for extended period" };
 
-        var additionalHours = (request.NewEndTime - contract.EndTime).TotalHours;
+        var timeDifference = (TimeSpan)(request.NewEndTime.Value - contract.EndTime);
+        var additionalHours = timeDifference.TotalHours;
         var additionalCost = (decimal)additionalHours * contract.Vehicle.Model.PricePerHour;
 
         var newInvoice = await _invoiceService.CreateAdditionalInvoiceAsync(
             contractId, additionalCost, "Time extension charge");
 
-        contract.EndTime = request.NewEndTime;
+        contract.EndTime = (DateTime)request.NewEndTime;
         contract.TotalCost += additionalCost;
         _contractRepository.Update(contract);
 
@@ -103,14 +108,14 @@ public class ContractModificationService : IContractModificationService
         };
     }
 
-    public async Task<ModificationResultDto> ChangeVehicleAsync(int contractId, ChangeVehicleRequest request)
+    public async Task<ModificationResultDto> ChangeVehicleAsync(int contractId, RenterChangeRequest request)
     {
         var contract = _contractRepository.GetById(contractId);
         var originalInvoice = await _invoiceService.GetOriginalInvoiceAsync(contractId);
 
         if (request.NewVehicleId.HasValue)
         {
-            var newVehicle = _vehicleService.GetEntityById(request.NewVehicleId.Value); 
+            var newVehicle = _vehicleService.GetEntityById(request.NewVehicleId.Value);
             return await ProcessVehicleChange(contract, newVehicle, originalInvoice, request.Reason);
         }
 
@@ -133,13 +138,16 @@ public class ContractModificationService : IContractModificationService
             Success = true,
             Message = "Vehicle updated successfully.",
             PriceDifference = priceDifference,
-            UpdatedContract = MapToContractDto(contract) 
+            UpdatedContract = MapToContractDto(contract)
         };
     }
 
     private async Task<Vehicle> FindBestReplacementVehicle(RentalContract contract)
     {
         var currentVehicle = _vehicleService.GetEntityById((int)contract.VehicleId);
+        if (currentVehicle == null)
+            throw new InvalidOperationException("Current vehicle not found");
+
         var currentModelId = currentVehicle.ModelId;
 
         var sameModelVehicle = await _vehicleService.GetFirstAvailableVehicleByModelAsync(
@@ -164,6 +172,7 @@ public class ContractModificationService : IContractModificationService
         var duration = (endTime - startTime).TotalHours;
         return (decimal)duration * vehicle.Model.PricePerHour;
     }
+
     private ContractDto MapToContractDto(RentalContract contract)
     {
         return new ContractDto
@@ -179,11 +188,193 @@ public class ContractModificationService : IContractModificationService
             StaffId = contract.StaffId,
         };
     }
+
+    public async Task<ModificationResultDto> HandleStaffVehicleProblemAsync(int contractId, StaffVehicleProblemRequest request)
+    {
+        var contract = _contractRepository.GetById(contractId);
+        if (contract == null)
+            return new ModificationResultDto { Success = false, Message = "Contract not found" };
+
+        var originalInvoice = await _invoiceService.GetOriginalInvoiceAsync(contractId);
+        var totalPaid = await _invoiceService.GetTotalPaidAmountAsync(contractId);
+
+        switch (request.ProblemType)
+        {
+            case VehicleProblemType.Maintenance:
+            case VehicleProblemType.Accident:
+            case VehicleProblemType.MechanicalIssue:
+                return await HandleVehicleReplacement(contract, originalInvoice, totalPaid, request);
+
+            case VehicleProblemType.Unavailable:
+                return await HandleNoVehicleAvailable(contract, originalInvoice, totalPaid, request);
+
+            default:
+                return new ModificationResultDto { Success = false, Message = "Unknown problem type" };
+        }
+    }
+
+    private async Task<ModificationResultDto> HandleVehicleReplacement(RentalContract contract, Invoice originalInvoice, decimal totalPaid, StaffVehicleProblemRequest request)
+    {
+        Vehicle newVehicle = null;
+
+        if (request.NewVehicleId.HasValue)
+        {
+            newVehicle = _vehicleService.GetEntityById(request.NewVehicleId.Value);
+        }
+        else if (request.NewModelId.HasValue)
+        {
+            newVehicle = await _vehicleService.GetFirstAvailableVehicleByModelAsync(
+                request.NewModelId.Value, (int)contract.StationId, contract.StartTime, contract.EndTime);
+        }
+
+        if (newVehicle == null)
+        {
+            newVehicle = await FindBestReplacementVehicle(contract);
+        }
+
+        if (newVehicle == null)
+        {
+            return await HandleNoVehicleAvailable(contract, originalInvoice, totalPaid, request);
+        }
+
+        var newTotal = CalculateNewTotal(newVehicle, contract.StartTime, contract.EndTime);
+
+        // 🚫 KEY CHANGE: No financial impact for automatic replacements
+        decimal priceDifference = 0;
+        if (!request.IsAutomaticReplacement)
+        {
+            priceDifference = originalInvoice.AmountDue - newTotal;
+        }
+
+        contract.VehicleId = newVehicle.VehicleId;
+        contract.TotalCost = request.IsAutomaticReplacement ? contract.TotalCost : newTotal; // Keep original cost for automatic
+        _contractRepository.Update(contract);
+
+        int? refundId = null;
+        if (!request.IsAutomaticReplacement && priceDifference > 0)
+        {
+            var refundRequest = new CreateRefundRequestDto
+            {
+                ContractId = contract.ContractId,
+                Amount = priceDifference,
+                Reason = $"Vehicle replacement: {request.Reason}",
+                StaffId = request.StaffId,
+                Note = request.Note
+            };
+
+            var refundResult = await _refundService.RequestRefundAsync(refundRequest);
+            if (refundResult.Success)
+            {
+                refundId = refundResult.RefundId;
+            }
+        }
+
+        return new ModificationResultDto
+        {
+            Success = true,
+            Message = request.IsAutomaticReplacement ?
+                $"Vehicle automatically replaced due to accident. No cost change." :
+                (priceDifference > 0 ?
+                    $"Vehicle replaced. Refund of {priceDifference:C} processed." :
+                    "Vehicle replaced with equivalent model."),
+            PriceDifference = request.IsAutomaticReplacement ? 0 : -priceDifference,
+            RefundId = refundId,
+            UpdatedContract = MapToContractDto(contract)
+        };
+    }
+
+    private async Task<ModificationResultDto> HandleNoVehicleAvailable(RentalContract contract, Invoice originalInvoice, decimal totalPaid, StaffVehicleProblemRequest request)
+    {
+        // Full refund + cancel contract
+        var refundRequest = new CreateRefundRequestDto
+        {
+            ContractId = contract.ContractId,
+            Amount = totalPaid,
+            Reason = $"No vehicles available: {request.Reason}",
+            StaffId = request.StaffId,
+            Note = "Full refund due to no available vehicles"
+        };
+
+        var refundResult = await _refundService.RequestRefundAsync(refundRequest);
+
+        // Cancel contract
+        contract.Status = RentalStatus.Cancelled;
+        _contractRepository.Update(contract);
+
+        return new ModificationResultDto
+        {
+            Success = refundResult.Success,
+            Message = refundResult.Success ?
+                "Contract cancelled. Full refund processed." :
+                "Contract cancelled but refund failed.",
+            PriceDifference = -totalPaid,
+            RefundId = refundResult.RefundId,
+            UpdatedContract = MapToContractDto(contract)
+        };
+    }
+
+    public async Task<ModificationResultDto> HandleRenterCancellation(int contractId, RenterChangeRequest request)
+    {
+        var contract = _contractRepository.GetById(contractId);
+        var totalPaid = contract.TotalCost;
+        {
+            var daysUntilStart = (contract.StartTime - DateTime.UtcNow).TotalDays;
+            decimal refundAmount = 0;
+
+            if (daysUntilStart > 5)
+            {
+                refundAmount = (decimal)(totalPaid * 0.8m);
+            }
+
+            if (refundAmount > 0)
+            {
+                var refundRequest = new CreateRefundRequestDto
+                {
+                    ContractId = contract.ContractId,
+                    Amount = refundAmount,
+                    Reason = $"Contract cancellation: {request.Reason}",
+                    StaffId = request.StaffId,
+                    Note = $"Cancelled {daysUntilStart:F0} days before start"
+                };
+
+                var refundResult = await _refundService.RequestRefundAsync(refundRequest);
+
+                contract.Status = RentalStatus.Cancelled;
+                _contractRepository.Update(contract);
+
+                return new ModificationResultDto
+                {
+                    Success = refundResult.Success,
+                    Message = refundResult.Success ?
+                        $"Contract cancelled. {refundAmount:C} refund processed." :
+                        "Contract cancelled but refund failed.",
+                    PriceDifference = -refundAmount,
+                    RefundId = refundResult.RefundId,
+                    UpdatedContract = MapToContractDto(contract)
+                };
+            }
+            else
+            {
+                contract.Status = RentalStatus.Cancelled;
+                _contractRepository.Update(contract);
+
+                return new ModificationResultDto
+                {
+                    Success = true,
+                    Message = "Contract cancelled. No refund applicable.",
+                    PriceDifference = 0,
+                    UpdatedContract = MapToContractDto(contract)
+                };
+            }
+        }
+    }
 }
 
 public interface IContractModificationService
 {
-    Task<ModificationResultDto> ChangeModelAsync(int contractId, ChangeModelRequest request);
-    Task<ModificationResultDto> ExtendTimeAsync(int contractId, ExtendTimeRequest request);
-    Task<ModificationResultDto> ChangeVehicleAsync(int contractId, ChangeVehicleRequest request);
+    Task<ModificationResultDto> ChangeModelAsync(int contractId, RenterChangeRequest request);
+    Task<ModificationResultDto> ExtendTimeAsync(int contractId, RenterChangeRequest request);
+    Task<ModificationResultDto> ChangeVehicleAsync(int contractId, RenterChangeRequest request);
+    Task<ModificationResultDto> HandleStaffVehicleProblemAsync(int contractId, StaffVehicleProblemRequest request);
+    Task<ModificationResultDto> HandleRenterCancellation(int contractId, RenterChangeRequest request);
 }

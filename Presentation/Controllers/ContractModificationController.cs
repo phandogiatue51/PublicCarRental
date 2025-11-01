@@ -14,27 +14,43 @@ namespace PublicCarRental.Presentation.Controllers
             _modificationService = modificationService;
         }
 
-        [HttpPost("change-model")]
+        [HttpPost("renter/change-model")]
         public async Task<ActionResult<ModificationResultDto>> ChangeModel(
-            int contractId, [FromBody] ChangeModelRequest request)
+            int contractId, [FromBody] RenterChangeRequest request)
         {
             var result = await _modificationService.ChangeModelAsync(contractId, request);
             return Ok(result);
         }
 
-        [HttpPost("extend-time")]
+        [HttpPost("renter/extend-time")]
         public async Task<ActionResult<ModificationResultDto>> ExtendTime(
-            int contractId, [FromBody] ExtendTimeRequest request)
+            int contractId, [FromBody] RenterChangeRequest request)
         {
             var result = await _modificationService.ExtendTimeAsync(contractId, request);
             return Ok(result);
         }
 
-        [HttpPost("change-vehicle")]
+        [HttpPost("renter/change-vehicle")]
         public async Task<ActionResult<ModificationResultDto>> ChangeVehicle(
-            int contractId, [FromBody] ChangeVehicleRequest request)
+            int contractId, [FromBody] RenterChangeRequest request)
         {
             var result = await _modificationService.ChangeVehicleAsync(contractId, request);
+            return Ok(result);
+        }
+
+        [HttpDelete("renter/cancel-contract")]
+        public async Task<ActionResult<ModificationResultDto>> CancelContract(
+        int contractId, [FromBody] RenterChangeRequest request)
+        {
+            var result = await _modificationService.HandleRenterCancellation(contractId, request);
+            return Ok(result);
+        }
+
+        [HttpPost("staff/vehicle-problem")]
+        public async Task<ActionResult<ModificationResultDto>> HandleStaffVehicleProblem(
+            int contractId, [FromBody] StaffVehicleProblemRequest request)
+        {
+            var result = await _modificationService.HandleStaffVehicleProblemAsync(contractId, request);
             return Ok(result);
         }
     }

@@ -22,7 +22,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("overview")]
-        public async Task<ActionResult> GetSystemOverview()
+        public async Task<ActionResult<AdminOverviewDto>> GetSystemOverview()
         {
             try
             {
@@ -36,7 +36,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("fleet-management")]
-        public async Task<ActionResult> GetFleetManagement()
+        public async Task<ActionResult<FleetManagementDto>> GetFleetManagement()
         {
             try
             {
@@ -50,7 +50,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("stations-performance")]
-        public async Task<ActionResult> GetStationsPerformance()
+        public async Task<ActionResult<List<StationPerformanceDto>>> GetStationsPerformance()
         {
             try
             {
@@ -64,7 +64,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("customer-analytics")]
-        public async Task<ActionResult> GetCustomerAnalytics()
+        public async Task<ActionResult<CustomerAnalyticsDto>> GetCustomerAnalytics()
         {
             try
             {
@@ -78,7 +78,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("risk-customers")]
-        public async Task<ActionResult> GetRiskCustomers()
+        public async Task<ActionResult<List<RiskCustomerDto>>> GetRiskCustomers()
         {
             try
             {
@@ -92,7 +92,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("staff-performance")]
-        public async Task<ActionResult> GetStaffPerformance()
+        public async Task<ActionResult<StaffPerformanceDto>> GetStaffPerformance()
         {
             try
             {
@@ -106,7 +106,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpPost("financial-report")]
-        public async Task<ActionResult> GetFinancialReport(DateRange dto)
+        public async Task<ActionResult<FinancialReportDto>> GetFinancialReport(DateRange dto)
         {
             try
             {
@@ -121,7 +121,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("rating-analytics")]
-        public async Task<ActionResult> GetRatingAnalytics()
+        public async Task<ActionResult<RatingAnalyticsDto>> GetRatingAnalytics()
         {
             try
             {

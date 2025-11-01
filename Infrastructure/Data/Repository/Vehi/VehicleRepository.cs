@@ -37,7 +37,7 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Vehi
                 .FirstOrDefault(v => v.VehicleId == id);
         }
 
-        public async Task<Vehicle?> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime startTime, DateTime endTime)
+        public async Task<Vehicle?> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime startTime, DateTime endTime, int? excludeVehicleId = null)
         {
             var availableStatuses = new[]
             {
@@ -45,17 +45,24 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Vehi
                 VehicleStatus.Renting
             };
 
-            var availableVehicles = await _context.Vehicles
+            var query = _context.Vehicles
                 .Include(v => v.Model)
                 .Where(v => v.ModelId == modelId &&
                            v.StationId == stationId &&
-                           availableStatuses.Contains(v.Status) &&
-                           !v.RentalContracts.Any(c =>
-                               (c.Status == RentalStatus.Confirmed ||
-                                c.Status == RentalStatus.Active ||
-                                c.Status == RentalStatus.ToBeConfirmed) &&
-                               startTime < c.EndTime &&
-                               endTime > c.StartTime))
+                           availableStatuses.Contains(v.Status));
+
+            if (excludeVehicleId.HasValue)
+            {
+                query = query.Where(v => v.VehicleId != excludeVehicleId.Value);
+            }
+
+            var availableVehicles = await query
+                .Where(v => !v.RentalContracts.Any(c =>
+                    (c.Status == RentalStatus.Confirmed ||
+                     c.Status == RentalStatus.Active ||
+                     c.Status == RentalStatus.ToBeConfirmed) &&
+                    startTime < c.EndTime &&
+                    endTime > c.StartTime))
                 .OrderBy(x => Guid.NewGuid())
                 .ToListAsync();
 
@@ -64,13 +71,40 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Vehi
 
         public async Task<bool> CheckVehicleAvailabilityAsync(int vehicleId, DateTime startTime, DateTime endTime)
         {
-            return await _context.Vehicles
+            var hasConflict = await _context.Vehicles
                 .Where(v => v.VehicleId == vehicleId)
                 .SelectMany(v => v.RentalContracts)
                 .Where(c => c.Status == RentalStatus.Confirmed ||
-                           c.Status == RentalStatus.Active ||
-                           c.Status == RentalStatus.ToBeConfirmed)
-                .AllAsync(c => !(startTime < c.EndTime && endTime > c.StartTime));
+                            c.Status == RentalStatus.Active ||
+                            c.Status == RentalStatus.ToBeConfirmed)
+                .AnyAsync(c => startTime < c.EndTime && endTime > c.StartTime);
+
+            return !hasConflict;
+        }
+
+        public async Task<List<Vehicle>> GetAvailableVehiclesByModelAsync(int modelId, int stationId, DateTime startTime, DateTime endTime, int? excludeVehicleId = null)
+        {
+            var availableStatuses = new[] { VehicleStatus.Available, VehicleStatus.Renting };
+
+            var query = _context.Vehicles
+                .Include(v => v.Model)
+                .Where(v => v.ModelId == modelId &&
+                           v.StationId == stationId &&
+                           availableStatuses.Contains(v.Status));
+
+            if (excludeVehicleId.HasValue)
+            {
+                query = query.Where(v => v.VehicleId != excludeVehicleId.Value);
+            }
+
+            return await query
+                .Where(v => !v.RentalContracts.Any(c =>
+                    (c.Status == RentalStatus.Confirmed ||
+                     c.Status == RentalStatus.Active ||
+                     c.Status == RentalStatus.ToBeConfirmed) &&
+                    startTime < c.EndTime &&
+                    endTime > c.StartTime))
+                .ToListAsync();
         }
 
         public void Create(Vehicle vehicle)

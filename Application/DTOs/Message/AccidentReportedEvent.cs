@@ -10,6 +10,16 @@
         public string Location { get; set; }
         public DateTime ReportedAt { get; set; }
         public string ImageUrl { get; set; }
-        public string? VehicleLicensePlate { get; set; } 
+        public string? VehicleLicensePlate { get; set; }
+        public AccidentActionStatus ActionStatus { get; set; } = AccidentActionStatus.PendingApproval;
+        public DateTime? ApprovedAt { get; set; }
+    }
+
+    public enum AccidentActionStatus
+    {
+        PendingApproval,
+        Approved,
+        Rejected,
+        AutoProcessed
     }
 }
