@@ -40,8 +40,9 @@ namespace PublicCarRental.Infrastructure.Data.Repository.Vehi
         public async Task<Vehicle?> GetFirstAvailableVehicleByModelAsync(int modelId, int stationId, DateTime startTime, DateTime endTime)
         {
             var availableStatuses = new[]
-                {
+            {
                 VehicleStatus.Available,
+                VehicleStatus.Renting
             };
 
             var availableVehicles = await _context.Vehicles

@@ -19,7 +19,7 @@ const VehicleActions = ({
     const toast = useToast();
 
     const canUpdateBattery = [0, 3, 5].includes(vehicle.status); // ToBeRented, ToBeCheckup, Available
-    const canActivate = vehicle.status === 0; // ToBeRented -> Available
+    const canActivate = [0 , 3].includes(vehicle.status); // ToBeRented, ToBeCheckUp -> Available
     const canFinishCharging = vehicle.status === 2; // Charging -> Available
 
     const handleFinishCharging = async () => {

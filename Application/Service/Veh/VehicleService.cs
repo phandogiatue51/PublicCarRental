@@ -218,7 +218,7 @@ namespace PublicCarRental.Application.Service.Veh
             return await _repo.GetAll()
                 .Where(v => v.ModelId == modelId &&
                            v.StationId == stationId &&
-                           v.Status == VehicleStatus.Available &&
+                           v.Status == VehicleStatus.Available || v.Status == VehicleStatus.Renting &&
                            !v.RentalContracts.Any(c =>
                                (c.Status == RentalStatus.Confirmed ||
                                 c.Status == RentalStatus.Active ||
@@ -256,7 +256,7 @@ namespace PublicCarRental.Application.Service.Veh
         public async Task<List<VehicleDto>> GetAvailableAsync(DateTime? startTime = null, DateTime? endTime = null, int? stationId = null)
         {
             var query = _repo.GetAll()
-                .Where(v => (v.Status == VehicleStatus.Available) &&
+                .Where(v => (v.Status == VehicleStatus.Available || v.Status == VehicleStatus.Renting) &&
                            !v.RentalContracts.Any(c =>
                                (c.Status == RentalStatus.Confirmed ||
                                 c.Status == RentalStatus.Active ||
