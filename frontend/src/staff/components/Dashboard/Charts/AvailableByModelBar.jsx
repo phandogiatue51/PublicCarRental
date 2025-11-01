@@ -40,9 +40,19 @@ const AvailableByModelBar = ({ stationId, top = 10 }) => {
     };
   }, [items, top]);
 
+  const maxValue = Math.max(...(series[0]?.data || [1]), 5);
+
   const options = {
     chart: { id: 'available-by-model', toolbar: { show: false } },
-    xaxis: { categories },
+    xaxis: { 
+      categories,
+      min: 0,
+      max: maxValue,
+      tickAmount: maxValue,
+      labels: {
+        formatter: (val) => Math.round(val)
+      }
+    },
     colors: ['#319795'],
     dataLabels: { enabled: true },
     plotOptions: { bar: { horizontal: true } },
@@ -69,5 +79,3 @@ const AvailableByModelBar = ({ stationId, top = 10 }) => {
 };
 
 export default AvailableByModelBar;
-
-
