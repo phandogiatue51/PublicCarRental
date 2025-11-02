@@ -62,7 +62,9 @@ namespace PublicCarRental.Application.Service
                 StationId = m.Vehicle.StationId,
                 Location = m.Vehicle.Station.Name,
                 ImageUrl = m.ImageUrl,
-                Status = m.Status
+                Status = m.Status,
+                ResolutionNote = m.ResolutionNote,
+                ActionTaken = m.ActionTaken
             }).ToList();
         }
 
@@ -86,7 +88,9 @@ namespace PublicCarRental.Application.Service
                 StationId = acc.Vehicle.StationId,
                 Location = acc.Vehicle.Station.Name,
                 ImageUrl = acc.ImageUrl,
-                Status = acc.Status
+                Status = acc.Status,
+                ResolutionNote = acc.ResolutionNote,
+                ActionTaken = acc.ActionTaken
             };
         }
 
@@ -200,10 +204,10 @@ namespace PublicCarRental.Application.Service
                 acc.ResolutionNote = dto.ResolutionNote;
                 acc.ResolvedAt = dto.ResolvedAt ?? DateTime.UtcNow;
 
-                if (dto.ActionTaken.HasValue)
+                if (dto.ActionTaken.HasValue && !acc.ActionTaken.HasValue)
                 {
                     var actionResult = await ExecuteAccidentAction(acc, dto.ActionTaken.Value);
-                    acc.ResolutionNote += $"\nAction Result: {actionResult}";
+                    acc.ResolutionNote += $"Action Result: {actionResult}";
                 }
 
                 // Handle status-specific logic

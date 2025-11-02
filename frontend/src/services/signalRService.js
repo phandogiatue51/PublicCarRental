@@ -94,6 +94,24 @@ class SignalRService {
                 });
             });
 
+            this.connection.off('ReceivePersonalAccidentUpdate');
+            this.connection.on('ReceivePersonalAccidentUpdate', (notification) => {
+                console.log('📋 Raw personal accident update from server:', notification);
+                this.notifyHandlers({
+                    type: 'PersonalAccidentUpdate',
+                    ...notification 
+                });
+            });
+
+            this.connection.off('ReceiveAccidentAction');
+            this.connection.on('ReceiveAccidentAction', (notification) => {
+                console.log('🚨 Raw accident action from server:', notification);
+                this.notifyHandlers({
+                    type: 'AccidentAction',
+                    ...notification 
+                });
+            });
+
             await this.connection.start();
             
             await this.joinUserGroup();
@@ -137,6 +155,13 @@ class SignalRService {
                         console.log(`✅ Joined station group: ${user.stationId}`);
                     } else {
                         console.warn('Staff user has no stationId assigned');
+                    }
+                    // Also join staff-specific group for personal notifications
+                    if (user.staffId) {
+                        await this.connection.invoke('JoinStaffGroup', parseInt(user.staffId));
+                        console.log(`✅ Joined staff group: ${user.staffId}`);
+                    } else {
+                        console.warn('Staff user has no staffId assigned');
                     }
                     break;
                     

@@ -21,5 +21,11 @@ namespace PublicCarRental.Infrastructure.Signal
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{userId}");
             await Clients.Caller.SendAsync("JoinedGroup", $"user-{userId}");
         }
+
+        public async Task JoinStaffGroup(int staffId)
+        {
+            await Groups.AddToGroupAsync(Context.ConnectionId, $"staff-{staffId}");
+            await Clients.Caller.SendAsync("JoinedGroup", $"staff-{staffId}");
+        }
     }
 }

@@ -273,36 +273,27 @@ namespace PublicCarRental.Application.Service.Rabbit
                 return;
             }
 
-            // Notify staff at the specific station
-            await hubContext.Clients.Group($"station-{actionEvent.StationId}")
-                .SendAsync("ReceiveAccidentAction", new
-                {
-                    Type = "AccidentAction",
-                    AccidentId = actionEvent.AccidentId,
-                    VehicleId = actionEvent.VehicleId,
-                    LicensePlate = actionEvent.VehicleLicensePlate,
-                    Status = actionEvent.Status.ToString(),
-                    ActionTaken = actionEvent.ActionTaken?.ToString(),
-                    ResolutionNote = actionEvent.ResolutionNote,
-                    ResolvedAt = actionEvent.ResolvedAt,
-                    Message = GetActionMessage(actionEvent.Status, actionEvent.ActionTaken),
-                    Priority = GetPriority(actionEvent.Status),
-                    StationId = actionEvent.StationId
-                });
-
-            // Also notify the specific staff member who reported it
-            if (actionEvent.StaffId.HasValue)
+            if (actionEvent.Status == AccidentStatus.RepairApproved)
             {
-                await hubContext.Clients.Group($"staff-{actionEvent.StaffId}")
-                    .SendAsync("ReceivePersonalAccidentUpdate", new
-                    {
-                        Type = "PersonalAccidentUpdate",
-                        AccidentId = actionEvent.AccidentId,
-                        VehicleId = actionEvent.VehicleId,
-                        Status = actionEvent.Status.ToString(),
-                        ResolutionNote = actionEvent.ResolutionNote,
-                        Message = $"Your accident report has been updated to: {actionEvent.Status}"
-                    });
+                if (actionEvent.StaffId.HasValue)
+                {
+                    await hubContext.Clients.Group($"staff-{actionEvent.StaffId}")
+                        .SendAsync("ReceivePersonalAccidentUpdate", new
+                        {
+                            Type = "PersonalAccidentUpdate",
+                            AccidentId = actionEvent.AccidentId,
+                            VehicleId = actionEvent.VehicleId,
+                            Status = actionEvent.Status.ToString(),
+                            ActionTaken = actionEvent.ActionTaken?.ToString(),
+                            ResolutionNote = actionEvent.ResolutionNote,
+                            ResolvedAt = actionEvent.ResolvedAt,
+                            Message = GetActionMessage(actionEvent.Status, actionEvent.ActionTaken)
+                        });
+
+                    _logger.LogInformation("📢 RepairApproved notification sent to staff {StaffId} for accident {AccidentId}",
+                        actionEvent.StaffId, actionEvent.AccidentId);
+                }
+                return;
             }
 
             _logger.LogInformation("📢 Accident action notification sent to station {StationId} for accident {AccidentId}",

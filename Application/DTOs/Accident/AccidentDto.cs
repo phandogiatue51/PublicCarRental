@@ -16,5 +16,7 @@ namespace PublicCarRental.Application.DTOs.Accident
         public DateTime ReportedAt { get; set; }
         public AccidentStatus Status { get; set; }
         public string? ImageUrl { get; set; } = null;
+        public string? ResolutionNote { get; set; } = null;
+        public ActionType? ActionTaken { get; set; } = null;
     }
 }

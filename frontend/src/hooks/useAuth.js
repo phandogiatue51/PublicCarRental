@@ -14,7 +14,7 @@ const decodeJWT = (token) => {
         }
 
         const payload = parts[1];
-        
+
         let base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
         switch (base64.length % 4) {
             case 2: base64 += '=='; break;
@@ -23,7 +23,7 @@ const decodeJWT = (token) => {
 
         const decodedPayload = atob(base64);
         const userData = JSON.parse(decodedPayload);
-                
+
         return userData;
 
     } catch (error) {
@@ -53,7 +53,7 @@ export function useAuth() {
             localStorage.setItem("jwtToken", data.token);
 
             const userInfo = decodeJWT(data.token);
-            let role = null; 
+            let role = null;
 
             if (userInfo) {
                 console.log("🔍 Decoded JWT user info:", userInfo);
@@ -62,8 +62,8 @@ export function useAuth() {
                 localStorage.setItem("userRole", userInfo.Role?.toString());
                 localStorage.setItem("accountId", userInfo.AccountId?.toString());
                 localStorage.setItem("email", userInfo.Email || "");
-                localStorage.setItem("fullName", data.fullName || ""); 
-                
+                localStorage.setItem("fullName", data.fullName || "");
+
                 localStorage.setItem("renterId", userInfo.RenterId?.toString() || "");
                 localStorage.setItem("staffId", userInfo.StaffId?.toString() || "");
                 localStorage.setItem("stationId", userInfo.StationId?.toString() || "");
@@ -130,18 +130,20 @@ export function useAuth() {
             "renterId", "staffId", "stationId", "isAdmin", "fullName", "phoneNumber"
         ];
         itemsToRemove.forEach(item => localStorage.removeItem(item));
-        
+
         toast({
             title: "Logged out successfully!",
-            status: "info", 
+            status: "info",
             duration: 3000,
             isClosable: true,
             position: "top",
         });
-        
+
         window.dispatchEvent(new CustomEvent('authStateChanged'));
-        navigate("/login");
-    }, [navigate, toast]); 
+        setTimeout(() => {
+            navigate("/login");
+        }, 1000);
+    }, [navigate, toast]);
 
     // Get current user data - with fallbacks
     const getCurrentUser = useCallback(() => {
@@ -155,11 +157,11 @@ export function useAuth() {
                         email: userData.Email,
                         role: userData.Role?.toString(),
                         renterId: userData.RenterId,
-                        staffId: userData.StaffId, 
+                        staffId: userData.StaffId,
                         stationId: userData.StationId,
                         isAdmin: userData.IsAdmin === "true" || userData.IsAdmin === true,
-                        fullName: localStorage.getItem("fullName"), 
-                        phoneNumber: "" 
+                        fullName: localStorage.getItem("fullName"),
+                        phoneNumber: ""
                     };
                 }
             }

@@ -1,36 +1,23 @@
-// chakra imports
 import { Box, Flex, Stack, Button, Icon } from "@chakra-ui/react";
 import { MdExitToApp } from "react-icons/md";
-//   Custom components
 import Brand from "./Brand";
 import Links from "./Links";
 import React from "react";
-
-// FUNCTIONS
+import { useAuth } from "./../../../../hooks/useAuth";
+import { useState } from "react";
 
 function SidebarContent(props) {
   const { routes } = props;
+  const { logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = () => {
-    // Clear all auth-related data from localStorage
-    localStorage.removeItem("jwtToken");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("accountId");
-    localStorage.removeItem("fullName");
-    localStorage.removeItem("email");
-    localStorage.removeItem("isAdmin");
-    localStorage.removeItem("staffId");
-    localStorage.removeItem("stationId");
-    localStorage.removeItem("renterId");
-    localStorage.removeItem("phoneNumber");
-    
-    // Dispatch custom event to notify components of auth state change
-    window.dispatchEvent(new CustomEvent('authStateChanged'));
-    
-    window.location.href = '/';
+    setIsLoggingOut(true);
+    setTimeout(() => {
+      logout();
+    }, 1000);
   };
 
-  // SIDEBAR
   return (
     <Flex direction='column' height='100%' pt='25px' px="16px" borderRadius='30px'>
       <Brand />
@@ -39,16 +26,23 @@ function SidebarContent(props) {
           <Links routes={routes} />
         </Box>
       </Stack>
-      
-      {/* Logout button at the bottom */}
-      <Box mt="auto" pb="25px" px="20px" display="flex" justifyContent="center">
-      <Button
-        w="50%" leftIcon={<Icon as={MdExitToApp} />}
-        colorScheme="red"        variant="outline"        justifyContent="center"
-        onClick={handleLogout}        size="md"      >
-        Logout
-      </Button>
-    </Box>
+
+      <Box style={{ marginTop: 'auto', paddingBottom: '25px', paddingLeft: '20px', paddingRight: '20px', display: 'flex', justifyContent: 'center' }}>
+        <Button
+          w="75%"
+          leftIcon={<Icon as={MdExitToApp} />}
+          colorScheme="red"
+          variant="outline"
+          justifyContent="center"
+          onClick={handleLogout}
+          size="md"
+          isLoading={isLoggingOut}
+          loadingText="Logging out"
+          disabled={isLoggingOut}
+        >
+          {isLoggingOut ? 'Logging out...' : 'Logout'}
+        </Button>
+      </Box>
     </Flex>
   );
 }

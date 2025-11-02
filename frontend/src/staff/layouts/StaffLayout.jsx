@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Box, Flex, Text, Icon, Button, useColorModeValue, useToast } from '@chakra-ui/react';
+import { Box, Flex, Text, Icon, Button, useColorModeValue, useToast, Spinner } from '@chakra-ui/react';
 import {
     MdDashboard, MdPerson, MdDriveEta, MdAssignment, MdReceipt, MdMenu, MdLogout, MdHome
 } from 'react-icons/md';
@@ -12,8 +12,8 @@ const StaffLayout = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const toast = useToast();
-    const { logout, isAuthenticated } = useAuth(); // ADD THIS
-
+    const { logout, isAuthenticated } = useAuth();
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
     const bgColor = useColorModeValue('white', 'gray.800');
     const borderColor = useColorModeValue('gray.200', 'gray.700');
     const textColor = useColorModeValue('gray.600', 'white');
@@ -124,10 +124,11 @@ const StaffLayout = () => {
     };
 
     const handleLogout = () => {
-        logout(); // Use the hook's logout function
+        setIsLoggingOut(true);
+        setTimeout(() => {
+            logout();
+        }, 1000);
     };
-
-    // REMOVED ALL AUTH CHECKS - StaffRoute already handled this!
 
     return (
         <Box minH="100vh" bg={pageBgColor} display="flex" flexDirection="column">
@@ -181,18 +182,20 @@ const StaffLayout = () => {
 
                             <Button
                                 w="100%"
-                                leftIcon={<Icon as={MdLogout} />}
+                                leftIcon={isLoggingOut ? <Spinner size="sm" /> : <Icon as={MdLogout} />}
                                 colorScheme="red"
                                 variant="ghost"
                                 onClick={handleLogout}
+                                isLoading={isLoggingOut}
+                                loadingText="Logging out"
+                                disabled={isLoggingOut}
                             >
-                                Logout
+                                {isLoggingOut ? 'Logging out...' : 'Logout'}
                             </Button>
                         </Box>
                     </Box>
                 </Box>
 
-                {/* Main Content Area */}
                 <Box
                     flex="1"
                     display="flex"

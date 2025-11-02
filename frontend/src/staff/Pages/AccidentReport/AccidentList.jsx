@@ -40,7 +40,7 @@ export default function AccidentList() {
   const [pageSize, setPageSize] = useState(10);
   const totalItems = accidents.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-  // Get stationId from localStorage on component mount
+
   useEffect(() => {
     const storedStationId = localStorage.getItem('stationId');
     console.log('AccidentList - StationId from localStorage:', storedStationId);
@@ -59,6 +59,16 @@ export default function AccidentList() {
   const handlePageSizeChange = (newPageSize) => {
     setPageSize(parseInt(newPageSize));
     setCurrentPage(1);
+  };
+
+const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return (
+      date.toLocaleDateString() +
+      " " +
+      date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    );
   };
 
   const goToFirstPage = () => setCurrentPage(1);
@@ -117,18 +127,14 @@ export default function AccidentList() {
   }, [stationId]);
 
   const getStatusColor = (status) => {
-    const statusValue = typeof status === 'number'
-      ? mapStatusNumberToString(status)
-      : status;
-
     const colors = {
-      'Reported': 'blue',
-      'UnderInvestigation': 'orange',
-      'RepairApproved': 'yellow',
-      'UnderRepair': 'purple',
-      'Repaired': 'green'
+      0: 'blue',
+      1: 'orange',
+      2: 'yellow',
+      3: 'purple',
+      4: 'green'
     };
-    return colors[statusValue] || 'gray';
+    return colors[status] || 'gray';
   };
 
   const mapStatusNumberToString = (statusNumber) => {
@@ -195,20 +201,19 @@ export default function AccidentList() {
         </Text>
       ),
     }),
-
     columnHelper.accessor('reportedAt', {
-      id: 'reportedAt',
-      header: () => (
-        <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
-          REPORTED AT
-        </Text>
-      ),
-      cell: (info) => (
-        <Text color={textColor} fontSize="sm">
-          {new Date(info.getValue()).toLocaleDateString()}
-        </Text>
-      ),
-    }),
+          id: 'reportedAt',
+          header: () => (
+            <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
+              REPORTED AT
+            </Text>
+          ),
+          cell: (info) => (
+            <Text color={textColor} fontSize="sm">
+              {formatDate(info.getValue())}
+            </Text>
+          ),
+        }),
     columnHelper.accessor('status', {
       id: 'status',
       header: () => (

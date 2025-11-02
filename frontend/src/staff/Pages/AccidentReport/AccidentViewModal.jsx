@@ -47,71 +47,76 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
     }
   };
 
-  // UPDATED: Handle full accident update with action type and notes
   const handleAccidentUpdate = async () => {
-    if (!accidentDetails) return;
+  if (!accidentDetails) return;
 
-    setUpdating(true);
-    setError('');
+  setUpdating(true);
+  setError('');
 
-    try {
-      const updateData = {
-        status: parseInt(selectedStatus),
-        actionTaken: actionType ? parseInt(actionType) : null,
-        resolutionNote: resolutionNote || '',
-        resolvedAt: new Date().toISOString()
-      };
+  try {
+    // Only update actionTaken if it's being changed (status 2 - RepairApproved)
+    const finalActionTaken = showActionTypeField && actionType 
+      ? parseInt(actionType) 
+      : accidentDetails.actionTaken;
 
-      await accidentAPI.updateAccident(accidentDetails.accidentId, updateData);
+    // Only update resolutionNote if new text is entered
+    const finalResolutionNote = resolutionNote 
+      ? resolutionNote 
+      : accidentDetails.resolutionNote;
 
-      toast({
-        title: 'Accident Updated',
-        description: 'Accident has been resolved successfully.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
+    const updateData = {
+      status: parseInt(selectedStatus),
+      actionTaken: finalActionTaken,
+      resolutionNote: finalResolutionNote,
+      resolvedAt: new Date().toISOString()
+    };
 
-      if (onSuccess) {
-        onSuccess(); // Refresh the parent list
-      }
-      handleClose();
-    } catch (err) {
-      console.error('Error updating accident:', err);
-      setError('Failed to update accident');
-      toast({
-        title: 'Error',
-        description: 'Failed to update accident',
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-      });
-    } finally {
-      setUpdating(false);
+    await accidentAPI.updateAccident(accidentDetails.accidentId, updateData);
+
+    toast({
+      title: 'Accident Updated',
+      description: 'Accident has been resolved successfully.',
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
+
+    if (onSuccess) {
+      onSuccess(); 
     }
-  };
+    handleClose();
+  } catch (err) {
+    console.error('Error updating accident:', err);
+    setError('Failed to update accident');
+    toast({
+      title: 'Error',
+      description: 'Failed to update accident',
+      status: 'error',
+      duration: 3000,
+      isClosable: true,
+    });
+  } finally {
+    setUpdating(false);
+  }
+};
 
   const getStatusColor = (status) => {
-    const statusValue = typeof status === 'number'
-      ? mapStatusNumberToString(status)
-      : status;
-
     const colors = {
-      'Reported': 'blue',
-      'UnderInvestigation': 'orange',
-      'RepairApproved': 'yellow',
-      'UnderRepair': 'purple',
-      'Repaired': 'green'
+      0: 'blue',
+      1: 'orange',
+      2: 'yellow',
+      3: 'purple',
+      4: 'green'
     };
-    return colors[statusValue] || 'gray';
+    return colors[status] || 'gray';
   };
 
   const mapStatusNumberToString = (statusNumber) => {
     const statusMap = {
       0: 'Reported',
-      1: 'UnderInvestigation',
-      2: 'RepairApproved',
-      3: 'UnderRepair',
+      1: 'Under Investigation',
+      2: 'Repair Approved',
+      3: 'Under Repair',
       4: 'Repaired'
     };
     return statusMap[statusNumber] || 'Reported';
@@ -120,7 +125,7 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
   const mapActionTypeToString = (actionType) => {
     const actionMap = {
       0: 'Refund',
-      1: 'Replace', 
+      1: 'Replace',
       2: 'RepairOnly'
     };
     return actionMap[actionType] || 'No Action';
@@ -222,30 +227,29 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
                 </Box>
 
                 <Divider />
-
-                {/* ADMIN CONTROLS */}
-                {isAdmin && (
+                {isAdmin && accidentDetails.status !== 4 && (
                   <Box p={4} border="1px" borderColor="blue.200" borderRadius="md" bg="blue.50">
                     <Text fontWeight="bold" fontSize="lg" mb={3}>Admin Resolution</Text>
-                    
-                    {/* Status Update */}
-                    <FormControl mb={3}>
-                      <FormLabel>Change Status</FormLabel>
-                      <Select
-                        value={selectedStatus}
-                        onChange={(e) => setSelectedStatus(e.target.value)}
-                        placeholder="Select next status"
-                      >
-                        {getNextStatusOptions(accidentDetails.status).map(option => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </Select>
-                    </FormControl>
 
-                    {/* Action Type (only show for RepairApproved) */}
-                    {showActionTypeField && (
+                    {/* Status Update - Hide if Repaired (status 4) */}
+                    {accidentDetails.status !== 4 && (
+                      <FormControl mb={3}>
+                        <FormLabel>Change Status</FormLabel>
+                        <Select
+                          value={selectedStatus}
+                          onChange={(e) => setSelectedStatus(e.target.value)}
+                          placeholder="Select next status"
+                        >
+                          {getNextStatusOptions(accidentDetails.status).map(option => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )}
+
+                    {accidentDetails.status == 0 && (
                       <FormControl mb={3}>
                         <FormLabel>Action Type</FormLabel>
                         <Select
@@ -259,10 +263,34 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
                         </Select>
                       </FormControl>
                     )}
+
+                    {accidentDetails.status == 0 && (
+                      <FormControl mb={3}>
+                        <FormLabel>Resolution Notes</FormLabel>
+                        <Textarea
+                          value={resolutionNote || accidentDetails?.resolutionNote || ''}
+                          onChange={(e) => setResolutionNote(e.target.value)}
+                          placeholder="Add resolution notes (Optional)(e.g., call repair team, contact customer, etc.)"
+                          size="sm"
+                        />
+                      </FormControl>
+                    )}
                   </Box>
                 )}
 
-                {/* Vehicle Information */}
+                {(accidentDetails?.resolutionNote || accidentDetails?.actionTaken !== null) &&
+                  accidentDetails.status >= 2 && (
+                    <Box p={4} border="1px" borderColor="gray.200" borderRadius="md">
+                      <Text fontWeight="bold" fontSize="lg" mb={3}>Resolution Details</Text>
+                      {accidentDetails.resolutionNote && (
+                        <Text mb={2}><strong>Resolution Note:</strong> {accidentDetails.resolutionNote}</Text>
+                      )}
+                      {accidentDetails.actionTaken !== null && (
+                        <Text><strong>Action Taken:</strong> {mapActionTypeToString(accidentDetails.actionTaken)}</Text>
+                      )}
+                    </Box>
+                  )}
+
                 <Box p={4} border="1px" borderColor="gray.200" borderRadius="md">
                   <Text fontWeight="bold" fontSize="lg" mb={3}>Vehicle Information</Text>
                   <Grid templateColumns="repeat(2, 1fr)" gap={4}>
@@ -319,15 +347,14 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
           <Button variant="outline" mr={3} onClick={handleClose}>
             Close
           </Button>
-          {/* UPDATE BUTTON FOR ADMINS */}
-          {isAdmin && accidentDetails && (
+          {isAdmin && accidentDetails && accidentDetails.status !== 4 && (
             <Button
               colorScheme="blue"
               onClick={handleAccidentUpdate}
               isLoading={updating}
               isDisabled={!selectedStatus || selectedStatus === accidentDetails.status.toString()}
             >
-              Apply Resolution
+              Apply
             </Button>
           )}
         </ModalFooter>

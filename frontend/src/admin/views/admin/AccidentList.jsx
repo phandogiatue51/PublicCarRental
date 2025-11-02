@@ -27,6 +27,16 @@ export default function AccidentList() {
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const brandColor = useColorModeValue('brand.500', 'white');
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return (
+      date.toLocaleDateString() +
+      " " +
+      date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    );
+  };
+
   const fetchAccidents = async () => {
     try {
       setLoading(true);
@@ -68,26 +78,22 @@ export default function AccidentList() {
   }, []);
 
   const getStatusColor = (status) => {
-    const statusValue = typeof status === 'number'
-      ? mapStatusNumberToString(status)
-      : status;
-
     const colors = {
-      'Reported': 'blue',
-      'UnderInvestigation': 'orange',
-      'RepairApproved': 'yellow',
-      'UnderRepair': 'purple',
-      'Repaired': 'green'
+      0: 'blue',
+      1: 'orange',
+      2: 'yellow',
+      3: 'purple',
+      4: 'green'
     };
-    return colors[statusValue] || 'gray';
+    return colors[status] || 'gray';
   };
 
   const mapStatusNumberToString = (statusNumber) => {
     const statusMap = {
       0: 'Reported',
-      1: 'UnderInvestigation',
-      2: 'RepairApproved',
-      3: 'UnderRepair',
+      1: 'Under Investigation',
+      2: 'Repair Approved',
+      3: 'Under Repair',
       4: 'Repaired'
     };
     return statusMap[statusNumber] || 'Reported';
@@ -156,7 +162,7 @@ export default function AccidentList() {
       ),
       cell: (info) => (
         <Text color={textColor} fontSize="sm">
-          {new Date(info.getValue()).toLocaleDateString()}
+          {formatDate(info.getValue())}
         </Text>
       ),
     }),
@@ -291,7 +297,7 @@ export default function AccidentList() {
   }
 
   return (
-    <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
+    <Box pt={{ md: "30px" }}>
       <Flex direction="column" gap="20px" me="auto">
         <Flex
           mt="45px"
@@ -304,27 +310,37 @@ export default function AccidentList() {
           </Text>
         </Flex>
 
-        <Flex gap="4" wrap="wrap">
+        <Flex gap="4" justify="start">
           <Card p="4" minW="200px">
             <Text color="gray.500" fontSize="sm">Total Reports</Text>
             <Text color={textColor} fontSize="2xl" fontWeight="700">{accidents.length}</Text>
           </Card>
+
           <Card p="4" minW="200px">
-            <Text color="gray.500" fontSize="sm">Under Investigation</Text>
-            <Text color="orange.500" fontSize="2xl" fontWeight="700">
-              {accidents.filter(a => a.status === 'UnderInvestigation').length}
+            <Text color="gray.500" fontSize="sm">Reported</Text>
+            <Text color="blue.500" fontSize="2xl" fontWeight="700">
+              {accidents.filter(a => a.status === 0).length}
             </Text>
           </Card>
+
+          <Card p="4" minW="200px">
+            <Text color="gray.500" fontSize="sm">Repair Approved</Text>
+            <Text color="yellow.500" fontSize="2xl" fontWeight="700">
+              {accidents.filter(a => a.status === 2).length}
+            </Text>
+          </Card>
+
           <Card p="4" minW="200px">
             <Text color="gray.500" fontSize="sm">Under Repair</Text>
             <Text color="purple.500" fontSize="2xl" fontWeight="700">
-              {accidents.filter(a => a.status === 'UnderRepair').length}
+              {accidents.filter(a => a.status === 3).length}
             </Text>
           </Card>
+
           <Card p="4" minW="200px">
             <Text color="gray.500" fontSize="sm">Repaired</Text>
             <Text color="green.500" fontSize="2xl" fontWeight="700">
-              {accidents.filter(a => a.status === 'Repaired').length}
+              {accidents.filter(a => a.status === 4).length}
             </Text>
           </Card>
         </Flex>
