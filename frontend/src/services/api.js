@@ -633,6 +633,52 @@ export const accidentAPI = {
     method: 'GET',
     queryParams: filters
   }),
+
+  getReplacementPreview: async (accidentId) => {
+    const data = await apiRequest(`/Accident/${accidentId}/replacement-preview`);
+    return data;
+  },
+
+  executeReplacement: async (accidentId) => {
+    const data = await apiRequest(`/Accident/${accidentId}/execute-replacement`, {
+      method: 'POST'
+    });
+    return data;
+  }
+};
+
+export const modificationAPI = {
+  changeModel: async (contractId, requestData) => {
+    const data = await apiRequest(`/contracts/${contractId}/modifications/renter/change-model`, {
+      method: 'POST',
+      body: JSON.stringify(requestData)
+    });
+    return data;
+  },
+
+  extendTime: async (contractId, requestData) => {
+    const data = await apiRequest(`/contracts/${contractId}/modifications/renter/extend-time`, {
+      method: 'POST',
+      body: JSON.stringify(requestData)
+    });
+    return data;
+  },
+
+  changeVehicle: async (contractId, requestData) => {
+    const data = await apiRequest(`/contracts/${contractId}/modifications/renter/change-vehicle`, {
+      method: 'POST',
+      body: JSON.stringify(requestData)
+    });
+    return data;
+  },
+
+  cancelContract: async (contractId, requestData) => {
+    const data = await apiRequest(`/contracts/${contractId}/modifications/renter/cancel-contract`, {
+      method: 'DELETE',
+      body: JSON.stringify(requestData)
+    });
+    return data;
+  }
 };
 
 export const ratingsAPI = {
@@ -675,28 +721,6 @@ export const ratingsAPI = {
 
   hasRatedContract: (contractId, renterId) =>
     apiRequest(`/Ratings/contract/${contractId}/has-rated/${renterId}`),
-};
-
-const mapStatusNumberToString = (statusNumber) => {
-  const statusMap = {
-    0: 'Reported',
-    1: 'UnderInvestigation',
-    2: 'RepairApproved',
-    3: 'UnderRepair',
-    4: 'Repaired'
-  };
-  return statusMap[statusNumber] || 'Reported';
-};
-
-const mapStatusStringToNumber = (statusString) => {
-  const statusMap = {
-    'Reported': 0,
-    'UnderInvestigation': 1,
-    'RepairApproved': 2,
-    'UnderRepair': 3,
-    'Repaired': 4
-  };
-  return statusMap[statusString] || 0;
 };
 
 export const paymentAPI = {

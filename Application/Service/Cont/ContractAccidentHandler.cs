@@ -7,45 +7,31 @@ using PublicCarRental.Application.Service.Rabbit;
 
 namespace PublicCarRental.Application.Service.Cont
 {
-    public interface IContractAccidentHandler
-    {
-        Task HandleAffectedContracts(int damagedVehicleId, int staffId, string accidentReason);
-        Task<AccidentProcessingResult> ProcessApprovedAccidentAsync(int accidentId, int adminId, string approvalNotes);
-        Task<List<VehicleOptionDto>> GetAvailableReplacementOptions(int contractId);
-        Task<ModificationResultDto> SelectReplacementVehicle(int contractId, int vehicleId, int staffId, string reason);
-
-        Task<AccidentProcessingResult> RejectAutomaticReplacementAsync(int accidentId, int adminId, string reason);
-        Task<List<RentalContract>> GetAffectedContractsAsync(int vehicleId);
-    }
-
     public class ContractAccidentHandler : IContractAccidentHandler
     {
         private readonly IVehicleService _vehicleService;
         private readonly IContractService _contractService;
-        private readonly IContractModificationService _modificationService;
         private readonly IAccidentRepository _accidentRepository;
         private readonly IServiceProvider _serviceProvider;
-        public ContractAccidentHandler(IVehicleService vehicleService, IContractService contractService, IContractModificationService contractModificationService,
+        public ContractAccidentHandler(IVehicleService vehicleService, IContractService contractService, 
             IAccidentRepository accidentRepository, IServiceProvider serviceProvider)
         {
             _vehicleService = vehicleService;
             _contractService = contractService;
-            _modificationService = contractModificationService;
-            _accidentRepository = accidentRepository;
             _serviceProvider = serviceProvider;
         }
 
-        public async Task HandleAffectedContracts(int damagedVehicleId, int staffId, string accidentReason)
+        public async Task HandleAffectedContracts(int damagedVehicleId, string accidentReason)
         {
             var affectedContracts = _contractService.GetConfirmedContractByVehicle(damagedVehicleId);
 
             foreach (var contract in affectedContracts.Where(c => c.StartTime > DateTime.UtcNow))
             {
-                await ProcessContractReplacement(contract, staffId, accidentReason);
+                await ProcessContractReplacement(contract, accidentReason);
             }
         }
 
-        public async Task<AccidentProcessingResult> ProcessApprovedAccidentAsync(int accidentId, int adminId, string approvalNotes)
+        public async Task<AccidentProcessingResult> ProcessApprovedAccidentAsync(int accidentId, string approvalNotes)
         {
             var accident = _accidentRepository.GetAll()
                 .FirstOrDefault(a => a.AccidentId == accidentId);
@@ -61,8 +47,8 @@ namespace PublicCarRental.Application.Service.Cont
 
             foreach (var contract in affectedContracts)
             {
-                var result = await ProcessContractReplacement(contract, accident.StaffId ?? adminId,
-                    $"Approved replacement: {accident.Description}", true, adminId);
+                var result = await ProcessContractReplacement(contract,
+                    $"Approved replacement: {accident.Description}", true);
 
                 if (result.Success) processedCount++;
                 results.Add(result);
@@ -86,7 +72,6 @@ namespace PublicCarRental.Application.Service.Cont
 
             var options = new List<VehicleOptionDto>();
 
-            // 1. Get same model vehicles (exclude current damaged vehicle)
             var sameModelVehicles = await _vehicleService.GetAvailableVehiclesByModelAsync(
                 currentVehicle.ModelId, (int)contract.StationId, contract.StartTime, contract.EndTime, currentVehicle.VehicleId);
 
@@ -97,7 +82,6 @@ namespace PublicCarRental.Application.Service.Cont
                 PriceDifference = 0
             }));
 
-            // 2. Get other available vehicles at the same station
             var otherVehicles = await _vehicleService.GetAvailableVehiclesByModelAsync(currentVehicle.ModelId, (int)contract.StationId, contract.StartTime, contract.EndTime);
 
             options.AddRange(otherVehicles.Select(v => new VehicleOptionDto
@@ -110,27 +94,44 @@ namespace PublicCarRental.Application.Service.Cont
             return options.OrderBy(o => o.PriceDifference).ToList();
         }
 
-        public async Task<ModificationResultDto> SelectReplacementVehicle(int contractId, int vehicleId, int staffId, string reason)
+        public async Task<ModificationResultDto> SelectReplacementVehicle(int contractId, int vehicleId, string reason)
         {
-            var contract = _contractService.GetEntityById(contractId);
-            var selectedVehicle = _vehicleService.GetEntityById(vehicleId);
-
-            var request = new StaffVehicleProblemRequest
+            try
             {
-                ProblemType = VehicleProblemType.Accident,
-                StaffId = staffId,
-                Reason = reason,
-                NewVehicleId = vehicleId,
-                Note = "User-selected replacement",
-                IsAutomaticReplacement = true
-            };
+                var contract = _contractService.GetEntityById(contractId);
+                var selectedVehicle = _vehicleService.GetEntityById(vehicleId);
 
-            var result = await _modificationService.HandleStaffVehicleProblemAsync(contractId, request);
+                var availableOptions = await GetAvailableReplacementOptions(contractId);
+                if (!availableOptions.Any(o => o.Vehicle.VehicleId == vehicleId))
+                {
+                    return new ModificationResultDto
+                    {
+                        Success = false,
+                        Message = "Selected vehicle is not available for this contract period"
+                    };
+                }
 
-            return result;
+                contract.VehicleId = vehicleId;
+                _contractService.UpdateContract(contract);
+
+                return new ModificationResultDto
+                {
+                    Success = true,
+                    Message = $"Vehicle replaced successfully due to: {reason}"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ModificationResultDto
+                {
+                    Success = false,
+                    Message = $"Error replacing vehicle: {ex.Message}"
+                };
+            }
         }
 
-        private async Task<ModificationResultDto> ProcessContractReplacement(RentalContract contract, int staffId, string reason, bool isApproved = false, int? approvedBy = null)
+
+        private async Task<ModificationResultDto> ProcessContractReplacement(RentalContract contract, string reason, bool isApproved = false, int? approvedBy = null)
         {
             var availableVehicles = await GetAvailableReplacementOptions(contract.ContractId);
 
@@ -146,23 +147,17 @@ namespace PublicCarRental.Application.Service.Cont
             }
             else
             {
-                return await ProcessNoVehicleAvailable(contract, staffId, reason);
+                return await ProcessNoVehicleAvailable(contract, reason);
             }
         }
 
-        private async Task<ModificationResultDto> ProcessNoVehicleAvailable(RentalContract contract, int staffId, string reason)
+        private async Task<ModificationResultDto> ProcessNoVehicleAvailable(RentalContract contract, string reason)
         {
-            var request = new StaffVehicleProblemRequest
+            return new ModificationResultDto
             {
-                ProblemType = VehicleProblemType.Unavailable,
-                StaffId = staffId,
-                Reason = reason,
-                Note = "Full refund due to no available vehicles"
+                Success = false,
+                Message = "No replacement vehicles available - requires staff follow-up"
             };
-
-            var result = await _modificationService.HandleStaffVehicleProblemAsync(contract.ContractId, request);
-
-            return result;
         }
 
         private VehicleDto MapToVehicleDto(Vehicle vehicle)
@@ -180,7 +175,7 @@ namespace PublicCarRental.Application.Service.Cont
             };
         }
 
-        public async Task<AccidentProcessingResult> RejectAutomaticReplacementAsync(int accidentId, int adminId, string reason)
+        public async Task<AccidentProcessingResult> RejectAutomaticReplacementAsync(int accidentId, string reason)
         {
             var accident = _accidentRepository.GetAll()
                 .FirstOrDefault(a => a.AccidentId == accidentId);
@@ -206,5 +201,172 @@ namespace PublicCarRental.Application.Service.Cont
 
             return contracts;
         }
+
+        public async Task<BulkReplacementResult> SmartBulkReplaceAsync(int accidentId)
+        {
+            var accident = _accidentRepository.GetAll()
+                .FirstOrDefault(a => a.AccidentId == accidentId);
+            if (accident == null)
+                return new BulkReplacementResult { Success = false, Message = "Accident not found" };
+
+            var remainingContracts = (await GetAffectedContractsAsync(accident.VehicleId))
+                .Where(c => c.VehicleId == accident.VehicleId) // Only contracts that haven't been replaced yet
+                .OrderBy(c => c.StartTime)
+                .ToList();
+
+            if (!remainingContracts.Any())
+            {
+                return new BulkReplacementResult
+                {
+                    Success = true,
+                    Message = "All contracts have already been processed!",
+                };
+            }
+
+            var availableVehicles = await GetAvailableReplacementPool(accident.VehicleId, remainingContracts);
+            var results = new List<ContractReplacementResult>();
+
+            foreach (var contract in remainingContracts)
+            {
+                var bestMatch = FindBestAvailableVehicle(availableVehicles, contract);
+                if (bestMatch != null)
+                {
+                    var replacementResult = await ReplaceSingleContract(contract, bestMatch.Vehicle.VehicleId);
+                    availableVehicles.Remove(bestMatch);
+                    results.Add(new ContractReplacementResult
+                    {
+                        Success = true,
+                        ContractId = contract.ContractId,
+                        NewVehicleId = bestMatch.Vehicle.VehicleId,
+                        Message = replacementResult.Message
+                    });
+                }
+                else
+                {
+                    results.Add(new ContractReplacementResult
+                    {
+                        Success = false,
+                        ContractId = contract.ContractId,
+                        Reason = "No vehicle available",
+                        Message = "Contract still has damaged vehicle - needs staff follow-up"
+                    });
+                }
+            }
+
+            return new BulkReplacementResult
+            {
+                Success = true,
+                Message = $"Processed {results.Count(r => r.Success)} out of {remainingContracts.Count} remaining contracts",
+                Results = results,
+            };
+        }
+
+        private async Task<List<VehicleOptionDto>> GetAvailableReplacementPool(int damagedVehicleId, List<RentalContract> allContracts)
+        {
+            var allAvailableVehicles = new List<VehicleOptionDto>();
+
+            foreach (var contract in allContracts)
+            {
+                var options = await GetAvailableReplacementOptions(contract.ContractId);
+                // Filter out the damaged vehicle and already assigned vehicles
+                var validOptions = options.Where(o => o.Vehicle.VehicleId != damagedVehicleId);
+                allAvailableVehicles.AddRange(validOptions);
+            }
+
+            return allAvailableVehicles
+                .GroupBy(v => v.Vehicle.VehicleId)
+                .Select(g => g.First())
+                .ToList();
+        }
+
+        private VehicleOptionDto FindBestAvailableVehicle(List<VehicleOptionDto> availableVehicles, RentalContract contract)
+        {
+            if (contract.Vehicle == null) return availableVehicles.FirstOrDefault();
+
+            // Priority 1: Same model, same station
+            var bestMatch = availableVehicles
+                .FirstOrDefault(v => v.Vehicle.ModelId == contract.Vehicle.ModelId &&
+                                    v.Vehicle.StationId == contract.StationId);
+
+            if (bestMatch != null) return bestMatch;
+
+            // Priority 2: Same model, different station  
+            bestMatch = availableVehicles
+                .FirstOrDefault(v => v.Vehicle.ModelId == contract.Vehicle.ModelId);
+
+            if (bestMatch != null) return bestMatch;
+
+            // Priority 3: Any available vehicle
+            return availableVehicles.FirstOrDefault();
+        }
+
+        private async Task<ModificationResultDto> ReplaceSingleContract(RentalContract contract, int newVehicleId)
+        {
+            return await SelectReplacementVehicle(contract.ContractId, newVehicleId,
+                "Bulk replacement from accident");
+        }
+
+        public async Task<ReplacementPreviewDto> GetReplacementPreviewAsync(int accidentId)
+        {
+            var accident = _accidentRepository.GetAll()
+                .FirstOrDefault(a => a.AccidentId == accidentId);
+            if (accident == null)
+                return new ReplacementPreviewDto { Success = false, Message = "Accident not found" };
+
+            var remainingContracts = (await GetAffectedContractsAsync(accident.VehicleId))
+                .Where(c => c.VehicleId == accident.VehicleId)
+                .OrderBy(c => c.StartTime)
+                .ToList();
+
+            var totalAffected = (await GetAffectedContractsAsync(accident.VehicleId)).Count;
+            var alreadyProcessed = totalAffected - remainingContracts.Count;
+
+            var availableVehiclesPool = await GetAvailableReplacementPool(accident.VehicleId, remainingContracts);
+            var availableVehiclesCopy = availableVehiclesPool.ToList();
+            var previewResults = new List<ContractReplacementPreview>();
+
+            foreach (var contract in remainingContracts)
+            {
+                var bestMatch = FindBestAvailableVehicle(availableVehiclesCopy, contract);
+                if (bestMatch != null)
+                {
+                    previewResults.Add(new ContractReplacementPreview
+                    {
+                        ContractId = contract.ContractId,
+                        RenterName = contract.EVRenter?.Account.FullName ?? "Unknown",
+                        StartTime = contract.StartTime,
+                        CurrentVehicleId = (int)contract.VehicleId,
+                        NewVehicleId = bestMatch.Vehicle.VehicleId,
+                        NewVehicleInfo = $"{bestMatch.Vehicle.LicensePlate} - {bestMatch.Vehicle.ModelName}",
+                        WillBeReplaced = true,
+                        ReplacementType = bestMatch.OptionType
+                    });
+                    availableVehiclesCopy.Remove(bestMatch);
+                }
+                else
+                {
+                    previewResults.Add(new ContractReplacementPreview
+                    {
+                        ContractId = contract.ContractId,
+                        RenterName = contract.EVRenter?.Account.FullName ?? "Unknown",
+                        StartTime = contract.StartTime,
+                        CurrentVehicleId = (int)contract.VehicleId,
+                        WillBeReplaced = false,
+                        Reason = "No available replacement vehicle"
+                    });
+                }
+            }
+
+            return new ReplacementPreviewDto
+            {
+                Success = true,
+                AccidentId = accidentId,
+                TotalContracts = totalAffected,
+                CanBeReplaced = previewResults.Count(r => r.WillBeReplaced),
+                CannotBeReplaced = previewResults.Count(r => !r.WillBeReplaced),
+                PreviewResults = previewResults
+            };
+        }
+
     }
 }

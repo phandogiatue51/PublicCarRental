@@ -157,7 +157,6 @@ namespace PublicCarRental.Application.Service
 
                 _accidentRepository.CreateAcc(acc);
 
-                await _contractAccidentHandler.HandleAffectedContracts(vehicle.VehicleId, (int)dto.StaffId, dto.Description);
                 await _accidentEventProducerService.PublishAccidentReportedAsync(acc);
 
                 return (true, $"Fixing report for vehicle {dto.VehicleId} created successfully!");
@@ -244,40 +243,11 @@ namespace PublicCarRental.Application.Service
 
             return actionType switch
             {
-                ActionType.Refund => await ProcessRefundAction(contractHandler, accident),
-                ActionType.Replace => await ProcessReplaceAction(contractHandler, accident),
+                ActionType.Refund => "Refund contracts that couldn't change vehicle",
+                ActionType.Replace => "Replace all contract with new vehicles. Process refund if unable to change",
                 ActionType.RepairOnly => "Repair only - no contract changes",
                 _ => "Unknown action type"
             };
-        }
-
-        private async Task<string> ProcessRefundAction(IContractAccidentHandler handler, AccidentReport accident)
-        {
-            var affectedContracts = await handler.GetAffectedContractsAsync(accident.VehicleId);
-
-            if (!affectedContracts.Any())
-                return "No future contracts to refund";
-
-            foreach (var contract in affectedContracts)
-            {
-                var request = new StaffVehicleProblemRequest
-                {
-                    ProblemType = VehicleProblemType.Unavailable,
-                    StaffId = (int)accident.StaffId,
-                    Reason = $"Refund due to vehicle accident: {accident.Description}",
-                    Note = "Full refund per admin resolution"
-                };
-
-                await _modificationService.HandleStaffVehicleProblemAsync(contract.ContractId, request);
-            }
-
-            return $"Refunded {affectedContracts.Count} contracts";
-        }
-
-        private async Task<string> ProcessReplaceAction(IContractAccidentHandler handler, AccidentReport accident)
-        {
-            var result = await handler.ProcessApprovedAccidentAsync(accident.AccidentId, accident.StaffId ?? 1, "Admin initiated replacement");
-            return result.Message;
         }
 
         public IEnumerable<AccidentDto?> FilterAccidents(AccidentStatus? status, int? stationId)

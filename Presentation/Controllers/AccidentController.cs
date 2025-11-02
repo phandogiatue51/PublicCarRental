@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.Application.DTOs.Accident;
 using PublicCarRental.Application.Service;
+using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Infrastructure.Data.Models;
 
 namespace PublicCarRental.Presentation.Controllers
@@ -11,11 +12,13 @@ namespace PublicCarRental.Presentation.Controllers
     {
         private readonly IAccidentService _accidentService;
         private readonly ILogger<AccidentController> _logger;
+        private readonly IContractAccidentHandler _accidentHandler;
 
-        public AccidentController(IAccidentService accidentService, ILogger<AccidentController> logger)
+        public AccidentController(IAccidentService accidentService, ILogger<AccidentController> logger, IContractAccidentHandler accidentHandler)
         {
             _accidentService = accidentService;
             _logger = logger;
+            _accidentHandler = accidentHandler;
         }
 
         [HttpGet("get-all")]
@@ -126,6 +129,20 @@ namespace PublicCarRental.Presentation.Controllers
                 _logger.LogError(ex, "Error filtering accident reports");
                 return StatusCode(500, "An error occurred while filtering accident reports");
             }
+        }
+
+        [HttpGet("{accidentId}/replacement-preview")]
+        public async Task<ActionResult<ReplacementPreviewDto>> GetReplacementPreview(int accidentId)
+        {
+            var result = await _accidentHandler.GetReplacementPreviewAsync(accidentId);
+            return Ok(result);
+        }
+
+        [HttpPost("{accidentId}/execute-replacement")]
+        public async Task<ActionResult<BulkReplacementResult>> ExecuteReplacement(int accidentId)
+        {
+            var result = await _accidentHandler.SmartBulkReplaceAsync(accidentId);
+            return Ok(result);
         }
     }
 }

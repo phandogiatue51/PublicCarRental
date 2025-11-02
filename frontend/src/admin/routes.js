@@ -14,7 +14,7 @@ import ContractList from './../admin/views/admin/contract/ContractList';
 import InvoiceList from './../admin/views/admin/invoice/InvoiceList';
 import StaffList from './../admin/views/admin/staff/StaffList';
 import StationList from './../admin/views/admin/station/StationList';
-import AccidentList from './../admin/views/admin/AccidentList';
+import AccidentList from './../admin/views/admin/accident/AccidentList';
 import RatingList from './../admin/views/admin/RatingList';
 
 import Home from 'Pages/Home';

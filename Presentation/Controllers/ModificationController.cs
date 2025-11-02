@@ -1,15 +1,17 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using PublicCarRental.Application.DTOs.Accident;
 using PublicCarRental.Application.DTOs.BadScenario;
+using PublicCarRental.Application.Service.Cont;
 
 namespace PublicCarRental.Presentation.Controllers
 {
     [ApiController]
     [Route("api/contracts/{contractId}/modifications")]
-    public class ContractModificationController : ControllerBase
+    public class ModificationController : ControllerBase
     {
         private readonly IContractModificationService _modificationService;
-        public ContractModificationController(IContractModificationService modificationService)
+        public ModificationController(IContractModificationService modificationService)
         {
             _modificationService = modificationService;
         }
@@ -43,14 +45,6 @@ namespace PublicCarRental.Presentation.Controllers
         int contractId, [FromBody] RenterChangeRequest request)
         {
             var result = await _modificationService.HandleRenterCancellation(contractId, request);
-            return Ok(result);
-        }
-
-        [HttpPost("staff/vehicle-problem")]
-        public async Task<ActionResult<ModificationResultDto>> HandleStaffVehicleProblem(
-            int contractId, [FromBody] StaffVehicleProblemRequest request)
-        {
-            var result = await _modificationService.HandleStaffVehicleProblemAsync(contractId, request);
             return Ok(result);
         }
     }

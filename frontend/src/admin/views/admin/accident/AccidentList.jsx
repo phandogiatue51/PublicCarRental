@@ -1,18 +1,18 @@
 import {
   Box, Button, Flex, Table, Tbody, Td, Text, Th, Thead, Tr,
   useColorModeValue, Spinner, Alert, AlertIcon, AlertTitle,
-  AlertDescription, Badge, HStack, IconButton
+  AlertDescription, Badge, HStack
 } from '@chakra-ui/react';
 import {
   createColumnHelper, flexRender, getCoreRowModel,
   getSortedRowModel, useReactTable
 } from '@tanstack/react-table';
 import { useState, useEffect } from 'react';
-import { accidentAPI } from '../../../services/api';
+import { accidentAPI } from '../../../../services/api';
 import { MdDelete } from 'react-icons/md';
-import AccidentViewModal from '../../../staff/Pages/AccidentReport/AccidentViewModal';
+import AccidentViewModal from '../../../../staff/Pages/AccidentReport/AccidentViewModal';
 
-import Card from './../../components/card/Card';
+import Card from './../../../components/card/Card';
 
 const columnHelper = createColumnHelper();
 

@@ -18,7 +18,7 @@ namespace PublicCarRental.Application.Service.Cont
     {
         private readonly IContractRepository _contractRepo;
         private readonly IEVRenterService _renterService;
-        private readonly BookingEventProducerService _bookingEventProducer; 
+        private readonly BookingEventProducerService _bookingEventProducer;
         private readonly ILogger<ContractService> _logger;
         private readonly IImageStorageService _imageStorageService;
         private readonly IDistributedLockService _distributedLock;
@@ -29,10 +29,10 @@ namespace PublicCarRental.Application.Service.Cont
         private readonly IReceiptGenerationProducerService _receiptGenerationProducerService;
         private readonly IContractGenerationProducerService _contractGenerationProducer;
 
-        public ContractService(IContractRepository repo, IVehicleRepository vehicleRepo, IEVRenterService eVRenterService, 
+        public ContractService(IContractRepository repo, IVehicleRepository vehicleRepo, IEVRenterService eVRenterService,
             BookingEventProducerService bookingEventProducerService, IImageStorageService imageStorageService,
             ILogger<ContractService> logger, IDistributedLockService distributedLock, IStaffService staffService,
-            IInvoiceRepository invoiceRepository, IBookingService bookingService, IReceiptGenerationProducerService receiptGenerationProducerService, 
+            IInvoiceRepository invoiceRepository, IBookingService bookingService, IReceiptGenerationProducerService receiptGenerationProducerService,
             IContractGenerationProducerService contractGenerationProducer)
         {
             _contractRepo = repo;
@@ -149,7 +149,7 @@ namespace PublicCarRental.Application.Service.Cont
             _bookingService.RemoveBookingRequest(invoice.BookingToken);
 
             var lockKey = $"vehicle_booking:{bookingRequest.VehicleId}:{bookingRequest.StartTime:yyyyMMddHHmm}_{bookingRequest.EndTime:yyyyMMddHHmm}";
-            _distributedLock.ReleaseLock(lockKey, invoice.BookingToken); 
+            _distributedLock.ReleaseLock(lockKey, invoice.BookingToken);
 
             var renter = await _renterService.GetByIdAsync(bookingRequest.EVRenterId);
 
@@ -315,7 +315,7 @@ namespace PublicCarRental.Application.Service.Cont
             try
             {
                 var contract = _contractRepo.GetById(contractId);
-                if (contract == null) 
+                if (contract == null)
                 {
                     Console.WriteLine($"ContractService: Contract {contractId} not found");
                     return false;
@@ -340,8 +340,8 @@ namespace PublicCarRental.Application.Service.Cont
             var contract = _contractRepo.GetById(contractId);
             if (contract == null) return (false, "Contract not found");
 
-            if (contract.Status != RentalStatus.ToBeConfirmed || contract.Status != RentalStatus.Cancelled) 
-            return (false, $"Contract {contractId} is not in a cancellable state");
+            if (contract.Status != RentalStatus.ToBeConfirmed || contract.Status != RentalStatus.Cancelled)
+                return (false, $"Contract {contractId} is not in a cancellable state");
             _contractRepo.Delete(contractId);
             return (true, $"Contract {contractId} deleted successfully");
         }
@@ -370,7 +370,7 @@ namespace PublicCarRental.Application.Service.Cont
             });
         }
 
-        public IEnumerable<ContractDto> FilterContracts(int? stationId, RentalStatus? status, int? renterId, int? staffId, 
+        public IEnumerable<ContractDto> FilterContracts(int? stationId, RentalStatus? status, int? renterId, int? staffId,
             int? vehicleId, DateTime? startTime, DateTime? endTime)
         {
             var query = _contractRepo.GetAll().AsQueryable();
@@ -423,7 +423,21 @@ namespace PublicCarRental.Application.Service.Cont
         {
             return _contractRepo.GetAll()
                 .Where(v => v.VehicleId == vehicleId && v.Status == RentalStatus.Confirmed)
-                .ToList(); 
+                .ToList();
+        }
+
+        public bool UpdateContract(RentalContract contract)
+        {
+            try
+            {
+                _contractRepo.Update(contract);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating contract {ContractId}", contract.ContractId);
+                return false;
+            }
         }
     }
 }

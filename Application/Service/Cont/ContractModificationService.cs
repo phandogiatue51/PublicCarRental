@@ -1,6 +1,7 @@
 ﻿using PublicCarRental.Application.DTOs.BadScenario;
 using PublicCarRental.Application.DTOs.Cont;
 using PublicCarRental.Application.DTOs.Refund;
+using PublicCarRental.Application.DTOs.Veh;
 using PublicCarRental.Application.Service;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Veh;
@@ -189,130 +190,6 @@ public class ContractModificationService : IContractModificationService
         };
     }
 
-    public async Task<ModificationResultDto> HandleStaffVehicleProblemAsync(int contractId, StaffVehicleProblemRequest request)
-    {
-        var contract = _contractRepository.GetById(contractId);
-        if (contract == null)
-            return new ModificationResultDto { Success = false, Message = "Contract not found" };
-
-        var originalInvoice = await _invoiceService.GetOriginalInvoiceAsync(contractId);
-        var totalPaid = await _invoiceService.GetTotalPaidAmountAsync(contractId);
-
-        switch (request.ProblemType)
-        {
-            case VehicleProblemType.Maintenance:
-            case VehicleProblemType.Accident:
-            case VehicleProblemType.MechanicalIssue:
-                return await HandleVehicleReplacement(contract, originalInvoice, totalPaid, request);
-
-            case VehicleProblemType.Unavailable:
-                return await HandleNoVehicleAvailable(contract, originalInvoice, totalPaid, request);
-
-            default:
-                return new ModificationResultDto { Success = false, Message = "Unknown problem type" };
-        }
-    }
-
-    private async Task<ModificationResultDto> HandleVehicleReplacement(RentalContract contract, Invoice originalInvoice, decimal totalPaid, StaffVehicleProblemRequest request)
-    {
-        Vehicle newVehicle = null;
-
-        if (request.NewVehicleId.HasValue)
-        {
-            newVehicle = _vehicleService.GetEntityById(request.NewVehicleId.Value);
-        }
-        else if (request.NewModelId.HasValue)
-        {
-            newVehicle = await _vehicleService.GetFirstAvailableVehicleByModelAsync(
-                request.NewModelId.Value, (int)contract.StationId, contract.StartTime, contract.EndTime);
-        }
-
-        if (newVehicle == null)
-        {
-            newVehicle = await FindBestReplacementVehicle(contract);
-        }
-
-        if (newVehicle == null)
-        {
-            return await HandleNoVehicleAvailable(contract, originalInvoice, totalPaid, request);
-        }
-
-        var newTotal = CalculateNewTotal(newVehicle, contract.StartTime, contract.EndTime);
-
-        // 🚫 KEY CHANGE: No financial impact for automatic replacements
-        decimal priceDifference = 0;
-        if (!request.IsAutomaticReplacement)
-        {
-            priceDifference = originalInvoice.AmountDue - newTotal;
-        }
-
-        contract.VehicleId = newVehicle.VehicleId;
-        contract.TotalCost = request.IsAutomaticReplacement ? contract.TotalCost : newTotal; // Keep original cost for automatic
-        _contractRepository.Update(contract);
-
-        int? refundId = null;
-        if (!request.IsAutomaticReplacement && priceDifference > 0)
-        {
-            var refundRequest = new CreateRefundRequestDto
-            {
-                ContractId = contract.ContractId,
-                Amount = priceDifference,
-                Reason = $"Vehicle replacement: {request.Reason}",
-                StaffId = request.StaffId,
-                Note = request.Note
-            };
-
-            var refundResult = await _refundService.RequestRefundAsync(refundRequest);
-            if (refundResult.Success)
-            {
-                refundId = refundResult.RefundId;
-            }
-        }
-
-        return new ModificationResultDto
-        {
-            Success = true,
-            Message = request.IsAutomaticReplacement ?
-                $"Vehicle automatically replaced due to accident. No cost change." :
-                (priceDifference > 0 ?
-                    $"Vehicle replaced. Refund of {priceDifference:C} processed." :
-                    "Vehicle replaced with equivalent model."),
-            PriceDifference = request.IsAutomaticReplacement ? 0 : -priceDifference,
-            RefundId = refundId,
-            UpdatedContract = MapToContractDto(contract)
-        };
-    }
-
-    private async Task<ModificationResultDto> HandleNoVehicleAvailable(RentalContract contract, Invoice originalInvoice, decimal totalPaid, StaffVehicleProblemRequest request)
-    {
-        // Full refund + cancel contract
-        var refundRequest = new CreateRefundRequestDto
-        {
-            ContractId = contract.ContractId,
-            Amount = totalPaid,
-            Reason = $"No vehicles available: {request.Reason}",
-            StaffId = request.StaffId,
-            Note = "Full refund due to no available vehicles"
-        };
-
-        var refundResult = await _refundService.RequestRefundAsync(refundRequest);
-
-        // Cancel contract
-        contract.Status = RentalStatus.Cancelled;
-        _contractRepository.Update(contract);
-
-        return new ModificationResultDto
-        {
-            Success = refundResult.Success,
-            Message = refundResult.Success ?
-                "Contract cancelled. Full refund processed." :
-                "Contract cancelled but refund failed.",
-            PriceDifference = -totalPaid,
-            RefundId = refundResult.RefundId,
-            UpdatedContract = MapToContractDto(contract)
-        };
-    }
-
     public async Task<ModificationResultDto> HandleRenterCancellation(int contractId, RenterChangeRequest request)
     {
         var contract = _contractRepository.GetById(contractId);
@@ -375,6 +252,5 @@ public interface IContractModificationService
     Task<ModificationResultDto> ChangeModelAsync(int contractId, RenterChangeRequest request);
     Task<ModificationResultDto> ExtendTimeAsync(int contractId, RenterChangeRequest request);
     Task<ModificationResultDto> ChangeVehicleAsync(int contractId, RenterChangeRequest request);
-    Task<ModificationResultDto> HandleStaffVehicleProblemAsync(int contractId, StaffVehicleProblemRequest request);
     Task<ModificationResultDto> HandleRenterCancellation(int contractId, RenterChangeRequest request);
 }

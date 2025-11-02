@@ -19,6 +19,6 @@ namespace PublicCarRental.Application.Service.Cont
         public IEnumerable<ContractDto> FilterContracts(int? stationId, RentalStatus? status, int? renterId, int? staffId, 
             int? vehicleId, DateTime? startTime, DateTime? endTime);
         public List<RentalContract> GetConfirmedContractByVehicle(int vehicleId);
-
+        public bool UpdateContract(RentalContract contract);
     }
 }
