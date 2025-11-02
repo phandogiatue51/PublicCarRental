@@ -22,9 +22,7 @@ function Success() {
                 <p style={{ marginBottom: '15px' }}>
                     A receipt has been sent to your email address (even in Spam).
                 </p>
-                <p style={{ marginBottom: '15px' }}>
-                    To start your renting, you will have to present your receipt.
-                </p>
+
                 {orderCode && (
                     <p style={{ marginBottom: '15px' }}>
                         Order Code: {orderCode}

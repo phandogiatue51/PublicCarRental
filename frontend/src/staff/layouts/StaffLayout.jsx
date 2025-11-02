@@ -20,7 +20,6 @@ const StaffLayout = () => {
     const pageBgColor = useColorModeValue('gray.50', 'gray.900');
 
     useEffect(() => {
-        // Only start SignalR if authenticated
         if (!isAuthenticated()) return;
 
         signalRService.startConnection();
@@ -44,21 +43,53 @@ const StaffLayout = () => {
                     title: "✅ Booking Confirmed",
                     description: notification.message || "A booking has been confirmed",
                     status: "info",
-                    duration: 6000,
+                    duration: 8000,
                     isClosable: true,
                     position: "top-right"
                 });
             }
 
             if (notification?.type === 'VehicleReadyForPickup') {
-            toast({
-                title: "🔧 Vehicle Ready",
-                description: notification.message || `Vehicle ${notification.licensePlate} is ready for pickup`,
-                status: "success",
-                duration: 6000,
-                isClosable: true,
-                position: "top-right"
-            });
+                toast({
+                    title: "🔧 Vehicle Ready",
+                    description: notification.message || `Vehicle ${notification.licensePlate} is ready for pickup`,
+                    status: "success",
+                    duration: 8000,
+                    isClosable: true,
+                    position: "top-right"
+                });
+            }
+
+            if (notification?.type === 'AccidentAction') {
+                toast({
+                    title: `🚨 Accident Update - ${notification.priority || 'MEDIUM'}`,
+                    description: notification.message || `Accident ${notification.accidentId} status: ${notification.status}`,
+                    status: getAccidentStatusColor(notification.status),
+                    duration: 8000,
+                    isClosable: true,
+                    position: "top-right"
+                });
+            }
+
+            if (notification?.type === 'PersonalAccidentUpdate') {
+                toast({
+                    title: "📋 Your Accident Report Updated",
+                    description: notification.message || `Your accident report #${notification.accidentId} has been updated`,
+                    status: "info",
+                    duration: 8000,
+                    isClosable: true,
+                    position: "top-right"
+                });
+            }
+        };
+
+        const getAccidentStatusColor = (status) => {
+            switch (status) {
+                case 'RepairApproved': return 'warning';
+                case 'UnderInvestigation': return 'info';
+                case 'UnderRepair': return 'info';
+                case 'Repaired': return 'success';
+                default: return 'info';
             }
         };
 

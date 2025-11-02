@@ -8,7 +8,7 @@
         public int? StaffId { get; set; }
         public string? Description { get; set; }
         public string? Location { get; set; }
-        public DateTime ReportedAt { get; set; } = DateTime.Now;
+        public DateTime ReportedAt { get; set; } = DateTime.UtcNow;
         public AccidentStatus Status { get; set; } = AccidentStatus.Reported;
         public string? ImageUrl { get; set; }
 

@@ -156,10 +156,8 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
 
     switch (currentStatus) {
       case 0: // Reported
-        return statusOptions.filter(opt => opt.value === 1 || opt.value === 2);
+        return statusOptions.filter(opt => opt.value === 2);
       case 2: // RepairApproved
-        return statusOptions.filter(opt => opt.value === 1);
-      case 1: // UnderInvestigation
         return statusOptions.filter(opt => opt.value === 3);
       case 3: // UnderRepair
         return statusOptions.filter(opt => opt.value === 4);
@@ -261,18 +259,6 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
                         </Select>
                       </FormControl>
                     )}
-
-                    {/* Resolution Notes */}
-                    <FormControl>
-                      <FormLabel>Resolution Notes</FormLabel>
-                      <Textarea
-                        value={resolutionNote}
-                        onChange={(e) => setResolutionNote(e.target.value)}
-                        placeholder="Add resolution notes for staff..."
-                        size="sm"
-                        rows={3}
-                      />
-                    </FormControl>
                   </Box>
                 )}
 

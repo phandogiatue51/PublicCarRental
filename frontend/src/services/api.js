@@ -624,9 +624,9 @@ export const accidentAPI = {
     method: 'DELETE',
   }),
 
-   updateAccident: (id, updateData) => apiRequest(`Accident/update-accident/${id}`, {
+   updateAccident: (id, updateData) => apiRequest(`/Accident/update-accident/${id}`, {
     method: 'PATCH',
-    body: updateData
+    body: JSON.stringify(updateData)
   }),
 
   filter: (filters) => apiRequest('/Accident/filter', {

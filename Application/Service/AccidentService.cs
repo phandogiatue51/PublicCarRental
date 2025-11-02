@@ -198,7 +198,7 @@ namespace PublicCarRental.Application.Service
                 acc.Status = dto.Status;
                 acc.ActionTaken = dto.ActionTaken;
                 acc.ResolutionNote = dto.ResolutionNote;
-                acc.ResolvedAt = dto.ResolvedAt ?? DateTime.Now;
+                acc.ResolvedAt = dto.ResolvedAt ?? DateTime.UtcNow;
 
                 if (dto.ActionTaken.HasValue)
                 {
