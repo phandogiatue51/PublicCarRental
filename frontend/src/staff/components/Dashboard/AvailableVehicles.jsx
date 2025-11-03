@@ -88,7 +88,7 @@ const AvailableVehicles = ({ stationId }) => {
                       {v.modelName || 'Unknown Model'}
                     </Text>
                     <HStack justify="space-between" fontSize="sm" color="gray.600" _dark={{ color: 'gray.400' }}>
-                      <Text>Station: <Text as="span" fontWeight="medium">{v.stationName || v.stationId || 'N/A'}</Text></Text>
+                     
                       {typeof v.pricePerHour === 'number' && (
                         <Text>Price/hr: <Text as="span" fontWeight="medium">{v.pricePerHour.toLocaleString()}</Text></Text>
                       )}

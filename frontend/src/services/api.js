@@ -754,5 +754,38 @@ export const staffDashboardAPI = {
     apiRequest(`/StaffDashboard/station/${stationId}/available-vehicles`),
 };
 
+// Admin Dashboard API services
+export const adminDashboardAPI = {
+  // Get system overview
+  getOverview: () => apiRequest('/AdminDashboard/overview'),
+
+  // Get financial report (POST with date range)
+  getFinancialReport: (dateRange) => apiRequest('/AdminDashboard/financial-report', {
+    method: 'POST',
+    body: JSON.stringify({
+      StartDate: dateRange.startDate,
+      EndDate: dateRange.endDate,
+    }),
+  }),
+
+  // Get customer analytics
+  getCustomerAnalytics: () => apiRequest('/AdminDashboard/customer-analytics'),
+
+  // Get risk customers
+  getRiskCustomers: () => apiRequest('/AdminDashboard/risk-customers'),
+
+  // Get fleet management
+  getFleetManagement: () => apiRequest('/AdminDashboard/fleet-management'),
+
+  // Get staff performance
+  getStaffPerformance: () => apiRequest('/AdminDashboard/staff-performance'),
+
+  // Get rating analytics
+  getRatingAnalytics: () => apiRequest('/AdminDashboard/rating-analytics'),
+
+  // Get stations performance
+  getStationsPerformance: () => apiRequest('/AdminDashboard/stations-performance'),
+};
+
 
 export default apiRequest;
