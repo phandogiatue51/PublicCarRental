@@ -153,17 +153,6 @@ export default function AccidentDetailsPage() {
 
   return (
     <Container maxW="container.xl" py={8}>
-      <Breadcrumb mb={6}>
-        <BreadcrumbItem>
-          <BreadcrumbLink onClick={() => navigate('/staff/issues')}>
-            Issues
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbItem isCurrentPage>
-          <Text>Issue #{accidentId}</Text>
-        </BreadcrumbItem>
-      </Breadcrumb>
-
       {loading && (
         <Box textAlign="center" py={8}>
           <Spinner size="xl" />
@@ -209,7 +198,9 @@ export default function AccidentDetailsPage() {
                 accidentDetails.status >= 2 && (
                   <ResolutionDetails
                     accidentDetails={accidentDetails}
-                    mapActionTypeToString={mapActionTypeToString}
+                    resolutionNote={resolutionNote}
+                    setResolutionNote={setResolutionNote}
+                    isDisabled={true}
                   />
                 )}
 
@@ -227,11 +218,12 @@ export default function AccidentDetailsPage() {
           </HStack>
 
           <Flex justify="flex-start" mt={6} gap={3}>
-            <Button 
-                variant="outline" 
-                onClick={() => navigate(backPath)}
+            <Button
+              variant="outline"
+              onClick={() => navigate(backPath)}
+              bg="white"
             >
-                Back to List
+              Back to List
             </Button>
 
             {isAdmin && accidentDetails.status !== 4 && (

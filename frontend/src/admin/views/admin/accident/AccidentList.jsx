@@ -7,10 +7,11 @@ import {
   createColumnHelper, flexRender, getCoreRowModel,
   getSortedRowModel, useReactTable
 } from '@tanstack/react-table';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { accidentAPI } from '../../../../services/api';
 import { MdDelete } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
+import Pagination from './../../../../components/Pagination';
 
 import Card from './../../../components/card/Card';
 
@@ -25,6 +26,7 @@ export default function AccidentList() {
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const brandColor = useColorModeValue('brand.500', 'white');
   const navigate = useNavigate();
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -35,8 +37,33 @@ export default function AccidentList() {
     );
   };
 
- const handleView = (accident) => {
-    navigate(`/admin/issues/${accident.accidentId}`);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const totalItems = accidents.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+
+  const paginatedData = useMemo(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+      return accidents.slice((totalPages - 1) * pageSize, totalPages * pageSize);
+    }
+    return accidents.slice(startIndex, endIndex);
+  }, [accidents, currentPage, pageSize, totalPages, startIndex, endIndex]);
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newPageSize) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+  };
+
+  const handleView = (accident) => {
+    navigate(`/admin/issue/${accident.accidentId}`);
   };
 
   const fetchAccidents = async () => {
@@ -227,7 +254,7 @@ export default function AccidentList() {
   ];
 
   const table = useReactTable({
-    data: accidents,
+    data: paginatedData,
     columns,
     state: {
       sorting,
@@ -388,6 +415,16 @@ export default function AccidentList() {
             </Table>
           </Box>
         </Card>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          startIndex={startIndex}
+          endIndex={endIndex}
+        />
       </Flex>
     </Box>
   );

@@ -25,7 +25,7 @@ export default function StaffApp() {
                     <Route path="invoices" element={<InvoiceList />} />
                     <Route path="models" element={<ModelList />} />
                     <Route path="issues" element={<AccidentList />} />
-                    <Route path="/issues/:accidentId" element={<AccidentDetailsPage />} />
+                    <Route path="/issue/:accidentId" element={<AccidentDetailsPage />} />
                 </Route>
             </Routes>
         </ChakraProvider>

@@ -2,7 +2,7 @@ import { Box, Text, Badge, Grid } from '@chakra-ui/react';
 
 export default function AccidentHeader({ accidentDetails, getStatusColor, mapStatusNumberToString, formatDate }) {
   return (
-    <Box p={4} bg="blue.50" borderRadius="md">
+    <Box p={4} border="1px" bg="white" borderColor="gray.200" borderRadius="xl" mt={20}>
       <Grid templateColumns="1fr auto" gap={4} alignItems="center">
         <Box>
           <Text fontWeight="bold" fontSize="xl">

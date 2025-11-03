@@ -16,10 +16,8 @@ import StaffList from './../admin/views/admin/staff/StaffList';
 import StationList from './../admin/views/admin/station/StationList';
 import AccidentList from './../admin/views/admin/accident/AccidentList';
 import RatingList from './../admin/views/admin/RatingList';
-import AccidentDetailsPage from './../staff/Pages/AccidentReport/AccidentDetailPage';
-
 import Home from 'Pages/Home';
-
+import AccidentDetailsPage from 'staff/Pages/AccidentReport/AccidentDetailPage';
 
 const routes = [
   {
@@ -78,6 +76,7 @@ const routes = [
     icon: <Icon as={MdBarChart} width="20px" height="20px" color="inherit" />,
     component: <AccidentList />,
   },
+
   {
     name: 'Staff',
     layout: '/admin',
@@ -106,12 +105,11 @@ const routes = [
     icon: <Icon as={MdExitToApp} width="20px" height="20px" color="inherit" />,
     component: <Home />,
   },
-  {
-    path: "/issues/:accidentId",
-    layout: "/admin",
-    component: <AccidentDetailsPage />,
-  }
+ {
+  layout: '/admin',
+  path: '/issue/:accidentId',
+  component: <AccidentDetailsPage />,
+ }
 ];
-
 
 export default routes;

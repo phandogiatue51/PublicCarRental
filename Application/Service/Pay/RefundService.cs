@@ -61,7 +61,8 @@ namespace PublicCarRental.Application.Service
                     ContractId = request.ContractId,
                     IssuedAt = DateTime.UtcNow,
                     AmountDue = -request.Amount, 
-                    Status = InvoiceStatus.Pending, 
+                    AmountPaid = -request.Amount,
+                    Status = InvoiceStatus.Refunded, 
                     Note = $"Refund request: {request.Reason}",
                     BookingToken = $"REFUND_{originalInvoice.InvoiceId}_{DateTime.UtcNow:yyyyMMddHHmmss}"
                 };
@@ -196,7 +197,6 @@ namespace PublicCarRental.Application.Service
             {
                 _logger.LogError(ex, $"❌ Failed to process refund #{refundId}");
 
-                // Update refund status to failed
                 var refund = _refundRepository.GetById(refundId);
                 if (refund != null)
                 {

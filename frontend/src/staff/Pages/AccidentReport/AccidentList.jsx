@@ -16,6 +16,7 @@ import ContractAccidentModal from './ContractAccidentModal';
 import VehicleAccidentModal from './VehicleAccidentModal';
 import { useNavigate } from 'react-router-dom';
 import Card from '../../../admin/components/card/Card';
+import Pagination from './../../../components/Pagination';
 
 const columnHelper = createColumnHelper();
 
@@ -37,10 +38,12 @@ export default function AccidentList() {
   const [pageSize, setPageSize] = useState(10);
   const totalItems = accidents.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-  const navigate = useNavigate(); // Add this
+  const navigate = useNavigate();
+
   const handleView = (accident) => {
-    navigate(`/staff/issues/${accident.accidentId}`);
+    navigate(`/staff/issue/${accident.accidentId}`);
   };
+
   useEffect(() => {
     const storedStationId = localStorage.getItem('stationId');
     console.log('AccidentList - StationId from localStorage:', storedStationId);
@@ -70,11 +73,6 @@ export default function AccidentList() {
       date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     );
   };
-
-  const goToFirstPage = () => setCurrentPage(1);
-  const goToLastPage = () => setCurrentPage(totalPages);
-  const goToPreviousPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
-  const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
 
   const fetchAccidents = useCallback(async () => {
     if (!stationId) {
@@ -298,7 +296,7 @@ export default function AccidentList() {
   }, [accidents, currentPage, pageSize]);
 
   const table = useReactTable({
-    data: paginatedData, // Use paginatedData instead of accidents
+    data: paginatedData,
     columns,
     state: {
       sorting,
@@ -317,41 +315,10 @@ export default function AccidentList() {
     setIsVehicleModalOpen(true);
   };
 
-
   const handleModalSuccess = () => {
     fetchAccidents();
   };
-  const pageNumbers = useMemo(() => {
-    const maxVisiblePages = 5;
-    const pages = [];
 
-    if (totalPages <= maxVisiblePages) {
-      // Show all pages if total is 5 or less
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      // Smart pagination logic
-      let startPage, endPage;
-
-      if (currentPage <= 3) {
-        startPage = 1;
-        endPage = maxVisiblePages;
-      } else if (currentPage >= totalPages - 2) {
-        startPage = totalPages - maxVisiblePages + 1;
-        endPage = totalPages;
-      } else {
-        startPage = currentPage - 2;
-        endPage = currentPage + 2;
-      }
-
-      for (let i = startPage; i <= endPage; i++) {
-        pages.push(i);
-      }
-    }
-
-    return pages;
-  }, [currentPage, totalPages]);
 
   if (loading) {
     return (
@@ -487,96 +454,20 @@ export default function AccidentList() {
           </Box>
         </Card>
       </Flex>
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Flex
-          justify="space-between"
-          align="center"
-          w="100%"
-          px="24px"
-          py="16px"
-          borderTop="1px"
-          borderColor={borderColor}
-          flexDirection={{ base: 'column', md: 'row' }}
-          gap={4}
-        >
-          <Flex align="center">
-            <Text color={textColor} fontSize="sm" mr={2}>
-              Show:
-            </Text>
-            <Select
-              value={pageSize}
-              onChange={(e) => handlePageSizeChange(e.target.value)}
-              size="sm"
-              w="auto"
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-            </Select>
-            <Text color={textColor} fontSize="sm" ml={2}>
-              rows per page
-            </Text>
-          </Flex>
 
-          <Flex align="center" gap={2}>
-            <Text color={textColor} fontSize="sm">
-              Page {currentPage} of {totalPages}
-            </Text>
-            <HStack spacing={1}>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={goToFirstPage}
-                isDisabled={currentPage === 1}
-              >
-                <Icon as={MdChevronLeft} />
-                <Icon as={MdChevronLeft} />
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={goToPreviousPage}
-                isDisabled={currentPage === 1}
-              >
-                <Icon as={MdChevronLeft} />
-              </Button>
-
-              {pageNumbers.map((page) => (
-                <Button
-                  key={page}
-                  size="sm"
-                  variant={currentPage === page ? 'solid' : 'outline'}
-                  colorScheme={currentPage === page ? 'blue' : 'gray'}
-                  onClick={() => handlePageChange(page)}
-                >
-                  {page}
-                </Button>
-              ))}
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={goToNextPage}
-                isDisabled={currentPage === totalPages}
-              >
-                <Icon as={MdChevronRight} />
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={goToLastPage}
-                isDisabled={currentPage === totalPages}
-              >
-                <Icon as={MdChevronRight} />
-                <Icon as={MdChevronRight} />
-              </Button>
-            </HStack>
-          </Flex>
-        </Flex>
+      {totalItems > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          startIndex={(currentPage - 1) * pageSize}
+          endIndex={currentPage * pageSize}
+        />
       )}
-      {/* Create Modals */}
+
       <ContractAccidentModal
         isOpen={isContractModalOpen}
         onClose={handleModalClose}

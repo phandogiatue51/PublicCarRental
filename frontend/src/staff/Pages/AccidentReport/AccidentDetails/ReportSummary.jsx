@@ -3,9 +3,8 @@ import { Box, Text, Grid, Image } from '@chakra-ui/react';
 export default function ReportSummary({ accidentDetails, formatDate }) {
   return (
     <>
-      {/* Accident Image */}
       {accidentDetails.imageUrl && (
-        <Box border="1px" borderColor="gray.200" borderRadius="md">
+        <Box border="1px" borderColor="gray.200" borderRadius="md" mt={20}>
           <Image
             src={accidentDetails.imageUrl}
             alt="Accident damage"
@@ -19,8 +18,7 @@ export default function ReportSummary({ accidentDetails, formatDate }) {
         </Box>
       )}
 
-      {/* Report Summary */}
-      <Box p={4} bg="gray.50" borderRadius="md">
+      <Box p={4} border="1px" bg="white" borderColor="gray.200" borderRadius="xl">
         <Text fontWeight="bold" mb={2}>Report Summary</Text>
         <Grid templateColumns="repeat(2, 1fr)" gap={2}>
           <Text><strong>Report Type:</strong> {accidentDetails.contractId ? 'Contract Issue' : 'Vehicle Issue'}</Text>
