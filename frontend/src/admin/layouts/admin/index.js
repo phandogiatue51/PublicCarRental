@@ -10,11 +10,9 @@ import { SidebarContext } from '../../contexts/SidebarContext';
 import routes from '../../routes';
 import signalRService from '../../../services/signalRService';
 
-// Custom Chakra theme
 export default function Dashboard(props) {
   const { ...rest } = props;
   const location = useLocation();
-  // states and functions
   const [fixed] = useState(false);
   const toast = useToast(); 
   const [toggleSidebar, setToggleSidebar] = useState(false);
