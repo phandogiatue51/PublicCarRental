@@ -1,5 +1,5 @@
-import { 
-    Card, CardBody, Grid, Stat, StatLabel, StatNumber, StatHelpText, Progress 
+import {
+    Card, CardBody, Grid, Stat, StatLabel, StatNumber, StatHelpText, Progress
 } from '@chakra-ui/react';
 
 export default function PreviewStats({ data }) {
@@ -29,14 +29,37 @@ export default function PreviewStats({ data }) {
                     </Stat>
                     <Stat>
                         <StatLabel>Success Rate</StatLabel>
-                        <StatNumber color={data.canBeReplaced > 0 ? 'green.500' : 'red.500'}>
-                            {data.canBeReplaced > 0 ? 'Ready' : 'Needs Review'}
+                        <StatNumber
+                            color={
+                                data.totalContracts === 0
+                                    ? 'blue.500'
+                                    : data.cannotBeReplaced === 0
+                                        ? 'green.500'
+                                        : 'red.500'
+                            }
+                        >
+                            {data.totalContracts === 0
+                                ? 'Success'
+                                : data.cannotBeReplaced === 0
+                                    ? 'Ready'
+                                    : 'Needs Review'}
                         </StatNumber>
                     </Stat>
+
                 </Grid>
                 <Progress
-                    value={(data.canBeReplaced / data.totalContracts) * 100}
-                    colorScheme={data.canBeReplaced > 0 ? 'green' : 'red'}
+                    value={
+                        data.totalContracts === 0
+                            ? 100
+                            : (data.canBeReplaced / data.totalContracts) * 100
+                    }
+                    colorScheme={
+                        data.totalContracts === 0
+                            ? 'blue'
+                            : data.cannotBeReplaced === 0
+                                ? 'green'
+                                : 'red'
+                    }
                     mt={4}
                     size="lg"
                 />

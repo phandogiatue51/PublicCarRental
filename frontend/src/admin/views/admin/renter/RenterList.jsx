@@ -198,30 +198,13 @@ export default function RenterList() {
           </Flex>
         ),
       }),
-      columnHelper.accessor("email", {
-        header: "EMAIL",
-        cell: (info) => (
-          <Flex align="center" gap={2}>
-            <Icon as={MdEmail} />
-            <Text>{info.getValue()}</Text>
-          </Flex>
-        ),
-      }),
+     
       columnHelper.accessor("phoneNumber", {
         header: "PHONE",
         cell: (info) => (
           <Flex align="center" gap={2}>
             <Icon as={MdPhone} />
             <Text>{info.getValue()}</Text>
-          </Flex>
-        ),
-      }),
-      columnHelper.accessor("licenseNumber", {
-        header: "LICENSE",
-        cell: (info) => (
-          <Flex align="center" gap={2}>
-            <Icon as={MdDriveEta} />
-            <Text>{info.getValue() || "No License"}</Text>
           </Flex>
         ),
       }),

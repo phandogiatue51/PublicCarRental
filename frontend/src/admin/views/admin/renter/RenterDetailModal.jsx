@@ -37,26 +37,13 @@ export default function RenterDetailModal({ isOpen, onClose, renter = null }) {
         <ModalHeader>
           <HStack spacing={2}>
             <Icon as={MdPerson} color="blue.500" />
-            <Text>Renter Details</Text>
+            <Text>Renter Details #{renter.renterId}</Text>
           </HStack>
         </ModalHeader>
         <ModalCloseButton />
         
         <ModalBody>
           <VStack spacing={6} align="stretch">
-            <Box p={4} bg="blue.50" borderRadius="md" border="1px solid" borderColor="blue.200">
-              <HStack spacing={2} mb={2}>
-                <Icon as={MdInfo} color="blue.500" boxSize={6} />
-                <Text fontSize="xl" fontWeight="semibold" color="blue.700">
-                  Account Information
-                </Text>
-              </HStack>
-              <Text fontSize="lg" color="blue.600">
-                Renter ID: <strong>{renter.renterId}</strong> | 
-                Status: <strong>{getStatusText(renter.status)}</strong>
-              </Text>
-            </Box>
-
             <Box p={6} border="1px solid" borderColor="gray.200" borderRadius="lg" bg="gray.50">
               <VStack spacing={4} align="start">
                 {/* Header with Name and Status */}

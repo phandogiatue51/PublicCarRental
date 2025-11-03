@@ -50,6 +50,7 @@ namespace PublicCarRental.Application.Service.Rabbit
             _logger.LogWarning("🚨 AccidentReported event published to {QueueName} for accident {AccidentId}",
                 _rabbitMqSettings.QueueNames.AccidentQueue, accident.AccidentId);
         }
+
         public async Task PublishVehicleReadyAsync(AccidentReport accident)
         {
             var vehicleReadyEvent = new VehicleReadyEvent

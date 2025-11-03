@@ -203,6 +203,10 @@ namespace PublicCarRental.Application.Service.Acc
             account.PasswordHash = _passwordHelper.HashPassword(newPassword);
             _tokenRepository.InvalidatePasswordResetToken(account);
 
+            account.PasswordResetToken = null;
+            account.PasswordResetRequestedAt = null;
+            _accountRepo.Update(account);
+                
             return (true, "Password has been reset successfully.");
         }
 

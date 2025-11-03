@@ -1,8 +1,9 @@
 ﻿using PublicCarRental.Application.DTOs.BadScenario;
 using PublicCarRental.Application.DTOs.Cont;
+using PublicCarRental.Application.DTOs.Pay;
 using PublicCarRental.Application.DTOs.Refund;
-using PublicCarRental.Application.DTOs.Veh;
 using PublicCarRental.Application.Service;
+using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Veh;
 using PublicCarRental.Infrastructure.Data.Models;
@@ -14,14 +15,16 @@ public class ContractModificationService : IContractModificationService
     private readonly IVehicleService _vehicleService;
     private readonly IInvoiceService _invoiceService;
     private readonly IRefundService _refundService;
+    private readonly ILogger<ContractModificationService> _logger;
 
     public ContractModificationService(IContractRepository contractRepository, IVehicleService vehicleService,
-        IInvoiceService invoiceService, IRefundService refundService)
+        IInvoiceService invoiceService, IRefundService refundService, ILogger<ContractModificationService> logger)
     {
         _contractRepository = contractRepository;
         _vehicleService = vehicleService;
         _invoiceService = invoiceService;
         _refundService = refundService;
+        _logger = logger;
     }
 
     public async Task<ModificationResultDto> ChangeModelAsync(int contractId, RenterChangeRequest request)
@@ -190,60 +193,57 @@ public class ContractModificationService : IContractModificationService
         };
     }
 
-    public async Task<ModificationResultDto> HandleRenterCancellation(int contractId, RenterChangeRequest request)
+    public async Task<ModificationResultDto> HandleRenterCancellation(int contractId, BankAccountInfo bankInfo)
     {
         var contract = _contractRepository.GetById(contractId);
+        if (contract == null)
+            throw new Exception("Contract not found.");
+
         var totalPaid = contract.TotalCost;
+        var daysUntilStart = (contract.StartTime - DateTime.UtcNow).TotalDays;
+
+        var refundAmount = (decimal)totalPaid;
+
+        if (daysUntilStart < 2)
+            refundAmount = (decimal)(totalPaid * 0.8m);
+
+        var refundRequest = new CreateRefundRequestDto
         {
-            var daysUntilStart = (contract.StartTime - DateTime.UtcNow).TotalDays;
-            decimal refundAmount = 0;
+            ContractId = contract.ContractId,
+            Amount = refundAmount,
+            Reason = $"Contract cancellation",
+            Note = $"Cancelled {daysUntilStart:F0} days before start"
+        };
 
-            if (daysUntilStart > 5)
+        var refundResult = await _refundService.RequestRefundAsync(refundRequest);
+
+        if (refundResult.Success && refundResult.RefundId != null)
+        {
+            var processResult = await _refundService.ProcessRefundAsync(refundResult.RefundId, bankInfo);
+
+            if (!processResult.Success)
             {
-                refundAmount = (decimal)(totalPaid * 0.8m);
-            }
-
-            if (refundAmount > 0)
-            {
-                var refundRequest = new CreateRefundRequestDto
-                {
-                    ContractId = contract.ContractId,
-                    Amount = refundAmount,
-                    Reason = $"Contract cancellation: {request.Reason}",
-                    StaffId = request.StaffId,
-                    Note = $"Cancelled {daysUntilStart:F0} days before start"
-                };
-
-                var refundResult = await _refundService.RequestRefundAsync(refundRequest);
-
-                contract.Status = RentalStatus.Cancelled;
-                _contractRepository.Update(contract);
-
-                return new ModificationResultDto
-                {
-                    Success = refundResult.Success,
-                    Message = refundResult.Success ?
-                        $"Contract cancelled. {refundAmount:C} refund processed." :
-                        "Contract cancelled but refund failed.",
-                    PriceDifference = -refundAmount,
-                    RefundId = refundResult.RefundId,
-                    UpdatedContract = MapToContractDto(contract)
-                };
-            }
-            else
-            {
-                contract.Status = RentalStatus.Cancelled;
-                _contractRepository.Update(contract);
-
-                return new ModificationResultDto
-                {
-                    Success = true,
-                    Message = "Contract cancelled. No refund applicable.",
-                    PriceDifference = 0,
-                    UpdatedContract = MapToContractDto(contract)
-                };
+                _logger.LogInformation($"⚠️ Refund #{refundResult.RefundId} created but payout failed: {processResult.Message}");
             }
         }
+        else
+        {
+            _logger.LogInformation($"⚠️ Refund creation failed: {refundResult.Message}");
+        }
+
+        contract.Status = RentalStatus.Cancelled;
+        _contractRepository.Update(contract);
+
+        return new ModificationResultDto
+        {
+            Success = refundResult.Success,
+            Message = refundResult.Success
+                ? $"Contract cancelled. {refundAmount:C} refund initiated."
+                : "Contract cancelled but refund request failed.",
+            PriceDifference = -refundAmount,
+            RefundId = refundResult.RefundId,
+            UpdatedContract = MapToContractDto(contract)
+        };
     }
 }
 
@@ -252,5 +252,5 @@ public interface IContractModificationService
     Task<ModificationResultDto> ChangeModelAsync(int contractId, RenterChangeRequest request);
     Task<ModificationResultDto> ExtendTimeAsync(int contractId, RenterChangeRequest request);
     Task<ModificationResultDto> ChangeVehicleAsync(int contractId, RenterChangeRequest request);
-    Task<ModificationResultDto> HandleRenterCancellation(int contractId, RenterChangeRequest request);
+    Task<ModificationResultDto> HandleRenterCancellation(int contractId, BankAccountInfo bankInfo);
 }

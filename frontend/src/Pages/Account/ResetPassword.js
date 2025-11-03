@@ -1,10 +1,11 @@
-import React, { useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { accountAPI } from "../../services/api";
-import "./../../styles/ForgotPassword.css";
+import "./../../styles/ResetPassword.css";
 
 function ResetPassword() {
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
     const token = searchParams.get("token");
     
     const [newPassword, setNewPassword] = useState("");
@@ -39,6 +40,15 @@ function ResetPassword() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (message) {
+            const timer = setTimeout(() => {
+                navigate("/login");
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [message, navigate]);
 
     if (!token) {
         return (

@@ -123,7 +123,7 @@ namespace PublicCarRental.Application.Service.Rabbit
                                             var vehicleReady = JsonSerializer.Deserialize<VehicleReadyEvent>(messageJson);
                                             await ProcessVehicleReadyAsync(hubContext, vehicleReady);
                                             break;
-                                        case "AccidentAction": // ✅ NEW: Handle accident actions
+                                        case "AccidentAction": 
                                             var accidentAction = JsonSerializer.Deserialize<AccidentActionEvent>(messageJson);
                                             await ProcessAccidentActionAsync(hubContext, accidentAction);
                                             break;
@@ -264,7 +264,6 @@ namespace PublicCarRental.Application.Service.Rabbit
             _logger.LogInformation("📢 Vehicle ready notification sent to station {StationId}", vehicleEvent.StationId);
         }
 
-        // ✅ NEW: Process accident action notifications
         private async Task ProcessAccidentActionAsync(IHubContext<NotificationHub> hubContext, AccidentActionEvent actionEvent)
         {
             if (actionEvent == null)
@@ -311,18 +310,6 @@ namespace PublicCarRental.Application.Service.Rabbit
                 (AccidentStatus.UnderRepair, _) => "Vehicle under repair",
                 (AccidentStatus.Repaired, _) => "Vehicle repaired and ready",
                 _ => $"Accident status: {status}"
-            };
-        }
-
-        private string GetPriority(AccidentStatus status)
-        {
-            return status switch
-            {
-                AccidentStatus.RepairApproved => "HIGH",
-                AccidentStatus.UnderInvestigation => "MEDIUM",
-                AccidentStatus.UnderRepair => "LOW",
-                AccidentStatus.Repaired => "LOW",
-                _ => "MEDIUM"
             };
         }
     }

@@ -19,13 +19,13 @@ namespace PublicCarRental.Application.Service.Rabbit
         private readonly string _queueName;
         private readonly ILogger<AccidentConsumerService> _logger;
 
-        public AccidentConsumerService(IServiceProvider serviceProvider, IOptions<RabbitMQSettings> rabbitMQSettings, 
+        public AccidentConsumerService(IServiceProvider serviceProvider, IOptions<RabbitMQSettings> rabbitMQSettings,
             ILogger<AccidentConsumerService> logger)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
             _connectionString = rabbitMQSettings.Value.ConnectionString;
-            _queueName = rabbitMQSettings.Value.QueueNames.AccidentQueue; 
+            _queueName = rabbitMQSettings.Value.QueueNames.AccidentQueue;
 
             _logger.LogInformation("🚗 ACCIDENT CONSUMER CONSTRUCTOR CALLED");
             _logger.LogInformation("🚗 QueueName: {QueueName}", _queueName);
@@ -135,8 +135,9 @@ namespace PublicCarRental.Application.Service.Rabbit
                 throw;
             }
         }
+
         private async Task ProcessAccidentNotificationAsync(IHubContext<NotificationHub> hubContext, IContractAccidentHandler contractAccidentHandler,
-        AccidentReportedEvent accidentEvent)
+    AccidentReportedEvent accidentEvent)
         {
             if (accidentEvent == null)
             {
@@ -144,50 +145,6 @@ namespace PublicCarRental.Application.Service.Rabbit
                 return;
             }
 
-            var affectedContracts = await contractAccidentHandler.GetAffectedContractsAsync(accidentEvent.VehicleId);
-
-            if (affectedContracts.Any())
-            {
-                await SendApprovalRequestAsync(hubContext, accidentEvent, affectedContracts);
-            }
-            else
-            {
-                accidentEvent.ActionStatus = AccidentActionStatus.AutoProcessed;
-                await SendStandardNotificationAsync(hubContext, accidentEvent);
-            }
-        }
-
-        private async Task SendApprovalRequestAsync(IHubContext<NotificationHub> hubContext, AccidentReportedEvent accidentEvent, List<RentalContract> affectedContracts)
-        {
-            var approvalRequest = new
-            {
-                Type = "AccidentApprovalRequired",
-                AccidentId = accidentEvent.AccidentId,
-                VehicleId = accidentEvent.VehicleId,
-                VehicleLicensePlate = accidentEvent.VehicleLicensePlate ?? "Unknown Vehicle",
-                Location = accidentEvent.Location ?? "Unknown Location",
-                ReportedAt = accidentEvent.ReportedAt,
-                AffectedContracts = affectedContracts.Select(c => new {
-                    ContractId = c.ContractId,
-                    RenterId = c.EVRenterId,
-                    StartTime = c.StartTime,
-                    EndTime = c.EndTime,
-                    Status = c.Status.ToString()
-                }),
-                Message = $"🚨 Accident affects {affectedContracts.Count} future contracts. Approval required for vehicle replacement.",
-                Priority = "HIGH",
-                RequiresApproval = true,
-                Timestamp = DateTime.UtcNow
-            };
-
-            await hubContext.Clients.Group("admin").SendAsync("ReceiveAccidentApprovalRequest", approvalRequest);
-
-            _logger.LogWarning("🚨 Approval request sent to admins for Accident {AccidentId} affecting {ContractCount} contracts",
-                accidentEvent.AccidentId, affectedContracts.Count);
-        }
-
-        private async Task SendStandardNotificationAsync(IHubContext<NotificationHub> hubContext, AccidentReportedEvent accidentEvent)
-        {
             await hubContext.Clients.Group("admin").SendAsync("ReceiveAccidentNotification", new
             {
                 Type = "AccidentReported",
@@ -196,10 +153,12 @@ namespace PublicCarRental.Application.Service.Rabbit
                 VehicleLicensePlate = accidentEvent.VehicleLicensePlate ?? "Unknown Vehicle",
                 Location = accidentEvent.Location ?? "Unknown Location",
                 ReportedAt = accidentEvent.ReportedAt,
-                Message = $"🚨 Accident at {accidentEvent.Location} - No future contracts affected",
+                Message = $"🚨 Issue reported at {accidentEvent.Location ?? "unknown location"} ({accidentEvent.VehicleLicensePlate ?? "N/A"}) requires your attention!",
                 Priority = "MEDIUM",
-                RequiresImmediateAction = false
+                RequiresImmediateAction = true
             });
+
+            _logger.LogInformation("✅ Accident notification sent for AccidentId={AccidentId}", accidentEvent.AccidentId);
         }
     }
 }

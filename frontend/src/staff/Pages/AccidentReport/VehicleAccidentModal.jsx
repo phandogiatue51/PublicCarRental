@@ -65,7 +65,13 @@ const VehicleAccidentModal = ({
     try {
       const response = await vehicleAPI.filter({ stationId });
       console.log('Fetched vehicles for station:', stationId, response);
-      setVehicles(response || []);
+
+      const allowedStatuses = [0, 3, 5];
+      const filteredVehicles = (response || []).filter(v =>
+        allowedStatuses.includes(v.status)
+      );
+
+      setVehicles(filteredVehicles);
     } catch (err) {
       console.error('Error fetching vehicles:', err);
       setError('Failed to load vehicles');
@@ -247,7 +253,7 @@ const VehicleAccidentModal = ({
                     </option>
                   ))}
                 </Select>
-          
+
                 {vehicles.length === 0 && !fetchingVehicles && !vehicle && (
                   <Text fontSize="sm" color="gray.500" mt={1}>
                     No vehicles found at this station

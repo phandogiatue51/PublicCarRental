@@ -176,6 +176,8 @@ export default function InvoiceList() {
         return "Overdue";
       case 3:
         return "Cancelled";
+      case 4:
+        return "Refunded";
       default:
         return "Unknown";
     }
@@ -212,21 +214,13 @@ const columns = useMemo(
         </Text>
       ),
     }),
-    columnHelper.accessor("orderCode", {
-      header: () => (
-        <Text color="gray.400" fontSize="12px">
-          ORDER CODE
-        </Text>
-      ),
-      cell: (info) => <Text color={textColor}>{info.getValue()}</Text>,
-    }),
+    
     columnHelper.accessor("contractId", {
       header: () => (
         <Text color="gray.400" fontSize="12px">
           CONTRACT
         </Text>
       ),
-      // Add a cell function for this column
       cell: (info) => <Text color={textColor}>{info.getValue()}</Text>,
     }),
     columnHelper.accessor('amountPaid', {
@@ -238,7 +232,7 @@ const columns = useMemo(
           fontSize={{ sm: '10px', lg: '12px' }}
           color="gray.400"
         >
-          AMOUNT PAID
+          AMOUNT
         </Text>
       ),
       cell: (info) => (

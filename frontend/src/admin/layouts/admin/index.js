@@ -127,17 +127,6 @@ export default function Dashboard(props) {
           position: "top-right"
         });
       }
-      
-      if (notification?.type === 'NewBooking') {
-        toast({
-          title: "📋 New Booking",
-          description: notification.message || `New booking received (ID: ${notification.bookingId || 'N/A'})`,
-          status: "info",
-          duration: 10000,
-          isClosable: true,
-          position: "top-right"
-        });
-      }
     };
     
     signalRService.registerNotificationHandler(handler);

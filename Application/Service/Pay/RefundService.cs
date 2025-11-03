@@ -60,9 +60,9 @@ namespace PublicCarRental.Application.Service
                 {
                     ContractId = request.ContractId,
                     IssuedAt = DateTime.UtcNow,
-                    AmountDue = -request.Amount, 
+                    Status = InvoiceStatus.Refunded,
+                    AmountDue = -request.Amount,
                     AmountPaid = -request.Amount,
-                    Status = InvoiceStatus.Refunded, 
                     Note = $"Refund request: {request.Reason}",
                     BookingToken = $"REFUND_{originalInvoice.InvoiceId}_{DateTime.UtcNow:yyyyMMddHHmmss}"
                 };
@@ -75,7 +75,7 @@ namespace PublicCarRental.Application.Service
                     InvoiceId = invoice.InvoiceId,
                     Amount = request.Amount,
                     Reason = request.Reason,
-                    Status = RefundStatus.Pending,
+                    Status = RefundStatus.Approved,
                     StaffId = request.StaffId,
                     RequestedDate = DateTime.UtcNow,
                     Note = request.Note
@@ -136,9 +136,6 @@ namespace PublicCarRental.Application.Service
                 var refund = _refundRepository.GetById(refundId);
                 if (refund == null)
                     return new RefundResultDto { Success = false, Message = "Refund not found" };
-
-                if (refund.Status != RefundStatus.Approved)
-                    return new RefundResultDto { Success = false, Message = "Refund must be approved before processing" };
 
                 refund.Status = RefundStatus.Processing;
                 _refundRepository.Update(refund);
@@ -290,7 +287,7 @@ namespace PublicCarRental.Application.Service
             return invoice != null &&
                    invoice.Status == InvoiceStatus.Paid &&
                    invoice.AmountPaid > 0 &&
-                   invoice.RefundAmount == null; 
+                   invoice.RefundAmount == null;
         }
 
         public async Task<decimal> CalculateMaxRefundAmountAsync(int invoiceId)
