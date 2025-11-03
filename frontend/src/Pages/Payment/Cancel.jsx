@@ -8,7 +8,7 @@ function Cancel() {
     useEffect(() => {
         const orderCode = searchParams.get('orderCode');
         if (orderCode) {
-            invoiceAPI.deleteByOrderCode(orderCode)
+            invoiceAPI.cancelInvoice(orderCode)
                 .then(() => console.log('Invoice deleted'))
                 .catch(err => console.error('Failed to delete invoice:', err));
         }
