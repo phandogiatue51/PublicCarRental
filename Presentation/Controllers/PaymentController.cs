@@ -206,9 +206,11 @@ namespace PublicCarRental.Presentation.Controllers
 
         [AllowAnonymous]
         [HttpGet("cancel")]
-        public IActionResult PaymentCancel()
+        public IActionResult PaymentCancel([FromQuery] string orderCode)
         {
-            var frontendUrl = "https://car777.shop/payment/cancel";
+            var frontendUrl = $"https://car777.shop/payment/cancel?orderCode={orderCode}";
+
+            _logger.LogInformation($"🔄 Redirecting to cancel URL: {frontendUrl}");
             return Redirect(frontendUrl);
         }
     }
