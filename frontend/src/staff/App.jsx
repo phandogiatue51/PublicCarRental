@@ -10,6 +10,7 @@ import ContractList from './Pages/Contract/ContractList';
 import InvoiceList from './Pages/InvoiceList';
 import ModelList from './Pages/ModelList';
 import AccidentList from './Pages/AccidentReport/AccidentList';
+import AccidentDetailsPage from './Pages/AccidentReport/AccidentDetailPage';
 
 export default function StaffApp() {
     return (
@@ -23,7 +24,8 @@ export default function StaffApp() {
                     <Route path="contracts" element={<ContractList />} />
                     <Route path="invoices" element={<InvoiceList />} />
                     <Route path="models" element={<ModelList />} />
-                    <Route path="issues" element={<AccidentList/>} />
+                    <Route path="issues" element={<AccidentList />} />
+                    <Route path="/issues/:accidentId" element={<AccidentDetailsPage />} />
                 </Route>
             </Routes>
         </ChakraProvider>

@@ -4,7 +4,7 @@ import { Box, Button, VStack, Text, Alert, AlertIcon, useToast } from "@chakra-u
 import Footer from "../components/Footer";
 import MaybeYouWillLike from "../components/MaybeYouWillLike";
 import BookingForm from "../hooks/BookingForm"; 
-import { modelAPI, renterAPI, ratingsAPI } from "../services/api";
+import { modelAPI, renterAPI } from "../services/api";
 import '../styles/ModelDetail.css';
 import { useAuth } from "../hooks/useAuth"; 
 import ModelRatings from "../components/ModelRatings"; // We'll create this
@@ -77,7 +77,7 @@ function ModelDetail() {
             
             try {
                 const favorites = await renterAPI.getFavorites(evRenterId);
-                const isFav = Array.isArray(favorites) && favorites.some(fav => fav.modelId == id);
+                const isFav = Array.isArray(favorites) && favorites.some(fav => fav.modelId === id);
                 setIsFavorite(isFav);
             } catch (err) {
                 console.error('Error checking favorites:', err);
@@ -241,16 +241,16 @@ function ModelDetail() {
                     </div>
                     <Box display="flex" justifyContent="center" mt={4}>
                                     <Button
-                                        width="250px"
+                                        width="300px"
                                         size="xl"
-                                        colorScheme={isFavorite ? "red" : "blue"}
+                                        colorScheme={isFavorite ? "blue" : "red"}
                                         onClick={handleFavoriteToggle}
                                         isLoading={favoriteLoading}
                                         fontSize="2rem"
                                         py={5}
                                         borderRadius="full"
                                     >
-                                        {isFavorite ? "❤️ Remove from Favorites" : "🤍 Add to Favorites"}
+                                        {isFavorite ? "Remove from Favorites" : "Add to Favorites"}
                                     </Button>
                                 </Box>
                 </div>

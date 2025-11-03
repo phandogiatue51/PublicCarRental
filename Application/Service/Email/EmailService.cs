@@ -122,7 +122,7 @@ namespace PublicCarRental.Application.Service.Email
 
         public async Task SendVerificationEmail(string toEmail, string token)
         {
-            var verificationLink = $"https://car777.shop/api/Account/verify-email?token={token}"; // ✅ Your domain!
+            var verificationLink = $"https://car777.shop/api/Account/verify-email?token={token}"; 
 
             var htmlContent = $@"
                 <div style='font-family: Times New Roman, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>
@@ -142,7 +142,7 @@ namespace PublicCarRental.Application.Service.Email
 
         public async Task SendPasswordResetEmail(string toEmail, string token)
         {
-            var resetLink = $"https://publiccarrental-production-b7c5.up.railway.app/api/Account/reset-password?token={token}"; // ✅ Your domain!
+            var resetLink = $"https://car777.shop/api/Account/reset-password?token={token}";
 
             var htmlContent = $@"
                 <div style='font-family: Times New Roman, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>

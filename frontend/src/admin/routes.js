@@ -2,7 +2,7 @@ import React from 'react';
 
 import { Icon } from '@chakra-ui/react';
 import {
-  MdBarChart,  MdPerson,  MdHome,  MdExitToApp,
+  MdBarChart, MdPerson, MdHome, MdExitToApp,
 } from 'react-icons/md';
 
 import MainDashboard from './../admin/views/admin/default';
@@ -16,6 +16,7 @@ import StaffList from './../admin/views/admin/staff/StaffList';
 import StationList from './../admin/views/admin/station/StationList';
 import AccidentList from './../admin/views/admin/accident/AccidentList';
 import RatingList from './../admin/views/admin/RatingList';
+import AccidentDetailsPage from './../staff/Pages/AccidentReport/AccidentDetailPage';
 
 import Home from 'Pages/Home';
 
@@ -29,11 +30,11 @@ const routes = [
     component: <MainDashboard />,
   },
   {
-  name: 'Renter',
-  layout: '/admin',
-  path: '/renter',
-  icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
-  component: <RenterList />,
+    name: 'Renter',
+    layout: '/admin',
+    path: '/renter',
+    icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
+    component: <RenterList />,
   },
   {
     name: 'Contract',
@@ -70,7 +71,7 @@ const routes = [
     icon: <Icon as={MdBarChart} width="20px" height="20px" color="inherit" />,
     component: <VehicleList />,
   },
-   {
+  {
     name: 'Issues',
     layout: '/admin',
     path: '/issue',
@@ -105,6 +106,11 @@ const routes = [
     icon: <Icon as={MdExitToApp} width="20px" height="20px" color="inherit" />,
     component: <Home />,
   },
+  {
+    path: "/issues/:accidentId",
+    layout: "/admin",
+    component: <AccidentDetailsPage />,
+  }
 ];
 
 

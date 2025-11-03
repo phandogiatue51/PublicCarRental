@@ -10,7 +10,7 @@ import {
 import { useState, useEffect } from 'react';
 import { accidentAPI } from '../../../../services/api';
 import { MdDelete } from 'react-icons/md';
-import AccidentViewModal from '../../../../staff/Pages/AccidentReport/AccidentViewModal';
+import { useNavigate } from 'react-router-dom';
 
 import Card from './../../../components/card/Card';
 
@@ -21,12 +21,10 @@ export default function AccidentList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sorting, setSorting] = useState([]);
-  const [selectedAccident, setSelectedAccident] = useState(null);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const brandColor = useColorModeValue('brand.500', 'white');
-
+  const navigate = useNavigate();
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -35,6 +33,10 @@ export default function AccidentList() {
       " " +
       date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     );
+  };
+
+ const handleView = (accident) => {
+    navigate(`/admin/issues/${accident.accidentId}`);
   };
 
   const fetchAccidents = async () => {
@@ -236,20 +238,6 @@ export default function AccidentList() {
     debugTable: true,
   });
 
-  const handleView = (accident) => {
-    setSelectedAccident(accident);
-    setIsViewModalOpen(true); // Change this from setIsModalOpen
-  };
-
-  const handleModalClose = () => {
-    setIsViewModalOpen(false);
-    setSelectedAccident(null);
-  };
-
-  const handleModalSuccess = () => {
-    fetchAccidents(); // Refresh the list after status update
-  };
-
   const handleDelete = async (accidentId) => {
     if (window.confirm('Are you sure you want to delete this issue report?')) {
       try {
@@ -401,13 +389,6 @@ export default function AccidentList() {
           </Box>
         </Card>
       </Flex>
-
-      <AccidentViewModal
-        isOpen={isViewModalOpen}
-        onClose={handleModalClose}
-        onSuccess={handleModalSuccess}
-        accident={selectedAccident}
-      />
     </Box>
   );
 }

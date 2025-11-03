@@ -9,13 +9,12 @@ import {
   createColumnHelper, flexRender, getCoreRowModel,
   getSortedRowModel, useReactTable
 } from '@tanstack/react-table';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { accidentAPI } from '../../../services/api';
 import { MdAdd, MdVisibility, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import ContractAccidentModal from './ContractAccidentModal';
 import VehicleAccidentModal from './VehicleAccidentModal';
-import AccidentViewModal from './AccidentViewModal';
-
+import { useNavigate } from 'react-router-dom';
 import Card from '../../../admin/components/card/Card';
 
 const columnHelper = createColumnHelper();
@@ -27,8 +26,6 @@ export default function AccidentList() {
   const [sorting, setSorting] = useState([]);
   const [isContractModalOpen, setIsContractModalOpen] = useState(false);
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [selectedAccident, setSelectedAccident] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [stationId, setStationId] = useState(null);
   const { isOpen: isImageModalOpen, onOpen: onImageModalOpen, onClose: onImageModalClose } = useDisclosure();
@@ -40,7 +37,10 @@ export default function AccidentList() {
   const [pageSize, setPageSize] = useState(10);
   const totalItems = accidents.length;
   const totalPages = Math.ceil(totalItems / pageSize);
-
+  const navigate = useNavigate(); // Add this
+  const handleView = (accident) => {
+    navigate(`/staff/issues/${accident.accidentId}`);
+  };
   useEffect(() => {
     const storedStationId = localStorage.getItem('stationId');
     console.log('AccidentList - StationId from localStorage:', storedStationId);
@@ -61,7 +61,7 @@ export default function AccidentList() {
     setCurrentPage(1);
   };
 
-const formatDate = (dateString) => {
+  const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
     return (
@@ -76,7 +76,7 @@ const formatDate = (dateString) => {
   const goToPreviousPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
 
-  const fetchAccidents = async () => {
+  const fetchAccidents = useCallback(async () => {
     if (!stationId) {
       console.log('No stationId available, skipping fetch');
       return;
@@ -116,15 +116,14 @@ const formatDate = (dateString) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [stationId]);
 
-  // Fetch accidents when stationId is available
   useEffect(() => {
     if (stationId) {
       console.log('AccidentList - stationId is now available:', stationId);
       fetchAccidents();
     }
-  }, [stationId]);
+  }, [stationId, fetchAccidents]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -202,18 +201,18 @@ const formatDate = (dateString) => {
       ),
     }),
     columnHelper.accessor('reportedAt', {
-          id: 'reportedAt',
-          header: () => (
-            <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
-              REPORTED AT
-            </Text>
-          ),
-          cell: (info) => (
-            <Text color={textColor} fontSize="sm">
-              {formatDate(info.getValue())}
-            </Text>
-          ),
-        }),
+      id: 'reportedAt',
+      header: () => (
+        <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
+          REPORTED AT
+        </Text>
+      ),
+      cell: (info) => (
+        <Text color={textColor} fontSize="sm">
+          {formatDate(info.getValue())}
+        </Text>
+      ),
+    }),
     columnHelper.accessor('status', {
       id: 'status',
       header: () => (
@@ -287,6 +286,11 @@ const formatDate = (dateString) => {
     }),
   ];
 
+  const handleModalClose = () => {
+    setIsContractModalOpen(false);
+    setIsVehicleModalOpen(false);
+  };
+
   const paginatedData = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
@@ -305,27 +309,14 @@ const formatDate = (dateString) => {
     debugTable: true,
   });
 
-  const handleView = (accident) => {
-    setSelectedAccident(accident);
-    setIsViewModalOpen(true);
-  };
-
   const handleAddContract = () => {
-    setSelectedAccident(null);
     setIsContractModalOpen(true);
   };
 
   const handleAddVehicle = () => {
-    setSelectedAccident(null);
     setIsVehicleModalOpen(true);
   };
 
-  const handleModalClose = () => {
-    setIsContractModalOpen(false);
-    setIsVehicleModalOpen(false);
-    setIsViewModalOpen(false);
-    setSelectedAccident(null);
-  };
 
   const handleModalSuccess = () => {
     fetchAccidents();
@@ -596,13 +587,6 @@ const formatDate = (dateString) => {
         isOpen={isVehicleModalOpen}
         onClose={handleModalClose}
         onSuccess={handleModalSuccess}
-      />
-
-      {/* View Modal */}
-      <AccidentViewModal
-        isOpen={isViewModalOpen}
-        onClose={handleModalClose}
-        accident={selectedAccident}
       />
 
       <Modal isOpen={isImageModalOpen} onClose={onImageModalClose} size="xl" isCentered>

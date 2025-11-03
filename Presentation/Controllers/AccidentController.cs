@@ -134,8 +134,25 @@ namespace PublicCarRental.Presentation.Controllers
         [HttpGet("{accidentId}/replacement-preview")]
         public async Task<ActionResult<ReplacementPreviewDto>> GetReplacementPreview(int accidentId)
         {
-            var result = await _accidentHandler.GetReplacementPreviewAsync(accidentId);
-            return Ok(result);
+            try
+            {
+                var result = await _accidentHandler.GetReplacementPreviewAsync(accidentId);
+
+                if (!result.Success)
+                    return BadRequest(result);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting replacement preview for accident {AccidentId}", accidentId);
+
+                return StatusCode(500, new ReplacementPreviewDto
+                {
+                    Success = false,
+                    Message = "An internal error occurred"
+                });
+            }
         }
 
         [HttpPost("{accidentId}/execute-replacement")]

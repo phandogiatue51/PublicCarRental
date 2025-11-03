@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
     Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, 
     ModalBody, ModalCloseButton, Button, VStack, Box, 
@@ -23,6 +23,7 @@ export default function VehicleReplacementPreview({ isOpen, onClose, accidentId,
         setError('');
 
         try {
+            // Your API call to the backend controller
             const data = await accidentAPI.getReplacementPreview(accidentId);
             setPreviewData(data);
         } catch (err) {
@@ -40,17 +41,19 @@ export default function VehicleReplacementPreview({ isOpen, onClose, accidentId,
         }
     };
 
+    useEffect(() => {
+        if (isOpen && accidentId) {
+            setPreviewData(null); 
+            setError('');
+            fetchPreview();
+        }
+    }, [isOpen, accidentId]); 
+
     const handleExecute = async (result) => {
         if (onExecuteReplacement) {
             onExecuteReplacement(result);
         }
         onClose();
-    };
-
-    const handleOpen = () => {
-        if (isOpen && accidentId) {
-            fetchPreview();
-        }
     };
 
     const handleClose = () => {
@@ -61,7 +64,8 @@ export default function VehicleReplacementPreview({ isOpen, onClose, accidentId,
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={handleClose} size="6xl" onOpen={handleOpen}>
+        // Removed the incorrect 'onOpen={handleOpen}' prop
+        <Modal isOpen={isOpen} onClose={handleClose} size="6xl"> 
             <ModalOverlay />
             <ModalContent>
                 <ModalHeader>Vehicle Replacement Preview</ModalHeader>
@@ -86,7 +90,7 @@ export default function VehicleReplacementPreview({ isOpen, onClose, accidentId,
                         <VStack spacing={6} align="stretch">
                             <PreviewStats data={previewData} />
                             <ContractTable data={previewData} />
-                            <ActionAlerts data={previewData} />
+                            <ActionAlerts data={previewData} /> 
                         </VStack>
                     )}
                 </ModalBody>
