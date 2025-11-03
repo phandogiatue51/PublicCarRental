@@ -120,29 +120,9 @@ namespace PublicCarRental.Application.Service.Email
             }
         }
 
-        public async Task SendVerificationEmail(string toEmail, string token)
-        {
-            var verificationLink = $"https://car777.shop/api/Account/verify-email?token={token}"; 
-
-            var htmlContent = $@"
-                <div style='font-family: Times New Roman, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>
-                    <h2 style='color: #007bff;'>Welcome to Car777!</h2>
-                    <p>Hi {toEmail},</p>
-                    <p>Thanks for registering. Please verify your email by clicking the button below:</p>
-                    <a href='{verificationLink}' 
-                       style='display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;'>
-                       Verify Email
-                    </a>
-                    <p style='margin-top: 20px;'>If you didn't request this, you can safely ignore it.</p>
-                    <p>— Car777 Team</p>
-                </div>";
-
-            await SendEmailAsync(toEmail, "Verify your email", htmlContent);
-        }
-
         public async Task SendPasswordResetEmail(string toEmail, string token)
         {
-            var resetLink = $"https://car777.shop/api/Account/reset-password?token={token}";
+            var resetLink = $"https://car777.shop/reset-password?token={token}";
 
             var htmlContent = $@"
                 <div style='font-family: Times New Roman, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;'>
@@ -269,7 +249,6 @@ namespace PublicCarRental.Application.Service.Email
 
     public interface IEmailService
     {
-        Task SendVerificationEmail(string toEmail, string token);
         Task SendPasswordResetEmail(string toEmail, string token);
         Task SendEmail(string toEmail, string subject, string body);
         Task SendReceiptPdfAsync(string toEmail, string userName, byte[] pdfBytes, int invoiceId);

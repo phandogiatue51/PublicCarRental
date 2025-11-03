@@ -164,18 +164,6 @@ namespace PublicCarRental.Presentation.Controllers
             return Ok(new { message = "Logged out successfully" });
         }
 
-
-        [HttpGet("verify-email")]
-        public IActionResult VerifyEmail([FromQuery] string token)
-        {
-            var success = _accountService.VerifyEmail(token);
-
-            if (success)
-                return Ok(new { message = "Email verified successfully." });
-            else
-                return BadRequest(new { error = "Invalid or expired token." });
-        }
-
         [HttpPost("forgot-password")]
         public async Task<IActionResult> ForgotPasswordAsync([FromForm] string email)
         {

@@ -56,12 +56,7 @@ namespace PublicCarRental.Application.Service.Email
                         using var scope = _serviceProvider.CreateScope();
                         var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
 
-                        if (message.MessageType == "Verification")
-                        {
-                            await emailService.SendVerificationEmail(message.ToEmail, message.Token);
-                            _logger.LogInformation("Verification email sent to {Email}", message.ToEmail);
-                        }
-                        else if (message.MessageType == "PasswordReset")
+                        if (message.MessageType == "PasswordReset")
                         {
                             await emailService.SendPasswordResetEmail(message.ToEmail, message.Token);
                             _logger.LogInformation("Password reset email sent to {Email}", message.ToEmail);
