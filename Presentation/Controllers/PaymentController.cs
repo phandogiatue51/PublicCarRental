@@ -200,7 +200,7 @@ namespace PublicCarRental.Presentation.Controllers
         [HttpGet("success")]
         public IActionResult PaymentSuccess([FromQuery] string orderCode)
         {
-            var frontendUrl = $"https://sweet-essence-production.up.railway.app/payment/success?orderCode={orderCode}";
+            var frontendUrl = $"https://car777.shop/payment/success?orderCode={orderCode}";
             return Redirect(frontendUrl);
         }
 
@@ -208,7 +208,7 @@ namespace PublicCarRental.Presentation.Controllers
         [HttpGet("cancel")]
         public IActionResult PaymentCancel()
         {
-            var frontendUrl = "https://sweet-essence-production.up.railway.app/payment/cancel";
+            var frontendUrl = "https://car777.shop/payment/cancel";
             return Redirect(frontendUrl);
         }
     }

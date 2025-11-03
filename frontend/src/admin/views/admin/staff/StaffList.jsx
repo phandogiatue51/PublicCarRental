@@ -33,10 +33,7 @@ import { staffAPI, stationAPI, documentAPI } from "../../../../services/api";
 import {
   MdEdit,
   MdAdd,
-  MdChevronLeft,
-  MdChevronRight,
   MdPerson,
-  MdEmail,
   MdPhone,
   MdLocationOn,
   MdToggleOn,

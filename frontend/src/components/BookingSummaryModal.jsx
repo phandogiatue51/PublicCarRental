@@ -10,7 +10,6 @@ import {
     VStack,
     Text,
     Box,
-    Divider,
     Badge,
     HStack
 } from '@chakra-ui/react';

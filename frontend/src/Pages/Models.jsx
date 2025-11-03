@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import { useToast, Button } from "@chakra-ui/react";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@chakra-ui/react";
 import HeroPages from "../components/HeroPages";
 import Footer from "../components/Footer";
 import { brandAPI, typeAPI, modelAPI } from "../services/api";

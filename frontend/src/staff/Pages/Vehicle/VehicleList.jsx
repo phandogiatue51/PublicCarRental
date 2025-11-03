@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-    Box, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, Spinner, Alert,
-    AlertIcon, AlertTitle, AlertDescription, Badge, useToast, Progress, HStack
+    Box, Button, Flex, Table, Tbody, Td, Text, Th, Thead, Tr, Spinner, Alert,
+    AlertIcon, AlertTitle, AlertDescription, Badge, useToast, Progress
 } from '@chakra-ui/react';
 import {
     createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable
 } from '@tanstack/react-table';
-import { MdRefresh } from 'react-icons/md';
 import { vehicleAPI, modelAPI, brandAPI, typeAPI, stationAPI } from '../../../services/api';
 
 // Import components
@@ -85,28 +84,7 @@ const VehicleList = () => {
         }
     };
 
-    const handleShowAllVehicles = useCallback(() => {
-        setShowAvailableOnly(false);
-        fetchVehicles();
-    }, []);
-
-    useEffect(() => {
-        if (filter.brandId) {
-            // If brand is selected, filter models by that brand
-            const filtered = models.filter(model => model.brandId === parseInt(filter.brandId));
-
-            // Clear model selection if the current model doesn't belong to selected brand
-            if (filter.modelId && !filtered.some(model => model.modelId === parseInt(filter.modelId))) {
-                setFilter(prev => ({ ...prev, modelId: '' }));
-            }
-        }
-        // If no brand is selected, we'll show all models in the FilterBar
-    }, [filter.brandId, models, filter.modelId]);
-
-
-
-    // Fetch data
-    const fetchVehicles = async () => {
+    const fetchVehicles = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
@@ -120,14 +98,12 @@ const VehicleList = () => {
 
             let response = await vehicleAPI.filter(query);
 
-            // If filter returns empty array, that means NO vehicles match the filter
-            // Don't fall back to getAll() - show the empty result
             if (!Array.isArray(response)) {
-                response = []; // Ensure it's always an array
+                response = [];
             }
 
             console.log('Vehicles response:', response);
-            const list = response; // Use the filtered result directly
+            const list = response;
             setVehicles(list);
             setTotalItems(list.length);
         } catch (err) {
@@ -136,7 +112,25 @@ const VehicleList = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [filter.modelId, filter.typeId, filter.brandId, filter.status, filter.stationId, presetStationId]);
+
+    const handleShowAllVehicles = useCallback(() => {
+        setShowAvailableOnly(false);
+        fetchVehicles();
+    }, [fetchVehicles]);
+
+    useEffect(() => {
+        if (filter.brandId) {
+            // If brand is selected, filter models by that brand
+            const filtered = models.filter(model => model.brandId === parseInt(filter.brandId));
+
+            // Clear model selection if the current model doesn't belong to selected brand
+            if (filter.modelId && !filtered.some(model => model.modelId === parseInt(filter.modelId))) {
+                setFilter(prev => ({ ...prev, modelId: '' }));
+            }
+        }
+        // If no brand is selected, we'll show all models in the FilterBar
+    }, [filter.brandId, models, filter.modelId]);
 
     // Load initial data
     useEffect(() => {
@@ -161,14 +155,12 @@ const VehicleList = () => {
             await fetchVehicles();
         };
         loadData();
-    }, []);
+    }, [fetchVehicles]);
 
-    // Re-fetch when filters change
     useEffect(() => {
         fetchVehicles();
-    }, [filter.modelId, filter.typeId, filter.brandId, filter.status, filter.stationId]);
+    }, [filter.modelId, filter.typeId, filter.brandId, filter.status, filter.stationId, fetchVehicles]);
 
-    // Action handlers
     const handleUpdate = useCallback((vehicle) => {
         setSelectedVehicle(vehicle);
         setIsUpdateModalOpen(true);
@@ -193,17 +185,16 @@ const VehicleList = () => {
         } catch (error) {
             toast({ title: 'Error', description: error.message || 'Failed to activate', status: 'error', duration: 5000 });
         }
-    }, [toast]);
+    }, [toast, fetchVehicles]);
 
     const handleFinishCharging = useCallback(async () => {
         await fetchVehicles();
-    }, []);
+    }, [fetchVehicles]);
 
     const handleModalSuccess = useCallback(async () => {
         await fetchVehicles();
-    }, []);
+    }, [fetchVehicles]);
 
-    // Table configuration
     const columns = useMemo(() => [
         columnHelper.accessor('vehicleId', {
             header: 'ID',

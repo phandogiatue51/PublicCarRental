@@ -17,7 +17,6 @@ import {
 } from "@chakra-ui/react";
 import { adminDashboardAPI } from "../../../../../services/api";
 import Card from "../../../../components/card/Card";
-import { MdAttachMoney } from "react-icons/md";
 
 // Helper function to format VND currency
 const formatVND = (amount) => {

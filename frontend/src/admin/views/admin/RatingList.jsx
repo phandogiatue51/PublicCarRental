@@ -55,9 +55,9 @@ export default function RatingList() {
         rating.renterName?.toLowerCase().includes(filters.search.toLowerCase()) ||
         rating.comment?.toLowerCase().includes(filters.search.toLowerCase());
 
-      const matchesStar = !filters.starRating || rating.stars == filters.starRating;
-      const matchesModel = !filters.modelId || rating.modelId == filters.modelId;
-      const matchesRenter = !filters.renterId || rating.renterId == filters.renterId;
+      const matchesStar = !filters.starRating || rating.stars === filters.starRating;
+      const matchesModel = !filters.modelId || rating.modelId === filters.modelId;
+      const matchesRenter = !filters.renterId || rating.renterId === filters.renterId;
 
       return matchesSearch && matchesStar && matchesModel && matchesRenter;
     });

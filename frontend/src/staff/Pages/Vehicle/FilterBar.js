@@ -1,5 +1,5 @@
 import React from 'react';
-import { HStack, Select, Button, Input, Flex, Text } from '@chakra-ui/react';
+import { HStack, Select, Button, Input, Flex } from '@chakra-ui/react';
 
 const FilterBar = ({ 
     filter, 

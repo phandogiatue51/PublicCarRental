@@ -1,6 +1,5 @@
-// components/ContractFilters.js
 import React from 'react';
-import { Grid, FormControl, Select, HStack, Button, Icon, FormLabel, Input } from '@chakra-ui/react';
+import { Grid, FormControl, Select, HStack, Button, Icon, Input } from '@chakra-ui/react';
 import { MdFilterList, MdClear } from 'react-icons/md';
 
 const ContractFilters = ({

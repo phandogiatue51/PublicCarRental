@@ -33,7 +33,7 @@ function Success() {
                     style={{
                         marginBottom: '15px',
                         display: 'inline-block',
-                        backgroundColor: '#007BFF', 
+                        backgroundColor: '#ff3c00ff', 
                         color: '#fff',
                         padding: '10px 20px',
                         borderRadius: '5px',

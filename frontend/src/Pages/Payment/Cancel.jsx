@@ -28,7 +28,18 @@ function Cancel() {
                 <p style={{ marginBottom: '15px' }}>
                     Your payment was cancelled. You can try again anytime.
                 </p>
-                <a href="/" style={{ marginBottom: '15px', display: 'inline-block' }}>
+                 <a
+                    href="/"
+                    style={{
+                        marginBottom: '15px',
+                        display: 'inline-block',
+                        backgroundColor: '#ff3c00ff', 
+                        color: '#fff',
+                        padding: '10px 20px',
+                        borderRadius: '5px',
+                        textDecoration: 'none'
+                    }}
+                >
                     Return to Home
                 </a>
             </div>

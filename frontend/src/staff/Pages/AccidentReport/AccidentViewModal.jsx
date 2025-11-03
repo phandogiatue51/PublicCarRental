@@ -1,12 +1,20 @@
 import {
   Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter,
-  ModalBody, ModalCloseButton, Button, VStack, Text,
-  Box, Badge, HStack, Divider, Image, Grid, Alert, AlertIcon,
-  Spinner, Select, FormControl, FormLabel, useToast, Textarea
+  ModalBody, ModalCloseButton, Button, VStack, HStack, Divider,
+  Alert, AlertIcon, Spinner, useToast, Box, Text
 } from '@chakra-ui/react';
 import { useState, useEffect, useCallback } from 'react';
 import { accidentAPI } from '../../../services/api';
-import VehicleReplacementPreview from './../../../admin/views/admin/accident/VehicleReplacementPreview';
+import VehicleReplacementPreview from './../../../admin/views/admin/accident/VehicleReplacementPreview/index';
+// import StaffContractResolution from './StaffContractResolution'; // Comment out for now
+
+// Import components
+import AccidentHeader from './AccidentDetails/AccidentHeader';
+import AdminResolutionPanel from './AccidentDetails/AdminResolutionPanel';
+import VehicleInfo from './AccidentDetails/VehicleInfo';
+import DescriptionSection from './AccidentDetails/DescriptionSection';
+import ReportSummary from './AccidentDetails/ReportSummary';
+import ResolutionDetails from './AccidentDetails/ResolutionNotes';
 
 export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess }) {
   const [accidentDetails, setAccidentDetails] = useState(null);
@@ -14,11 +22,12 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
-  const [actionType, setActionType] = useState(''); // ADD action type
-  const [resolutionNote, setResolutionNote] = useState(''); // ADD resolution note
+  const [actionType, setActionType] = useState('');
+  const [resolutionNote, setResolutionNote] = useState('');
   const toast = useToast();
   const [showReplacementPreview, setShowReplacementPreview] = useState(false);
-
+  // const [showStaffResolution, setShowStaffResolution] = useState(false); // Comment out for now
+  // const [contractsNeedingResolution, setContractsNeedingResolution] = useState([]); // Comment out for now
   const isAdmin = localStorage.getItem("isAdmin") === "true";
 
   const fetchAccidentDetails = useCallback(async () => {
@@ -28,25 +37,41 @@ export default function AccidentViewModal({ isOpen, onClose, accident, onSuccess
     setError('');
 
     try {
-        const details = await accidentAPI.getById(accident.accidentId);
-        setAccidentDetails(details);
-        setSelectedStatus(details.status);
-        setActionType('');
-        setResolutionNote('');
+      const details = await accidentAPI.getById(accident.accidentId);
+      setAccidentDetails(details);
+      setSelectedStatus(details.status);
+      setActionType('');
+      setResolutionNote('');
     } catch (err) {
-        console.error('Error fetching accident details:', err);
-        setError('Failed to load accident details');
+      console.error('Error fetching accident details:', err);
+      setError('Failed to load accident details');
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-}, [accident]); 
+  }, [accident]);
 
-useEffect(() => {
+  useEffect(() => {
     if (isOpen && accident?.accidentId) {
-        fetchAccidentDetails();
+      fetchAccidentDetails();
     }
-}, [isOpen, accident?.accidentId, fetchAccidentDetails]);
+  }, [isOpen, accident?.accidentId, fetchAccidentDetails]);
 
+  // Comment out staff resolution for now
+  /*
+  const getContractsNeedingResolution = async () => {
+    if (!accidentDetails) return [];
+    const result = await accidentAPI.getUnresolvedContracts(accidentDetails.accidentId);
+    setContractsNeedingResolution(result.contracts);
+    return result.contracts;
+  };
+
+  const handleStaffResolution = async () => {
+    const contracts = await getContractsNeedingResolution();
+    if (contracts.length > 0) {
+      setShowStaffResolution(true);
+    }
+  };
+  */
 
   const handleAccidentUpdate = async () => {
     if (!accidentDetails) return;
@@ -55,12 +80,10 @@ useEffect(() => {
     setError('');
 
     try {
-      // Only update actionTaken if it's being changed (status 2 - RepairApproved)
       const finalActionTaken = showActionTypeField && actionType
         ? parseInt(actionType)
         : accidentDetails.actionTaken;
 
-      // Only update resolutionNote if new text is entered
       const finalResolutionNote = resolutionNote
         ? resolutionNote
         : accidentDetails.resolutionNote;
@@ -82,9 +105,7 @@ useEffect(() => {
         isClosable: true,
       });
 
-      if (onSuccess) {
-        onSuccess();
-      }
+      if (onSuccess) onSuccess();
       handleClose();
     } catch (err) {
       console.error('Error updating accident:', err);
@@ -106,33 +127,20 @@ useEffect(() => {
   };
 
   const getStatusColor = (status) => {
-    const colors = {
-      0: 'blue',
-      1: 'orange',
-      2: 'yellow',
-      3: 'purple',
-      4: 'green'
-    };
+    const colors = { 0: 'blue', 1: 'orange', 2: 'yellow', 3: 'purple', 4: 'green' };
     return colors[status] || 'gray';
   };
 
   const mapStatusNumberToString = (statusNumber) => {
     const statusMap = {
-      0: 'Reported',
-      1: 'Under Investigation',
-      2: 'Repair Approved',
-      3: 'Under Repair',
-      4: 'Repaired'
+      0: 'Reported', 1: 'Under Investigation', 2: 'Repair Approved', 
+      3: 'Under Repair', 4: 'Repaired'
     };
     return statusMap[statusNumber] || 'Reported';
   };
 
   const mapActionTypeToString = (actionType) => {
-    const actionMap = {
-      0: 'Refund',
-      1: 'Replace',
-      2: 'RepairOnly'
-    };
+    const actionMap = { 0: 'Refund', 1: 'Replace', 2: 'RepairOnly' };
     return actionMap[actionType] || 'No Action';
   };
 
@@ -165,20 +173,15 @@ useEffect(() => {
     ];
 
     switch (currentStatus) {
-      case 0: // Reported
-        return statusOptions.filter(opt => opt.value === 2);
-      case 2: // RepairApproved
-        return statusOptions.filter(opt => opt.value === 3);
-      case 3: // UnderRepair
-        return statusOptions.filter(opt => opt.value === 4);
-      case 4: // Repaired
-        return [];
-      default:
-        return statusOptions;
+      case 0: return statusOptions.filter(opt => opt.value === 2);
+      case 2: return statusOptions.filter(opt => opt.value === 3);
+      case 3: return statusOptions.filter(opt => opt.value === 4);
+      case 4: return [];
+      default: return statusOptions;
     }
   };
 
-  const showActionTypeField = selectedStatus === '2'; // Show action type only for RepairApproved
+  const showActionTypeField = selectedStatus === '2';
 
   if (!accident) return null;
 
@@ -209,141 +212,47 @@ useEffect(() => {
               <HStack spacing={6} align="start">
                 {/* Left Column: Textual Details */}
                 <VStack spacing={4} align="stretch" flex={1}>
-                  {/* Report Header */}
-                  <Box p={4} bg="blue.50" borderRadius="md">
-                    <Grid templateColumns="1fr auto" gap={4} alignItems="center">
-                      <Box>
-                        <Text fontWeight="bold" fontSize="xl">
-                          Issue Report #{accidentDetails.accidentId}
-                        </Text>
-                        <Text color="gray.600">
-                          Reported on {formatDate(accidentDetails.reportedAt)}
-                        </Text>
-                      </Box>
-                      <Badge
-                        colorScheme={getStatusColor(accidentDetails.status)}
-                        fontSize="md"
-                        px={3}
-                        py={2}
-                        borderRadius="full"
-                      >
-                        {mapStatusNumberToString(accidentDetails.status).replace(/([A-Z])/g, ' $1').trim()}
-                      </Badge>
-                    </Grid>
-                  </Box>
+                  <AccidentHeader 
+                    accidentDetails={accidentDetails}
+                    getStatusColor={getStatusColor}
+                    mapStatusNumberToString={mapStatusNumberToString}
+                    formatDate={formatDate}
+                  />
 
                   <Divider />
+
                   {isAdmin && accidentDetails.status !== 4 && (
-                    <Box p={4} border="1px" borderColor="blue.200" borderRadius="md" bg="blue.50">
-                      <Text fontWeight="bold" fontSize="lg" mb={3}>Admin Resolution</Text>
-
-                      {/* Status Update - Hide if Repaired (status 4) */}
-                      {accidentDetails.status !== 4 && (
-                        <FormControl mb={3}>
-                          <FormLabel>Change Status</FormLabel>
-                          <Select
-                            value={selectedStatus}
-                            onChange={(e) => setSelectedStatus(e.target.value)}
-                            placeholder="Select next status"
-                          >
-                            {getNextStatusOptions(accidentDetails.status).map(option => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      )}
-
-                      {accidentDetails.status === 0 && (
-                        <FormControl mb={3}>
-                          <FormLabel>Action Type</FormLabel>
-                          <Select
-                            value={actionType}
-                            onChange={(e) => setActionType(e.target.value)}
-                            placeholder="Select action"
-                          >
-                            <option value="0">💰 Refund Contracts</option>
-                            <option value="1">🔄 Replace Vehicles</option>
-                            <option value="2">🛠️ Repair Only</option>
-                          </Select>
-                        </FormControl>
-                      )}
-
-                      {accidentDetails.status === 0 && (
-                        <FormControl mb={3}>
-                          <FormLabel>Resolution Notes</FormLabel>
-                          <Textarea
-                            value={resolutionNote || accidentDetails?.resolutionNote || ''}
-                            onChange={(e) => setResolutionNote(e.target.value)}
-                            placeholder="Add resolution notes (Optional)(e.g., call repair team, contact customer, etc.)"
-                            size="sm"
-                          />
-                        </FormControl>
-                      )}
-                    </Box>
+                    <AdminResolutionPanel
+                      selectedStatus={selectedStatus}
+                      setSelectedStatus={setSelectedStatus}
+                      actionType={actionType}
+                      setActionType={setActionType}
+                      resolutionNote={resolutionNote}
+                      setResolutionNote={setResolutionNote}
+                      getNextStatusOptions={getNextStatusOptions}
+                      accidentDetails={accidentDetails}
+                      showActionTypeField={showActionTypeField}
+                    />
                   )}
 
                   {(accidentDetails?.resolutionNote || accidentDetails?.actionTaken !== null) &&
                     accidentDetails.status >= 2 && (
-                      <Box p={4} border="1px" borderColor="gray.200" borderRadius="md">
-                        <Text fontWeight="bold" fontSize="lg" mb={3}>Resolution Details</Text>
-                        {accidentDetails.resolutionNote && (
-                          <Text mb={2}><strong>Resolution Note:</strong> {accidentDetails.resolutionNote}</Text>
-                        )}
-                        {accidentDetails.actionTaken !== null && (
-                          <Text><strong>Action Taken:</strong> {mapActionTypeToString(accidentDetails.actionTaken)}</Text>
-                        )}
-                      </Box>
+                      <ResolutionDetails 
+                        accidentDetails={accidentDetails}
+                        mapActionTypeToString={mapActionTypeToString}
+                      />
                     )}
 
-                  <Box p={4} border="1px" borderColor="gray.200" borderRadius="md">
-                    <Text fontWeight="bold" fontSize="lg" mb={3}>Vehicle Information</Text>
-                    <Grid templateColumns="repeat(2, 1fr)" gap={4}>
-                      <Box>
-                        <Text><strong>License Plate:</strong> {accidentDetails.licensePlate}</Text>
-                        <Text><strong>Location:</strong> {accidentDetails.location || 'Not specified'}</Text>
-                      </Box>
-                      <Box>
-                        <Text><strong>Contract ID:</strong> {accidentDetails.contractId ? accidentDetails.contractId : 'N/A'}</Text>
-                        <Text><strong>Staff:</strong> {accidentDetails.staffName || 'Not specified'}</Text>
-                      </Box>
-                    </Grid>
-                  </Box>
-
-                  {/* Description */}
-                  <Box p={4} border="1px" borderColor="gray.200" borderRadius="md">
-                    <Text fontWeight="bold" fontSize="lg" mb={3}>Description</Text>
-                    <Text>{accidentDetails.description || 'No description provided'}</Text>
-                  </Box>
+                  <VehicleInfo accidentDetails={accidentDetails} />
+                  <DescriptionSection accidentDetails={accidentDetails} />
                 </VStack>
 
                 {/* Right Column: Image + Summary */}
                 <VStack spacing={4} align="stretch" flex={1}>
-                  {/* Accident Image */}
-                  {accidentDetails.imageUrl && (
-                    <Box border="1px" borderColor="gray.200" borderRadius="md">
-                      <Image
-                        src={accidentDetails.imageUrl}
-                        alt="Accident damage"
-                        maxH="400px"
-                        objectFit="contain"
-                        borderRadius="md"
-                        mx="auto"
-                        border="1px"
-                        borderColor="gray.200"
-                      />
-                    </Box>
-                  )}
-
-                  {/* Report Summary */}
-                  <Box p={4} bg="gray.50" borderRadius="md">
-                    <Text fontWeight="bold" mb={2}>Report Summary</Text>
-                    <Grid templateColumns="repeat(2, 1fr)" gap={2}>
-                      <Text><strong>Report Type:</strong> {accidentDetails.contractId ? 'Contract Issue' : 'Vehicle Issue'}</Text>
-                      <Text><strong>Reported At:</strong> {formatDate(accidentDetails.reportedAt)}</Text>
-                    </Grid>
-                  </Box>
+                  <ReportSummary 
+                    accidentDetails={accidentDetails} 
+                    formatDate={formatDate} 
+                  />
                 </VStack>
               </HStack>
             )}
@@ -353,6 +262,7 @@ useEffect(() => {
             <Button variant="outline" mr={3} onClick={handleClose}>
               Close
             </Button>
+            
             {isAdmin && accidentDetails && accidentDetails.status !== 4 && (
               <Button
                 colorScheme="blue"
@@ -363,18 +273,24 @@ useEffect(() => {
                 Apply
               </Button>
             )}
+
             {isAdmin && accidentDetails && accidentDetails.status === 0 && (
-              <Button
-                colorScheme="teal"
-                onClick={handleShowPreview}
-                ml={3}
-              >
+              <Button colorScheme="teal" onClick={handleShowPreview} ml={3}>
                 Preview Vehicle Replacement
               </Button>
             )}
+
+            {/* Comment out staff button for now
+            {!isAdmin && accidentDetails?.actionTaken === 1 && accidentDetails.status === 2 && (
+              <Button colorScheme="orange" onClick={handleStaffResolution} ml={3}>
+                Resolve Remaining Contracts ({contractsNeedingResolution.length})
+              </Button>
+            )}
+            */}
           </ModalFooter>
         </ModalContent>
       </Modal>
+
       <VehicleReplacementPreview
         isOpen={showReplacementPreview}
         onClose={() => setShowReplacementPreview(false)}
@@ -384,6 +300,15 @@ useEffect(() => {
           if (onSuccess) onSuccess();
         }}
       />
+
+      {/* Comment out staff resolution modal for now
+      <StaffContractResolution
+        isOpen={showStaffResolution}
+        onClose={() => setShowStaffResolution(false)}
+        accidentId={accidentDetails?.accidentId}
+        contracts={contractsNeedingResolution}
+      />
+      */}
     </>
-  )
+  );
 }

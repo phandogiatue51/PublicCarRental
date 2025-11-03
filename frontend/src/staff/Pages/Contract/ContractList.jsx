@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Grid, Image,
-  Button, FormLabel,
+  Button, 
   Flex,
   Text,
   useColorModeValue,
@@ -33,11 +33,7 @@ import { contractAPI, renterAPI, vehicleAPI } from "../../../services/api";
 import {
   MdRefresh,
   MdSchedule,
-  MdPhotoLibrary,
-  MdVisibility,
-  MdDirectionsCar,
-  MdExitToApp, MdReportProblem
-} from "react-icons/md";
+  MdPhotoLibrary} from "react-icons/md";
 
 import Card from "../../../admin/components/card/Card";
 import ContractDetailModal from "./ContractDetailModal";

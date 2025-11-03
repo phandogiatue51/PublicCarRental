@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box, Grid, GridItem, Card, CardBody, Text, Stat, StatLabel, StatNumber, StatHelpText, StatArrow, Icon,
     Flex, useColorModeValue, Spinner, Alert, AlertIcon, AlertTitle, AlertDescription
@@ -6,7 +6,7 @@ import {
 import {
     MdPerson, MdDriveEta, MdAssignment, MdReceipt
 } from 'react-icons/md';
-import { renterAPI, vehicleAPI, contractAPI, invoiceAPI } from '../../services/api';
+import { vehicleAPI, contractAPI, invoiceAPI } from '../../services/api';
 import IncomingCheckins from '../components/Dashboard/IncomingCheckins';
 import IncomingCheckouts from '../components/Dashboard/IncomingCheckouts';
 import MaintenanceQueue from '../components/Dashboard/MaintenanceQueue';
@@ -33,10 +33,9 @@ const StaffDashboard = () => {
     const borderColor = useColorModeValue('gray.200', 'gray.700');
 
     useEffect(() => {
-        // Get stationId from localStorage
         const storedStationId = localStorage.getItem('stationId');
         console.log('StaffDashboard - StationId from localStorage:', storedStationId);
-        
+
         if (storedStationId) {
             setStationId(parseInt(storedStationId));
         } else {
@@ -45,13 +44,7 @@ const StaffDashboard = () => {
         }
     }, []);
 
-    useEffect(() => {
-        if (stationId) {
-            fetchDashboardData();
-        }
-    }, [stationId]);
-
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
@@ -68,11 +61,11 @@ const StaffDashboard = () => {
             console.log('Dashboard data:', { vehicles, contracts, invoices });
 
             // Calculate stats
-            const activeContracts = contracts?.filter(contract => 
+            const activeContracts = contracts?.filter(contract =>
                 contract.status === 'Active' || contract.status === 0
             ) || [];
-            
-            const availableVehicles = vehicles?.filter(vehicle => 
+
+            const availableVehicles = vehicles?.filter(vehicle =>
                 vehicle.status === 'Available' || vehicle.status === 0
             ) || [];
 
@@ -91,10 +84,16 @@ const StaffDashboard = () => {
         } catch (err) {
             console.error('Error fetching dashboard data:', err);
             setError(err.message || 'Failed to fetch dashboard data');
-        } finally {             
+        } finally {
             setLoading(false);
         }
-    };
+    }, [stationId]);
+
+    useEffect(() => {
+        if (stationId) {
+            fetchDashboardData();
+        }
+    }, [stationId, fetchDashboardData]);
 
     const StatCard = ({ title, value, icon, trend, trendValue, color = 'blue' }) => (
         <Card bg={cardBg} border="1px" borderColor={borderColor}>
@@ -234,7 +233,7 @@ const StaffDashboard = () => {
                 </Grid>
             </Box>
 
-            
+
         </Box>
     );
 };
