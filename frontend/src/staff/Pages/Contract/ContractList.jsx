@@ -344,13 +344,13 @@ const ContractList = () => {
       ),
     }),
 
-    columnHelper.accessor('stationName', {
-      id: 'station',
+    columnHelper.accessor('vehicleLicensePlate', {
+      id: 'vehicle',
       header: () => (
         <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
-          STATION
+          VEHICLE
         </Text>
-      ),
+      ),  
       cell: (info) => (
         <Text color={textColor} fontSize="sm">
           {info.getValue()}

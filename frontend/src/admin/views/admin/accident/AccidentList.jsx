@@ -7,8 +7,8 @@ import {
   createColumnHelper, flexRender, getCoreRowModel,
   getSortedRowModel, useReactTable
 } from '@tanstack/react-table';
-import { useState, useEffect, useMemo } from 'react';
-import { accidentAPI } from '../../../../services/api';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { accidentAPI, stationAPI } from '../../../../services/api';
 import { MdDelete } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import Pagination from './../../../../components/Pagination';
@@ -26,6 +26,8 @@ export default function AccidentList() {
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
   const brandColor = useColorModeValue('brand.500', 'white');
   const navigate = useNavigate();
+  const [statusFilter, setStatusFilter] = useState('');
+  const [stationFilter, setStationFilter] = useState('');
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
@@ -44,6 +46,7 @@ export default function AccidentList() {
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
+  const [stations, setStations] = useState([]);
 
   const paginatedData = useMemo(() => {
     if (currentPage > totalPages && totalPages > 0) {
@@ -56,6 +59,17 @@ export default function AccidentList() {
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
+  useEffect(() => {
+    const fetchStations = async () => {
+      try {
+        const data = await stationAPI.getAll();
+        setStations(data);
+      } catch (err) {
+        console.error('Error fetching stations:', err);
+      }
+    };
+    fetchStations();
+  }, []);
 
   const handlePageSizeChange = (newPageSize) => {
     setPageSize(newPageSize);
@@ -66,41 +80,34 @@ export default function AccidentList() {
     navigate(`/admin/issue/${accident.accidentId}`);
   };
 
-  const fetchAccidents = async () => {
+  const fetchAccidents = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching accidents from API...');
-      const data = await accidentAPI.getAll();
-      console.log('Issues fetched successfully:', data);
 
-      const formattedData = data.map(accident => ({
-        ...accident,
-        reportedAt: accident.reportedAt === '0001-01-01T00:00:00'
-          ? new Date().toISOString()
-          : accident.reportedAt
-      }));
+      const query = {};
+      if (statusFilter) query.status = statusFilter;
+      if (stationFilter) query.stationId = stationFilter;
 
-      setAccidents(formattedData);
+      const data = await accidentAPI.filter(query);
+      console.log('Accidents fetched:', data);
+
+      setAccidents(
+        data.map(accident => ({
+          ...accident,
+          reportedAt:
+            accident.reportedAt === '0001-01-01T00:00:00'
+              ? new Date().toISOString()
+              : accident.reportedAt
+        }))
+      );
     } catch (err) {
       console.error('Error fetching accidents:', err);
-      let errorMessage = 'Failed to fetch accident reports';
-
-      if (err.message.includes('404')) {
-        errorMessage = 'Accident API endpoint not found. Please check the backend URL.';
-      } else if (err.message.includes('Unable to connect')) {
-        errorMessage = 'Cannot connect to the server. Please check if the backend is running';
-      } else if (err.message.includes('CORS')) {
-        errorMessage = 'CORS error. Please check backend CORS configuration.';
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
-      setError(errorMessage);
+      setError(err.message || 'Failed to fetch accident reports');
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, stationFilter]);
 
   useEffect(() => {
     fetchAccidents();
@@ -319,10 +326,41 @@ export default function AccidentList() {
           justifyContent="space-between"
           direction={{ base: 'column', md: 'row' }}
           align={{ base: 'start', md: 'center' }}
-        >
+          >
           <Text color={textColor} fontSize="2xl" ms="24px" fontWeight="700">
             Issue Report Management
           </Text>
+          <Flex gap={3} align="center">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              style={{ padding: '8px', borderRadius: '6px', minWidth: '200px' }}
+            >
+              <option value="">All Statuses</option>
+              <option value="0">Reported</option>
+              <option value="1">Under Investigation</option>
+              <option value="2">Repair Approved</option>
+              <option value="3">Under Repair</option>
+              <option value="4">Repaired</option>
+            </select>
+
+            <select
+              value={stationFilter}
+              onChange={(e) => setStationFilter(e.target.value)}
+              style={{ padding: '8px', borderRadius: '6px', minWidth: '200px' }}
+            >
+              <option value="">All Stations</option>
+              {stations.map(station => (
+                <option key={station.stationId} value={station.stationId}>
+                  {station.name}
+                </option>
+              ))}
+            </select>
+
+            <Button colorScheme="blue" onClick={fetchAccidents}>
+              Apply Filter
+            </Button>
+          </Flex>
         </Flex>
 
         <Flex gap="4" justify="start">
@@ -359,6 +397,7 @@ export default function AccidentList() {
             </Text>
           </Card>
         </Flex>
+
 
         {/* Table Card */}
         <Card>

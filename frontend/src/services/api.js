@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'https://localhost:7230/api'
+  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
 
 const apiRequest = async (endpoint, options = {}) => {
@@ -624,15 +624,15 @@ export const accidentAPI = {
     method: 'DELETE',
   }),
 
-   updateAccident: (id, updateData) => apiRequest(`/Accident/update-accident/${id}`, {
+  updateAccident: (id, updateData) => apiRequest(`/Accident/update-accident/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(updateData)
   }),
 
-  filter: (filters) => apiRequest('/Accident/filter', {
-    method: 'GET',
-    queryParams: filters
-  }),
+  filter: (filters = {}) => {
+    const query = new URLSearchParams(filters).toString();
+    return apiRequest(`/Accident/filter${query ? `?${query}` : ''}`);
+  },
 
   getReplacementPreview: async (accidentId) => {
     const data = await apiRequest(`/Accident/${accidentId}/replacement-preview`);

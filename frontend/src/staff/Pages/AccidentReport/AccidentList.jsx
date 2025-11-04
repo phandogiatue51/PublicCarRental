@@ -39,6 +39,7 @@ export default function AccidentList() {
   const totalItems = accidents.length;
   const totalPages = Math.ceil(totalItems / pageSize);
   const navigate = useNavigate();
+  const [statusFilter, setStatusFilter] = useState('');
 
   const handleView = (accident) => {
     navigate(`/staff/issue/${accident.accidentId}`);
@@ -55,6 +56,7 @@ export default function AccidentList() {
       setLoading(false);
     }
   }, []);
+
   const handlePageChange = (page) => {
     setCurrentPage(page);
   };
@@ -75,18 +77,23 @@ export default function AccidentList() {
   };
 
   const fetchAccidents = useCallback(async () => {
-    if (!stationId) {
-      console.log('No stationId available, skipping fetch');
-      return;
-    }
+    if (!stationId) return;
 
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching accidents for station:', stationId);
 
-      const data = await accidentAPI.filter({ stationId });
+      const query = { stationId };
+      if (statusFilter) query.status = statusFilter;
+
+      const data = await accidentAPI.filter(query);
       console.log('Accidents fetched successfully:', data);
+
+      // ✅ handle empty result
+      if (!data || data.length === 0) {
+        setAccidents([]);
+        return;
+      }
 
       const formattedData = data.map(accident => ({
         ...accident,
@@ -98,30 +105,17 @@ export default function AccidentList() {
       setAccidents(formattedData);
     } catch (err) {
       console.error('Error fetching accidents:', err);
-      let errorMessage = 'Failed to fetch accident reports';
-
-      if (err.message.includes('404')) {
-        errorMessage = 'Accident API endpoint not found. Please check the backend URL.';
-      } else if (err.message.includes('Unable to connect')) {
-        errorMessage = 'Cannot connect to the server. Please check if the backend is running';
-      } else if (err.message.includes('CORS')) {
-        errorMessage = 'CORS error. Please check backend CORS configuration.';
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-
-      setError(errorMessage);
+      setError(err.message || 'Failed to fetch accident reports');
     } finally {
       setLoading(false);
     }
-  }, [stationId]);
+  }, [stationId, statusFilter]);
 
   useEffect(() => {
     if (stationId) {
-      console.log('AccidentList - stationId is now available:', stationId);
       fetchAccidents();
     }
-  }, [stationId, fetchAccidents]);
+  }, [stationId, statusFilter, fetchAccidents]);
 
   const getStatusColor = (status) => {
     const colors = {
@@ -369,6 +363,21 @@ export default function AccidentList() {
             Issue Report Management
           </Text>
           <Flex gap={3} me="24px">
+            <Select
+              placeholder="All Statuses"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              w="200px"
+              bg="white"
+              color="black"
+            >
+              <option value="0">Reported</option>
+              <option value="1">Under Investigation</option>
+              <option value="2">Repair Approved</option>
+              <option value="3">Under Repair</option>
+              <option value="4">Repaired</option>
+            </Select>
+
             <Button
               leftIcon={<Icon as={MdAdd} />}
               colorScheme="blue"
@@ -427,7 +436,7 @@ export default function AccidentList() {
                   <Tr>
                     <Td colSpan={columns.length} textAlign="center" py={8}>
                       <Text color="gray.500">
-                        {stationId ? 'No accident reports found for this station' : 'No station assigned'}
+                        {'No accident reports found.'}
                       </Text>
                     </Td>
                   </Tr>
