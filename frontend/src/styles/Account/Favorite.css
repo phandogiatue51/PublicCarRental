@@ -10,15 +10,37 @@
   text-align: center;
 }
 
+.favorite-content .favorite-header h2,
+.favorite-content > .favorite-header h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #111827;
+  margin: 0 0 8px;
+}
+
 .favorite-header h2 {
   color: #333;
   margin-bottom: 10px;
   font-size: 2rem;
 }
 
+.favorite-content .favorite-header p,
+.favorite-header p {
+  font-size: 1rem;
+  color: #6b7280;
+}
+
 .favorite-header p {
   color: #666;
   font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .favorite-content .favorite-header h2,
+  .favorite-header h2 {
+    font-size: 1.4rem;
+  }
 }
 
 /* Loading State */
@@ -119,9 +141,9 @@
 /* Favorites Grid */
 .favorites-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 25px;
-  margin-top: 20px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  align-items: start;
 }
 
 .favorite-card {
@@ -131,6 +153,9 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .favorite-card:hover {
@@ -227,6 +252,37 @@
   background: linear-gradient(135deg, #f8f9fa, #e9ecef);
   border-radius: 10px;
   border: 1px solid #dee2e6;
+}
+
+/* Make the price box visually disappear (no grey box) while keeping structure */
+.favorite-card .favorite-price {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: inherit;
+}
+
+/* Ensure inner label/value also have no background or extra padding */
+.favorite-card .favorite-price .price-label,
+.favorite-card .favorite-price .price-value {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* If card itself had an inner area with gray bg, make sure it's transparent too */
+.favorite-card .price-area,
+.favorite-card .price-box {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
 .price-label {
@@ -393,6 +449,22 @@
   border-color: #0056b3;
 }
 
+/* Scale favorite area fonts by ~150% */
+.favorite-content,
+.favorite-content * {
+  font-size: 1.5rem !important;
+  line-height: 1.35 !important;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .favorite-content,
+  .favorite-content * {
+    font-size: 1.05rem !important;
+    line-height: 1.3 !important;
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .favorite-content {
@@ -425,8 +497,18 @@
     padding: 12px;
   }
   
-  .price-value {
-    font-size: 1.2rem;
+  .favorite-card .favorite-price {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: inherit;
   }
 
   /* Pagination responsive */
@@ -454,5 +536,11 @@
     padding: 6px 10px;
     font-size: 0.8rem;
     min-width: 35px;
+  }
+}
+
+@media (max-width: 992px) {
+  .favorites-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

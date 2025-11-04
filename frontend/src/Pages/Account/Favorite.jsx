@@ -174,11 +174,11 @@ function Favorite() {
                 <div className="favorite-content">
                   <div className="favorite-header">
                     <h3 className="favorite-title">{favorite.brandName} {favorite.name}</h3>
-                    <span className="favorite-type">{favorite.typeName}</span>
+                   
                   </div>
                   
                   <div className="favorite-price">
-                    <span className="price-label">Price per hour</span>
+                    
                     <span className="price-value">₫{favorite.pricePerHour?.toLocaleString() || '0'}</span>
                   </div>
                   
