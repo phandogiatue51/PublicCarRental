@@ -12,25 +12,21 @@ const tabs = [
   {
     id: 'profile',
     label: 'Profile',
-    icon: '👤',
     component: Profile
   },
   {
     id: 'contract',
     label: 'Contracts',
-    icon: '📝',
     component: Contract
   },
   {
     id: 'invoice',
     label: 'Invoices',
-    icon: '🧾',
     component: Invoice
   },
   {
     id: 'favorite',
     label: 'Favorites',
-    icon: '❤️',
     component: Favorite
   }
 ];
