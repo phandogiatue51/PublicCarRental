@@ -40,7 +40,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { contractAPI } from "../../../../services/api";
+import { contractAPI, stationAPI, renterAPI, staffAPI, vehicleAPI, brandAPI, modelAPI } from "../../../../services/api";
 import {
   MdChevronLeft,
   MdChevronRight,
@@ -75,6 +75,22 @@ export default function ContractList() {
   const [renterId, setRenterId] = useState("");
   const [staffId, setStaffId] = useState("");
   const [vehicleId, setVehicleId] = useState("");
+  // Dropdown data & selection modals
+  const [stations, setStations] = useState([]);
+  const [isRenterModalOpen, setIsRenterModalOpen] = useState(false);
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
+  const [renters, setRenters] = useState([]);
+  const [staffList, setStaffList] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
+  const [selectedRenter, setSelectedRenter] = useState(null);
+  const [selectedStaffObj, setSelectedStaffObj] = useState(null);
+  const [selectedVehicleObj, setSelectedVehicleObj] = useState(null);
+  // Vehicle modal filters
+  const [brands, setBrands] = useState([]);
+  const [models, setModels] = useState([]);
+  const [selectedBrandId, setSelectedBrandId] = useState("");
+  const [selectedModelId, setSelectedModelId] = useState("");
 
   // Gọi API filter
   const handleFilter = async () => {
@@ -148,6 +164,28 @@ export default function ContractList() {
 
   useEffect(() => {
     fetchContracts();
+    // Load stations for dropdown
+    (async () => {
+      try {
+        const res = await stationAPI.getAll();
+        setStations(res || []);
+      } catch (err) {
+        console.error("Error fetching stations:", err);
+      }
+    })();
+  }, []);
+
+  // Load brands/models for vehicle modal once
+  useEffect(() => {
+    (async () => {
+      try {
+        const [b, m] = await Promise.all([brandAPI.getAll?.(), modelAPI.getAll?.()]);
+        setBrands(b || []);
+        setModels(m || []);
+      } catch (e) {
+        console.error("Error fetching brand/model:", e);
+      }
+    })();
   }, []);
 
   // Pagination calculations - memoized for performance
@@ -586,14 +624,20 @@ export default function ContractList() {
 
         <Card mb={4} p={4}>
           <Flex gap={3} wrap="nowrap" overflowX="auto">
-            <Input
-              placeholder="Station ID"
+            <Select
+              placeholder="Station"
               value={stationId}
               onChange={(e) => setStationId(e.target.value)}
               size="sm"
               flex={1}
-              width="120px"
-            />
+              width="180px"
+            >
+              {stations?.map((s) => (
+                <option key={s.stationId || s.id} value={(s.stationId || s.id)?.toString?.()}> 
+                  {s.name || s.stationName || `Station ${s.stationId || s.id}`}
+                </option>
+              ))}
+            </Select>
             <Select
               placeholder="Status"
               value={status}
@@ -608,30 +652,39 @@ export default function ContractList() {
               <option value="3">Cancelled</option>
               <option value="4">Confirmed</option>
             </Select>
-            <Input
-              placeholder="Renter ID"
-              value={renterId}
-              onChange={(e) => setRenterId(e.target.value)}
-              size="sm"
-              flex={1}
-              width="120px"
-            />
-            <Input
-              placeholder="Staff ID"
-              value={staffId}
-              onChange={(e) => setStaffId(e.target.value)}
-              size="sm"
-              flex={1}
-              width="120px"
-            />
-            <Input
-              placeholder="Vehicle ID"
-              value={vehicleId}
-              onChange={(e) => setVehicleId(e.target.value)}
-              size="sm"
-              width="120px"
-              flex={1}
-            />
+            <Flex gap={2} align="center">
+              <Button size="sm" onClick={async () => {
+                try {
+                  const res = await renterAPI.getAll();
+                  setRenters(res || []);
+                  setIsRenterModalOpen(true);
+                } catch (err) {
+                  console.error("Error fetching renters:", err);
+                }
+              }}>{selectedRenter ? `Renter: ${selectedRenter.fullName || selectedRenter.name || selectedRenter.email} (${selectedRenter.renterId || selectedRenter.id})` : 'Select Renter'}</Button>
+            </Flex>
+            <Flex gap={2} align="center">
+              <Button size="sm" onClick={async () => {
+                try {
+                  const res = await staffAPI.getAll();
+                  setStaffList(res || []);
+                  setIsStaffModalOpen(true);
+                } catch (err) {
+                  console.error("Error fetching staff:", err);
+                }
+              }}>{selectedStaffObj ? `Staff: ${selectedStaffObj.fullName || selectedStaffObj.name || selectedStaffObj.email} (${selectedStaffObj.staffId || selectedStaffObj.id})` : 'Select Staff'}</Button>
+            </Flex>
+            <Flex gap={2} align="center">
+              <Button size="sm" onClick={async () => {
+                try {
+                  const res = await vehicleAPI.getAll();
+                  setVehicles(res || []);
+                  setIsVehicleModalOpen(true);
+                } catch (err) {
+                  console.error("Error fetching vehicles:", err);
+                }
+              }}>{selectedVehicleObj ? `Vehicle: ${selectedVehicleObj.licensePlate || selectedVehicleObj.vehicleLicensePlate} (${selectedVehicleObj.vehicleId || selectedVehicleObj.id})` : 'Select Vehicle'}</Button>
+            </Flex>
             <Button colorScheme="blue" onClick={handleFilter} size="sm">
               Apply
             </Button>
@@ -871,6 +924,136 @@ export default function ContractList() {
                 )}
               </Box>
             </Grid>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Renter Select Modal */}
+      <Modal isOpen={isRenterModalOpen} onClose={() => setIsRenterModalOpen(false)} size="xl" isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Select Renter</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <Table variant="simple" color="gray.500">
+              <Thead>
+                <Tr>
+                  <Th>ID</Th>
+                  <Th>Name</Th>
+                  <Th></Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {renters?.map((r) => (
+                  <Tr key={r.renterId || r.id}>
+                    <Td>{r.renterId || r.id}</Td>
+                    <Td>{r.fullName || r.name || r.email}</Td>
+                    <Td>
+                      <Button size="sm" colorScheme="blue" onClick={() => {
+                        setRenterId(((r.renterId || r.id) ?? "").toString());
+                        setSelectedRenter(r);
+                        setIsRenterModalOpen(false);
+                      }}>Choose</Button>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Staff Select Modal */}
+      <Modal isOpen={isStaffModalOpen} onClose={() => setIsStaffModalOpen(false)} size="xl" isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Select Staff</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <Table variant="simple" color="gray.500">
+              <Thead>
+                <Tr>
+                  <Th>ID</Th>
+                  <Th>Name</Th>
+                  <Th></Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {staffList?.map((s) => (
+                  <Tr key={s.staffId || s.id}>
+                    <Td>{s.staffId || s.id}</Td>
+                    <Td>{s.fullName || s.name || s.email}</Td>
+                    <Td>
+                      <Button size="sm" colorScheme="blue" onClick={() => {
+                        setStaffId(((s.staffId || s.id) ?? "").toString());
+                        setSelectedStaffObj(s);
+                        setIsStaffModalOpen(false);
+                      }}>Choose</Button>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Vehicle Select Modal */}
+      <Modal isOpen={isVehicleModalOpen} onClose={() => setIsVehicleModalOpen(false)} size="xl" isCentered>
+        <ModalOverlay />
+        <ModalContent maxH="75vh">
+          <ModalHeader>Select Vehicle</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6} overflowY="auto">
+            <Flex gap={3} mb={4} align="center" wrap="wrap">
+             
+              <Select
+                placeholder="Model"
+                value={selectedModelId}
+                onChange={(e) => setSelectedModelId(e.target.value)}
+                width="220px"
+                size="sm"
+              >
+                {(selectedBrandId
+                  ? models?.filter((m) => ((m.brandId || m.brand?.id)?.toString?.()) === selectedBrandId)
+                  : models
+                 )?.map((m) => (
+                  <option key={m.modelId || m.id} value={(m.modelId || m.id)?.toString?.()}>
+                    {m.name || m.modelName}
+                  </option>
+                ))}
+              </Select>
+            </Flex>
+            <Table variant="simple" color="gray.500">
+              <Thead>
+                <Tr>
+                  <Th>ID</Th>
+                  <Th>License Plate</Th>
+                  <Th></Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {(vehicles || [])
+                  .filter((v) => {
+                    if (selectedBrandId && ((v.brandId || v.brand?.id)?.toString?.()) !== selectedBrandId) return false;
+                    if (selectedModelId && ((v.modelId || v.model?.id)?.toString?.()) !== selectedModelId) return false;
+                    return true;
+                  })
+                  .map((v) => (
+                  <Tr key={v.vehicleId || v.id}>
+                    <Td>{v.vehicleId || v.id}</Td>
+                    <Td>{v.licensePlate || v.vehicleLicensePlate}</Td>
+                    <Td>
+                      <Button size="sm" colorScheme="blue" onClick={() => {
+                        setVehicleId(((v.vehicleId || v.id) ?? "").toString());
+                        setSelectedVehicleObj(v);
+                        setIsVehicleModalOpen(false);
+                      }}>Choose</Button>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
           </ModalBody>
         </ModalContent>
       </Modal>

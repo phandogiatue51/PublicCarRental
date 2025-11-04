@@ -1,7 +1,10 @@
-/* Booking Summary Modal Styles */
+/* Booking Summary Modal Styles - Enhanced Version */
 
-/* Modal Overlay */
-
+/* Modal Overlay with stronger blur */
+.chakra-modal__overlay {
+    backdrop-filter: blur(12px) !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+}
 
 .chakra-modal__content-container {
     display: flex !important;
@@ -9,40 +12,90 @@
     justify-content: center !important;
     min-height: 100vh !important;
 }   
+
 .booking-summary-modal-content {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    border-radius: 20px;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+    background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+    border-radius: 24px;
+    box-shadow: 
+        0 30px 60px rgba(0, 0, 0, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.8) inset,
+        0 0 100px rgba(49, 130, 206, 0.1);
     overflow: hidden;
     max-width: 700px;
     width: 90%;
     font-family: 'Rubik', sans-serif;
-    border: 1px solid #e2e8f0;
+    border: 20px;
     margin: 0 auto;
     position: relative;
-    z-index: 1501; /* make sure modal content sits above overlay/backdrop */
+    z-index: 1501;
+    transform: translateY(0);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.booking-summary-modal-content:hover {
+    box-shadow: 
+        0 35px 70px rgba(0, 0, 0, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.9) inset,
+        0 0 120px rgba(49, 130, 206, 0.15);
+}
+
+/* Animated gradient border */
 .booking-summary-modal-content::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 6px;
-    background: linear-gradient(90deg, #3182ce, #38a169, #d69e2e, #e53e3e);
+    height: 8px;
+    background: linear-gradient(
+        90deg, 
+        #3182ce 0%, 
+        #38a169 25%, 
+        #d69e2e 50%, 
+        #e53e3e 75%, 
+        #3182ce 100%
+    );
+    background-size: 200% 100%;
+    animation: gradientFlow 4s linear infinite;
 }
 
+@keyframes gradientFlow {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 200% 0%; }
+}
+
+/* Enhanced header with subtle animation */
 .booking-summary-modal-header {
-    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 50%, #2d3748 100%);
     color: #ffffff;
-    padding: 2rem;
-    font-size: 2rem;
+    padding: 2.5rem;
+    font-size: 2.2rem;
     font-weight: 800;
     text-align: center;
     position: relative;
     font-family: 'Poppins', sans-serif;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+/* Animated background pattern */
+.booking-summary-modal-header::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 30px 30px;
+    animation: patternMove 20s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes patternMove {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(30px, 30px); }
 }
 
 .booking-summary-modal-header::before {
@@ -51,23 +104,39 @@
     left: 2rem;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 1.5rem;
+    font-size: 2rem;
+    animation: carBounce 2s ease-in-out infinite;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
 }
 
+@keyframes carBounce {
+    0%, 100% { transform: translateY(-50%) translateX(0); }
+    50% { transform: translateY(-50%) translateX(10px); }
+}
+
+/* Enhanced body with subtle texture */
 .booking-summary-modal-body {
     padding: 2.5rem;
     color: #2d3748;
-    background: #ffffff;
+    background: 
+        linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.95) 100%),
+        url('data:image/svg+xml,<svg width="60" height="60" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(49,130,206,0.03)" stroke-width="1"/></pattern></defs><rect width="60" height="60" fill="url(%23grid)"/></svg>');
+    position: relative;
 }
 
+/* Enhanced text styling */
 .booking-summary-modal-body .chakra-text {
     margin-bottom: 1rem;
-    font-size: 1.5rem; /* increased from 1.1rem */
+    font-size: 1.5rem;
     line-height: 1.7;
     font-family: 'Rubik', sans-serif;
+    transition: all 0.2s ease;
 }
 
-/* Stronger override to ensure Chakra's fontSize props don't reduce our size for body text */
+.booking-summary-modal-body .chakra-text:hover {
+    transform: translateX(5px);
+}
+
 .booking-summary-modal-body .chakra-text,
 .booking-summary-modal-body .chakra-text * {
     font-size: 1.5rem !important;
@@ -77,34 +146,82 @@
     font-family: 'Poppins', sans-serif;
     font-weight: 700;
     color: #2c5282;
-    font-size: 1.6rem; /* increased for bold labels */
+    font-size: 1.6rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
+/* Enhanced badges with glow effect */
 .booking-summary-modal-body .chakra-badge {
     font-size: 1rem;
     padding: 0.5rem 1rem;
-    border-radius: 8px;
+    border-radius: 10px;
     font-weight: 700;
     margin-top: 0.5rem;
     font-family: 'Poppins', sans-serif;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
+    box-shadow: 
+        0 4px 12px rgba(0, 0, 0, 0.1),
+        0 0 20px rgba(56, 161, 105, 0.3);
+    transition: all 0.3s ease;
+    animation: badgePulse 2s ease-in-out infinite;
 }
 
+@keyframes badgePulse {
+    0%, 100% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1), 0 0 20px rgba(56, 161, 105, 0.3); }
+    50% { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 30px rgba(56, 161, 105, 0.5); }
+}
+
+.booking-summary-modal-body .chakra-badge:hover {
+    transform: scale(1.05);
+}
+
+/* Animated divider */
 .booking-summary-modal-body .chakra-divider {
     margin: 2rem 0;
-    border-color: #e2e8f0;
-    border-width: 2px;
+    border-color: transparent;
+    border-width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #3182ce, transparent);
+    position: relative;
+    overflow: hidden;
 }
 
-/* Status Message Box */
+.booking-summary-modal-body .chakra-divider::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 200%; }
+}
+
+/* Enhanced boxes with 3D effect */
+.status-message-box,
+.booking-details-box,
+.payment-notice-box,
+.payment-info-box {
+    position: relative;
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 1.5rem 0;
+    transform: translateY(0);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
 .status-message-box {
     background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
     border: 2px solid #68d391;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    position: relative;
-    overflow: hidden;
+    box-shadow: 
+        0 8px 25px rgba(104, 211, 145, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
 }
 
 .status-message-box::before {
@@ -113,25 +230,23 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #38a169, #68d391);
+    height: 5px;
+    background: linear-gradient(90deg, #38a169, #68d391, #38a169);
+    background-size: 200% 100%;
+    animation: gradientSlide 3s linear infinite;
 }
 
-.status-message-box .chakra-text {
-    color: #22543d;
-    font-weight: 700;
-    font-size: 1.2rem;
-    margin-bottom: 0;
+@keyframes gradientSlide {
+    0% { background-position: 0% 0%; }
+    100% { background-position: 200% 0%; }
 }
 
-/* Booking Details Box */
 .booking-details-box {
-    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 2rem;
-    margin: 1.5rem 0;
-    position: relative;
+    background: linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%);
+    border: 2px solid #90cdf4;
+    box-shadow: 
+        0 10px 30px rgba(49, 130, 206, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.6) inset;
 }
 
 .booking-details-box::before {
@@ -139,27 +254,22 @@
     position: absolute;
     top: 1rem;
     right: 1rem;
-    font-size: 1.5rem;
+    font-size: 2rem;
+    opacity: 0.6;
+    animation: iconFloat 3s ease-in-out infinite;
 }
 
-.booking-details-box .chakra-text {
-    font-size: 1.1rem;
-    margin-bottom: 0.8rem;
+@keyframes iconFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-10px) rotate(5deg); }
 }
 
-.booking-details-box .chakra-text b {
-    color: #2d3748;
-    font-size: 1.3rem;
-}
-
-/* Payment Notice Box */
 .payment-notice-box {
-    background: linear-gradient(135deg, #fffaf0 0%, #fef5e7 100%);
+    background: linear-gradient(135deg, #fffaf0 0%, #feebc8 100%);
     border: 2px solid #f6ad55;
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-top: 1.5rem;
-    position: relative;
+    box-shadow: 
+        0 8px 25px rgba(246, 173, 85, 0.2),
+        0 0 0 1px rgba(255, 255, 255, 0.5) inset;
 }
 
 .payment-notice-box::before {
@@ -167,25 +277,23 @@
     position: absolute;
     top: 1rem;
     right: 1rem;
-    font-size: 1.5rem;
+    font-size: 2rem;
+    opacity: 0.6;
+    animation: cardFlip 4s ease-in-out infinite;
 }
 
-.payment-notice-box .chakra-text {
-    color: #c05621;
-    font-weight: 600;
-    font-size: 1rem;
-    margin-bottom: 0;
+@keyframes cardFlip {
+    0%, 100% { transform: rotateY(0deg); }
+    50% { transform: rotateY(180deg); }
 }
 
-/* Payment Info Box */
 .payment-info-box {
     background: linear-gradient(135deg, #f0fff4 0%, #c6f6d5 100%);
     border: 2px solid #68d391;
-    border-radius: 12px;
-    padding: 2rem;
-    margin-top: 1.5rem;
-    position: relative;
-    overflow: hidden;
+    box-shadow: 
+        0 10px 30px rgba(104, 211, 145, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.6) inset,
+        0 0 40px rgba(56, 161, 105, 0.1);
 }
 
 .payment-info-box::before {
@@ -194,108 +302,168 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, #38a169, #68d391);
+    height: 5px;
+    background: linear-gradient(90deg, #38a169, #68d391, #38a169);
+    background-size: 200% 100%;
+    animation: gradientSlide 3s linear infinite;
 }
 
-.payment-info-box .chakra-text {
-    font-size: 1.1rem;
-    margin-bottom: 0.8rem;
+/* Hover effects with 3D transform */
+.booking-details-box:hover,
+.payment-info-box:hover {
+    transform: translateY(-5px) scale(1.01);
+    box-shadow: 
+        0 15px 40px rgba(49, 130, 206, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.8) inset;
 }
 
-.payment-info-box .chakra-text b {
-    color: #22543d;
-    font-size: 1.2rem;
+.status-message-box:hover,
+.payment-notice-box:hover {
+    transform: translateY(-3px) scale(1.005);
 }
 
-.payment-info-box .chakra-badge {
-    font-size: 1rem;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-weight: 700;
-    font-family: 'Poppins', sans-serif;
-    letter-spacing: 0.3px;
-}
-
+/* Enhanced footer */
 .booking-summary-modal-footer {
     padding: 2rem;
-    background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
     border-top: 2px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
     gap: 1.5rem;
-}
-
-.booking-summary-modal-footer .chakra-button {
-    font-family: 'Poppins', sans-serif;
-    font-weight: 700;
-    font-size: 1.1rem;
-    padding: 1rem 2rem;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
     position: relative;
     overflow: hidden;
 }
 
-.booking-summary-modal-footer .chakra-button.close-button {
-    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
-    color: #2d3748;
-    border: 2px solid #a0aec0;
-}
-
-.booking-summary-modal-footer .chakra-button.close-button:hover {
-    background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.booking-summary-modal-footer .chakra-button.confirm-button {
-    background: linear-gradient(135deg, #3182ce 0%, #38a169 100%);
-    color: #ffffff;
-    border: none;
-    box-shadow: 0 8px 25px rgba(49, 130, 206, 0.4);
-    position: relative;
-}
-
-.booking-summary-modal-footer .chakra-button.confirm-button::before {
+.booking-summary-modal-footer::before {
     content: '';
     position: absolute;
     top: 0;
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transition: left 0.5s ease;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+    animation: footerShine 3s infinite;
+}
+
+@keyframes footerShine {
+    0% { left: -100%; }
+    100% { left: 200%; }
+}
+
+/* Enhanced buttons with advanced effects */
+.booking-summary-modal-footer .chakra-button {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 1.2rem 2.5rem;
+    border-radius: 14px;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+    transform: translateY(0);
+}
+
+.booking-summary-modal-footer .chakra-button.close-button {
+    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+    color: #2d3748;
+    border: 2px solid #a0aec0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.booking-summary-modal-footer .chakra-button.close-button:hover {
+    background: linear-gradient(135deg, #cbd5e0 0%, #a0aec0 100%);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.booking-summary-modal-footer .chakra-button.confirm-button {
+    background: linear-gradient(135deg, #3182ce 0%, #38a169 100%);
+    color: #ffffff;
+    border: none;
+    box-shadow: 
+        0 8px 25px rgba(49, 130, 206, 0.4),
+        0 0 40px rgba(56, 161, 105, 0.3);
+    position: relative;
+    animation: buttonGlow 2s ease-in-out infinite;
+}
+
+@keyframes buttonGlow {
+    0%, 100% { 
+        box-shadow: 
+            0 8px 25px rgba(49, 130, 206, 0.4),
+            0 0 40px rgba(56, 161, 105, 0.3);
+    }
+    50% { 
+        box-shadow: 
+            0 8px 25px rgba(49, 130, 206, 0.6),
+            0 0 60px rgba(56, 161, 105, 0.5);
+    }
+}
+
+.booking-summary-modal-footer .chakra-button.confirm-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s ease, height 0.6s ease;
+}
+
+.booking-summary-modal-footer .chakra-button.confirm-button:hover::before {
+    width: 300px;
+    height: 300px;
 }
 
 .booking-summary-modal-footer .chakra-button.confirm-button:hover {
     background: linear-gradient(135deg, #38a169 0%, #3182ce 100%);
-    transform: translateY(-3px);
-    box-shadow: 0 12px 35px rgba(49, 130, 206, 0.6);
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 
+        0 15px 40px rgba(49, 130, 206, 0.6),
+        0 0 60px rgba(56, 161, 105, 0.5);
 }
 
-.booking-summary-modal-footer .chakra-button.confirm-button:hover::before {
-    left: 100%;
+/* Particle effect overlay */
+.booking-summary-modal-footer .chakra-button.confirm-button::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.3) 0%, transparent 50%);
+    animation: particleMove 3s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes particleMove {
+    0% { opacity: 0; transform: translateY(0); }
+    50% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-20px); }
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .booking-summary-modal-content {
         width: 95%;
-        border-radius: 15px;
-        margin: 0 auto;
+        border-radius: 20px;
     }
 
     .booking-summary-modal-header {
-        font-size: 1.6rem;
-        padding: 1.5rem;
+        font-size: 1.8rem;
+        padding: 2rem;
     }
 
     .booking-summary-modal-header::before {
         left: 1.5rem;
-        font-size: 1.2rem;
+        font-size: 1.5rem;
     }
 
     .booking-summary-modal-body {
@@ -315,54 +483,78 @@
     .booking-summary-modal-footer .chakra-button {
         width: 100%;
         font-size: 1rem;
-        padding: 0.8rem 1.5rem;
+        padding: 1rem 1.5rem;
     }
 
-    .booking-details-box {
-        padding: 1.5rem;
-    }
-
+    .booking-details-box,
     .status-message-box,
-    .payment-notice-box {
-        padding: 1rem;
+    .payment-notice-box,
+    .payment-info-box {
+        padding: 1.5rem;
     }
 }
 
-/* Animation for modal appearance */
+/* Enhanced modal entrance animation */
 @keyframes modalSlideIn {
     from {
         opacity: 0;
-        transform: scale(0.9) translateY(-20px);
+        transform: scale(0.85) translateY(-30px) rotateX(10deg);
     }
     to {
         opacity: 1;
-        transform: scale(1) translateY(0);
+        transform: scale(1) translateY(0) rotateX(0deg);
     }
 }
 
 .booking-summary-modal-content {
-    animation: modalSlideIn 0.3s ease-out;
+    animation: modalSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Hover effects for interactive elements */
-.booking-details-box:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+/* Loading state animation */
+.chakra-button[data-loading] {
+    position: relative;
+    pointer-events: none;
 }
 
-.status-message-box:hover {
-    transform: translateY(-1px);
-    transition: all 0.3s ease;
+.chakra-button[data-loading]::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: buttonSpin 0.8s linear infinite;
 }
 
-.payment-notice-box:hover {
-    transform: translateY(-1px);
-    transition: all 0.3s ease;
+@keyframes buttonSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-.payment-info-box:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(56, 161, 105, 0.2);
-    transition: all 0.3s ease;
+/* Add subtle shine effect to important values */
+.chakra-text[style*="color: green"],
+.chakra-text[style*="color: blue"] {
+    position: relative;
+    overflow: hidden;
+}
+
+.chakra-text[style*="color: green"]::after,
+.chakra-text[style*="color: blue"]::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: textShine 3s infinite;
+}
+
+@keyframes textShine {
+    0% { left: -100%; }
+    100% { left: 200%; }
 }
