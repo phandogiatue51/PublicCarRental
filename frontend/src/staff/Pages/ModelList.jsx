@@ -381,7 +381,6 @@ export default function ModelList() {
     <Box >
       <Flex direction="column" gap="20px" me="auto">
         <Flex
-          mt="45px"
           justifyContent="space-between"
           direction={{ base: 'column', md: 'row' }}
           align={{ base: 'start', md: 'center' }}

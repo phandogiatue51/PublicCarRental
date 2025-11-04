@@ -62,8 +62,8 @@ const StaffLayout = () => {
 
             if (notification?.type === 'AccidentAction') {
                 toast({
-                    title: `🚨 Accident Update - ${notification.priority || 'MEDIUM'}`,
-                    description: notification.message || `Accident ${notification.accidentId} status: ${notification.status}`,
+                    title: `🚨 Issue Update - ${notification.priority || 'MEDIUM'}`,
+                    description: notification.message || `Issue #${notification.accidentId} status: ${notification.status}`,
                     status: getAccidentStatusColor(notification.status),
                     duration: 8000,
                     isClosable: true,
@@ -73,8 +73,8 @@ const StaffLayout = () => {
 
             if (notification?.type === 'PersonalAccidentUpdate') {
                 toast({
-                    title: "📋 Your Accident Report Updated",
-                    description: notification.message || `Your accident report #${notification.accidentId} has been updated`,
+                    title: "📋 Your Issue Report Updated",
+                    description: notification.message || `Your Issue report #${notification.accidentId} has been updated`,
                     status: "info",
                     duration: 8000,
                     isClosable: true,

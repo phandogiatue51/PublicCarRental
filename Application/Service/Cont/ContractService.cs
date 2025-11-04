@@ -85,8 +85,10 @@ namespace PublicCarRental.Application.Service.Cont
                 ContractId = contract.ContractId,
                 EVRenterId = contract.EVRenterId,
                 EVRenterName = contract.EVRenter?.Account?.FullName,
+                PhoneNumber = contract.EVRenter?.Account?.PhoneNumber,
                 StaffId = contract.StaffId,
                 StaffName = contract.Staff?.Account?.FullName,
+                ModelName = contract.Vehicle?.Model?.Name,
                 VehicleId = contract.VehicleId ?? 0,
                 VehicleLicensePlate = contract.Vehicle?.LicensePlate,
                 StationId = contract.StationId ?? 0,
@@ -419,11 +421,42 @@ namespace PublicCarRental.Application.Service.Cont
             }).ToList();
         }
 
-        public List<RentalContract> GetConfirmedContractByVehicle(int vehicleId)
+        public List<RentalContract> GetAffectedContracts(int vehicleId)
         {
             return _contractRepo.GetAll()
                 .Where(v => v.VehicleId == vehicleId && v.Status == RentalStatus.Confirmed)
+                .Where(c => c.StartTime > DateTime.UtcNow)
                 .ToList();
+        }
+
+        public List<ContractReadDto> ViewAffectedContracts(int vehicleId)
+        {
+            var contracts = _contractRepo.GetAll()
+                .Where(v => v.VehicleId == vehicleId && v.Status == RentalStatus.Confirmed)
+                .Where(c => c.StartTime > DateTime.UtcNow)
+                .ToList();
+
+            return contracts.Select(contract => new ContractReadDto
+            {
+                ContractId = contract.ContractId,
+                EVRenterId = contract.EVRenterId,
+                EVRenterName = contract.EVRenter?.Account?.FullName,
+                PhoneNumber = contract.EVRenter?.Account?.PhoneNumber,
+                StaffId = contract.StaffId,
+                StaffName = contract.Staff?.Account?.FullName,
+                ModelName = contract.Vehicle?.Model?.Name,
+                VehicleId = contract.VehicleId ?? 0,
+                VehicleLicensePlate = contract.Vehicle?.LicensePlate,
+                StationId = contract.StationId ?? 0,
+                StationName = contract.Station?.Name,
+                StartTime = contract.StartTime,
+                EndTime = contract.EndTime,
+                TotalCost = contract.TotalCost,
+                Status = contract.Status,
+                ImageIn = contract.ImageUrlIn,
+                ImageOut = contract.ImageUrlOut,
+                Notes = contract.Note,
+            }).ToList();
         }
 
         public bool UpdateContract(RentalContract contract)

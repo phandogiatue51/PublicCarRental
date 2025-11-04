@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Box, Button, Flex, Table, Tbody, Td, Text, Th, Thead, Tr, Spinner, Alert,
-    AlertIcon, AlertTitle, AlertDescription, Badge, useToast, Progress
+    AlertIcon, AlertTitle, AlertDescription, Badge, useToast, Progress, useColorModeValue
 } from '@chakra-ui/react';
 import {
     createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable
@@ -21,6 +21,7 @@ const VehicleList = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [sorting, setSorting] = useState([]);
+    const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
 
     // Modal states
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -291,9 +292,7 @@ const VehicleList = () => {
                     onShowAllVehicles={handleShowAllVehicles}
                 />
 
-
-                {/* Table */}
-                <TableComponent table={table} />
+                <TableComponent table={table} borderColor={borderColor} />
             </Flex>
             {/* Pagination - Using your reusable component */}
             <Pagination
@@ -401,17 +400,25 @@ const ErrorState = ({ error, onRetry }) => (
     </Box>
 );
 
-// Table component
-const TableComponent = ({ table }) => (
-    <Box bg="white" borderRadius="lg" border="1px" borderColor="gray.200" overflow="hidden">
+const TableComponent = ({ table, borderColor }) => (
+    <Box bg="white" borderRadius="lg" overflow="hidden">
         <Table variant="simple">
             <Thead>
                 {table.getHeaderGroups().map((headerGroup) => (
                     <Tr key={headerGroup.id}>
                         {headerGroup.headers.map((header) => (
-                            <Th key={header.id} borderColor="gray.200">
-                                <Flex justify="space-between" align="center" fontSize="12px" color="gray.400">
-                                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                            <Th
+                                key={header.id}
+                                borderColor={borderColor}
+                                cursor={header.column.getCanSort() ? "pointer" : "default"}
+                                onClick={header.column.getToggleSortingHandler()}
+                            >
+                                <Flex align="center" gap={2}>
+                                    {flexRender(header.column.columnDef.header, header.getContext())}
+                                    {{
+                                        asc: "▲",
+                                        desc: "▼",
+                                    }[header.column.getIsSorted()] ?? null}
                                 </Flex>
                             </Th>
                         ))}

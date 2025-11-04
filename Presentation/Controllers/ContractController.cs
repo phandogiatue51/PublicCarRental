@@ -124,5 +124,19 @@ namespace PublicCarRental.Presentation.Controllers
                 return NotFound("Contract PDF not found");
             }
         }
+
+        [HttpGet("get-affected-contract/{vehicleId}")]
+        public ActionResult<List<ContractReadDto>> GetAffectedContracts(int vehicleId)
+        {
+            try
+            {
+                var result = _contractService.ViewAffectedContracts(vehicleId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = "Error during return", details = ex.Message });
+            }
+        }
     }
 }

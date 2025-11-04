@@ -64,7 +64,7 @@ const ContractDetailModal = ({ isOpen, onClose, contract }) => {
                     <Flex align="center" gap={3}>
                         <Icon as={MdAssignment} color="blue.500" boxSize={6} />
                         <Text fontSize="xl" fontWeight="bold" color={textColor}>
-                            Contract Details
+                            Contract Details # {contract.contractId}
                         </Text>
                         <Badge
                             colorScheme={getStatusColor(contract.status)}
@@ -83,20 +83,9 @@ const ContractDetailModal = ({ isOpen, onClose, contract }) => {
 
                 <ModalBody pb={6}>
                     <Grid templateColumns="repeat(2, 1fr)" gap={6}>
-                        <GridItem colSpan={1}>
-                            <Text fontSize="lg" fontWeight="bold" color={textColor} mb={3}>
-                                Contract Information
-                            </Text>
-                            <Box w="100%" p={4} bg={cardBg} borderRadius="md">
-                                <HStack justify="space-between" mb={2}>
-                                    <Text fontWeight="semibold" color={textColor}>Contract ID:</Text>
-                                    <Text color={textColor}>{contract.contractId}</Text>
-                                </HStack>
-                            </Box>
-                        </GridItem>
 
-                        <GridItem colSpan={2}>
-                            <Text fontSize="lg" fontWeight="bold" color={textColor} mb={3}>
+                        <GridItem colSpan={1}>
+                            <Text fontSize="lg" fontWeight="bold" color={textColor}>
                                 Rental Period
                             </Text>
                             <Box w="100%" p={4} bg={cardBg} borderRadius="md">
@@ -117,16 +106,12 @@ const ContractDetailModal = ({ isOpen, onClose, contract }) => {
                             </Box>
                         </GridItem>
 
-                        <GridItem colSpan={1}>
-                            <Text fontSize="lg" fontWeight="bold" color={textColor} mb={3}>
+                        <GridItem colSpan={2}>
+                            <Text fontSize="lg" fontWeight="bold" color={textColor}>
                                 Renter Information
                             </Text>
                             <Box w="100%" p={4} bg={cardBg} borderRadius="md">
-                                <HStack mb={2}>
-                                    <Icon as={MdBusiness} color="blue.500" boxSize={5} />
-                                    <Text fontWeight="semibold" color={textColor}>Renter ID:</Text>
-                                    <Text color={textColor}>{contract.evRenterId}</Text>
-                                </HStack>
+
                                 <HStack>
                                     <Icon as={MdPerson} color="blue.500" boxSize={5} />
                                     <Text fontWeight="semibold" color={textColor}>Renter Name:</Text>
@@ -134,20 +119,21 @@ const ContractDetailModal = ({ isOpen, onClose, contract }) => {
                                         {contract.evRenterName}
                                     </Text>
                                 </HStack>
+                                <HStack mb={2}>
+                                    <Icon as={MdBusiness} color="blue.500" boxSize={5} />
+                                    <Text fontWeight="semibold" color={textColor}>Phone:</Text>
+                                    <Text color={textColor}>{contract.phoneNumber}</Text>
+                                </HStack>
                             </Box>
                         </GridItem>
 
                         {/* Staff Information */}
-                        <GridItem colSpan={2}>
-                            <Text fontSize="lg" fontWeight="bold" color={textColor} mb={3}>
+                        <GridItem colSpan={1}>
+                            <Text fontSize="lg" fontWeight="bold" color={textColor}>
                                 Staff Information
                             </Text>
                             <Box w="100%" p={4} bg={cardBg} borderRadius="md">
-                                <HStack mb={2}>
-                                    <Icon as={MdBusiness} color="green.500" boxSize={5} />
-                                    <Text fontWeight="semibold" color={textColor}>Staff ID:</Text>
-                                    <Text color={textColor}>{contract.staffId}</Text>
-                                </HStack>
+
                                 <HStack>
                                     <Icon as={MdPerson} color="green.500" boxSize={5} />
                                     <Text fontWeight="semibold" color={textColor}>Staff Name:</Text>
@@ -155,19 +141,23 @@ const ContractDetailModal = ({ isOpen, onClose, contract }) => {
                                         {contract.staffName}
                                     </Text>
                                 </HStack>
+                                <HStack mb={2}>
+                                    <Icon as={MdBusiness} color="green.500" boxSize={5} />
+                                    <Text fontWeight="semibold" color={textColor}>Station:</Text>
+                                    <Text color={textColor}>{contract.stationName}</Text>
+                                </HStack>
                             </Box>
                         </GridItem>
 
-                        {/* Vehicle Information */}
-                        <GridItem colSpan={1}>
-                            <Text fontSize="lg" fontWeight="bold" color={textColor} mb={3}>
+                        <GridItem colSpan={2}>
+                            <Text fontSize="lg" fontWeight="bold" color={textColor}>
                                 Vehicle Information
                             </Text>
                             <Box w="100%" p={4} bg={cardBg} borderRadius="md">
                                 <HStack mb={2}>
                                     <Icon as={MdBusiness} color="purple.500" boxSize={5} />
-                                    <Text fontWeight="semibold" color={textColor}>Vehicle ID:</Text>
-                                    <Text color={textColor}>{contract.vehicleId}</Text>
+                                    <Text fontWeight="semibold" color={textColor}>Model:</Text>
+                                    <Text color={textColor}>{contract.modelName}</Text>
                                 </HStack>
                                 <HStack>
                                     <Icon as={MdDriveEta} color="purple.500" boxSize={5} />
@@ -179,35 +169,13 @@ const ContractDetailModal = ({ isOpen, onClose, contract }) => {
                             </Box>
                         </GridItem>
 
-                        {/* Station Information */}
-                        <GridItem colSpan={2}>
-                            <Text fontSize="lg" fontWeight="bold" color={textColor} mb={3}>
-                                Station Information
-                            </Text>
-                            <Box w="100%" p={4} bg={cardBg} borderRadius="md">
-                                <HStack mb={2}>
-                                    <Icon as={MdBusiness} color="orange.500" boxSize={5} />
-                                    <Text fontWeight="semibold" color={textColor}>Station ID:</Text>
-                                    <Text color={textColor}>{contract.stationId}</Text>
-                                </HStack>
-                                <HStack>
-                                    <Icon as={MdLocationOn} color="orange.500" boxSize={5} />
-                                    <Text fontWeight="semibold" color={textColor}>Station Name:</Text>
-                                    <Text color={textColor}>
-                                        {contract.stationName}
-                                    </Text>
-                                </HStack>
-                            </Box>
-                        </GridItem>
-
-                        {/* Invoices Section */}
                         <GridItem colSpan={3}>
-                            <Text fontSize="lg" fontWeight="bold" color={textColor} mb={3}>
+                            <Text fontSize="lg" fontWeight="bold" color={textColor}>
                                 Invoices
                             </Text>
 
                             {contract.invoices && contract.invoices.length > 0 ? (
-                                <Box w="100%" p={4} bg={cardBg} borderRadius="md">
+                                <Box w="100%" bg={cardBg} borderRadius="xl">
                                     {contract.invoices.map((invoice) => (
                                         <Box
                                             key={invoice.invoiceId}
@@ -215,7 +183,7 @@ const ContractDetailModal = ({ isOpen, onClose, contract }) => {
                                             mb={3}
                                             border="1px"
                                             borderColor="gray.200"
-                                            borderRadius="md"
+                                            borderRadius="xl"
                                             bg="white"
                                         >
                                             <HStack justify="space-between" mb={2}>
@@ -262,9 +230,6 @@ const ContractDetailModal = ({ isOpen, onClose, contract }) => {
                         </GridItem>
 
                         <GridItem colSpan={3}>
-                            <Text fontSize="lg" fontWeight="bold" color={textColor} mb={3}>
-                                Financial Information
-                            </Text>
                             <Box w="100%" p={4} bg={greenBg} borderRadius="md" border="1px" borderColor={greenBorder}>
                                 <HStack justify="center">
                                     <Icon as={MdAttachMoney} color="green.500" boxSize={6} />

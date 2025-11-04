@@ -9,5 +9,6 @@
         public int CanBeReplaced { get; set; }
         public int CannotBeReplaced { get; set; }
         public List<ContractReplacementPreview> PreviewResults { get; set; } = new();
+       
     }
 }

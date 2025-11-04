@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { 
-    Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter, 
-    ModalBody, ModalCloseButton, Button, VStack, Box, 
-    Alert, AlertIcon, Spinner, Text, useToast 
+import {
+    Modal, ModalOverlay, ModalContent, ModalHeader, ModalFooter,
+    ModalBody, ModalCloseButton, Button, VStack, Box,
+    Alert, AlertIcon, Spinner, Text, useToast
 } from '@chakra-ui/react';
 import { accidentAPI } from './../../../../../services/api';
 import PreviewStats from './PreviewStats';
@@ -14,6 +14,7 @@ export default function VehicleReplacementPreview({ isOpen, onClose, accidentId,
     const [previewData, setPreviewData] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [lastRefreshed, setLastRefreshed] = useState(null);
     const toast = useToast();
 
     const fetchPreview = async () => {
@@ -23,7 +24,6 @@ export default function VehicleReplacementPreview({ isOpen, onClose, accidentId,
         setError('');
 
         try {
-            // Your API call to the backend controller
             const data = await accidentAPI.getReplacementPreview(accidentId);
             setPreviewData(data);
         } catch (err) {
@@ -41,13 +41,25 @@ export default function VehicleReplacementPreview({ isOpen, onClose, accidentId,
         }
     };
 
+
     useEffect(() => {
         if (isOpen && accidentId) {
-            setPreviewData(null); 
+            setPreviewData(null);
             setError('');
             fetchPreview();
         }
-    }, [isOpen, accidentId]); 
+    }, [isOpen, accidentId]);
+
+    useEffect(() => {
+        if (isOpen && previewData?.canBeReplaced > 0) {
+            const refreshInterval = setInterval(() => {
+                console.log('Auto-refreshing vehicle locks...');
+                fetchPreview();
+            }, 4 * 60 * 1000); // 4 minutes
+
+            return () => clearInterval(refreshInterval);
+        }
+    }, [isOpen, previewData]);
 
     const handleExecute = async (result) => {
         if (onExecuteReplacement) {
@@ -64,18 +76,24 @@ export default function VehicleReplacementPreview({ isOpen, onClose, accidentId,
     };
 
     return (
-        // Removed the incorrect 'onOpen={handleOpen}' prop
-        <Modal isOpen={isOpen} onClose={handleClose} size="6xl"> 
+        <Modal isOpen={isOpen} onClose={handleClose} size="6xl">
             <ModalOverlay />
             <ModalContent>
-                <ModalHeader>Vehicle Replacement Preview</ModalHeader>
+                <ModalHeader>
+                    Affected Contracts
+                    {lastRefreshed && (
+                        <Text fontSize="sm" color="gray.600" fontWeight="normal">
+                            Last refreshed: {lastRefreshed.toLocaleTimeString()}
+                        </Text>
+                    )}
+                </ModalHeader>
                 <ModalCloseButton />
 
                 <ModalBody>
                     {loading && (
                         <Box textAlign="center" py={8}>
                             <Spinner size="xl" />
-                            <Text mt={4}>Generating replacement preview...</Text>
+                            <Text mt={4}>Refreshing affected contracts...</Text>
                         </Box>
                     )}
 
@@ -89,8 +107,12 @@ export default function VehicleReplacementPreview({ isOpen, onClose, accidentId,
                     {previewData && !loading && (
                         <VStack spacing={6} align="stretch">
                             <PreviewStats data={previewData} />
-                            <ContractTable data={previewData} />
-                            <ActionAlerts data={previewData} /> 
+                            <ContractTable
+                                data={previewData}
+                                onContractReplaced={handleExecute}
+                                onRefresh={fetchPreview} 
+                            />
+                            <ActionAlerts data={previewData} />
                         </VStack>
                     )}
                 </ModalBody>

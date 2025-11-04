@@ -4,13 +4,20 @@ export default function ReportSummary({ accidentDetails, formatDate }) {
   return (
     <>
       {accidentDetails.imageUrl && (
-        <Box border="1px" borderColor="gray.200" borderRadius="md" mt={20}>
+        <Box
+          border="1px"
+          borderColor="gray.200"
+          borderRadius="xl"
+          mt={20}
+          h={"45vh"}
+        >
           <Image
             src={accidentDetails.imageUrl}
             alt="Accident damage"
-            maxH="400px"
-            objectFit="contain"
-            borderRadius="md"
+            h="100%"
+            borderRadius={"xl"}
+            w="100%"
+            objectFit="cover"
             mx="auto"
             border="1px"
             borderColor="gray.200"
@@ -19,7 +26,7 @@ export default function ReportSummary({ accidentDetails, formatDate }) {
       )}
 
       <Box p={4} border="1px" bg="white" borderColor="gray.200" borderRadius="xl">
-        <Text fontWeight="bold" mb={2}>Report Summary</Text>
+        <Text fontWeight="bold" mb={2} fontSize={"lg"}>Report Summary</Text>
         <Grid templateColumns="repeat(2, 1fr)" gap={2}>
           <Text><strong>Report Type:</strong> {accidentDetails.contractId ? 'Contract Issue' : 'Vehicle Issue'}</Text>
           <Text><strong>Reported At:</strong> {formatDate(accidentDetails.reportedAt)}</Text>

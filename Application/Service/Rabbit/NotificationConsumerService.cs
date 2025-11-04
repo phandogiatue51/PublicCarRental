@@ -286,7 +286,7 @@ namespace PublicCarRental.Application.Service.Rabbit
                             ActionTaken = actionEvent.ActionTaken?.ToString(),
                             ResolutionNote = actionEvent.ResolutionNote,
                             ResolvedAt = actionEvent.ResolvedAt,
-                            Message = GetActionMessage(actionEvent.Status, actionEvent.ActionTaken)
+                            Message = GetActionMessage(actionEvent.Status, actionEvent.ActionTaken, actionEvent.AccidentId)
                         });
 
                     _logger.LogInformation("📢 RepairApproved notification sent to staff {StaffId} for accident {AccidentId}",
@@ -299,13 +299,13 @@ namespace PublicCarRental.Application.Service.Rabbit
                 actionEvent.StationId, actionEvent.AccidentId);
         }
 
-        private string GetActionMessage(AccidentStatus status, ActionType? actionTaken)
+        private string GetActionMessage(AccidentStatus status, ActionType? actionTaken, int accidentId)
         {
             return (status, actionTaken) switch
             {
-                (AccidentStatus.RepairApproved, ActionType.Refund) => "Accident approved - refunds processed",
-                (AccidentStatus.RepairApproved, ActionType.Replace) => "Accident approved - vehicles replaced",
-                (AccidentStatus.RepairApproved, ActionType.RepairOnly) => "Accident approved - repair only",
+                (AccidentStatus.RepairApproved, ActionType.Refund) => $"Issue #{accidentId} Approved - Please change model or refund",
+                (AccidentStatus.RepairApproved, ActionType.Replace) => $"Issue #{accidentId} Approved - Vehicles Replaced",
+                (AccidentStatus.RepairApproved, ActionType.RepairOnly) => $"Issue #{accidentId} Approved - Repair vehicle",
                 (AccidentStatus.UnderInvestigation, _) => "Accident under investigation",
                 (AccidentStatus.UnderRepair, _) => "Vehicle under repair",
                 (AccidentStatus.Repaired, _) => "Vehicle repaired and ready",

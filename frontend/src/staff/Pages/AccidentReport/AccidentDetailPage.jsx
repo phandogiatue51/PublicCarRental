@@ -1,15 +1,15 @@
 import {
-  Container, Breadcrumb, BreadcrumbItem, BreadcrumbLink, Flex, Button, VStack, HStack, Divider,
+  Container, Flex, Button, VStack, HStack,
   Alert, AlertIcon, Spinner, useToast, Box, Text
 } from '@chakra-ui/react';
 import { useState, useEffect, useCallback } from 'react';
 import { accidentAPI } from '../../../services/api';
 import VehicleReplacementPreview from './../../../admin/views/admin/accident/VehicleReplacementPreview';
+import StaffContractResolution from './StaffContractResolution'; // ADD THIS IMPORT
 import { useParams, useNavigate } from 'react-router-dom';
 import AccidentHeader from './AccidentDetails/AccidentHeader';
 import AdminResolutionPanel from './AccidentDetails/AdminResolutionPanel';
 import VehicleInfo from './AccidentDetails/VehicleInfo';
-import DescriptionSection from './AccidentDetails/DescriptionSection';
 import ReportSummary from './AccidentDetails/ReportSummary';
 import ResolutionDetails from './AccidentDetails/ResolutionNotes';
 
@@ -24,9 +24,11 @@ export default function AccidentDetailsPage() {
   const [resolutionNote, setResolutionNote] = useState('');
   const toast = useToast();
   const [showReplacementPreview, setShowReplacementPreview] = useState(false);
+  const [showStaffResolution, setShowStaffResolution] = useState(false); // MOVED UP
   const isAdmin = localStorage.getItem("isAdmin") === "true";
   const navigate = useNavigate();
   const backPath = isAdmin ? '/admin/issue' : '/staff/issues';
+
   const fetchAccidentDetails = useCallback(async () => {
     if (!accidentId) return;
 
@@ -46,6 +48,7 @@ export default function AccidentDetailsPage() {
       setLoading(false);
     }
   }, [accidentId]);
+
   useEffect(() => {
     if (accidentId) {
       fetchAccidentDetails();
@@ -59,6 +62,8 @@ export default function AccidentDetailsPage() {
     setError('');
 
     try {
+      const showActionTypeField = Number(selectedStatus) === 2 && Number(accidentDetails.status) !== 2;
+      
       const finalActionTaken = showActionTypeField && actionType
         ? parseInt(actionType)
         : accidentDetails.actionTaken;
@@ -77,8 +82,8 @@ export default function AccidentDetailsPage() {
       await accidentAPI.updateAccident(accidentDetails.accidentId, updateData);
 
       toast({
-        title: 'Accident Updated',
-        description: 'Accident has been resolved successfully.',
+        title: 'Issue Updated',
+        description: 'Issue has been resolved successfully.',
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -87,11 +92,11 @@ export default function AccidentDetailsPage() {
       fetchAccidentDetails();
 
     } catch (err) {
-      console.error('Error updating accident:', err);
-      setError('Failed to update accident');
+      console.error('Error updating issue:', err);
+      setError('Failed to update issue');
       toast({
         title: 'Error',
-        description: 'Failed to update accident',
+        description: 'Failed to update issue',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -105,6 +110,7 @@ export default function AccidentDetailsPage() {
     setShowReplacementPreview(true);
   };
 
+  // FIXED: Moved helper functions to component level
   const getStatusColor = (status) => {
     const colors = { 0: 'blue', 1: 'orange', 2: 'yellow', 3: 'purple', 4: 'green' };
     return colors[status] || 'gray';
@@ -116,11 +122,6 @@ export default function AccidentDetailsPage() {
       3: 'Under Repair', 4: 'Repaired'
     };
     return statusMap[statusNumber] || 'Reported';
-  };
-
-  const mapActionTypeToString = (actionType) => {
-    const actionMap = { 0: 'Refund', 1: 'Replace', 2: 'RepairOnly' };
-    return actionMap[actionType] || 'No Action';
   };
 
   const formatDate = (dateString) => {
@@ -149,7 +150,8 @@ export default function AccidentDetailsPage() {
     }
   };
 
-  const showActionTypeField = selectedStatus === '2';
+  // FIXED: Define showActionTypeField at component level
+  const showActionTypeField = Number(selectedStatus) === 2 && Number(accidentDetails?.status) !== 2;
 
   return (
     <Container maxW="container.xl" py={8}>
@@ -178,8 +180,6 @@ export default function AccidentDetailsPage() {
                 formatDate={formatDate}
               />
 
-              <Divider />
-
               {isAdmin && accidentDetails.status !== 4 && (
                 <AdminResolutionPanel
                   selectedStatus={selectedStatus}
@@ -205,7 +205,6 @@ export default function AccidentDetailsPage() {
                 )}
 
               <VehicleInfo accidentDetails={accidentDetails} />
-              <DescriptionSection accidentDetails={accidentDetails} />
             </VStack>
 
             {/* Right Column: Image + Summary */}
@@ -219,9 +218,9 @@ export default function AccidentDetailsPage() {
 
           <Flex justify="flex-start" mt={6} gap={3}>
             <Button
+              colorScheme="white"
               variant="outline"
               onClick={() => navigate(backPath)}
-              bg="white"
             >
               Back to List
             </Button>
@@ -239,18 +238,35 @@ export default function AccidentDetailsPage() {
 
             {isAdmin && accidentDetails.status === 0 && (
               <Button colorScheme="teal" onClick={handleShowPreview}>
-                Preview Vehicle Replacement
+                View Affected Contract
+              </Button>
+            )}
+
+            {!isAdmin && accidentDetails.status === 2 && (
+              <Button colorScheme="teal" onClick={() => setShowStaffResolution(true)}>
+                View Affected Contracts
               </Button>
             )}
           </Flex>
         </>
       )}
+      
       <VehicleReplacementPreview
         isOpen={showReplacementPreview}
         onClose={() => setShowReplacementPreview(false)}
         accidentId={accidentDetails?.accidentId}
         onExecuteReplacement={() => {
-          fetchAccidentDetails(); // Refresh page data after replacement
+          fetchAccidentDetails(); 
+        }}
+      />
+
+      <StaffContractResolution
+        isOpen={showStaffResolution}
+        onClose={() => setShowStaffResolution(false)}
+        accidentId={accidentDetails?.accidentId}
+        vehicleId={accidentDetails?.vehicleId}
+        onSuccess={() => {
+          fetchAccidentDetails(); 
         }}
       />
     </Container>

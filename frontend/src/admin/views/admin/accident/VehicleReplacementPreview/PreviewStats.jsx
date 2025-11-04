@@ -5,62 +5,61 @@ import {
 export default function PreviewStats({ data }) {
     if (!data) return null;
 
+    // Calculate counts based on current preview data
+    const totalContracts = data.previewResults?.length || 0;
+    const canBeReplaced = data.previewResults?.filter(c => c.willBeReplaced && c.lockKey && c.lockToken).length || 0;
+    const cannotBeReplaced = totalContracts - canBeReplaced;
+
     return (
         <Card>
             <CardBody>
                 <Grid templateColumns="repeat(4, 1fr)" gap={4}>
                     <Stat>
                         <StatLabel>Total Contracts</StatLabel>
-                        <StatNumber>{data.totalContracts}</StatNumber>
+                        <StatNumber>{totalContracts}</StatNumber>
                     </Stat>
                     <Stat>
                         <StatLabel>Can Be Replaced</StatLabel>
-                        <StatNumber color="green.500">{data.canBeReplaced}</StatNumber>
+                        <StatNumber color="green.500">{canBeReplaced}</StatNumber>
                         <StatHelpText>
-                            {((data.canBeReplaced / data.totalContracts) * 100).toFixed(1)}%
+                            {totalContracts > 0 ? ((canBeReplaced / totalContracts) * 100).toFixed(1) + '%' : '0%'}
                         </StatHelpText>
                     </Stat>
                     <Stat>
                         <StatLabel>Cannot Be Replaced</StatLabel>
-                        <StatNumber color="red.500">{data.cannotBeReplaced}</StatNumber>
+                        <StatNumber color="red.500">{cannotBeReplaced}</StatNumber>
                         <StatHelpText>
-                            {((data.cannotBeReplaced / data.totalContracts) * 100).toFixed(1)}%
+                            {totalContracts > 0 ? ((cannotBeReplaced / totalContracts) * 100).toFixed(1) + '%' : '0%'}
                         </StatHelpText>
                     </Stat>
                     <Stat>
                         <StatLabel>Success Rate</StatLabel>
                         <StatNumber
                             color={
-                                data.totalContracts === 0
+                                totalContracts === 0
                                     ? 'blue.500'
-                                    : data.cannotBeReplaced === 0
+                                    : cannotBeReplaced === 0
                                         ? 'green.500'
                                         : 'red.500'
                             }
                         >
-                            {data.totalContracts === 0
+                            {totalContracts === 0
                                 ? 'Success'
-                                : data.cannotBeReplaced === 0
+                                : cannotBeReplaced === 0
                                     ? 'Ready'
                                     : 'Needs Review'}
                         </StatNumber>
                     </Stat>
-
                 </Grid>
                 <Progress
-                    value={
-                        data.totalContracts === 0
-                            ? 100
-                            : (data.canBeReplaced / data.totalContracts) * 100
-                    }
+                    value={totalContracts === 0 ? 100 : (canBeReplaced / totalContracts) * 100}
                     colorScheme={
-                        data.totalContracts === 0
+                        totalContracts === 0
                             ? 'blue'
-                            : data.cannotBeReplaced === 0
+                            : cannotBeReplaced === 0
                                 ? 'green'
                                 : 'red'
                     }
-                    mt={4}
                     size="lg"
                 />
             </CardBody>

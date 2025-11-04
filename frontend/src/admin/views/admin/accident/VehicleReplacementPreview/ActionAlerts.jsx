@@ -1,11 +1,24 @@
-import { Alert, AlertIcon, Box, Text } from '@chakra-ui/react';
+import { Alert, AlertIcon, Box, Text, Badge, HStack } from '@chakra-ui/react';
 
-export default function ActionAlerts({ data }) {
+export default function ActionAlerts({ data, lastRefreshed }) {
     if (!data) return null;
+
+    const hasExpiredLocks = data.previewResults?.some(
+        contract => contract.willBeReplaced && (!contract.lockKey || !contract.lockToken)
+    );
 
     return (
         <>
-            {/* Action Required Alert */}
+            {hasExpiredLocks && (
+                <Alert status="warning">
+                    <AlertIcon />
+                    <Box>
+                        <Text fontWeight="bold">Some vehicle locks have expired</Text>
+                        <Text fontSize="sm">Refresh the preview to renew locks and enable replacement</Text>
+                    </Box>
+                </Alert>
+            )}
+
             {data.cannotBeReplaced > 0 && (
                 <Alert status="warning">
                     <AlertIcon />
@@ -13,23 +26,30 @@ export default function ActionAlerts({ data }) {
                         <Text fontWeight="bold">
                             {data.cannotBeReplaced} contract(s) cannot be automatically replaced
                         </Text>
-                        <Text fontSize="sm">
-                            These contracts will need manual staff follow-up after admin executes vehicle replacement. 
+                        <Text fontSize="md">
                             Staff may need to contact customers for model changes or refunds.
                         </Text>
                     </Box>
                 </Alert>
             )}
 
-            {data.cannotBeReplaced === 0 && data.totalContracts > 0 && (
+            {data.cannotBeReplaced === 0 && data.totalContracts > 0 && !hasExpiredLocks && (
                 <Alert status="success">
                     <AlertIcon />
-                    All affected contracts can be automatically replaced! You can safely proceed with the replacement.
-                    No staff intervention will be needed.
+                    <HStack>
+                        <Box>
+                            <Text fontWeight="bold">All contracts ready for replacement!</Text>
+                            <Text fontSize="sm">Vehicle locks are active. You can safely proceed with replacement.</Text>
+                        </Box>
+                        {lastRefreshed && (
+                            <Badge colorScheme="green" ml="auto">
+                                Locks active
+                            </Badge>
+                        )}
+                    </HStack>
                 </Alert>
             )}
 
-            {/* No Contracts Alert */}
             {data.totalContracts === 0 && (
                 <Alert status="info">
                     <AlertIcon />

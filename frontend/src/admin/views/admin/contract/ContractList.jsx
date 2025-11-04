@@ -647,12 +647,21 @@ export default function ContractList() {
               {table.getHeaderGroups().map((headerGroup) => (
                 <Tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <Th key={header.id} borderColor={borderColor}>
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                    <Th
+                      key={header.id}
+                      borderColor={borderColor}
+                      cursor={header.column.getCanSort() ? "pointer" : "default"}
+                      onClick={header.column.getToggleSortingHandler()}
+                    >
+                      <Flex align="center" gap={2}>
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {{
+                          asc: "▲",
+                          desc: "▼",
+                        }[header.column.getIsSorted()] ?? null}
+                      </Flex>
                     </Th>
+
                   ))}
                 </Tr>
               ))}

@@ -284,7 +284,7 @@ export default function StaffList() {
         </Flex>
       ),
     }),
-   
+
     columnHelper.accessor("phoneNumber", {
       header: () => <Text color="gray.400" fontSize="12px">PHONE</Text>,
       cell: (info) => (
@@ -422,7 +422,7 @@ export default function StaffList() {
         </HStack>
       </Flex>
 
-     {/* 🔍 Filter Section */}
+      {/* 🔍 Filter Section */}
       <Card mb={4} p={4}>
         <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 6 }} spacing={4}>
           <Select
@@ -492,11 +492,19 @@ export default function StaffList() {
             {table.getHeaderGroups().map((headerGroup) => (
               <Tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <Th key={header.id} borderColor={borderColor}>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
+                  <Th
+                    key={header.id}
+                    borderColor={borderColor}
+                    cursor={header.column.getCanSort() ? "pointer" : "default"}
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    <Flex align="center" gap={2}>
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {{
+                        asc: "▲",
+                        desc: "▼",
+                      }[header.column.getIsSorted()] ?? null}
+                    </Flex>
                   </Th>
                 ))}
               </Tr>

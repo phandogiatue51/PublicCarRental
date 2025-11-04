@@ -90,5 +90,34 @@ namespace PublicCarRental.Presentation.Controllers
                 return StatusCode(500, "Error checking availability");
             }
         }
+
+        [HttpPost("get-available-counts")]
+        public async Task<ActionResult<List<ModelAvailabilityDto>>> GetAvailableCounts([FromBody] ModelAvailabilityRequest dto)
+        {
+            try
+            {
+                var models = await _service.GetAllModelsAsync(); 
+                var result = new List<ModelAvailabilityDto>();
+
+                foreach (var model in models)
+                {
+                    var count = await _vehicleService.GetAvailableVehicleCountByModelAsync(
+                        model.ModelId, dto.StationId, dto.StartTime, dto.EndTime);
+
+                    result.Add(new ModelAvailabilityDto
+                    {
+                        ModelId = model.ModelId,
+                        Count = count
+                    });
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting available counts");
+                return StatusCode(500, "Error checking availability");
+            }
+        }
     }
 }

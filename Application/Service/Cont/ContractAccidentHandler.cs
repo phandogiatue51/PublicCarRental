@@ -1,9 +1,11 @@
 ﻿using PublicCarRental.Application.DTOs.Accident;
 using PublicCarRental.Application.DTOs.BadScenario;
 using PublicCarRental.Application.DTOs.Veh;
+using PublicCarRental.Application.Service.Cont;
+using PublicCarRental.Application.Service.Rabbit;
+using PublicCarRental.Application.Service.Redis;
 using PublicCarRental.Application.Service.Veh;
 using PublicCarRental.Infrastructure.Data.Models;
-using PublicCarRental.Application.Service.Rabbit;
 
 namespace PublicCarRental.Application.Service.Cont
 {
@@ -13,57 +15,18 @@ namespace PublicCarRental.Application.Service.Cont
         private readonly IContractService _contractService;
         private readonly IAccidentRepository _accidentRepository;
         private readonly IServiceProvider _serviceProvider;
-        public ContractAccidentHandler(IVehicleService vehicleService, IContractService contractService, 
-            IAccidentRepository accidentRepository, IServiceProvider serviceProvider)
+        private readonly IDistributedLockService _distributedLock;
+        private readonly ILogger<ContractAccidentHandler> _logger;
+        public ContractAccidentHandler(IVehicleService vehicleService, IContractService contractService,
+            IAccidentRepository accidentRepository, IServiceProvider serviceProvider, IDistributedLockService distributedLock,
+            ILogger<ContractAccidentHandler> logger)
         {
             _vehicleService = vehicleService;
             _contractService = contractService;
             _serviceProvider = serviceProvider;
             _accidentRepository = accidentRepository;
-        }
-
-        public async Task HandleAffectedContracts(int damagedVehicleId, string accidentReason)
-        {
-            var affectedContracts = _contractService.GetConfirmedContractByVehicle(damagedVehicleId);
-
-            foreach (var contract in affectedContracts.Where(c => c.StartTime > DateTime.UtcNow))
-            {
-                await ProcessContractReplacement(contract, accidentReason);
-            }
-        }
-
-        public async Task<AccidentProcessingResult> ProcessApprovedAccidentAsync(int accidentId, string approvalNotes)
-        {
-            var accident = _accidentRepository.GetAll()
-                .FirstOrDefault(a => a.AccidentId == accidentId);
-            if (accident == null)
-                return new AccidentProcessingResult { Success = false, Message = "Accident report not found" };
-
-            var affectedContracts = _contractService.GetConfirmedContractByVehicle(accident.VehicleId)
-                .Where(c => c.StartTime > DateTime.UtcNow)
-                .ToList();
-
-            int processedCount = 0;
-            var results = new List<ModificationResultDto>();
-
-            foreach (var contract in affectedContracts)
-            {
-                var result = await ProcessContractReplacement(contract,
-                    $"Approved replacement: {accident.Description}", true);
-
-                if (result.Success) processedCount++;
-                results.Add(result);
-            }
-            accident.Status = AccidentStatus.RepairApproved;
-            _accidentRepository.UpdateAcc(accident);
-
-            return new AccidentProcessingResult
-            {
-                Success = processedCount > 0,
-                Message = $"Processed {processedCount} out of {affectedContracts.Count} affected contracts",
-                AffectedContracts = processedCount,
-                ProcessingResults = results
-            };
+            _distributedLock = distributedLock;
+            _logger = logger;
         }
 
         public async Task<List<VehicleOptionDto>> GetAvailableReplacementOptions(int contractId)
@@ -79,23 +42,14 @@ namespace PublicCarRental.Application.Service.Cont
             options.AddRange(sameModelVehicles.Select(v => new VehicleOptionDto
             {
                 Vehicle = MapToVehicleDto(v),
-                OptionType = "SameModel",
+                OptionType = "Same Model",
                 PriceDifference = 0
-            }));
-
-            var otherVehicles = await _vehicleService.GetAvailableVehiclesByModelAsync(currentVehicle.ModelId, (int)contract.StationId, contract.StartTime, contract.EndTime);
-
-            options.AddRange(otherVehicles.Select(v => new VehicleOptionDto
-            {
-                Vehicle = MapToVehicleDto(v),
-                OptionType = "DifferentModel",
-                PriceDifference = v.Model.PricePerHour - currentVehicle.Model.PricePerHour
             }));
 
             return options.OrderBy(o => o.PriceDifference).ToList();
         }
 
-        public async Task<ModificationResultDto> SelectReplacementVehicle(int contractId, int vehicleId, string reason)
+        public async Task<ModificationResultDto> SelectReplacementVehicle(int contractId, int vehicleId)
         {
             try
             {
@@ -118,7 +72,6 @@ namespace PublicCarRental.Application.Service.Cont
                 return new ModificationResultDto
                 {
                     Success = true,
-                    Message = $"Vehicle replaced successfully due to: {reason}"
                 };
             }
             catch (Exception ex)
@@ -129,36 +82,6 @@ namespace PublicCarRental.Application.Service.Cont
                     Message = $"Error replacing vehicle: {ex.Message}"
                 };
             }
-        }
-
-
-        private async Task<ModificationResultDto> ProcessContractReplacement(RentalContract contract, string reason, bool isApproved = false, int? approvedBy = null)
-        {
-            var availableVehicles = await GetAvailableReplacementOptions(contract.ContractId);
-
-            if (availableVehicles.Any())
-            {
-                return new ModificationResultDto
-                {
-                    Success = true,
-                    Message = "Available vehicles found. Please select one.",
-                    AvailableVehicles = availableVehicles,
-                    RequiresUserSelection = true
-                };
-            }
-            else
-            {
-                return await ProcessNoVehicleAvailable(contract, reason);
-            }
-        }
-
-        private async Task<ModificationResultDto> ProcessNoVehicleAvailable(RentalContract contract, string reason)
-        {
-            return new ModificationResultDto
-            {
-                Success = false,
-                Message = "No replacement vehicles available - requires staff follow-up"
-            };
         }
 
         private VehicleDto MapToVehicleDto(Vehicle vehicle)
@@ -176,33 +99,6 @@ namespace PublicCarRental.Application.Service.Cont
             };
         }
 
-        public async Task<AccidentProcessingResult> RejectAutomaticReplacementAsync(int accidentId, string reason)
-        {
-            var accident = _accidentRepository.GetAll()
-                .FirstOrDefault(a => a.AccidentId == accidentId);
-            if (accident == null)
-                return new AccidentProcessingResult { Success = false, Message = "Accident report not found" };
-
-            accident.Status = AccidentStatus.UnderInvestigation;
-            _accidentRepository.UpdateAcc(accident);
-
-            return new AccidentProcessingResult
-            {
-                Success = true,
-                Message = $"Automatic replacement rejected. Accident #{accidentId} requires manual handling.",
-                AffectedContracts = 0
-            };
-        }
-
-        public async Task<List<RentalContract>> GetAffectedContractsAsync(int vehicleId)
-        {
-            var contracts = _contractService.GetConfirmedContractByVehicle(vehicleId)
-                .Where(c => c.StartTime > DateTime.UtcNow)
-                .ToList();
-
-            return contracts;
-        }
-
         public async Task<BulkReplacementResult> SmartBulkReplaceAsync(int accidentId)
         {
             var accident = _accidentRepository.GetAll()
@@ -210,8 +106,8 @@ namespace PublicCarRental.Application.Service.Cont
             if (accident == null)
                 return new BulkReplacementResult { Success = false, Message = "Accident not found" };
 
-            var remainingContracts = (await GetAffectedContractsAsync(accident.VehicleId))
-                .Where(c => c.VehicleId == accident.VehicleId) // Only contracts that haven't been replaced yet
+            var remainingContracts = _contractService.GetAffectedContracts(accident.VehicleId)
+                .Where(c => c.VehicleId == accident.VehicleId)
                 .OrderBy(c => c.StartTime)
                 .ToList();
 
@@ -306,70 +202,66 @@ namespace PublicCarRental.Application.Service.Cont
 
         private async Task<ModificationResultDto> ReplaceSingleContract(RentalContract contract, int newVehicleId)
         {
-            return await SelectReplacementVehicle(contract.ContractId, newVehicleId,
-                "Bulk replacement from accident");
+            return await SelectReplacementVehicle(contract.ContractId, newVehicleId);
         }
 
         public async Task<ReplacementPreviewDto> GetReplacementPreviewAsync(int accidentId)
         {
             try
             {
-                var accident = _accidentRepository.GetAll()
-                    .FirstOrDefault(a => a.AccidentId == accidentId);
+                var accident = _accidentRepository.GetAll().FirstOrDefault(a => a.AccidentId == accidentId);
                 if (accident == null)
                     return new ReplacementPreviewDto { Success = false, Message = "Accident not found" };
 
-                var remainingContracts = (await GetAffectedContractsAsync(accident.VehicleId))
+                var affectedContracts = _contractService.GetAffectedContracts(accident.VehicleId)
                     .Where(c => c.VehicleId == accident.VehicleId)
                     .OrderBy(c => c.StartTime)
                     .ToList();
 
-                if (!remainingContracts.Any())
-                {
-                    return new ReplacementPreviewDto
-                    {
-                        Success = true,
-                        Message = "No contracts need replacement",
-                        TotalContracts = 0,
-                        CanBeReplaced = 0,
-                        CannotBeReplaced = 0,
-                        PreviewResults = new List<ContractReplacementPreview>()
-                    };
-                }
-
-                var totalAffected = (await GetAffectedContractsAsync(accident.VehicleId)).Count;
-                var alreadyProcessed = totalAffected - remainingContracts.Count;
-
-                var availableVehiclesPool = await GetAvailableReplacementPool(accident.VehicleId, remainingContracts);
-                var availableVehiclesCopy = availableVehiclesPool?.ToList() ?? new List<VehicleOptionDto>();
                 var previewResults = new List<ContractReplacementPreview>();
 
-                foreach (var contract in remainingContracts)
+                foreach (var contract in affectedContracts)
                 {
-                    var bestMatch = FindBestAvailableVehicle(availableVehiclesCopy, contract);
-                    if (bestMatch != null)
+                    var firstAvailable = (await GetAvailableReplacementOptions(contract.ContractId)).FirstOrDefault();
+
+                    if (firstAvailable != null)
                     {
-                        previewResults.Add(new ContractReplacementPreview
+                        var lockKey = $"vehicle_replacement:{firstAvailable.Vehicle.VehicleId}:{contract.ContractId}";
+                        var lockToken = Guid.NewGuid().ToString();
+                        var lockExpiry = TimeSpan.FromMinutes(5);
+
+                        if (_distributedLock.AcquireLock(lockKey, lockToken, lockExpiry))
                         {
-                            ContractId = contract.ContractId,
-                            RenterName = contract.EVRenter?.Account?.FullName ?? "Unknown",
-                            StartTime = contract.StartTime,
-                            CurrentVehicleId = (int)contract.VehicleId,
-                            NewVehicleId = bestMatch.Vehicle.VehicleId,
-                            NewVehicleInfo = $"{bestMatch.Vehicle.LicensePlate} - {bestMatch.Vehicle.ModelName}",
-                            WillBeReplaced = true,
-                            ReplacementType = bestMatch.OptionType
-                        });
-                        availableVehiclesCopy.Remove(bestMatch);
+                            previewResults.Add(new ContractReplacementPreview
+                            {
+                                ContractId = contract.ContractId,
+                                RenterName = contract.EVRenter?.Account?.FullName ?? "Unknown",
+                                StartTime = contract.StartTime,
+                                CurrentVehicleId = (int)contract.VehicleId,
+                                NewVehicleId = firstAvailable.Vehicle.VehicleId,
+                                NewVehicleInfo = $"{firstAvailable.Vehicle.LicensePlate} - {firstAvailable.Vehicle.ModelName}",
+                                WillBeReplaced = true,
+                                ReplacementType = firstAvailable.OptionType,
+                                LockToken = lockToken,
+                                LockKey = lockKey,
+                                LockExpiresAt = DateTime.UtcNow.Add(lockExpiry)
+                            });
+                        }
+                        else
+                        {
+                            previewResults.Add(new ContractReplacementPreview
+                            {
+                                ContractId = contract.ContractId,
+                                WillBeReplaced = false,
+                                Reason = "Vehicle is currently being assigned to another contract"
+                            });
+                        }
                     }
                     else
                     {
                         previewResults.Add(new ContractReplacementPreview
                         {
                             ContractId = contract.ContractId,
-                            RenterName = contract.EVRenter?.Account?.FullName ?? "Unknown",
-                            StartTime = contract.StartTime,
-                            CurrentVehicleId = (int)contract.VehicleId,
                             WillBeReplaced = false,
                             Reason = "No available replacement vehicle"
                         });
@@ -380,7 +272,7 @@ namespace PublicCarRental.Application.Service.Cont
                 {
                     Success = true,
                     AccidentId = accidentId,
-                    TotalContracts = totalAffected,
+                    TotalContracts = affectedContracts.Count,
                     CanBeReplaced = previewResults.Count(r => r.WillBeReplaced),
                     CannotBeReplaced = previewResults.Count(r => !r.WillBeReplaced),
                     PreviewResults = previewResults
@@ -388,11 +280,128 @@ namespace PublicCarRental.Application.Service.Cont
             }
             catch (Exception ex)
             {
-                return new ReplacementPreviewDto
+                return new ReplacementPreviewDto { Success = false, Message = $"Error generating preview: {ex.Message}" };
+            }
+        }
+
+        public async Task<ModificationResultDto> ConfirmFirstAvailableVehicle(int contractId, string lockKey, string lockToken)
+        {
+            try
+            {
+                // Verify lock ownership using the new method
+                if (!await _distributedLock.VerifyLockOwnershipAsync(lockKey, lockToken))
                 {
-                    Success = false,
-                    Message = $"Error generating preview: {ex.Message}"
+                    return new ModificationResultDto
+                    {
+                        Success = false,
+                        Message = "Lock expired or invalid. Please refresh the preview and try again."
+                    };
+                }
+
+                var contract = _contractService.GetEntityById(contractId);
+                if (contract == null)
+                {
+                    _distributedLock.ReleaseLock(lockKey, lockToken);
+                    return new ModificationResultDto { Success = false, Message = "Contract not found" };
+                }
+
+                // Extract vehicle ID from lock key and verify availability
+                var vehicleId = ExtractVehicleIdFromLockKey(lockKey);
+                var isStillAvailable = await CheckVehicleAvailabilityForContractAsync(vehicleId, contract);
+
+                if (!isStillAvailable)
+                {
+                    _distributedLock.ReleaseLock(lockKey, lockToken);
+                    return new ModificationResultDto
+                    {
+                        Success = false,
+                        Message = "Vehicle no longer available for this contract period"
+                    };
+                }
+
+                // Perform the assignment
+                contract.VehicleId = vehicleId;
+                _contractService.UpdateContract(contract);
+
+                // Release the lock after successful assignment
+                _distributedLock.ReleaseLock(lockKey, lockToken);
+
+                return new ModificationResultDto
+                {
+                    Success = true,
+                    Message = $"Vehicle {vehicleId} successfully assigned to contract {contractId}"
                 };
+            }
+            catch (Exception ex)
+            {
+                // Always release lock on error
+                _distributedLock.ReleaseLock(lockKey, lockToken);
+                return new ModificationResultDto { Success = false, Message = $"Error replacing vehicle: {ex.Message}" };
+            }
+        }
+
+        private int ExtractVehicleIdFromLockKey(string lockKey)
+        {
+            var parts = lockKey.Split(':');
+            return int.Parse(parts[1]);
+        }
+
+        private async Task<bool> CheckVehicleAvailabilityForContractAsync(int vehicleId, RentalContract contract)
+        {
+            var options = await GetAvailableReplacementOptions(contract.ContractId);
+            return options.Any(o => o.Vehicle.VehicleId == vehicleId);
+        }
+
+        public async Task<SingleContractPreviewDto> GetSingleContractPreviewAsync(int contractId)
+        {
+            try
+            {
+                var contract = _contractService.GetEntityById(contractId);
+                if (contract == null)
+                    return new SingleContractPreviewDto { Success = false, Message = "Contract not found" };
+
+                var firstAvailable = (await GetAvailableReplacementOptions(contractId)).FirstOrDefault();
+
+                if (firstAvailable == null)
+                {
+                    return new SingleContractPreviewDto
+                    {
+                        Success = true,
+                        WillBeReplaced = false,
+                        Reason = "No available replacement vehicle"
+                    };
+                }
+
+                var lockKey = $"vehicle_replacement:{firstAvailable.Vehicle.VehicleId}:{contractId}";
+                var lockToken = Guid.NewGuid().ToString();
+                var lockExpiry = TimeSpan.FromMinutes(5);
+
+                if (!_distributedLock.AcquireLock(lockKey, lockToken, lockExpiry))
+                {
+                    return new SingleContractPreviewDto
+                    {
+                        Success = true,
+                        WillBeReplaced = false,
+                        Reason = "Vehicle is currently being assigned to another contract"
+                    };
+                }
+
+                return new SingleContractPreviewDto
+                {
+                    Success = true,
+                    WillBeReplaced = true,
+                    ContractId = contractId,
+                    NewVehicleId = firstAvailable.Vehicle.VehicleId,
+                    NewVehicleInfo = $"{firstAvailable.Vehicle.LicensePlate} - {firstAvailable.Vehicle.ModelName}",
+                    ReplacementType = firstAvailable.OptionType,
+                    LockToken = lockToken,
+                    LockKey = lockKey,
+                    LockExpiresAt = DateTime.UtcNow.Add(lockExpiry)
+                };
+            }
+            catch (Exception ex)
+            {
+                return new SingleContractPreviewDto { Success = false, Message = $"Error generating preview: {ex.Message}" };
             }
         }
     }

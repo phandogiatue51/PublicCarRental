@@ -131,12 +131,38 @@ export default function AccidentList() {
   const mapStatusNumberToString = (statusNumber) => {
     const statusMap = {
       0: 'Reported',
-      1: 'UnderInvestigation',
-      2: 'RepairApproved',
-      3: 'UnderRepair',
+      1: 'Under Investigation',
+      2: 'Repair Approved',
+      3: 'Under Repair',
       4: 'Repaired'
     };
     return statusMap[statusNumber] || 'Reported';
+  };
+
+  const mapActionNumberToString = (actionValue) => {  
+  if (actionValue === null || actionValue === undefined) return 'Pending';
+
+  const num = Number(actionValue);
+  const actionMap = {
+    0: 'Replace and Refund',
+    1: 'Replace',
+    2: 'Repair'
+  };
+
+  return actionMap[num] || 'Pending';
+};
+
+  const getActionColor = (actionValue) => {
+    if (actionValue === null || actionValue === undefined) return 'gray';
+
+    const num = Number(actionValue);
+    const colors = {
+      0: 'orange',
+      1: 'green',
+      2: 'blue'
+    };
+
+    return colors[num] || 'gray';
   };
 
   const columns = [
@@ -153,11 +179,11 @@ export default function AccidentList() {
         </Text>
       ),
     }),
-    columnHelper.accessor('vehicleId', {
-      id: 'vehicleId',
+    columnHelper.accessor(row => `#${row.vehicleId} - ${row.licensePlate}`, {
+      id: 'vehicle',
       header: () => (
         <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
-          VEHICLE ID
+          VEHICLE
         </Text>
       ),
       cell: (info) => (
@@ -179,19 +205,6 @@ export default function AccidentList() {
         </Text>
       ),
     }),
-    columnHelper.accessor('description', {
-      id: 'description',
-      header: () => (
-        <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
-          DESCRIPTION
-        </Text>
-      ),
-      cell: (info) => (
-        <Text color={textColor} fontSize="sm" noOfLines={2} maxW="200px">
-          {info.getValue() || 'No description'}
-        </Text>
-      ),
-    }),
     columnHelper.accessor('reportedAt', {
       id: 'reportedAt',
       header: () => (
@@ -205,6 +218,7 @@ export default function AccidentList() {
         </Text>
       ),
     }),
+
     columnHelper.accessor('status', {
       id: 'status',
       header: () => (
@@ -231,32 +245,40 @@ export default function AccidentList() {
         );
       },
     }),
-    columnHelper.accessor('imageUrl', {
-      id: 'image',
+    columnHelper.accessor('actionTaken', {
+      id: 'actionTaken',
       header: () => (
         <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
-          IMAGE
+          RESOLUTION
         </Text>
       ),
-      cell: (info) => (
-        info.getValue() ? (
-          <Image
-            src={info.getValue()}
-            alt="Accident"
-            boxSize="40px"
-            objectFit="cover"
-            borderRadius="md"
-            cursor="pointer"
-            onClick={() => {
-              setImagePreview(info.getValue());
-              onImageModalOpen();
-            }}
-            _hover={{ opacity: 0.8 }}
-          />
-        ) : (
-          <Text color="gray.500" fontSize="sm">No Image</Text>
-        )
-      ),
+      cell: (info) => {
+        const actionValue = info.getValue();
+        const status = info.row.original.status;
+
+        if (status === 0 || actionValue === null || actionValue === undefined) {
+          return (
+            <Badge colorScheme="gray" fontSize="xs" px={2} py={1} borderRadius="full">
+              Pending
+            </Badge>
+          );
+        }
+
+        const actionText = mapActionNumberToString(actionValue);
+        const colorScheme = getActionColor(actionValue);
+
+        return (
+          <Badge
+            colorScheme={colorScheme}
+            fontSize="xs"
+            px={2}
+            py={1}
+            borderRadius="full"
+          >
+            {actionText}
+          </Badge>
+        );
+      }
     }),
     columnHelper.accessor('actions', {
       id: 'actions',
@@ -348,13 +370,10 @@ export default function AccidentList() {
     );
   }
 
-
-
   return (
     <Box >
       <Flex direction="column" gap="20px" me="auto">
         <Flex
-          mt="45px"
           justifyContent="space-between"
           direction={{ base: 'column', md: 'row' }}
           align={{ base: 'start', md: 'center' }}

@@ -1,7 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PublicCarRental.Application.DTOs.Accident;
+using PublicCarRental.Application.DTOs.BadScenario;
+using PublicCarRental.Application.DTOs.Veh;
 using PublicCarRental.Application.Service;
 using PublicCarRental.Application.Service.Cont;
+using PublicCarRental.Application.Service.Veh;
 using PublicCarRental.Infrastructure.Data.Models;
 
 namespace PublicCarRental.Presentation.Controllers
@@ -13,12 +16,17 @@ namespace PublicCarRental.Presentation.Controllers
         private readonly IAccidentService _accidentService;
         private readonly ILogger<AccidentController> _logger;
         private readonly IContractAccidentHandler _accidentHandler;
+        private readonly IContractService _contractService;
+        private readonly IVehicleService _vehicleService;
 
-        public AccidentController(IAccidentService accidentService, ILogger<AccidentController> logger, IContractAccidentHandler accidentHandler)
+        public AccidentController(IAccidentService accidentService, ILogger<AccidentController> logger, IContractAccidentHandler accidentHandler,
+            IContractService contractService, IVehicleService vehicleService)
         {
             _accidentService = accidentService;
             _logger = logger;
             _accidentHandler = accidentHandler;
+            _contractService = contractService;
+            _vehicleService = vehicleService;
         }
 
         [HttpGet("get-all")]
@@ -137,16 +145,12 @@ namespace PublicCarRental.Presentation.Controllers
             try
             {
                 var result = await _accidentHandler.GetReplacementPreviewAsync(accidentId);
-
-                if (!result.Success)
-                    return BadRequest(result);
-
+                if (!result.Success) return BadRequest(result);
                 return Ok(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting replacement preview for accident {AccidentId}", accidentId);
-
                 return StatusCode(500, new ReplacementPreviewDto
                 {
                     Success = false,
@@ -160,6 +164,68 @@ namespace PublicCarRental.Presentation.Controllers
         {
             var result = await _accidentHandler.SmartBulkReplaceAsync(accidentId);
             return Ok(result);
+        }
+
+        [HttpGet("preview-replacement/{contractId}")]
+        public async Task<ActionResult<SingleContractPreviewDto>> PreviewReplacement(int contractId)
+        {
+            try
+            {
+                var result = await _accidentHandler.GetSingleContractPreviewAsync(contractId);
+                if (!result.Success) return BadRequest(result);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating replacement preview for contract {ContractId}", contractId);
+                return StatusCode(500, new SingleContractPreviewDto
+                {
+                    Success = false,
+                    Message = "An internal error occurred"
+                });
+            }
+        }
+
+        [HttpPost("contract/{contractId}/replace")]
+        public async Task<ActionResult<ModificationResultDto>> ReplaceSingleContract(int contractId, [FromBody] ReplaceContractRequest request)
+        {
+            try
+            {
+                var result = await _accidentHandler.ConfirmFirstAvailableVehicle(
+                    contractId, request.LockKey, request.LockToken);
+                if (!result.Success) return BadRequest(result);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error replacing vehicle for contract {ContractId}", contractId);
+                return StatusCode(500, new ModificationResultDto
+                {
+                    Success = false,
+                    Message = "An internal error occurred"
+                });
+            }
+        }
+
+        [HttpPost("confirm-replacement")]
+        public async Task<ActionResult<ModificationResultDto>> ConfirmReplacement([FromBody] ConfirmReplacementRequest request)
+        {
+            try
+            {
+                var result = await _accidentHandler.ConfirmFirstAvailableVehicle(
+                    request.ContractId, request.LockKey, request.LockToken);
+                if (!result.Success) return BadRequest(result);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error confirming replacement for contract {ContractId}", request?.ContractId);
+                return StatusCode(500, new ModificationResultDto
+                {
+                    Success = false,
+                    Message = "An internal error occurred during confirmation"
+                });
+            }
         }
     }
 }

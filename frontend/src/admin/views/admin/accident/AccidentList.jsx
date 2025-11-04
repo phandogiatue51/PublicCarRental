@@ -135,6 +135,32 @@ export default function AccidentList() {
     return statusMap[statusNumber] || 'Reported';
   };
 
+  const mapActionNumberToString = (actionValue) => {
+    if (actionValue === null || actionValue === undefined) return 'Pending';
+
+    const num = Number(actionValue);
+    const actionMap = {
+      0: 'Replace and Refund',
+      1: 'Replace',
+      2: 'Repair'
+    };
+
+    return actionMap[num] || 'Pending';
+  };
+
+  const getActionColor = (actionValue) => {
+    if (actionValue === null || actionValue === undefined) return 'gray';
+
+    const num = Number(actionValue);
+    const colors = {
+      0: 'orange',
+      1: 'green',
+      2: 'blue'
+    };
+
+    return colors[num] || 'gray';
+  };
+
   const columns = [
     columnHelper.accessor('accidentId', {
       id: 'accidentId',
@@ -149,11 +175,11 @@ export default function AccidentList() {
         </Text>
       ),
     }),
-    columnHelper.accessor('vehicleId', {
-      id: 'vehicleId',
+    columnHelper.accessor(row => `#${row.vehicleId} - ${row.licensePlate}`, {
+      id: 'vehicle',
       header: () => (
         <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
-          VEHICLE ID
+          VEHICLE
         </Text>
       ),
       cell: (info) => (
@@ -228,7 +254,41 @@ export default function AccidentList() {
         );
       },
     }),
+    columnHelper.accessor('actionTaken', {
+      id: 'actionTaken',
+      header: () => (
+        <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
+          RESOLUTION
+        </Text>
+      ),
+      cell: (info) => {
+        const actionValue = info.getValue();
+        const status = info.row.original.status;
 
+        if (status === 0 || actionValue === null || actionValue === undefined) {
+          return (
+            <Badge colorScheme="gray" fontSize="xs" px={2} py={1} borderRadius="full">
+              Pending
+            </Badge>
+          );
+        }
+
+        const actionText = mapActionNumberToString(actionValue);
+        const colorScheme = getActionColor(actionValue);
+
+        return (
+          <Badge
+            colorScheme={colorScheme}
+            fontSize="xs"
+            px={2}
+            py={1}
+            borderRadius="full"
+          >
+            {actionText}
+          </Badge>
+        );
+      }
+    }),
     columnHelper.accessor('actions', {
       id: 'actions',
       header: () => (
@@ -326,7 +386,7 @@ export default function AccidentList() {
           justifyContent="space-between"
           direction={{ base: 'column', md: 'row' }}
           align={{ base: 'start', md: 'center' }}
-          >
+        >
           <Text color={textColor} fontSize="2xl" ms="24px" fontWeight="700">
             Issue Report Management
           </Text>

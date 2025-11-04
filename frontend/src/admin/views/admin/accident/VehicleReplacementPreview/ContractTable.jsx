@@ -1,16 +1,44 @@
-import { 
-    Card, CardHeader, CardBody, Table, Thead, Tbody, Tr, Th, Td, 
-    Text, VStack, Badge 
+import {
+    Button, useToast, Card, CardHeader, Text, CardBody, Th, Tbody, Td, Badge
+    , Table, Thead, Tr, VStack
 } from '@chakra-ui/react';
+import { accidentAPI } from './../../../../../services/api';
+import { useState } from 'react';
 
-export default function ContractTable({ data }) {
-    const getReplacementTypeColor = (type) => {
-        const colors = {
-            'SameModel': 'green',
-            'DifferentModel': 'orange',
-            'NoReplacement': 'red'
-        };
-        return colors[type] || 'gray';
+export default function ContractTable({ data, onContractReplaced, onRefresh }) {
+    const [replacing, setReplacing] = useState(null);
+    const toast = useToast();
+    const handleReplace = async (contractId, lockKey, lockToken) => {
+        setReplacing(contractId);
+        try {
+            const result = await accidentAPI.replaceSingleContract(contractId, lockKey, lockToken);
+            
+            toast({
+                title: result.success ? 'Success' : 'Error',
+                description: result.message,
+                status: result.success ? 'success' : 'error',
+                duration: 3000,
+                isClosable: true,
+            });
+
+            if (result.success) {
+                if (onRefresh) {
+                    await onRefresh();
+                }
+            }
+
+            if (onContractReplaced) onContractReplaced(result);
+        } catch (err) {
+            toast({
+                title: 'Error',
+                description: 'Failed to replace this contract',
+                status: 'error',
+                duration: 3000,
+                isClosable: true,
+            });
+        } finally {
+            setReplacing(null);
+        }
     };
 
     if (!data?.previewResults?.length) return null;
@@ -25,19 +53,17 @@ export default function ContractTable({ data }) {
                     <Thead>
                         <Tr>
                             <Th>Contract ID</Th>
-                            <Th>Renter</Th>
                             <Th>Start Time</Th>
                             <Th>Current Vehicle</Th>
                             <Th>Replacement Vehicle</Th>
                             <Th>Status</Th>
-                            <Th>Type</Th>
+                            <Th>Action</Th>
                         </Tr>
                     </Thead>
                     <Tbody>
                         {data.previewResults.map((contract) => (
                             <Tr key={contract.contractId}>
                                 <Td fontWeight="medium">#{contract.contractId}</Td>
-                                <Td>{contract.renterName}</Td>
                                 <Td>{new Date(contract.startTime).toLocaleString()}</Td>
                                 <Td>Vehicle #{contract.currentVehicleId}</Td>
                                 <Td>
@@ -47,6 +73,11 @@ export default function ContractTable({ data }) {
                                             <Text fontSize="sm" color="gray.600">
                                                 {contract.newVehicleInfo}
                                             </Text>
+                                            {contract.lockToken && (
+                                                <Badge colorScheme="green" fontSize="xs">
+                                                    Locked
+                                                </Badge>
+                                            )}
                                         </VStack>
                                     ) : (
                                         <Text color="red.500" fontStyle="italic">
@@ -62,15 +93,33 @@ export default function ContractTable({ data }) {
                                         {contract.willBeReplaced ? 'Will Replace' : 'Cannot Replace'}
                                     </Badge>
                                 </Td>
+
                                 <Td>
-                                    {contract.willBeReplaced ? (
-                                        <Badge colorScheme={getReplacementTypeColor(contract.replacementType)}>
-                                            {contract.replacementType}
-                                        </Badge>
-                                    ) : (
-                                        <Text fontSize="sm" color="red.500">
-                                            {contract.reason}
-                                        </Text>
+                                    {contract.willBeReplaced && contract.lockKey && contract.lockToken && (
+                                        <Button
+                                            size="sm"
+                                            colorScheme="blue"
+                                            isLoading={replacing === contract.contractId}
+                                            onClick={() =>
+                                                handleReplace(
+                                                    contract.contractId, 
+                                                    contract.lockKey, 
+                                                    contract.lockToken
+                                                )
+                                            }
+                                        >
+                                            Replace
+                                        </Button>
+                                    )}
+                                    {contract.willBeReplaced && (!contract.lockKey || !contract.lockToken) && (
+                                        <Button
+                                            size="sm"
+                                            colorScheme="gray"
+                                            isDisabled
+                                            variant="outline"
+                                        >
+                                            Lock Expired
+                                        </Button>
                                     )}
                                 </Td>
                             </Tr>

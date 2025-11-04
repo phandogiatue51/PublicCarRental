@@ -200,101 +200,101 @@ export default function InvoiceList() {
       currency: "VND",
     }).format(amount);
   };
-const columns = useMemo(
-  () => [
-    columnHelper.accessor("invoiceId", {
-      header: () => (
-        <Text color="gray.400" fontSize="12px">
-          ID
-        </Text>
-      ),
-      cell: (info) => (
-        <Text color={textColor} fontWeight="700">
-          {info.getValue()}
-        </Text>
-      ),
-    }),
-    
-    columnHelper.accessor("contractId", {
-      header: () => (
-        <Text color="gray.400" fontSize="12px">
-          CONTRACT
-        </Text>
-      ),
-      cell: (info) => <Text color={textColor}>{info.getValue()}</Text>,
-    }),
-    columnHelper.accessor('amountPaid', {
-      id: 'amountPaid',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          AMOUNT
-        </Text>
-      ),
-      cell: (info) => (
-        <Flex align="center" gap={2}>
-          <Icon as={MdAttachMoney} color="green.500" />
-          <Text color={textColor} fontSize="sm" fontWeight="700">
-            {formatCurrency(info.getValue())}
+  const columns = useMemo(
+    () => [
+      columnHelper.accessor("invoiceId", {
+        header: () => (
+          <Text color="gray.400" fontSize="12px">
+            ID
           </Text>
-        </Flex>
-      ),
-    }),
-    columnHelper.accessor('paidAt', {
-      id: 'paidAt',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          PAID DATE
-        </Text>
-      ),
-      cell: (info) => {
-        const paidAt = info.getValue();
-        return (
+        ),
+        cell: (info) => (
+          <Text color={textColor} fontWeight="700">
+            {info.getValue()}
+          </Text>
+        ),
+      }),
+
+      columnHelper.accessor("contractId", {
+        header: () => (
+          <Text color="gray.400" fontSize="12px">
+            CONTRACT
+          </Text>
+        ),
+        cell: (info) => <Text color={textColor}>{info.getValue()}</Text>,
+      }),
+      columnHelper.accessor('amountPaid', {
+        id: 'amountPaid',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            AMOUNT
+          </Text>
+        ),
+        cell: (info) => (
           <Flex align="center" gap={2}>
-            <Icon as={MdSchedule} color="gray.500" />
-            <Text color={textColor} fontSize="sm">
-              {paidAt ? formatDate(paidAt) : 'Not Paid'}
+            <Icon as={MdAttachMoney} color="green.500" />
+            <Text color={textColor} fontSize="sm" fontWeight="700">
+              {formatCurrency(info.getValue())}
             </Text>
           </Flex>
-        );
-      },
-    }),
-    columnHelper.accessor('status', {
-      id: 'status',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          STATUS
-        </Text>
-      ),
-      cell: (info) => {
-        const status = info.getValue();
-        return (
-          <Badge
-            colorScheme={getStatusColor(info.getValue())}
-            px={3}
-            py={1}
-            borderRadius="full"
+        ),
+      }),
+      columnHelper.accessor('paidAt', {
+        id: 'paidAt',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
           >
-            {getStatusText(info.getValue())}
-          </Badge>
-        );
-      },
-    }),
-  ], [textColor]);
+            PAID DATE
+          </Text>
+        ),
+        cell: (info) => {
+          const paidAt = info.getValue();
+          return (
+            <Flex align="center" gap={2}>
+              <Icon as={MdSchedule} color="gray.500" />
+              <Text color={textColor} fontSize="sm">
+                {paidAt ? formatDate(paidAt) : 'Not Paid'}
+              </Text>
+            </Flex>
+          );
+        },
+      }),
+      columnHelper.accessor('status', {
+        id: 'status',
+        header: () => (
+          <Text
+            justifyContent="space-between"
+            align="center"
+            fontSize={{ sm: '10px', lg: '12px' }}
+            color="gray.400"
+          >
+            STATUS
+          </Text>
+        ),
+        cell: (info) => {
+          const status = info.getValue();
+          return (
+            <Badge
+              colorScheme={getStatusColor(info.getValue())}
+              px={3}
+              py={1}
+              borderRadius="full"
+            >
+              {getStatusText(info.getValue())}
+            </Badge>
+          );
+        },
+      }),
+    ], [textColor]);
 
   const table = useReactTable({
     data: paginatedInvoices,
@@ -396,11 +396,19 @@ const columns = useMemo(
             {table.getHeaderGroups().map((headerGroup) => (
               <Tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <Th key={header.id} borderColor={borderColor}>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
+                  <Th
+                    key={header.id}
+                    borderColor={borderColor}
+                    cursor={header.column.getCanSort() ? "pointer" : "default"}
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    <Flex align="center" gap={2}>
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {{
+                        asc: "▲",
+                        desc: "▼",
+                      }[header.column.getIsSorted()] ?? null}
+                    </Flex>
                   </Th>
                 ))}
               </Tr>

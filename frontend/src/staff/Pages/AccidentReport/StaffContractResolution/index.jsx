@@ -1,36 +1,89 @@
-import { useState } from 'react';
-import { 
-    Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, 
-    Button, VStack, Text, Box, Alert, AlertIcon} from '@chakra-ui/react';
+import { useState, useEffect } from 'react';
+import {
+    Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter,
+    Button, VStack, Text, Box, Alert, AlertIcon, Spinner, useToast
+} from '@chakra-ui/react';
 import ContractList from './ContractList';
-import ModelChangeModal from './ModelChangeModal';
-import RefundProcessingModal from './RefundProcessingModal';
+import ReplacementPreviewModal from './ReplacementPreviewModal';
+import { accidentAPI } from '../../../../services/api';
 
-export default function StaffContractResolution({ isOpen, onClose, accidentId, onSuccess }) {
+export default function StaffContractResolution({ isOpen, onClose, accidentId, vehicleId, onSuccess }) {
     const [selectedContract, setSelectedContract] = useState(null);
-    const [showModelChange, setShowModelChange] = useState(false);
-    const [showRefund, setShowRefund] = useState(false);
+    const [showReplacementPreview, setShowReplacementPreview] = useState(false);
+    const [contracts, setContracts] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const toast = useToast();
 
-    const [contracts] = useState([]);
+    const fetchAffectedContracts = async () => {
+        if (!vehicleId) return;
 
-    const handleModelChange = (contract) => {
+        setLoading(true);
+        setError('');
+        try {
+            const data = await accidentAPI.getAffectedContracts(vehicleId);
+            console.log('✅ API Response:', data);
+            console.log('✅ Data type:', typeof data);
+            console.log('✅ Is array:', Array.isArray(data));
+            console.log('✅ Array length:', data?.length);
+            
+            setContracts(Array.isArray(data) ? data : []);
+            
+            console.log('✅ Contracts state set:', contracts);
+        } catch (err) {
+            console.error('❌ Error fetching affected contracts:', err);
+            setError('Failed to load affected contracts');
+            setContracts([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isOpen && vehicleId) {
+            fetchAffectedContracts();
+        }
+    }, [isOpen, vehicleId]);
+
+    const handleReplaceVehicle = (contract) => {
         setSelectedContract(contract);
-        setShowModelChange(true);
+        setShowReplacementPreview(true);
     };
 
     const handleRefund = (contract) => {
         setSelectedContract(contract);
-        setShowRefund(true);
+        toast({
+            title: 'Refund Processing',
+            description: 'Refund functionality will be implemented separately',
+            status: 'info',
+            duration: 3000,
+            isClosable: true,
+        });
     };
 
-    const handleSuccess = () => {
+    const handleReplacementSuccess = () => {
+        fetchAffectedContracts();
         if (onSuccess) onSuccess();
+
+        toast({
+            title: 'Vehicle Replaced',
+            description: 'Contract has been successfully updated with new vehicle',
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+        });
+    };
+
+    const handleClose = () => {
+        setContracts([]);
+        setError('');
+        setLoading(false);
         onClose();
     };
 
     return (
         <>
-            <Modal isOpen={isOpen} onClose={onClose} size="4xl">
+            <Modal isOpen={isOpen} onClose={handleClose} size="6xl">
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>Manual Contract Resolution</ModalHeader>
@@ -41,18 +94,35 @@ export default function StaffContractResolution({ isOpen, onClose, accidentId, o
                                 <Box>
                                     <Text fontWeight="bold">Manual Resolution Required</Text>
                                     <Text fontSize="sm">
-                                        These contracts could not be automatically replaced and require staff intervention.
+                                        These contracts are affected by the accident and require staff intervention.
+                                        You can replace vehicles using the existing replacement system.
                                     </Text>
                                 </Box>
                             </Alert>
 
-                            <ContractList 
-                                contracts={contracts}
-                                onModelChange={handleModelChange}
-                                onRefund={handleRefund}
-                            />
+                            {loading && (
+                                <Box textAlign="center" py={8}>
+                                    <Spinner size="xl" />
+                                    <Text mt={4}>Loading affected contracts...</Text>
+                                </Box>
+                            )}
 
-                            {contracts.length === 0 && (
+                            {error && (
+                                <Alert status="error">
+                                    <AlertIcon />
+                                    {error}
+                                </Alert>
+                            )}
+
+                            {!loading && !error && (
+                                <ContractList
+                                    contracts={contracts}
+                                    onReplaceVehicle={handleReplaceVehicle}
+                                    onRefund={handleRefund}
+                                />
+                            )}
+
+                            {!loading && contracts.length === 0 && (
                                 <Box textAlign="center" py={8}>
                                     <Text color="gray.500">No contracts require manual resolution.</Text>
                                 </Box>
@@ -60,23 +130,16 @@ export default function StaffContractResolution({ isOpen, onClose, accidentId, o
                         </VStack>
                     </ModalBody>
                     <ModalFooter>
-                        <Button variant="outline" onClick={onClose}>Close</Button>
+                        <Button variant="outline" onClick={handleClose}>Close</Button>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
 
-            <ModelChangeModal
-                isOpen={showModelChange}
-                onClose={() => setShowModelChange(false)}
+            <ReplacementPreviewModal
+                isOpen={showReplacementPreview}
+                onClose={() => setShowReplacementPreview(false)}
                 contract={selectedContract}
-                onSuccess={handleSuccess}
-            />
-
-            <RefundProcessingModal
-                isOpen={showRefund}
-                onClose={() => setShowRefund(false)}
-                contract={selectedContract}
-                onSuccess={handleSuccess}
+                onSuccess={handleReplacementSuccess}
             />
         </>
     );

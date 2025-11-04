@@ -94,21 +94,21 @@ const RenterList = () => {
     identityCardFront: null,
     identityCardBack: null,
   });
-const [previewUrls, setPreviewUrls] = useState({
-  driverLicenseFront: null,
-  driverLicenseBack: null,
-  identityCardFront: null,
-  identityCardBack: null,
-});
+  const [previewUrls, setPreviewUrls] = useState({
+    driverLicenseFront: null,
+    driverLicenseBack: null,
+    identityCardFront: null,
+    identityCardBack: null,
+  });
 
-useEffect(() => {
-  return () => {
-    // Revoke object URLs to prevent memory leaks
-    Object.values(previewUrls).forEach(url => {
-      if (url) URL.revokeObjectURL(url);
-    });
-  };
-}, []);
+  useEffect(() => {
+    return () => {
+      // Revoke object URLs to prevent memory leaks
+      Object.values(previewUrls).forEach(url => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    };
+  }, []);
 
   const textColor = useColorModeValue("secondaryGray.900", "white");
   const borderColor = useColorModeValue("gray.200", "whiteAlpha.100");
@@ -211,149 +211,149 @@ useEffect(() => {
   };
 
   const clearPreview = (field) => {
-  if (previewUrls[field]) {
-    URL.revokeObjectURL(previewUrls[field]);
-  }
-  setPreviewUrls(prev => ({
-    ...prev,
-    [field]: null
-  }));
-  setDocumentForm(prev => ({
-    ...prev,
-    [field]: null
-  }));
-};
-
-const handleFileChange = (field, file) => {
-  // Revoke previous preview URL if exists
-  if (previewUrls[field]) {
-    URL.revokeObjectURL(previewUrls[field]);
-  }
-
-  if (file) {
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
-    setPreviewUrls(prev => ({
-      ...prev,
-      [field]: previewUrl
-    }));
-  } else {
+    if (previewUrls[field]) {
+      URL.revokeObjectURL(previewUrls[field]);
+    }
     setPreviewUrls(prev => ({
       ...prev,
       [field]: null
     }));
-  }
+    setDocumentForm(prev => ({
+      ...prev,
+      [field]: null
+    }));
+  };
 
-  setDocumentForm(prev => ({
-    ...prev,
-    [field]: file
-  }));
-};
-
-const handleUploadDocuments = async () => {
-  if (!selectedRenter) {
-    toast({
-      title: "Error",
-      description: "No renter selected",
-      status: "error",
-      duration: 3000,
-      isClosable: true,
-    });
-    return;
-  }
-
-  // Check if at least one file is selected
-  const hasFiles = Object.values(documentForm).some(file => file !== null);
-  if (!hasFiles) {
-    toast({
-      title: "Error",
-      description: "Please select at least one document to upload",
-      status: "error",
-      duration: 3000,
-      isClosable: true,
-    });
-    return;
-  }
-
-  try {
-    setUploading(true);
-    const formData = new FormData();
-    
-    console.log('Files to upload:', documentForm);
-    
-    if (documentForm.driverLicenseFront) {
-      formData.append('DriverLicenseFront', documentForm.driverLicenseFront);
-    }
-    if (documentForm.driverLicenseBack) {
-      formData.append('DriverLicenseBack', documentForm.driverLicenseBack);
-    }
-    if (documentForm.identityCardFront) {
-      formData.append('IdentityCardFront', documentForm.identityCardFront);
-    }
-    if (documentForm.identityCardBack) {
-      formData.append('IdentityCardBack', documentForm.identityCardBack);
+  const handleFileChange = (field, file) => {
+    // Revoke previous preview URL if exists
+    if (previewUrls[field]) {
+      URL.revokeObjectURL(previewUrls[field]);
     }
 
-    console.log('FormData contents:');
-    for (let pair of formData.entries()) {
-      console.log(pair[0] + ', ' + (pair[1] instanceof File ? pair[1].name : pair[1]));
+    if (file) {
+      // Create preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setPreviewUrls(prev => ({
+        ...prev,
+        [field]: previewUrl
+      }));
+    } else {
+      setPreviewUrls(prev => ({
+        ...prev,
+        [field]: null
+      }));
     }
 
-    console.log('Uploading to renter ID:', selectedRenter.renterId);
-    
-    const result = await documentAPI.uploadRenterAll(selectedRenter.renterId, formData);
-    console.log('Upload response:', result);
-    
-    toast({
-      title: "Success",
-      description: result.message || "IDs uploaded successfully",
-      status: "success",
-      duration: 3000,
-      isClosable: true,
-    });
-    
+    setDocumentForm(prev => ({
+      ...prev,
+      [field]: file
+    }));
+  };
+
+  const handleUploadDocuments = async () => {
+    if (!selectedRenter) {
+      toast({
+        title: "Error",
+        description: "No renter selected",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    // Check if at least one file is selected
+    const hasFiles = Object.values(documentForm).some(file => file !== null);
+    if (!hasFiles) {
+      toast({
+        title: "Error",
+        description: "Please select at least one document to upload",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
     try {
-      const updatedDocuments = await documentAPI.getByRenterId(selectedRenter.renterId);
-      setRenterDocuments(updatedDocuments || []);
-    } catch (refreshError) {
-      console.error('Error refreshing documents:', refreshError);
+      setUploading(true);
+      const formData = new FormData();
+
+      console.log('Files to upload:', documentForm);
+
+      if (documentForm.driverLicenseFront) {
+        formData.append('DriverLicenseFront', documentForm.driverLicenseFront);
+      }
+      if (documentForm.driverLicenseBack) {
+        formData.append('DriverLicenseBack', documentForm.driverLicenseBack);
+      }
+      if (documentForm.identityCardFront) {
+        formData.append('IdentityCardFront', documentForm.identityCardFront);
+      }
+      if (documentForm.identityCardBack) {
+        formData.append('IdentityCardBack', documentForm.identityCardBack);
+      }
+
+      console.log('FormData contents:');
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ', ' + (pair[1] instanceof File ? pair[1].name : pair[1]));
+      }
+
+      console.log('Uploading to renter ID:', selectedRenter.renterId);
+
+      const result = await documentAPI.uploadRenterAll(selectedRenter.renterId, formData);
+      console.log('Upload response:', result);
+
+      toast({
+        title: "Success",
+        description: result.message || "IDs uploaded successfully",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+
+      try {
+        const updatedDocuments = await documentAPI.getByRenterId(selectedRenter.renterId);
+        setRenterDocuments(updatedDocuments || []);
+      } catch (refreshError) {
+        console.error('Error refreshing documents:', refreshError);
+      }
+
+      Object.values(previewUrls).forEach(url => {
+        if (url) URL.revokeObjectURL(url);
+      });
+
+      setIsAddDocsModalOpen(false);
+      setDocumentForm({
+        driverLicenseFront: null,
+        driverLicenseBack: null,
+        identityCardFront: null,
+        identityCardBack: null,
+      });
+      setPreviewUrls({
+        driverLicenseFront: null,
+        driverLicenseBack: null,
+        identityCardFront: null,
+        identityCardBack: null,
+      });
+
+    } catch (err) {
+      console.error('Upload error details:', err);
+      console.error('Error response:', err.response);
+
+      const errorMessage = err.response?.data?.message || err.message || "Failed to upload documents";
+
+      toast({
+        title: "Upload Failed",
+        description: errorMessage,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setUploading(false);
     }
-    
-     Object.values(previewUrls).forEach(url => {
-      if (url) URL.revokeObjectURL(url);
-    });
-    
-    setIsAddDocsModalOpen(false);
-    setDocumentForm({
-      driverLicenseFront: null,
-      driverLicenseBack: null,
-      identityCardFront: null,
-      identityCardBack: null,
-    });
-    setPreviewUrls({
-      driverLicenseFront: null,
-      driverLicenseBack: null,
-      identityCardFront: null,
-      identityCardBack: null,
-    });
-    
-  } catch (err) {
-    console.error('Upload error details:', err);
-    console.error('Error response:', err.response);
-    
-    const errorMessage = err.response?.data?.message || err.message || "Failed to upload documents";
-    
-    toast({
-      title: "Upload Failed",
-      description: errorMessage,
-      status: "error",
-      duration: 5000,
-      isClosable: true,
-    });
-  } finally {
-    setUploading(false);
-  }
-};
+  };
 
   const getStatusColor = (status) =>
     status === 0 ? "green" : status === 1 ? "red" : "orange";
@@ -477,25 +477,25 @@ const handleUploadDocuments = async () => {
   };
 
   const handleAddDocsModalClose = () => {
-  Object.values(previewUrls).forEach(url => {
-    if (url) URL.revokeObjectURL(url);
-  });
-  
-  setIsAddDocsModalOpen(false);
-  setSelectedRenter(null);
-  setDocumentForm({
-    driverLicenseFront: null,
-    driverLicenseBack: null,
-    identityCardFront: null,
-    identityCardBack: null,
-  });
-  setPreviewUrls({
-    driverLicenseFront: null,
-    driverLicenseBack: null,
-    identityCardFront: null,
-    identityCardBack: null,
-  });
-};
+    Object.values(previewUrls).forEach(url => {
+      if (url) URL.revokeObjectURL(url);
+    });
+
+    setIsAddDocsModalOpen(false);
+    setSelectedRenter(null);
+    setDocumentForm({
+      driverLicenseFront: null,
+      driverLicenseBack: null,
+      identityCardFront: null,
+      identityCardBack: null,
+    });
+    setPreviewUrls({
+      driverLicenseFront: null,
+      driverLicenseBack: null,
+      identityCardFront: null,
+      identityCardBack: null,
+    });
+  };
 
   // Memoized page numbers calculation
   const pageNumbers = useMemo(() => {
@@ -559,7 +559,7 @@ const handleUploadDocuments = async () => {
   }
 
   return (
-    <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
+    <Box>
       <Flex direction="column" gap="20px" me="auto">
         <Flex justify="space-between" align="center" mb={4}>
           <Text fontSize="2xl" fontWeight="700" color={textColor}>
@@ -619,11 +619,19 @@ const handleUploadDocuments = async () => {
             {table.getHeaderGroups().map((headerGroup) => (
               <Tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <Th key={header.id} borderColor={borderColor}>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
+                  <Th
+                    key={header.id}
+                    borderColor={borderColor}
+                    cursor={header.column.getCanSort() ? "pointer" : "default"}
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    <Flex align="center" gap={2}>
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {{
+                        asc: "▲",
+                        desc: "▼",
+                      }[header.column.getIsSorted()] ?? null}
+                    </Flex>
                   </Th>
                 ))}
               </Tr>
@@ -685,9 +693,9 @@ const handleUploadDocuments = async () => {
                     <Text>{selectedRenter.licenseNumber || "Not provided"}</Text>
                   </GridItem>
                 </Grid>
-                
+
                 <Divider />
-                
+
                 <HStack justify="space-between">
                   <Button
                     colorScheme="blue"
@@ -746,7 +754,7 @@ const handleUploadDocuments = async () => {
                           maxH="200px"
                           objectFit="contain"
                         />
-                    
+
                       </VStack>
                     </CardBody>
                   </Card>

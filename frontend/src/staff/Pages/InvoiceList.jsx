@@ -1,18 +1,14 @@
-/* eslint-disable */
-
 import {
   Box, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue, Spinner, Alert, AlertIcon,
-  AlertTitle, AlertDescription, Badge, Select, HStack, VStack, useToast, Tooltip
-} from '@chakra-ui/react';
+  AlertTitle, AlertDescription, Badge, Select, HStack, useToast} from '@chakra-ui/react';
 import {
   createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable
 } from '@tanstack/react-table';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { invoiceAPI } from '../../services/api';
 import {
-  MdChevronLeft, MdChevronRight, MdReceipt, MdRefresh,
-  MdVisibility, MdAttachMoney, MdSchedule, MdAssignment
-} from 'react-icons/md';
+  MdChevronLeft, MdChevronRight, MdRefresh,
+  MdAttachMoney, MdSchedule} from 'react-icons/md';
 
 // Custom components
 import Card from '../../admin/components/card/Card';
@@ -380,7 +376,6 @@ export default function InvoiceList() {
       <Flex direction="column" gap="20px" me="auto">
         {/* Header */}
         <Flex
-          mt="45px"
           justifyContent="space-between"
           direction={{ base: 'column', md: 'row' }}
           align={{ base: 'start', md: 'center' }}
@@ -421,24 +416,16 @@ export default function InvoiceList() {
                     {headerGroup.headers.map((header) => (
                       <Th
                         key={header.id}
-                        colSpan={header.colSpan}
-                        pe="10px"
                         borderColor={borderColor}
-                        cursor="pointer"
+                        cursor={header.column.getCanSort() ? "pointer" : "default"}
                         onClick={header.column.getToggleSortingHandler()}
                       >
-                        <Flex
-                          justifyContent="space-between"
-                          align="center"
-                          fontSize={{ sm: "10px", lg: "12px" }}
-                          color="gray.400"
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                        <Flex align="center" gap={2}>
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {{
+                            asc: "▲",
+                            desc: "▼",
+                          }[header.column.getIsSorted()] ?? null}
                         </Flex>
                       </Th>
                     ))}

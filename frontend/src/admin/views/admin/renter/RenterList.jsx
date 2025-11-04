@@ -155,9 +155,8 @@ export default function RenterList() {
       await fetchRenters();
       toast({
         title: "Success",
-        description: `Status changed to ${
-          currentStatus === 0 ? "Inactive" : "Active"
-        }`,
+        description: `Status changed to ${currentStatus === 0 ? "Inactive" : "Active"
+          }`,
         status: "success",
         duration: 2000,
         isClosable: true,
@@ -198,7 +197,7 @@ export default function RenterList() {
           </Flex>
         ),
       }),
-     
+
       columnHelper.accessor("phoneNumber", {
         header: "PHONE",
         cell: (info) => (
@@ -268,39 +267,39 @@ export default function RenterList() {
   return (
     <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
       <Card>
-  <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
-    <Input
-      placeholder="Search by name, email, or phone..."
-      value={param}
-      onChange={(e) => setParam(e.target.value)}
-    />
-    <Select
-      value={statusFilter}
-      onChange={(e) => setStatusFilter(e.target.value)}
-    >
-      <option value="all">All Status</option>
-      <option value="active">Active</option>
-      <option value="inactive">Inactive</option>
-    </Select>
-    <HStack justify="flex-start">
-      <Button
-        colorScheme="teal"
-        leftIcon={<Icon as={MdSearch} />}
-        onClick={handleFilter}
-      >
-        Search
-      </Button>
-      <Button
-        variant="outline"
-        colorScheme="gray"
-        leftIcon={<Icon as={MdClear} />}
-        onClick={handleClear}
-      >
-        Clear
-      </Button>
-    </HStack>
-  </SimpleGrid>
-</Card>
+        <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
+          <Input
+            placeholder="Search by name, email, or phone..."
+            value={param}
+            onChange={(e) => setParam(e.target.value)}
+          />
+          <Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="all">All Status</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </Select>
+          <HStack justify="flex-start">
+            <Button
+              colorScheme="teal"
+              leftIcon={<Icon as={MdSearch} />}
+              onClick={handleFilter}
+            >
+              Search
+            </Button>
+            <Button
+              variant="outline"
+              colorScheme="gray"
+              leftIcon={<Icon as={MdClear} />}
+              onClick={handleClear}
+            >
+              Clear
+            </Button>
+          </HStack>
+        </SimpleGrid>
+      </Card>
 
 
       {/* 🧾 Table Section */}
@@ -310,11 +309,19 @@ export default function RenterList() {
             {table.getHeaderGroups().map((headerGroup) => (
               <Tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <Th key={header.id} borderColor={borderColor}>
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
+                  <Th
+                    key={header.id}
+                    borderColor={borderColor}
+                    cursor={header.column.getCanSort() ? "pointer" : "default"}
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    <Flex align="center" gap={2}>
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {{
+                        asc: "▲",
+                        desc: "▼",
+                      }[header.column.getIsSorted()] ?? null}
+                    </Flex>
                   </Th>
                 ))}
               </Tr>

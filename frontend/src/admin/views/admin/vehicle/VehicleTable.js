@@ -1,33 +1,12 @@
 import {
-  Table,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-  Flex,
-  Text,
-  Icon,
-  Badge,
-  VStack,
-  Progress,
-  Tooltip,
-  Button,
-  useColorModeValue,
+  Table, Tbody, Td, Th, Thead, Tr, Flex, Text, Icon, Badge, VStack, Progress, Tooltip, Button, useColorModeValue,
 } from "@chakra-ui/react";
 import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
+  createColumnHelper, flexRender, getCoreRowModel, useReactTable, getSortedRowModel,
 } from "@tanstack/react-table";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
-  MdDriveEta,
-  MdLocationOn,
-  MdBattery6Bar,
-  MdEdit,
-  MdDelete,
+  MdDriveEta, MdLocationOn, MdBattery6Bar, MdEdit, MdDelete,
 } from "react-icons/md";
 import Card from "../../../components/card/Card";
 
@@ -36,6 +15,7 @@ const columnHelper = createColumnHelper();
 export default function VehicleTable({ vehicles, onEdit, onDelete }) {
   const textColor = useColorModeValue("secondaryGray.900", "white");
   const borderColor = useColorModeValue("gray.200", "whiteAlpha.100");
+  const [sorting, setSorting] = useState([]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -183,7 +163,10 @@ export default function VehicleTable({ vehicles, onEdit, onDelete }) {
   const table = useReactTable({
     data: vehicles,
     columns,
+    state: { sorting },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
   });
 
   return (
@@ -193,11 +176,19 @@ export default function VehicleTable({ vehicles, onEdit, onDelete }) {
           {table.getHeaderGroups().map((headerGroup) => (
             <Tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <Th key={header.id} borderColor={borderColor}>
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
+                <Th
+                  key={header.id}
+                  borderColor={borderColor}
+                  cursor={header.column.getCanSort() ? "pointer" : "default"}
+                  onClick={header.column.getToggleSortingHandler()}
+                >
+                  <Flex align="center" gap={2}>
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                    {{
+                      asc: "▲",
+                      desc: "▼",
+                    }[header.column.getIsSorted()] ?? null}
+                  </Flex>
                 </Th>
               ))}
             </Tr>

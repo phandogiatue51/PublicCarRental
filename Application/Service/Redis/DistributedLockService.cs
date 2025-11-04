@@ -9,6 +9,7 @@ namespace PublicCarRental.Application.Service.Redis
         void ReleaseLock(string key);                          
         bool AcquireLock(string key, string ownerId, TimeSpan expiry);
         void ReleaseLock(string key, string expectedOwnerId);
+        Task<bool> VerifyLockOwnershipAsync(string key, string expectedOwnerId);
     }
 
     public class DistributedLockService : IDistributedLockService
@@ -22,7 +23,6 @@ namespace PublicCarRental.Application.Service.Redis
             _logger = logger;
         }
 
-        // ✅ Async simple version
         public async Task<bool> AcquireLockAsync(string key, TimeSpan expiry)
         {
             try
@@ -36,7 +36,6 @@ namespace PublicCarRental.Application.Service.Redis
             }
         }
 
-        // ✅ Async simple version
         public async Task ReleaseLockAsync(string key)
         {
             try
@@ -49,7 +48,6 @@ namespace PublicCarRental.Application.Service.Redis
             }
         }
 
-        // ✅ Sync simple version - THÊM VÀO
         public bool AcquireLock(string key, TimeSpan expiry)
         {
             try
@@ -63,7 +61,6 @@ namespace PublicCarRental.Application.Service.Redis
             }
         }
 
-        // ✅ Sync simple version - THÊM VÀO
         public void ReleaseLock(string key)
         {
             try
@@ -76,7 +73,6 @@ namespace PublicCarRental.Application.Service.Redis
             }
         }
 
-        // ✅ Sync owner-verified version
         public bool AcquireLock(string key, string ownerId, TimeSpan expiry)
         {
             try
@@ -90,7 +86,6 @@ namespace PublicCarRental.Application.Service.Redis
             }
         }
 
-        // ✅ Sync owner-verified version
         public void ReleaseLock(string key, string expectedOwnerId)
         {
             try
@@ -110,6 +105,19 @@ namespace PublicCarRental.Application.Service.Redis
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to release lock for key {LockKey}", key);
+            }
+        }
+        public async Task<bool> VerifyLockOwnershipAsync(string key, string expectedOwnerId)
+        {
+            try
+            {
+                var currentOwner = await _redis.StringGetAsync(key);
+                return currentOwner == expectedOwnerId;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to verify lock ownership for key {LockKey}", key);
+                return false;
             }
         }
     }

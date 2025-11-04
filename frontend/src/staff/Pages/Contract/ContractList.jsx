@@ -579,7 +579,6 @@ const ContractList = () => {
       <Flex direction="column" gap="20px" me="auto">
         {/* Header */}
         <Flex
-          mt="45px"
           justifyContent="space-between"
           direction={{ base: 'column', md: 'row' }}
           align={{ base: 'start', md: 'center' }}

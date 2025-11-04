@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PublicCarRental.Application.DTOs.Accident;
 using PublicCarRental.Application.DTOs.BadScenario;
 using PublicCarRental.Application.DTOs.Bran;
@@ -21,14 +22,12 @@ namespace PublicCarRental.Application.Service
         private readonly IContractRepository _contractRepository;
         private readonly AccidentEventProducerService _accidentEventProducerService;
         private readonly IStaffRepository _staffRepository;
-        private readonly IContractAccidentHandler _contractAccidentHandler;
         private readonly IServiceProvider _serviceProvider;
-        private readonly IContractModificationService _modificationService;
 
         public AccidentService(IAccidentRepository accidentRepository, IImageStorageService imageStorageService,
-            IVehicleRepository vehicleRepository, IContractRepository contractRepository, 
+            IVehicleRepository vehicleRepository, IContractRepository contractRepository,
             AccidentEventProducerService accidentEventProducerService, IStaffRepository staffRepository,
-            IContractAccidentHandler contractAccidentHandler, IServiceProvider serviceProvider, IContractModificationService modificationService)
+            IServiceProvider serviceProvider)
         {
             _accidentRepository = accidentRepository;
             _imageStorageService = imageStorageService;
@@ -36,9 +35,7 @@ namespace PublicCarRental.Application.Service
             _contractRepository = contractRepository;
             _accidentEventProducerService = accidentEventProducerService;
             _staffRepository = staffRepository;
-            _contractAccidentHandler = contractAccidentHandler;
             _serviceProvider = serviceProvider;
-            _modificationService = modificationService;
         }
 
         public async Task<IEnumerable<AccidentDto>> GetAllAsync()
@@ -182,7 +179,8 @@ namespace PublicCarRental.Application.Service
                 _accidentRepository.DeleteAcc(acc);
                 return (true, "Accident report deleted successfully!");
 
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 return (false, ex.ToString());
             }
@@ -203,13 +201,15 @@ namespace PublicCarRental.Application.Service
                 acc.ResolutionNote = dto.ResolutionNote;
                 acc.ResolvedAt = dto.ResolvedAt ?? DateTime.UtcNow;
 
-                if (dto.ActionTaken.HasValue && !acc.ActionTaken.HasValue)
+                if (string.IsNullOrWhiteSpace(acc.ResolutionNote))
                 {
-                    var actionResult = await ExecuteAccidentAction(acc, dto.ActionTaken.Value);
-                    acc.ResolutionNote += $"Action Result: {actionResult}";
+                    acc.ResolutionNote = !string.IsNullOrWhiteSpace(dto.ResolutionNote)
+                        ? dto.ResolutionNote
+                        : dto.ActionTaken.HasValue
+                            ? await ExecuteAccidentAction(acc, dto.ActionTaken.Value)
+                            : null;
                 }
 
-                // Handle status-specific logic
                 switch (dto.Status)
                 {
                     case AccidentStatus.UnderInvestigation:
@@ -243,32 +243,41 @@ namespace PublicCarRental.Application.Service
 
             return actionType switch
             {
-                ActionType.Refund => "Refund contracts that couldn't change vehicle",
-                ActionType.Replace => "Replace all contract with new vehicles. Process refund if unable to change",
-                ActionType.RepairOnly => "Repair only - no contract changes",
+                ActionType.Refund => "Please attempt to contact renter from affected contract and change model. Refund if requested.",
+                ActionType.Replace => "Replace all contract with new vehicles. Process refund if unable to change.",
+                ActionType.RepairOnly => "Simply repair vehicle.",
                 _ => "Unknown action type"
             };
         }
 
         public IEnumerable<AccidentDto?> FilterAccidents(AccidentStatus? status, int? stationId)
         {
+            var staffs = _staffRepository.GetAll()
+                .Where(s => s.Account != null)
+                .ToDictionary(s => s.StaffId, s => s.Account.FullName);
+
             return _accidentRepository.GetAll()
                 .Where(a => (!status.HasValue || a.Status == status.Value) &&
                             (!stationId.HasValue || a.Vehicle.StationId == stationId.Value))
-                .Select(a => new AccidentDto
+                .Select(m => new AccidentDto
                 {
-                    AccidentId = a.AccidentId,
-                    LicensePlate = a.Vehicle.LicensePlate,
-                    VehicleId = a.VehicleId,
-                    ContractId = a.ContractId,
-                    StaffId = a.StaffId,
-                    Description = a.Description,
-                    StationId = a.Vehicle.StationId,
-                    Location = a.Vehicle.Station.Name,
-                    ImageUrl = a.ImageUrl,
-                    Status = a.Status
-                })
-                .ToList();
+                    AccidentId = m.AccidentId,
+                    VehicleId = m.VehicleId,
+                    LicensePlate = m.Vehicle.LicensePlate,
+                    ContractId = m.ContractId,
+                    StaffId = m.StaffId,
+                    StaffName = m.StaffId.HasValue && staffs.ContainsKey(m.StaffId.Value)
+                        ? staffs[m.StaffId.Value]
+                        : null,
+                    Description = m.Description,
+                    StationId = m.Vehicle.StationId,
+                    Location = m.Vehicle.Station.Name,
+                    ImageUrl = m.ImageUrl,
+                    Status = m.Status,
+                    ResolutionNote = m.ResolutionNote,
+                    ActionTaken = m.ActionTaken,
+                    ReportedAt = m.ReportedAt
+                }).ToList();
         }
     }
 

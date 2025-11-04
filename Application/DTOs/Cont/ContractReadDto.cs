@@ -9,10 +9,12 @@ namespace PublicCarRental.Application.DTOs.Cont
 
         public int EVRenterId { get; set; }
         public string EVRenterName { get; set; }
+        public string? PhoneNumber { get; set; }
 
         public int? StaffId { get; set; }
         public string? StaffName { get; set; }
 
+        public string? ModelName { get; set; }
         public int VehicleId { get; set; }
         public string VehicleLicensePlate { get; set; }
 

@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'
+  ? 'https://localhost:7230/api'
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
 
 const apiRequest = async (endpoint, options = {}) => {
@@ -587,7 +587,6 @@ export const accidentAPI = {
 
       console.log('Vehicle accident response:', response);
 
-      // Handle the actual response structure from your backend
       if (response && response.status === 200) {
         return { success: true, message: response.message };
       }
@@ -608,7 +607,6 @@ export const accidentAPI = {
 
       console.log('Contract accident response:', response);
 
-      // Handle the actual response structure from your backend
       if (response && response.status === 200) {
         return { success: true, message: response.message };
       }
@@ -644,7 +642,67 @@ export const accidentAPI = {
       method: 'POST'
     });
     return data;
-  }
+  },
+
+  previewSingleContract: async (contractId) => {
+    const data = await apiRequest(`/Accident/preview-replacement/${contractId}`);
+    return data;
+  },
+
+  replaceSingleContract: async (contractId, lockKey, lockToken) => {
+    const data = await apiRequest(`/Accident/contract/${contractId}/replace`, {
+      method: 'POST',
+      body: JSON.stringify({ lockKey, lockToken }),
+    });
+    return data;
+  },
+
+  confirmReplacement: async (contractId, lockKey, lockToken) => {
+    const data = await apiRequest(`/Accident/confirm-replacement`, {
+      method: 'POST',
+      body: JSON.stringify({ contractId, lockKey, lockToken }),
+    });
+    return data;
+  },
+
+  manualModelChange: async (contractId, modelId) => {
+    const data = await apiRequest(`/Accident/contract/${contractId}/manual-change`, {
+      method: 'POST',
+      body: JSON.stringify({ modelId }),
+    });
+    return data;
+  },
+
+  processRefund: async (contractId, refundAmount, refundReason) => {
+    const data = await apiRequest(`/Accident/contract/${contractId}/refund`, {
+      method: 'POST',
+      body: JSON.stringify({ refundAmount, refundReason }),
+    });
+    return data;
+  },
+
+  getAvailableCounts: async (stationId, startTime, endTime) => {
+    try {
+      const response = await apiRequest('/Model/get-available-counts', {
+        method: 'POST',
+        body: JSON.stringify({ stationId, startTime, endTime })
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching available counts:', error);
+      throw error;
+    }
+  },
+
+  getAffectedContracts: async (vehicleId) => {
+    try {
+      const data = await apiRequest(`/Contract/get-affected-contract/${vehicleId}`);
+      return data;
+    } catch (error) {
+      console.error('Error fetching affected contracts:', error);
+      throw error;
+    }
+  },
 };
 
 export const modificationAPI = {

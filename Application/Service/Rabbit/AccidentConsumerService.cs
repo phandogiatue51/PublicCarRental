@@ -153,7 +153,7 @@ namespace PublicCarRental.Application.Service.Rabbit
                 VehicleLicensePlate = accidentEvent.VehicleLicensePlate ?? "Unknown Vehicle",
                 Location = accidentEvent.Location ?? "Unknown Location",
                 ReportedAt = accidentEvent.ReportedAt,
-                Message = $"🚨 Issue reported at {accidentEvent.Location ?? "unknown location"} ({accidentEvent.VehicleLicensePlate ?? "N/A"}) requires your attention!",
+                Message = $"🚨 Issue #{accidentEvent.AccidentId} reported at {accidentEvent.Location} requires your attention!",
                 Priority = "MEDIUM",
                 RequiresImmediateAction = true
             });
