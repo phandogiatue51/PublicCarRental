@@ -227,5 +227,49 @@ namespace PublicCarRental.Presentation.Controllers
                 });
             }
         }
+        
+        [HttpPost("change-model")]
+        public async Task<ActionResult<ModificationResultDto>> ChangeVehicleModel([FromQuery] int contractId, [FromQuery] int modelId)
+        {
+            try
+            {
+                var contract = _contractService.GetEntityById(contractId);
+                if (contract == null)
+                    return BadRequest(new ModificationResultDto { Success = false, Message = "Contract not found" });
+
+                var availableVehicles = await _vehicleService.GetAvailableVehiclesByModelAsync(
+                    modelId, (int)contract.StationId, contract.StartTime, contract.EndTime);
+
+                availableVehicles = availableVehicles.Where(v => v.VehicleId != contract.VehicleId).ToList();
+
+                if (!availableVehicles.Any())
+                {
+                    return BadRequest(new ModificationResultDto
+                    {
+                        Success = false,
+                        Message = "No available vehicles for the selected model in this time period"
+                    });
+                }
+
+                var selectedVehicle = availableVehicles.First();
+                contract.VehicleId = selectedVehicle.VehicleId;
+                _contractService.UpdateContract(contract);
+
+                return new ModificationResultDto
+                {
+                    Success = true,
+                    Message = $"Vehicle changed to {selectedVehicle.LicensePlate} ({selectedVehicle.Model?.Name})"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error changing model for contract {ContractId}", contractId);
+                return StatusCode(500, new ModificationResultDto
+                {
+                    Success = false,
+                    Message = "An error occurred while changing the vehicle model"
+                });
+            }
+        }
     }
 }

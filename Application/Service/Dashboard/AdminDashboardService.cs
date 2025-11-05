@@ -30,7 +30,6 @@ namespace PublicCarRental.Application.Service.Dashboard
         private readonly IRatingRepository _ratingRepository;
         private readonly IStaffRepository _staffRepository;
         private readonly IAccidentRepository _accidentRepository;
-        private readonly ITransactionService _transactionService;
 
         private DateTime today => DateTime.UtcNow.Date;
         private DateTime firstDayOfMonth => new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -38,7 +37,7 @@ namespace PublicCarRental.Application.Service.Dashboard
         public AdminDashboardService(IStationRepository stationRepository,IVehicleRepository vehicleRepository, IAccountRepository accountRepository,
             IContractRepository contractRepository, IInvoiceRepository invoiceRepository, IModelRepository vehicleModelRepository,
             IHelperService helperService, IEVRenterRepository renterRepository, IRatingRepository ratingRepository, IStaffRepository staffRepository,
-            IAccidentRepository accidentRepository, ITransactionService transactionService)
+            IAccidentRepository accidentRepository)
         {
             _stationRepository = stationRepository;
             _vehicleRepository = vehicleRepository;
@@ -51,7 +50,6 @@ namespace PublicCarRental.Application.Service.Dashboard
             _ratingRepository = ratingRepository;
             _staffRepository = staffRepository;
             _accidentRepository = accidentRepository;
-            _transactionService = transactionService;
         }
 
         public async Task<AdminOverviewDto> GetSystemOverviewAsync()
@@ -327,9 +325,126 @@ namespace PublicCarRental.Application.Service.Dashboard
                 AverageCheckOutsPerStaff = Math.Round(averageCheckOuts, 2)
             };
         }
-        public async Task<FinancialReportDto> GetFinancialReportAsync(DateRange dateRange)
+
+        public async Task<InvoiceFinancialReportDto> GetInvoiceFinancialReportAsync(DateRange dateRange)
         {
-            return await _transactionService.GetFinancialReportAsync(dateRange);
+            var invoices = await _invoiceRepository.GetAll()
+                .Where(i => i.IssuedAt >= dateRange.StartDate &&
+                           i.IssuedAt <= dateRange.EndDate)
+                .Include(i => i.Contract)
+                    .ThenInclude(c => c.Station)
+                .Include(i => i.Contract.Vehicle.Model.Type)
+                .Include(i => i.Refunds)
+                .ToListAsync();
+
+            // Total calculations
+            var totalInvoiceAmount = invoices.Sum(i => i.AmountDue);
+            var totalAmountPaid = invoices.Sum(i => i.AmountPaid ?? 0);
+            var totalRefundAmount = invoices.Sum(i => i.RefundAmount ?? 0);
+
+            // Income calculations (paid invoices that are not refunded)
+            var incomeInvoices = invoices
+                .Where(i => i.Status == InvoiceStatus.Paid &&
+                           i.RefundAmount == null)
+                .ToList();
+
+            var totalIncome = incomeInvoices.Sum(i => i.AmountPaid ?? i.AmountDue);
+
+            // Refund calculations
+            var refundedInvoices = invoices
+                .Where(i => i.Status == InvoiceStatus.Refunded ||
+                           i.Status == InvoiceStatus.PartiallyRefunded)
+                .ToList();
+
+            var totalRefunds = refundedInvoices.Sum(i => i.RefundAmount ?? 0);
+            var partialRefundsCount = invoices.Count(i => i.Status == InvoiceStatus.PartiallyRefunded);
+            var fullRefundsCount = invoices.Count(i => i.Status == InvoiceStatus.Refunded);
+
+            // Revenue by Station
+            var revenueByStation = incomeInvoices
+                .Where(i => i.Contract?.StationId != null)
+                .GroupBy(i => new { i.Contract.StationId, i.Contract.Station.Name })
+                .Select(g => new RevenueByStationDto
+                {
+                    StationId = (int)g.Key.StationId,
+                    StationName = g.Key.Name,
+                    Revenue = g.Sum(i => i.AmountPaid ?? i.AmountDue),
+                    TotalRentals = g.Count()
+                })
+                .OrderByDescending(r => r.Revenue)
+                .ToList();
+
+            // Daily Revenue
+            var dailyRevenue = incomeInvoices
+                .GroupBy(i => i.PaidAt?.Date ?? i.IssuedAt.Date)
+                .Select(g => new DailyRevenueDto
+                {
+                    Date = g.Key,
+                    Revenue = g.Sum(i => i.AmountPaid ?? i.AmountDue),
+                    RentalCount = g.Count()
+                })
+                .OrderBy(d => d.Date)
+                .ToList();
+
+            // Revenue by Vehicle Type
+            var revenueByVehicleType = incomeInvoices
+                .Where(i => i.Contract?.Vehicle?.Model != null)
+                .GroupBy(i => i.Contract.Vehicle.Model.Type.Name)
+                .Select(g => new RevenueByVehicleTypeDto
+                {
+                    VehicleType = g.Key,
+                    Revenue = g.Sum(i => i.AmountPaid ?? i.AmountDue),
+                    RentalCount = g.Count(),
+                    MarketShare = totalIncome > 0 ? (g.Sum(i => i.AmountPaid ?? i.AmountDue) / totalIncome * 100) : 0
+                })
+                .OrderByDescending(r => r.Revenue)
+                .ToList();
+
+            // Refund analysis
+            var refundsByStation = refundedInvoices
+                .Where(i => i.Contract?.StationId != null)
+                .GroupBy(i => new { i.Contract.StationId, i.Contract.Station.Name })
+                .Select(g => new RefundByStationDto
+                {
+                    StationId = (int)g.Key.StationId,
+                    StationName = g.Key.Name,
+                    RefundAmount = g.Sum(i => i.RefundAmount ?? 0),
+                    RefundCount = g.Count()
+                })
+                .OrderByDescending(r => r.RefundAmount)
+                .ToList();
+
+            // Invoice status breakdown
+            var invoiceStatusBreakdown = invoices
+                .GroupBy(i => i.Status)
+                .Select(g => new InvoiceStatusBreakdownDto
+                {
+                    Status = g.Key,
+                    Count = g.Count(),
+                    TotalAmount = g.Sum(i => i.AmountDue),
+                    Percentage = invoices.Count > 0 ? (g.Count() / (decimal)invoices.Count * 100) : 0
+                })
+                .ToList();
+
+            return new InvoiceFinancialReportDto
+            {
+                Period = dateRange,
+                TotalInvoices = invoices.Count,
+                TotalInvoiceAmount = totalInvoiceAmount,
+                TotalAmountPaid = totalAmountPaid,
+                TotalIncome = totalIncome,
+                TotalRefunds = totalRefunds,
+                NetRevenue = totalIncome - totalRefunds,
+                PartialRefundsCount = partialRefundsCount,
+                FullRefundsCount = fullRefundsCount,
+                RevenueByStation = revenueByStation,
+                DailyRevenue = dailyRevenue,
+                RevenueByVehicleType = revenueByVehicleType,
+                RefundsByStation = refundsByStation,
+                InvoiceStatusBreakdown = invoiceStatusBreakdown,
+                CollectionRate = totalInvoiceAmount > 0 ? (totalAmountPaid / totalInvoiceAmount * 100) : 0,
+                RefundRate = totalIncome > 0 ? (totalRefunds / totalIncome * 100) : 0
+            };
         }
 
         public async Task<RatingAnalyticsDto> GetRatingAnalyticsAsync()

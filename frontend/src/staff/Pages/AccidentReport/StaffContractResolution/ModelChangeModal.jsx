@@ -4,7 +4,7 @@ import {
     Button, VStack, FormControl, FormLabel, Select, Text, Alert, AlertIcon,
     Box, Spinner
 } from '@chakra-ui/react';
-import { accidentAPI, modelAPI } from '../../../../services/api';
+import { accidentAPI } from '../../../../services/api';
 
 export default function ModelChangeModal({ isOpen, onClose, contract, onSuccess }) {
     const [selectedModel, setSelectedModel] = useState('');
@@ -21,11 +21,32 @@ export default function ModelChangeModal({ isOpen, onClose, contract, onSuccess 
 
     const fetchAvailableModels = async () => {
         setFetchingModels(true);
+        setError('');
         try {
-            const mockModels = modelAPI.getAll();        
-            setAvailableModels(mockModels);
+            const stationId = localStorage.getItem('stationId');
+            if (!stationId) {
+                throw new Error('Station ID not found in localStorage');
+            }
+
+            const startTime = contract.startDate || contract.startTime;
+            const endTime = contract.endDate || contract.endTime;
+
+            if (!startTime || !endTime) {
+                throw new Error('Contract dates are missing');
+            }
+
+            const models = await accidentAPI.getAvailableCounts(
+                parseInt(stationId),
+                startTime,
+                endTime
+            );
+
+            console.log('Available models:', models);
+            setAvailableModels(Array.isArray(models) ? models : []);
         } catch (err) {
-            setError('Failed to load available models');
+            console.error('Error fetching models:', err);
+            setError('Failed to load available models: ' + (err.message || 'Unknown error'));
+            setAvailableModels([]);
         } finally {
             setFetchingModels(false);
         }
@@ -38,8 +59,8 @@ export default function ModelChangeModal({ isOpen, onClose, contract, onSuccess 
         setError('');
 
         try {
-            const result = await accidentAPI.manualModelChange(contract.contractId, selectedModel);
-            
+            const result = await accidentAPI.manualModelChange(contract.contractId, parseInt(selectedModel));
+
             if (result.success) {
                 onSuccess();
                 onClose();
@@ -47,7 +68,7 @@ export default function ModelChangeModal({ isOpen, onClose, contract, onSuccess 
                 setError(result.message || 'Failed to change vehicle model');
             }
         } catch (err) {
-            setError('Failed to change vehicle model');
+            setError('Failed to change vehicle model: ' + (err.message || 'Unknown error'));
         } finally {
             setLoading(false);
         }
@@ -59,14 +80,14 @@ export default function ModelChangeModal({ isOpen, onClose, contract, onSuccess 
             <ModalContent>
                 <ModalHeader>Change Vehicle Model</ModalHeader>
                 <ModalBody>
-                    <VStack spacing={4}>
-                        <Box>
+                    <VStack spacing={4} align="start">
+                        <Box textAlign="left" w="100%">
                             <Text fontWeight="bold">Contract #{contract?.contractId}</Text>
                             <Text fontSize="sm" color="gray.600">
-                                Renter: {contract?.renterName}
+                                Renter: {contract?.evRenterName}
                             </Text>
                             <Text fontSize="sm" color="gray.600">
-                                Current Vehicle: #{contract?.currentVehicleId}
+                                Current Vehicle: #{contract?.vehicleLicensePlate} - {contract?.modelName}
                             </Text>
                         </Box>
 
@@ -78,19 +99,26 @@ export default function ModelChangeModal({ isOpen, onClose, contract, onSuccess 
                                     <Text mt={2} fontSize="sm">Loading available models...</Text>
                                 </Box>
                             ) : (
-                                <Select 
+                                <Select
                                     placeholder="Choose vehicle model"
                                     value={selectedModel}
                                     onChange={(e) => setSelectedModel(e.target.value)}
                                 >
                                     {availableModels.map((model) => (
-                                        <option key={model.id} value={model.id}>
-                                            {model.name} ({model.price})
+                                        <option key={model.modelId} value={model.modelId}>
+                                            {model.modelName} ({model.brand}) - Available: {model.count}
                                         </option>
                                     ))}
                                 </Select>
                             )}
                         </FormControl>
+
+                        {availableModels.length === 0 && !fetchingModels && (
+                            <Alert status="info">
+                                <AlertIcon />
+                                No available models found for the selected dates.
+                            </Alert>
+                        )}
 
                         {error && (
                             <Alert status="error">
@@ -104,11 +132,11 @@ export default function ModelChangeModal({ isOpen, onClose, contract, onSuccess 
                     <Button variant="outline" mr={3} onClick={onClose}>
                         Cancel
                     </Button>
-                    <Button 
-                        colorScheme="blue" 
+                    <Button
+                        colorScheme="blue"
                         onClick={handleSubmit}
                         isLoading={loading}
-                        isDisabled={!selectedModel || fetchingModels}
+                        isDisabled={!selectedModel || fetchingModels || availableModels.length === 0}
                     >
                         Change Model
                     </Button>

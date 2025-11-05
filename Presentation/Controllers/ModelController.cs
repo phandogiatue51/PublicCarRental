@@ -107,6 +107,8 @@ namespace PublicCarRental.Presentation.Controllers
                     result.Add(new ModelAvailabilityDto
                     {
                         ModelId = model.ModelId,
+                        ModelName = model.Name,
+                        Brand = model.BrandName,
                         Count = count
                     });
                 }

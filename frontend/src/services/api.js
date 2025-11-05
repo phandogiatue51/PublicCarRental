@@ -375,41 +375,32 @@ export const accountAPI = {
   },
 };
 
-// Contract API services
 export const contractAPI = {
-  // Get all contracts
   getAll: () => apiRequest('/Contract/all'),
 
-  // Get contract by ID
   getById: (id) => apiRequest(`/Contract/${id}`),
 
-  // Update contract
   updateContract: (id, contractData) => apiRequest(`/Contract/update-contract/${id}`, {
     method: 'POST',
     body: JSON.stringify(contractData),
   }),
 
-  // Active contract (confirm handover)
   activeContract: (formData) => apiRequest('/Contract/active-contract', {
     method: 'POST',
     body: formData,
   }),
 
-  // Finish contract (return vehicle)
   finishContract: (formData) => apiRequest('/Contract/finish-contract', {
     method: 'POST',
     body: formData,
   }),
 
-  // Delete contract
   deleteContract: (id) => apiRequest(`/Contract/delete-contract/${id}`, {
     method: 'DELETE',
   }),
 
-  // Get contracts by station ID
   getByStation: (stationId) => apiRequest(`/Contract/get-by-station/${stationId}`),
 
-  // Filter contracts with multiple parameters
   filter: (filters) => {
     const queryParams = new URLSearchParams();
     if (filters.stationId) queryParams.append('stationId', filters.stationId);
@@ -424,36 +415,38 @@ export const contractAPI = {
     return apiRequest(`/Contract/filter${queryString ? `?${queryString}` : ''}`);
   },
 
-  // Download contract PDF
   downloadContractPdf: (contractId) => apiRequest(`/Contract/contracts/${contractId}/pdf`),
+
+  getRefundPreview: (contractId) => apiRequest(`/Contract/refund-preview?contractId=${contractId}`),
+
+  cancelContract: (contractId, bankAccountInfo) => apiRequest('/Contract/cancel-contract', {
+    method: 'POST',
+    body: JSON.stringify({
+      contractId,
+      ...bankAccountInfo
+    }),
+  }),
 };
 
-// Vehicle API services
 export const vehicleAPI = {
-  // Get all vehicles
   getAll: () => apiRequest('/Vehicle/get-all'),
 
-  // Get vehicle by ID
   getById: (id) => apiRequest(`/Vehicle/${id}`),
 
-  // Create vehicle
   create: (vehicleData) => apiRequest('/Vehicle/create-vehicle', {
     method: 'POST',
     body: JSON.stringify(vehicleData),
   }),
 
-  // Update vehicle
   update: (id, vehicleData) => apiRequest(`/Vehicle/update-vehicle/${id}`, {
     method: 'PUT',
     body: JSON.stringify(vehicleData),
   }),
 
-  // Delete vehicle
   delete: (id) => apiRequest(`/Vehicle/delete-vehicle/${id}`, {
     method: 'DELETE',
   }),
 
-  // Get available vehicles
   getAvailableVehicles: (modelId, stationId, startTime, endTime) => {
     const queryParams = new URLSearchParams();
     queryParams.append('modelId', modelId);
@@ -489,31 +482,22 @@ export const vehicleAPI = {
     if (endTime) queryParams.append('endDate', endTime);
 
     return apiRequest(`/Vehicle/check-availability?${queryParams.toString()}`, {
-      method: 'POST', // This should be POST, not GET
-      // If your backend expects a body, you might need this instead:
-      // body: JSON.stringify({ stationId, startTime, endTime }),
+      method: 'POST', 
     });
   }
 };
 
-// Invoice API services
 export const invoiceAPI = {
-  // Get all invoices
   getAll: () => apiRequest('/Invoice/all-invoices'),
 
-  // Get invoice by ID
   getById: (id) => apiRequest(`/Invoice/${id}`),
 
-  // Get invoice by contract ID
   getByContractId: (contractId) => apiRequest(`/Invoice/by-contract/${contractId}`),
 
-  // Get invoice by order code
   getByOrderCode: (orderCode) => apiRequest(`/Invoice/by-order-code/${orderCode}`),
 
-  // Get invoices by station ID
   getByStation: (stationId) => apiRequest(`/Invoice/get-by-station/${stationId}`),
 
-  // 🔍 Filter invoices (new)
   filter: (filters = {}) => {
     const queryParams = new URLSearchParams();
     if (filters.contractId) queryParams.append('contractId', filters.contractId);
@@ -524,21 +508,17 @@ export const invoiceAPI = {
     return apiRequest(`/Invoice/filter${queryString ? `?${queryString}` : ''}`);
   },
 
-  // Cancel invoice by order code
   cancelInvoice: (orderCode) => apiRequest(`/Invoice/cancel-invoice/${orderCode}`, {
     method: 'DELETE',
   }),
 };
 
-// Booking API
 export const bookingAPI = {
-  // Create booking request
   createBooking: (bookingData) => apiRequest('/Booking/request', {
     method: 'POST',
     body: JSON.stringify(bookingData)
   }),
 
-  // Get booking summary by token
   getBookingSummary: (bookingToken) => apiRequest(`/Booking/summary/${bookingToken}`),
 };
 
@@ -665,14 +645,6 @@ export const accidentAPI = {
     return data;
   },
 
-  manualModelChange: async (contractId, modelId) => {
-    const data = await apiRequest(`/Accident/contract/${contractId}/manual-change`, {
-      method: 'POST',
-      body: JSON.stringify({ modelId }),
-    });
-    return data;
-  },
-
   processRefund: async (contractId, refundAmount, refundReason) => {
     const data = await apiRequest(`/Accident/contract/${contractId}/refund`, {
       method: 'POST',
@@ -685,9 +657,16 @@ export const accidentAPI = {
     try {
       const response = await apiRequest('/Model/get-available-counts', {
         method: 'POST',
-        body: JSON.stringify({ stationId, startTime, endTime })
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          stationId,
+          startTime,
+          endTime
+        })
       });
-      return response.data;
+      return response.data || response;
     } catch (error) {
       console.error('Error fetching available counts:', error);
       throw error;
@@ -703,6 +682,66 @@ export const accidentAPI = {
       throw error;
     }
   },
+
+  manualModelChange: async (contractId, modelId) => {
+    try {
+      const data = await apiRequest(`/Accident/change-model?contractId=${contractId}&modelId=${modelId}`, {
+        method: 'POST'
+      });
+      return data;
+    } catch (error) {
+      console.error('Error in manual model change:', error);
+      throw error;
+    }
+  },
+
+  
+
+  processRefund: async (contractId, refundAmount, refundReason, staffId, bankInfo) => {
+    try {
+      const data = await apiRequest(`/Refund/request`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contractId,
+          amount: refundAmount,
+          reason: refundReason,
+          staffId,
+          bankInfo
+        }),
+      });
+      return data;
+    } catch (error) {
+      console.error('Error processing refund:', error);
+      throw error;
+    }
+  },
+
+  staffRefund: async (contractId, amount, reason, staffId, note, bankInfo, fullRefund = false) => {
+    try {
+      const data = await apiRequest(`/Refund/staff-refund`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contractId,
+          amount,
+          reason,
+          staffId,
+          note,
+          bankInfo,
+          fullRefund
+        }),
+      });
+      return data;
+    } catch (error) {
+      console.error('Error processing staff refund:', error);
+      throw error;
+    }
+  }
 };
 
 export const modificationAPI = {
@@ -736,6 +775,16 @@ export const modificationAPI = {
       body: JSON.stringify(requestData)
     });
     return data;
+  },
+
+  getRefundPreview: async (contractId) => {
+    try {
+      const data = await apiRequest(`/contracts/${contractId}/modifications/renter/refund-review`);
+      return data;
+    } catch (error) {
+      console.error('Error fetching refund preview:', error);
+      throw error;
+    }
   }
 };
 

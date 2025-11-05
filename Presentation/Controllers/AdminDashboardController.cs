@@ -106,12 +106,12 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpPost("financial-report")]
-        public async Task<ActionResult<FinancialReportDto>> GetFinancialReport(DateRange dto)
+        public async Task<ActionResult<InvoiceFinancialReportDto>> GetFinancialReport(DateRange dto)
         {
             try
             {
                 var dateRange = new DateRange { StartDate = dto.StartDate, EndDate = dto.EndDate};
-                var financialReport = await _adminDashboardService.GetFinancialReportAsync(dateRange);
+                var financialReport = await _adminDashboardService.GetInvoiceFinancialReportAsync(dateRange);
                 return Ok(financialReport);
             }
             catch (Exception ex)

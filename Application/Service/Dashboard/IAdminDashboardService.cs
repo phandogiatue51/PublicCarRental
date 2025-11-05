@@ -14,7 +14,7 @@ namespace PublicCarRental.Application.Service.Dashboard
         Task<CustomerAnalyticsDto> GetCustomerAnalyticsAsync();
         Task<List<RiskCustomerDto>> GetRiskCustomersAsync();
         Task<StaffPerformanceDto> GetStaffPerformanceAsync();
-        Task<FinancialReportDto> GetFinancialReportAsync(DateRange dateRange);
+        Task<InvoiceFinancialReportDto> GetInvoiceFinancialReportAsync(DateRange dateRange);
         Task<RatingAnalyticsDto> GetRatingAnalyticsAsync();
     }
 }

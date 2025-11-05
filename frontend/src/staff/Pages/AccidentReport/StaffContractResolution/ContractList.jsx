@@ -1,19 +1,12 @@
 import { 
     Table, Thead, Tbody, Tr, Th, Td, 
-    Button, HStack, Badge, Text, VStack
+    Button, Badge, Text, VStack
 } from '@chakra-ui/react';
 
 export default function ContractList({ contracts, onReplaceVehicle, onRefund }) {
     if (!contracts || contracts.length === 0) {
         return null;
     }
-
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND'
-        }).format(amount);
-    };
 
     return (
         <Table variant="simple">
@@ -25,8 +18,6 @@ export default function ContractList({ contracts, onReplaceVehicle, onRefund }) 
                     <Th>End Time</Th>
                     <Th>Vehicle</Th>
                     <Th>Model</Th>
-                    <Th>Total Amount</Th>
-                    <Th>Status</Th>
                     <Th>Actions</Th>
                 </Tr>
             </Thead>
@@ -49,16 +40,6 @@ export default function ContractList({ contracts, onReplaceVehicle, onRefund }) 
                             </VStack>
                         </Td>
                         <Td>{contract.modelName}</Td>
-                        <Td fontWeight="medium">{formatCurrency(contract.totalCost)}</Td>
-                        <Td>
-                            <Badge colorScheme={
-                                contract.status === 4 ? 'red' : 
-                                contract.status === 1 ? 'green' : 'orange'
-                            }>
-                                {contract.status === 4 ? 'Needs Resolution' : 
-                                 contract.status === 1 ? 'Active' : 'Pending'}
-                            </Badge>
-                        </Td>
                         <Td>
                             <VStack spacing={2} align="start">
                                 <Button 
@@ -68,7 +49,7 @@ export default function ContractList({ contracts, onReplaceVehicle, onRefund }) 
                                     width="100%"
                                     isDisabled={contract.status !== 4} 
                                 >
-                                    Replace Vehicle
+                                    Replace Model
                                 </Button>
                                 <Button 
                                     size="sm" 

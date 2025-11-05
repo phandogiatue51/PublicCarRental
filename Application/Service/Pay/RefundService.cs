@@ -11,8 +11,7 @@ namespace PublicCarRental.Application.Service
     public interface IRefundService
     {
         Task<RefundResultDto> RequestRefundAsync(CreateRefundRequestDto request);
-        Task<RefundResultDto> ApproveRefundAsync(int refundId);
-        Task<RefundResultDto> ProcessRefundAsync(int refundId, BankAccountInfo bankInfo);
+        Task<RefundResultDto> ProcessRefundAsync(int refundId, BankAccountInfo bankInfo, bool? fullRefund = null);
         Task<RefundResultDto> RejectRefundAsync(int refundId, string reason);
         Task<IEnumerable<RefundDto>> GetPendingRefundsAsync();
         Task<RefundDto> GetRefundByIdAsync(int refundId);
@@ -25,17 +24,15 @@ namespace PublicCarRental.Application.Service
     public class RefundService : IRefundService
     {
         private readonly IRefundRepository _refundRepository;
-        private readonly ITransactionService _transactionService;
         private readonly IPayOSPayoutService _payoutService;
         private readonly ILogger<RefundService> _logger;
         private readonly IContractRepository _contractRepository;
         private readonly IInvoiceRepository _invoiceRepository;
 
-        public RefundService(IRefundRepository refundRepository, IInvoiceRepository invoiceRepository, ITransactionService transactionService,
+        public RefundService(IRefundRepository refundRepository, IInvoiceRepository invoiceRepository,
             IPayOSPayoutService payoutService, ILogger<RefundService> logger, IContractRepository contractRepository)
         {
             _refundRepository = refundRepository;
-            _transactionService = transactionService;
             _payoutService = payoutService;
             _logger = logger;
             _contractRepository = contractRepository;
@@ -100,7 +97,7 @@ namespace PublicCarRental.Application.Service
             }
         }
 
-        public async Task<RefundResultDto> ApproveRefundAsync(int refundId)
+        public async Task<RefundResultDto> ProcessRefundAsync(int refundId, BankAccountInfo bankInfo, bool? fullRefund = null)
         {
             try
             {
@@ -108,34 +105,20 @@ namespace PublicCarRental.Application.Service
                 if (refund == null)
                     return new RefundResultDto { Success = false, Message = "Refund not found" };
 
-                if (refund.Status != RefundStatus.Pending)
-                    return new RefundResultDto { Success = false, Message = $"Refund is already {refund.Status}" };
-
-                refund.Status = RefundStatus.Approved;
-                _refundRepository.Update(refund);
-
-                return new RefundResultDto
+                if (fullRefund == true)
                 {
-                    Success = true,
-                    Message = "Refund approved successfully",
-                    RefundId = refund.RefundId,
-                    Status = refund.Status
-                };
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"❌ Failed to approve refund #{refundId}");
-                return new RefundResultDto { Success = false, Message = ex.Message };
-            }
-        }
+                    var invoice = _invoiceRepository.GetById(refund.InvoiceId);
+                    var contract = _contractRepository.GetById((int)invoice.ContractId);
 
-        public async Task<RefundResultDto> ProcessRefundAsync(int refundId, BankAccountInfo bankInfo)
-        {
-            try
-            {
-                var refund = _refundRepository.GetById(refundId);
-                if (refund == null)
-                    return new RefundResultDto { Success = false, Message = "Refund not found" };
+                    // Calculate the full amount that was paid
+                    var totalPaid = contract.TotalCost;
+                    if (refund.Amount < totalPaid)
+                    {
+                        refund.Amount = (decimal)totalPaid;
+                        refund.Note += " [STAFF OVERRIDE: 100% refund applied]";
+                        _refundRepository.Update(refund);
+                    }
+                }
 
                 refund.Status = RefundStatus.Processing;
                 _refundRepository.Update(refund);
@@ -146,9 +129,6 @@ namespace PublicCarRental.Application.Service
                 {
                     refund.Status = RefundStatus.Completed;
                     refund.ProcessedDate = DateTime.UtcNow;
-                    refund.PayoutTransactionId = payoutResult.TransactionId;
-                    refund.Note = $"Refund processed successfully. Transaction: {payoutResult.TransactionId}";
-
                     _refundRepository.Update(refund);
 
                     var invoice = _invoiceRepository.GetById(refund.InvoiceId);
@@ -156,12 +136,6 @@ namespace PublicCarRental.Application.Service
                     invoice.RefundedAt = DateTime.UtcNow;
                     invoice.Status = refund.Amount == invoice.AmountPaid ? InvoiceStatus.Refunded : InvoiceStatus.PartiallyRefunded;
                     _invoiceRepository.Update(invoice);
-
-                    _transactionService.CreateTransaction(
-                        refund.InvoiceId,
-                        TransactionType.Refund,
-                        $"Refund processed: {refund.Reason}"
-                    );
 
                     _logger.LogInformation($"✅ Refund processed: #{refundId} via PayOS {payoutResult.TransactionId}");
 
@@ -178,7 +152,6 @@ namespace PublicCarRental.Application.Service
                 {
                     refund.Status = RefundStatus.Failed;
                     refund.Note = $"Payout failed: {payoutResult.Message}";
-
                     _refundRepository.Update(refund);
 
                     return new RefundResultDto
@@ -199,7 +172,6 @@ namespace PublicCarRental.Application.Service
                 {
                     refund.Status = RefundStatus.Failed;
                     refund.Note = $"Processing error: {ex.Message}";
-
                     _refundRepository.Update(refund);
                 }
 

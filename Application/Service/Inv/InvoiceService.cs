@@ -1,4 +1,7 @@
-﻿using PublicCarRental.Application.DTOs.Inv;
+﻿using Microsoft.EntityFrameworkCore;
+using PublicCarRental.Application.DTOs.AdminDashboard;
+using PublicCarRental.Application.DTOs.AdminDashboard.Revenue;
+using PublicCarRental.Application.DTOs.Inv;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Inv;
 
@@ -7,15 +10,12 @@ namespace PublicCarRental.Application.Service.Inv
     public class InvoiceService : IInvoiceService
     {
         private readonly IInvoiceRepository _repo;
-        private readonly ITransactionService _transactionService;
         private readonly ILogger<InvoiceService> _logger;
 
 
-        public InvoiceService(IInvoiceRepository repo, ITransactionService transactionService, 
-            ILogger<InvoiceService> logger)
+        public InvoiceService(IInvoiceRepository repo, ILogger<InvoiceService> logger)
         {
             _repo = repo;
-            _transactionService = transactionService;
             _logger = logger;
         }
 
@@ -151,7 +151,6 @@ namespace PublicCarRental.Application.Service.Inv
                     try
                     {
                         string note = $"Payment received for invoice #{invoice.InvoiceId} created!";
-                        _transactionService.CreateTransaction(invoiceId, TransactionType.Income, note);
                         _logger.LogInformation("✅ Transaction created for invoice {InvoiceId}", invoiceId);
                     }
                     catch (Exception transEx)
@@ -278,6 +277,6 @@ namespace PublicCarRental.Application.Service.Inv
                 Note = i.Note
             });
         }
-
+        
     }
 }

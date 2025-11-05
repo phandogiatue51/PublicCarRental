@@ -4,12 +4,15 @@ import {
     Button, VStack, Text, Box, Alert, AlertIcon, Spinner, useToast
 } from '@chakra-ui/react';
 import ContractList from './ContractList';
-import ReplacementPreviewModal from './ReplacementPreviewModal';
+import ModelChangeModal from './ModelChangeModal';
 import { accidentAPI } from '../../../../services/api';
+import RefundProcessingModal from './RefundProcessingModal';
 
-export default function StaffContractResolution({ isOpen, onClose, accidentId, vehicleId, onSuccess }) {
+export default function StaffContractResolution({ isOpen, onClose, vehicleId, onSuccess }) {
     const [selectedContract, setSelectedContract] = useState(null);
     const [showReplacementPreview, setShowReplacementPreview] = useState(false);
+    const [showRefundModal, setShowRefundModal] = useState(false);
+
     const [contracts, setContracts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -26,9 +29,9 @@ export default function StaffContractResolution({ isOpen, onClose, accidentId, v
             console.log('✅ Data type:', typeof data);
             console.log('✅ Is array:', Array.isArray(data));
             console.log('✅ Array length:', data?.length);
-            
+
             setContracts(Array.isArray(data) ? data : []);
-            
+
             console.log('✅ Contracts state set:', contracts);
         } catch (err) {
             console.error('❌ Error fetching affected contracts:', err);
@@ -50,15 +53,14 @@ export default function StaffContractResolution({ isOpen, onClose, accidentId, v
         setShowReplacementPreview(true);
     };
 
+
     const handleRefund = (contract) => {
         setSelectedContract(contract);
-        toast({
-            title: 'Refund Processing',
-            description: 'Refund functionality will be implemented separately',
-            status: 'info',
-            duration: 3000,
-            isClosable: true,
-        });
+        setShowRefundModal(true);
+    };
+
+    const handleRefundSuccess = () => {
+        console.log('Refund processed successfully');
     };
 
     const handleReplacementSuccess = () => {
@@ -135,11 +137,17 @@ export default function StaffContractResolution({ isOpen, onClose, accidentId, v
                 </ModalContent>
             </Modal>
 
-            <ReplacementPreviewModal
+            <ModelChangeModal
                 isOpen={showReplacementPreview}
                 onClose={() => setShowReplacementPreview(false)}
                 contract={selectedContract}
                 onSuccess={handleReplacementSuccess}
+            />
+            <RefundProcessingModal
+                isOpen={showRefundModal}
+                onClose={() => setShowRefundModal(false)}
+                contract={selectedContract}
+                onSuccess={handleRefundSuccess}
             />
         </>
     );
