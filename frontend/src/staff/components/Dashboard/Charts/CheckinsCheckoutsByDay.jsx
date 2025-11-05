@@ -6,7 +6,8 @@ import { staffDashboardAPI } from '../../../../services/api';
 const formatDateKey = (iso) => {
   try {
     const d = new Date(iso);
-    return d.toISOString().slice(0, 10); // YYYY-MM-DD
+    // Use local date to avoid UTC day shifting
+    return d.toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
   } catch {
     return null;
   }
@@ -55,16 +56,17 @@ const CheckinsCheckoutsByDay = ({ stationId, days = 7, count = 100 }) => {
 
   const { categories, series } = useMemo(() => {
     const daysRange = buildPastDaysRange(days);
-    const keyList = daysRange.map(d => d.toISOString().slice(0, 10));
+    // Keys based on local calendar day
+    const keyList = daysRange.map(d => d.toLocaleDateString('en-CA'));
     const inCountByDay = Object.fromEntries(keyList.map(k => [k, 0]));
     const outCountByDay = Object.fromEntries(keyList.map(k => [k, 0]));
 
     for (const it of checkins) {
-      const key = formatDateKey(it.scheduledTime || it.expectedCheckinTime);
+      const key = formatDateKey(it.scheduledTime || it.expectedCheckinTime || it.checkinTime);
       if (key && key in inCountByDay) inCountByDay[key]++;
     }
     for (const it of checkouts) {
-      const key = formatDateKey(it.scheduledTime || it.expectedCheckoutTime);
+      const key = formatDateKey(it.scheduledTime || it.expectedCheckoutTime || it.checkoutTime);
       if (key && key in outCountByDay) outCountByDay[key]++;
     }
 
@@ -80,6 +82,14 @@ const CheckinsCheckoutsByDay = ({ stationId, days = 7, count = 100 }) => {
   const options = {
     chart: { id: 'checkins-checkouts', toolbar: { show: false } },
     xaxis: { categories },
+    yaxis: {
+      labels: {
+        formatter: function(val) {
+          return Math.floor(val);
+        }
+      },
+      forceNiceScale: true,
+    },
     colors: ['#38A169', '#805AD5'],
     dataLabels: { enabled: false },
     stroke: { curve: 'straight' },
@@ -107,5 +117,3 @@ const CheckinsCheckoutsByDay = ({ stationId, days = 7, count = 100 }) => {
 };
 
 export default CheckinsCheckoutsByDay;
-
-

@@ -24,6 +24,12 @@ import {
   Input,
   useToast,
   Tooltip,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
 } from "@chakra-ui/react";
 import {
   createColumnHelper,
@@ -33,7 +39,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { invoiceAPI } from "../../../../services/api";
+import { invoiceAPI, stationAPI, contractAPI } from "../../../../services/api";
 import {
   MdChevronLeft,
   MdChevronRight,
@@ -60,6 +66,11 @@ export default function InvoiceList() {
   const [contractId, setContractId] = useState("");
   const [orderCode, setOrderCode] = useState("");
   const [stationId, setStationId] = useState("");
+  // Station dropdown & contract selection
+  const [stations, setStations] = useState([]);
+  const [isContractModalOpen, setIsContractModalOpen] = useState(false);
+  const [contracts, setContracts] = useState([]);
+  const [selectedContractObj, setSelectedContractObj] = useState(null);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -101,6 +112,15 @@ export default function InvoiceList() {
 
   useEffect(() => {
     fetchInvoices();
+    // preload stations
+    (async () => {
+      try {
+        const res = await stationAPI.getAll();
+        setStations(res || []);
+      } catch (e) {
+        console.error("Failed to load stations", e);
+      }
+    })();
   }, []);
 
   // Handlers
@@ -110,6 +130,7 @@ export default function InvoiceList() {
 
   const handleClearFilters = () => {
     setContractId("");
+    setSelectedContractObj(null);
     setOrderCode("");
     setStationId("");
     fetchInvoices();
@@ -355,13 +376,17 @@ export default function InvoiceList() {
       {/* 🔍 Filter Section */}
       <Card mb={4} p={4}>
         <HStack spacing={4} align="center">
-          <Input
-            placeholder="Contract ID"
-            value={contractId}
-            onChange={(e) => setContractId(e.target.value)}
-            width="150px"
-            flex={1}
-          />
+          <Flex gap={2} align="center">
+            <Button size="sm" onClick={async () => {
+              try {
+                const res = await contractAPI.getAll();
+                setContracts(res || []);
+                setIsContractModalOpen(true);
+              } catch (err) {
+                console.error("Error fetching contracts:", err);
+              }
+            }}>{selectedContractObj ? `Contract: ${selectedContractObj.contractId || selectedContractObj.id} (${selectedContractObj.vehicleLicensePlate || selectedContractObj.vehicle?.licensePlate || 'Vehicle'})` : 'Select Contract'}</Button>
+          </Flex>
           <Input
             placeholder="Order Code"
             value={orderCode}
@@ -369,13 +394,20 @@ export default function InvoiceList() {
             width="150px"
             flex={1}
           />
-          <Input
-            placeholder="Station ID"
+          <Select
+            placeholder="Station"
             value={stationId}
             onChange={(e) => setStationId(e.target.value)}
-            width="150px"
+            width="200px"
             flex={1}
-          />
+            size="md"
+          >
+            {stations?.map((s) => (
+              <option key={s.stationId || s.id} value={(s.stationId || s.id)?.toString?.()}>
+                {s.name || s.stationName || `Station ${s.stationId || s.id}`}
+              </option>
+            ))}
+          </Select>
           <Button
             leftIcon={<Icon as={MdFilterAlt} />}
             colorScheme="blue"
@@ -481,6 +513,40 @@ export default function InvoiceList() {
           </HStack>
         </Flex>
       </Card>
+      {/* Contract Select Modal */}
+      <Modal isOpen={isContractModalOpen} onClose={() => setIsContractModalOpen(false)} size="xl" isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Select Contract</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <Table variant="simple" color="gray.500">
+              <Thead>
+                <Tr>
+                  <Th>ID</Th>
+                  <Th>Vehicle</Th>
+                  <Th></Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {contracts?.map((c) => (
+                  <Tr key={c.contractId || c.id}>
+                    <Td>{c.contractId || c.id}</Td>
+                    <Td>{c.vehicleLicensePlate || c.vehicle?.licensePlate}</Td>
+                    <Td>
+                      <Button size="sm" colorScheme="blue" onClick={() => {
+                        setContractId(((c.contractId || c.id) ?? "").toString());
+                        setSelectedContractObj(c);
+                        setIsContractModalOpen(false);
+                      }}>Choose</Button>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
