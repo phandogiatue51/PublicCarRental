@@ -377,7 +377,9 @@ export default function InvoiceList() {
       <Card mb={4} p={4}>
         <HStack spacing={4} align="center">
           <Flex gap={2} align="center">
-            <Button size="sm" onClick={async () => {
+            <Button size="sm" 
+            border={"1px solid"}
+            onClick={async () => {
               try {
                 const res = await contractAPI.getAll();
                 setContracts(res || []);

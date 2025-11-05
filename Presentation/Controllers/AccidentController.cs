@@ -271,5 +271,24 @@ namespace PublicCarRental.Presentation.Controllers
                 });
             }
         }
+
+        [HttpGet("refund-preview")]
+        public IActionResult GetRefundPreview(int contractId)
+        {
+            var contract = _contractService.GetEntityById(contractId);
+            if (contract == null)
+                return NotFound("Contract not found");
+
+            var totalPaid = contract.TotalCost;
+            decimal refundAmount = (decimal)totalPaid;
+
+            return Ok(new
+            {
+                contractId = contract.ContractId,
+                totalPaid,
+                refundAmount,
+                policy ="100% refund"
+            });
+        }
     }
 }

@@ -633,7 +633,7 @@ export default function ContractList() {
               width="180px"
             >
               {stations?.map((s) => (
-                <option key={s.stationId || s.id} value={(s.stationId || s.id)?.toString?.()}> 
+                <option key={s.stationId || s.id} value={(s.stationId || s.id)?.toString?.()}>
                   {s.name || s.stationName || `Station ${s.stationId || s.id}`}
                 </option>
               ))}
@@ -653,37 +653,43 @@ export default function ContractList() {
               <option value="4">Confirmed</option>
             </Select>
             <Flex gap={2} align="center">
-              <Button size="sm" onClick={async () => {
-                try {
-                  const res = await renterAPI.getAll();
-                  setRenters(res || []);
-                  setIsRenterModalOpen(true);
-                } catch (err) {
-                  console.error("Error fetching renters:", err);
-                }
-              }}>{selectedRenter ? `Renter: ${selectedRenter.fullName || selectedRenter.name || selectedRenter.email} (${selectedRenter.renterId || selectedRenter.id})` : 'Select Renter'}</Button>
+              <Button size="sm"
+                border="1px solid"
+                onClick={async () => {
+                  try {
+                    const res = await renterAPI.getAll();
+                    setRenters(res || []);
+                    setIsRenterModalOpen(true);
+                  } catch (err) {
+                    console.error("Error fetching renters:", err);
+                  }
+                }}>{selectedRenter ? `Renter: ${selectedRenter.fullName || selectedRenter.name || selectedRenter.email} (${selectedRenter.renterId || selectedRenter.id})` : 'Select Renter'}</Button>
             </Flex>
             <Flex gap={2} align="center">
-              <Button size="sm" onClick={async () => {
-                try {
-                  const res = await staffAPI.getAll();
-                  setStaffList(res || []);
-                  setIsStaffModalOpen(true);
-                } catch (err) {
-                  console.error("Error fetching staff:", err);
-                }
-              }}>{selectedStaffObj ? `Staff: ${selectedStaffObj.fullName || selectedStaffObj.name || selectedStaffObj.email} (${selectedStaffObj.staffId || selectedStaffObj.id})` : 'Select Staff'}</Button>
+              <Button size="sm"
+                border="1px solid"
+                onClick={async () => {
+                  try {
+                    const res = await staffAPI.getAll();
+                    setStaffList(res || []);
+                    setIsStaffModalOpen(true);
+                  } catch (err) {
+                    console.error("Error fetching staff:", err);
+                  }
+                }}>{selectedStaffObj ? `Staff: ${selectedStaffObj.fullName || selectedStaffObj.name || selectedStaffObj.email} (${selectedStaffObj.staffId || selectedStaffObj.id})` : 'Select Staff'}</Button>
             </Flex>
             <Flex gap={2} align="center">
-              <Button size="sm" onClick={async () => {
-                try {
-                  const res = await vehicleAPI.getAll();
-                  setVehicles(res || []);
-                  setIsVehicleModalOpen(true);
-                } catch (err) {
-                  console.error("Error fetching vehicles:", err);
-                }
-              }}>{selectedVehicleObj ? `Vehicle: ${selectedVehicleObj.licensePlate || selectedVehicleObj.vehicleLicensePlate} (${selectedVehicleObj.vehicleId || selectedVehicleObj.id})` : 'Select Vehicle'}</Button>
+              <Button size="sm"
+                border="1px solid"
+                onClick={async () => {
+                  try {
+                    const res = await vehicleAPI.getAll();
+                    setVehicles(res || []);
+                    setIsVehicleModalOpen(true);
+                  } catch (err) {
+                    console.error("Error fetching vehicles:", err);
+                  }
+                }}>{selectedVehicleObj ? `Vehicle: ${selectedVehicleObj.licensePlate || selectedVehicleObj.vehicleLicensePlate} (${selectedVehicleObj.vehicleId || selectedVehicleObj.id})` : 'Select Vehicle'}</Button>
             </Flex>
             <Button colorScheme="blue" onClick={handleFilter} size="sm">
               Apply
@@ -1015,7 +1021,7 @@ export default function ContractList() {
           <ModalCloseButton />
           <ModalBody pb={6} overflowY="auto">
             <Flex gap={3} mb={4} align="center" wrap="wrap">
-             
+
               <Select
                 placeholder="Model"
                 value={selectedModelId}
@@ -1026,7 +1032,7 @@ export default function ContractList() {
                 {(selectedBrandId
                   ? models?.filter((m) => ((m.brandId || m.brand?.id)?.toString?.()) === selectedBrandId)
                   : models
-                 )?.map((m) => (
+                )?.map((m) => (
                   <option key={m.modelId || m.id} value={(m.modelId || m.id)?.toString?.()}>
                     {m.name || m.modelName}
                   </option>
@@ -1049,18 +1055,18 @@ export default function ContractList() {
                     return true;
                   })
                   .map((v) => (
-                  <Tr key={v.vehicleId || v.id}>
-                    <Td>{v.vehicleId || v.id}</Td>
-                    <Td>{v.licensePlate || v.vehicleLicensePlate}</Td>
-                    <Td>
-                      <Button size="sm" colorScheme="blue" onClick={() => {
-                        setVehicleId(((v.vehicleId || v.id) ?? "").toString());
-                        setSelectedVehicleObj(v);
-                        setIsVehicleModalOpen(false);
-                      }}>Choose</Button>
-                    </Td>
-                  </Tr>
-                ))}
+                    <Tr key={v.vehicleId || v.id}>
+                      <Td>{v.vehicleId || v.id}</Td>
+                      <Td>{v.licensePlate || v.vehicleLicensePlate}</Td>
+                      <Td>
+                        <Button size="sm" colorScheme="blue" onClick={() => {
+                          setVehicleId(((v.vehicleId || v.id) ?? "").toString());
+                          setSelectedVehicleObj(v);
+                          setIsVehicleModalOpen(false);
+                        }}>Choose</Button>
+                      </Td>
+                    </Tr>
+                  ))}
               </Tbody>
             </Table>
           </ModalBody>
