@@ -17,10 +17,17 @@ import {
 } from "@chakra-ui/react";
 import { adminDashboardAPI } from "../../../../../services/api";
 import Card from "../../../../components/card/Card";
+import LineChart from "./../../../../../admin/components/charts/LineChart.js";
 
 // Helper function to format VND currency
 const formatVND = (amount) => {
   return `${(amount || 0).toLocaleString('vi-VN')} ₫`;
+};
+
+// Helper to format percentage values
+const formatPercent = (value) => {
+  if (value === null || value === undefined || isNaN(value)) return "0%";
+  return `${Number(value).toFixed(2)}%`;
 };
 
 export default function FinancialReport() {
@@ -130,40 +137,73 @@ export default function FinancialReport() {
       )}
 
       {data && !loading && (
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap="20px" mb="20px">
-          <Card p="20px">
-            <Text fontSize="sm" color="gray.400" mb="5px">
-              Total Revenue
-            </Text>
-            <Text fontSize="2xl" fontWeight="700" color={textColor}>
-              {formatVND(data.totalRevenue)}
-            </Text>
-          </Card>
-          <Card p="20px">
-            <Text fontSize="sm" color="gray.400" mb="5px">
-              Total Deposits
-            </Text>
-            <Text fontSize="2xl" fontWeight="700" color={textColor}>
-              {formatVND(data.totalDeposits)}
-            </Text>
-          </Card>
-          <Card p="20px">
-            <Text fontSize="sm" color="gray.400" mb="5px">
-              Total Refunds
-            </Text>
-            <Text fontSize="2xl" fontWeight="700" color={textColor}>
-              {formatVND(data.totalRefunds)}
-            </Text>
-          </Card>
-          <Card p="20px">
-            <Text fontSize="sm" color="gray.400" mb="5px">
-              Net Revenue
-            </Text>
-            <Text fontSize="2xl" fontWeight="700" color={textColor}>
-              {formatVND(data.netRevenue)}
-            </Text>
-          </Card>
-        </SimpleGrid>
+        <>
+          {/* Period Summary (if available) */}
+          {data.period && (
+            <Card p="20px" mb="20px">
+              <Text fontSize="md" color={textColor}>
+                Period: {new Date(data.period.startDate).toLocaleDateString()} - {new Date(data.period.endDate).toLocaleDateString()}
+              </Text>
+            </Card>
+          )}
+
+          {/* Top KPIs */}
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap="20px" mb="20px">
+            <Card p="20px">
+              <Text fontSize="sm" color="gray.400" mb="5px">Total Revenue</Text>
+              <Text fontSize="2xl" fontWeight="700" color={textColor}>
+                {formatVND(data.totalRevenue ?? data.totalIncome)}
+              </Text>
+            </Card>           
+            <Card p="20px">
+              <Text fontSize="sm" color="gray.400" mb="5px">Total Refunds</Text>
+              <Text fontSize="2xl" fontWeight="700" color={textColor}>
+                {formatVND(data.totalRefunds)}
+              </Text>
+            </Card>
+            <Card p="20px">
+              <Text fontSize="sm" color="gray.400" mb="5px">Net Revenue</Text>
+              <Text fontSize="2xl" fontWeight="700" color={textColor}>
+                {formatVND(data.netRevenue)}
+              </Text>
+            </Card>
+            <Card p="20px">
+              <Text fontSize="sm" color="gray.400" mb="5px">Full Refunds Count</Text>
+              <Text fontSize="2xl" fontWeight="700" color={textColor}>
+                {data.fullRefundsCount ?? 0}
+              </Text>
+            </Card>
+          </SimpleGrid>
+
+          {/* Extended KPIs */}
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap="20px" mb="20px">
+            <Card p="20px">
+              <Text fontSize="sm" color="gray.400" mb="5px">Total Invoices</Text>
+              <Text fontSize="2xl" fontWeight="700" color={textColor}>
+                {data.totalInvoices ?? 0}
+              </Text>
+            </Card>
+            <Card p="20px">
+              <Text fontSize="sm" color="gray.400" mb="5px">Total Invoice Amount</Text>
+              <Text fontSize="2xl" fontWeight="700" color={textColor}>
+                {formatVND(data.totalInvoiceAmount)}
+              </Text>
+            </Card>
+            <Card p="20px">
+              <Text fontSize="sm" color="gray.400" mb="5px">Total Amount Paid</Text>
+              <Text fontSize="2xl" fontWeight="700" color={textColor}>
+                {formatVND(data.totalAmountPaid)}
+              </Text>
+            </Card>
+            <Card p="20px">
+              <Text fontSize="sm" color="gray.400" mb="5px">Refund Rate</Text>
+              <Text fontSize="2xl" fontWeight="700" color={textColor}>
+                {formatPercent(data.refundRate)}
+              </Text>
+            </Card>
+          </SimpleGrid>
+
+        </>
       )}
 
       {data?.revenueByStation && data.revenueByStation.length > 0 && (
@@ -176,6 +216,7 @@ export default function FinancialReport() {
               <Tr>
                 <Th borderColor={borderColor}>Station Name</Th>
                 <Th borderColor={borderColor} isNumeric>Revenue</Th>
+                <Th borderColor={borderColor} isNumeric>Total Rentals</Th>
               </Tr>
             </Thead>
             <Tbody>
@@ -185,6 +226,146 @@ export default function FinancialReport() {
                   <Td borderColor={borderColor} isNumeric>
                     {formatVND(station.revenue)}
                   </Td>
+                  <Td borderColor={borderColor} isNumeric>
+                    {station.totalRentals ?? 0}
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </Card>
+      )}
+
+      {data?.dailyRevenue && data.dailyRevenue.length > 0 && (() => {
+        const dailyCategories = data.dailyRevenue.map((d) =>
+          new Date(d.date).toLocaleDateString()
+        );
+        const dailySeriesData = data.dailyRevenue.map((d) => d.revenue ?? 0);
+
+        const lineChartData = [
+          { name: "Revenue", data: dailySeriesData },
+        ];
+
+        const lineChartOptions = {
+          chart: { toolbar: { show: false } },
+          dataLabels: { enabled: false },
+          stroke: { curve: "smooth", width: 3 },
+          xaxis: { categories: dailyCategories, labels: { rotate: -45 } },
+          yaxis: {
+            labels: {
+              formatter: (val) => `${(val || 0).toLocaleString('vi-VN')} ₫`,
+            },
+          },
+          tooltip: {
+            y: { formatter: (val) => formatVND(val) },
+          },
+        };
+
+        return (
+          <Card p="20px" mt="20px">
+            <Text fontSize="xl" fontWeight="700" mb="15px" color={textColor}>
+              Daily Revenue
+            </Text>
+            <Box minH="260px" mb="20px">
+              <LineChart chartData={lineChartData} chartOptions={lineChartOptions} />
+            </Box>
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th borderColor={borderColor}>Date</Th>
+                  <Th borderColor={borderColor} isNumeric>Revenue</Th>
+                  <Th borderColor={borderColor} isNumeric>Rental Count</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {data.dailyRevenue.map((d, idx) => (
+                  <Tr key={idx}>
+                    <Td borderColor={borderColor}>{new Date(d.date).toLocaleDateString()}</Td>
+                    <Td borderColor={borderColor} isNumeric>{formatVND(d.revenue)}</Td>
+                    <Td borderColor={borderColor} isNumeric>{d.rentalCount ?? 0}</Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Card>
+        );
+      })()}
+
+      {data?.revenueByVehicleType && data.revenueByVehicleType.length > 0 && (
+        <Card p="20px" mt="20px">
+          <Text fontSize="xl" fontWeight="700" mb="15px" color={textColor}>
+            Revenue by Vehicle Type
+          </Text>
+          <Table variant="simple">
+            <Thead>
+              <Tr>
+                <Th borderColor={borderColor}>Vehicle Type</Th>
+                <Th borderColor={borderColor} isNumeric>Revenue</Th>
+                <Th borderColor={borderColor} isNumeric>Rental Count</Th>
+                <Th borderColor={borderColor} isNumeric>Market Share</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {data.revenueByVehicleType.map((v, idx) => (
+                <Tr key={idx}>
+                  <Td borderColor={borderColor}>{v.vehicleType}</Td>
+                  <Td borderColor={borderColor} isNumeric>{formatVND(v.revenue)}</Td>
+                  <Td borderColor={borderColor} isNumeric>{v.rentalCount ?? 0}</Td>
+                  <Td borderColor={borderColor} isNumeric>{formatPercent(v.marketShare)}</Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </Card>
+      )}
+
+      {data?.refundsByStation && data.refundsByStation.length > 0 && (
+        <Card p="20px" mt="20px">
+          <Text fontSize="xl" fontWeight="700" mb="15px" color={textColor}>
+            Refunds by Station
+          </Text>
+          <Table variant="simple">
+            <Thead>
+              <Tr>
+                <Th borderColor={borderColor}>Station Name</Th>
+                <Th borderColor={borderColor} isNumeric>Refund Amount</Th>
+                <Th borderColor={borderColor} isNumeric>Refund Count</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {data.refundsByStation.map((r, idx) => (
+                <Tr key={idx}>
+                  <Td borderColor={borderColor}>{r.stationName}</Td>
+                  <Td borderColor={borderColor} isNumeric>{formatVND(r.refundAmount)}</Td>
+                  <Td borderColor={borderColor} isNumeric>{r.refundCount ?? 0}</Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </Card>
+      )}
+
+      {data?.invoiceStatusBreakdown && data.invoiceStatusBreakdown.length > 0 && (
+        <Card p="20px" mt="20px">
+          <Text fontSize="xl" fontWeight="700" mb="15px" color={textColor}>
+            Invoice Status Breakdown
+          </Text>
+          <Table variant="simple">
+            <Thead>
+              <Tr>
+                <Th borderColor={borderColor}>Status</Th>
+                <Th borderColor={borderColor} isNumeric>Count</Th>
+                <Th borderColor={borderColor} isNumeric>Total Amount</Th>
+                <Th borderColor={borderColor} isNumeric>Percentage</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {data.invoiceStatusBreakdown.map((s, idx) => (
+                <Tr key={idx}>
+                  <Td borderColor={borderColor}>{s.status}</Td>
+                  <Td borderColor={borderColor} isNumeric>{s.count ?? 0}</Td>
+                  <Td borderColor={borderColor} isNumeric>{formatVND(s.totalAmount)}</Td>
+                  <Td borderColor={borderColor} isNumeric>{formatPercent(s.percentage)}</Td>
                 </Tr>
               ))}
             </Tbody>
