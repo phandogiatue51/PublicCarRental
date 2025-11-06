@@ -1,8 +1,8 @@
-﻿using PublicCarRental.Application.Service.Cont;
+﻿using PublicCarRental.Application.DTOs.Pay;
+using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Application.Service.Inv;
-using PublicCarRental.Application.Service.Redis;
 using PublicCarRental.Infrastructure.Data.Models;
-using System.Diagnostics.Contracts;
+using PublicCarRental.Infrastructure.Data.Repository.Cont;
 using System.Text.Json;
 
 namespace PublicCarRental.Application.Service.Pay
@@ -19,14 +19,19 @@ namespace PublicCarRental.Application.Service.Pay
         private readonly IContractService _contractService;
         private readonly IBookingService _bookingService;
         private readonly ILogger<PaymentProcessingService> _logger;
+        private readonly IContractRepository _contractRepository;
+        private readonly IPendingChangeService _pendingChangeService;
 
-        public PaymentProcessingService(IInvoiceService invoiceService, IContractService contractService, 
-            IBookingService bookingService, ILogger<PaymentProcessingService> logger)
+        public PaymentProcessingService(IInvoiceService invoiceService, IContractService contractService,
+            IBookingService bookingService, ILogger<PaymentProcessingService> logger,
+            IContractRepository contractRepository, IPendingChangeService pendingChangeService)
         {
             _invoiceService = invoiceService;
             _contractService = contractService;
             _bookingService = bookingService;
             _logger = logger;
+            _contractRepository = contractRepository;
+            _pendingChangeService = pendingChangeService;
         }
 
         public async Task ProcessPaymentWebhookAsync(string webhookBody)
@@ -81,31 +86,35 @@ namespace PublicCarRental.Application.Service.Pay
                 return;
             }
 
-            if (invoice.Status == InvoiceStatus.Paid)
+            if (invoice.Status != InvoiceStatus.Paid)
             {
-                _logger.LogInformation($"ℹ️ Invoice {invoice.InvoiceId} already paid");
-                return;
+                _logger.LogInformation("🔄 STEP 1: Updating invoice status to PAID...");
+                var invoiceUpdateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
+
+                if (!invoiceUpdateSuccess)
+                {
+                    _logger.LogError($"❌ Failed to update invoice {invoiceId} status to PAID");
+                    return;
+                }
+                _logger.LogInformation("✅ Invoice status updated to PAID");
             }
 
-            _logger.LogInformation("🔄 STEP 1: Updating invoice status to PAID...");
-            var invoiceUpdateSuccess = _invoiceService.UpdateInvoiceStatus(invoice.InvoiceId, InvoiceStatus.Paid, invoice.AmountDue);
-            _logger.LogInformation($"📊 Invoice status update: {invoiceUpdateSuccess}");
+            var pendingChange = await _pendingChangeService.GetByInvoiceIdAsync(invoiceId);
 
-            if (invoiceUpdateSuccess)
+            if (pendingChange != null)
             {
-                _logger.LogInformation("✅ Invoice status updated to PAID");
-
+                await CompleteModificationAfterPaymentAsync(pendingChange);
+                _logger.LogInformation($"✅ Modification completed for invoice {invoiceId}");
+            }
+            else
+            {
                 var bookingToken = invoice.BookingToken;
-                _logger.LogInformation($"🔑 Booking token: {bookingToken}");
-
                 var bookingRequest = await _bookingService.GetBookingRequest(bookingToken);
-                _logger.LogInformation($"📋 Booking request: {(bookingRequest != null ? "FOUND" : "NOT FOUND")}");
-
                 if (bookingRequest != null)
                 {
-                    _logger.LogInformation("🚀 STEP 2: Calling ConfirmBookingAfterPaymentAsync...");
+                    _logger.LogInformation("🚀 Calling ConfirmBookingAfterPaymentAsync...");
                     var result = await _contractService.ConfirmBookingAfterPaymentAsync(invoice.InvoiceId);
-                    _logger.LogInformation($"📝 Contract creation result: Success={result.Success}, ContractId={result.contractId}, Message={result.Message}");
+                    _logger.LogInformation($"📝 Contract creation result: Success={result.Success}, ContractId={result.contractId}");
 
                     if (result.Success)
                     {
@@ -115,9 +124,32 @@ namespace PublicCarRental.Application.Service.Pay
                 }
                 else
                 {
-                    _logger.LogWarning($"⚠️ No booking request found, but invoice marked as PAID");
+                    _logger.LogWarning($"⚠️ No booking request found for invoice {invoiceId}");
                 }
             }
+        }
+
+        private async Task CompleteModificationAfterPaymentAsync(PendingModificationDto pendingChange)
+        {
+            var contract = _contractRepository.GetById(pendingChange.ContractId);
+
+            if (pendingChange.ChangeType == "ModelChange")
+            {
+                contract.VehicleId = pendingChange.NewVehicleId;
+                contract.TotalCost = pendingChange.NewTotalCost;
+                _logger.LogInformation($"🔄 Updated contract {pendingChange.ContractId}: Model change applied");
+            }
+            else if (pendingChange.ChangeType == "TimeExtension")
+            {
+                contract.EndTime = (DateTime)pendingChange.NewEndTime;
+                contract.TotalCost = pendingChange.NewTotalCost;
+                _logger.LogInformation($"🔄 Updated contract {pendingChange.ContractId}: Time extension applied");
+            }
+
+            _contractRepository.Update(contract);
+
+            await _pendingChangeService.RemoveAsync(pendingChange.InvoiceId);
+            _logger.LogInformation($"🗑️ Removed pending modification for invoice {pendingChange.InvoiceId}");
         }
     }
 }

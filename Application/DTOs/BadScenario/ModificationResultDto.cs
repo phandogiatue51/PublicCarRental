@@ -11,6 +11,7 @@ namespace PublicCarRental.Application.DTOs.BadScenario
         public int? NewInvoiceId { get; set; }
         public int? RefundId { get; set; }
         public ContractDto UpdatedContract { get; set; }
+        public bool? RequiresPayment { get; set; }
 
         public List<VehicleOptionDto?> AvailableVehicles { get; set; } = new();
         public bool? RequiresUserSelection { get; set; }

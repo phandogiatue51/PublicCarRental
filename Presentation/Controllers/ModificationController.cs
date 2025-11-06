@@ -55,12 +55,12 @@ namespace PublicCarRental.Presentation.Controllers
             if (contract == null)
                 return NotFound("Contract not found");
 
-            if (contract.Status != Infrastructure.Data.Models.RentalStatus.Confirmed) 
+            if (contract.Status != Infrastructure.Data.Models.RentalStatus.Confirmed)
             {
                 return BadRequest("Refund is only available for confirmed contracts");
             }
 
-            var totalPaid = contract.TotalCost;
+            var totalPaid = contract.TotalCost ?? 0;
             var daysUntilStart = (contract.StartTime - DateTime.UtcNow).TotalDays;
 
             decimal refundAmount = 0;
@@ -68,17 +68,17 @@ namespace PublicCarRental.Presentation.Controllers
 
             if (daysUntilStart >= 2)
             {
-                refundAmount = (decimal)totalPaid;
+                refundAmount = totalPaid;
                 policy = "100% refund (more than 2 days before start)";
             }
             else if (daysUntilStart >= 0)
             {
-                refundAmount = (decimal)(totalPaid * 0.8m);
+                refundAmount = totalPaid * 0.8m;
                 policy = "80% refund (less than 2 days before start)";
             }
             else
             {
-                refundAmount = 0; 
+                refundAmount = 0;
                 policy = "No refund (after rental start time)";
             }
 
@@ -89,7 +89,7 @@ namespace PublicCarRental.Presentation.Controllers
                 refundAmount,
                 daysUntilStart = Math.Round(daysUntilStart, 1),
                 policy,
-                canCancel = daysUntilStart >= 0 
+                canCancel = daysUntilStart >= 0
             });
         }
 
@@ -118,19 +118,11 @@ namespace PublicCarRental.Presentation.Controllers
             if (!result.Success)
                 return BadRequest(result.Message);
 
-            var refundProcess = await _refundService.ProcessRefundAsync((int)result.RefundId, dto);
-
-            if (!refundProcess.Success)
-                return StatusCode(500, new
-                {
-                    message = "Contract cancelled, but refund processing failed.",
-                    refund = refundProcess
-                });
-
             return Ok(new
             {
-                message = "Contract cancelled and refund processed successfully.",
-                refund = refundProcess
+                message = result.Message,
+                refundId = result.RefundId,
+                contractStatus = "Cancelled"
             });
         }
     }

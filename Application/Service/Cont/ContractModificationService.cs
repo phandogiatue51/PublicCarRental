@@ -3,7 +3,6 @@ using PublicCarRental.Application.DTOs.Cont;
 using PublicCarRental.Application.DTOs.Pay;
 using PublicCarRental.Application.DTOs.Refund;
 using PublicCarRental.Application.Service;
-using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Veh;
 using PublicCarRental.Infrastructure.Data.Models;
@@ -16,21 +15,30 @@ public class ContractModificationService : IContractModificationService
     private readonly IInvoiceService _invoiceService;
     private readonly IRefundService _refundService;
     private readonly ILogger<ContractModificationService> _logger;
+    private readonly IPendingChangeService _pendingChangeService;
 
     public ContractModificationService(IContractRepository contractRepository, IVehicleService vehicleService,
-        IInvoiceService invoiceService, IRefundService refundService, ILogger<ContractModificationService> logger)
+        IInvoiceService invoiceService, IRefundService refundService, ILogger<ContractModificationService> logger,
+        IPendingChangeService pendingChangeService)
     {
         _contractRepository = contractRepository;
         _vehicleService = vehicleService;
         _invoiceService = invoiceService;
         _refundService = refundService;
         _logger = logger;
+        _pendingChangeService = pendingChangeService;
     }
 
     public async Task<ModificationResultDto> ChangeModelAsync(int contractId, RenterChangeRequest request)
     {
         var contract = _contractRepository.GetById(contractId);
-        var totalPaid = await _invoiceService.GetTotalPaidAmountAsync(contractId);
+
+        // Check original invoice is paid
+        var originalInvoice = await _invoiceService.GetOriginalInvoiceAsync(contractId);
+        if (originalInvoice?.Status != InvoiceStatus.Paid)
+        {
+            return new ModificationResultDto { Success = false, Message = "Please complete initial payment first" };
+        }
 
         var newVehicle = await _vehicleService.GetFirstAvailableVehicleByModelAsync(
             (int)request.NewModelId, (int)contract.StationId, contract.StartTime, contract.EndTime);
@@ -39,44 +47,72 @@ public class ContractModificationService : IContractModificationService
             return new ModificationResultDto { Success = false, Message = "No available vehicles for selected model" };
 
         var newTotal = CalculateNewTotal(newVehicle, contract.StartTime, contract.EndTime);
-
+        var totalPaid = await _invoiceService.GetTotalPaidAmountAsync(contractId);
         var priceDifference = newTotal - totalPaid;
         const decimal tolerance = 0.01m;
 
-        int? newInvoiceId = null;
+        // Create additional invoice
+        var newInvoice = await _invoiceService.CreateAdditionalInvoiceAsync(
+            contractId, priceDifference, "Model upgrade charge");
 
-        if (priceDifference > tolerance)
+        // Store pending modification
+        var pendingChange = new PendingModificationDto
         {
-            var newInvoice = await _invoiceService.CreateAdditionalInvoiceAsync(
-                contractId, priceDifference, "Model upgrade charge");
-            newInvoiceId = newInvoice.InvoiceId;
-        }
-
-        contract.VehicleId = newVehicle.VehicleId;
-        contract.TotalCost = newTotal;
-        _contractRepository.Update(contract);
-
-        string message;
-        if (Math.Abs(priceDifference) <= tolerance)
-        {
-            message = "Model changed successfully. No price change.";
-            priceDifference = 0;
-        }
-        else if (priceDifference > tolerance)
-        {
-            message = "Model changed. Additional payment required.";
-        }
-        else
-        {
-            message = "Model changed successfully. Price difference absorbed.";
-        }
+            ContractId = contractId,
+            ChangeType = "ModelChange",
+            NewVehicleId = newVehicle.VehicleId,
+            NewTotalCost = newTotal,
+            InvoiceId = newInvoice.InvoiceId
+        };
+        await _pendingChangeService.AddAsync(pendingChange);
 
         return new ModificationResultDto
         {
             Success = true,
-            Message = message,
+            Message = "Additional payment required to complete model change",
             PriceDifference = priceDifference,
-            NewInvoiceId = newInvoiceId,
+            NewInvoiceId = newInvoice.InvoiceId,
+            RequiresPayment = true,
+            UpdatedContract = MapToContractDto(contract) // Return current contract
+        };
+    }
+
+    public async Task<ModificationResultDto> CompleteChangeAfterPaymentAsync(int invoiceId)
+    {
+        var invoice = _invoiceService.GetEntityById(invoiceId);
+        if (invoice?.Status != InvoiceStatus.Paid)
+        {
+            return new ModificationResultDto { Success = false, Message = "Invoice not paid" };
+        }
+
+        // Get pending modification
+        var pendingChange = await _pendingChangeService.GetByInvoiceIdAsync(invoiceId);
+        if (pendingChange == null)
+            return new ModificationResultDto { Success = false, Message = "No pending change found" };
+
+        // Apply the contract changes
+        var contract = _contractRepository.GetById(pendingChange.ContractId);
+
+        if (pendingChange.ChangeType == "ModelChange")
+        {
+            contract.VehicleId = pendingChange.NewVehicleId;
+            contract.TotalCost = pendingChange.NewTotalCost;
+        }
+        else if (pendingChange.ChangeType == "TimeExtension")
+        {
+            contract.EndTime = (DateTime)pendingChange.NewEndTime;
+            contract.TotalCost = pendingChange.NewTotalCost;
+        }
+
+        _contractRepository.Update(contract);
+
+        // Clean up
+        await _pendingChangeService.RemoveAsync(invoiceId);
+
+        return new ModificationResultDto
+        {
+            Success = true,
+            Message = $"{pendingChange.ChangeType} completed successfully",
             UpdatedContract = MapToContractDto(contract)
         };
     }
@@ -84,6 +120,13 @@ public class ContractModificationService : IContractModificationService
     public async Task<ModificationResultDto> ExtendTimeAsync(int contractId, RenterChangeRequest request)
     {
         var contract = _contractRepository.GetById(contractId);
+
+        // Check original payment
+        var originalInvoice = await _invoiceService.GetOriginalInvoiceAsync(contractId);
+        if (originalInvoice?.Status != InvoiceStatus.Paid)
+        {
+            return new ModificationResultDto { Success = false, Message = "Please complete initial payment first" };
+        }
 
         var isAvailable = await _vehicleService.CheckVehicleAvailabilityAsync(
             (int)contract.VehicleId, contract.EndTime, (DateTime)request.NewEndTime);
@@ -95,20 +138,29 @@ public class ContractModificationService : IContractModificationService
         var additionalHours = timeDifference.TotalHours;
         var additionalCost = (decimal)additionalHours * contract.Vehicle.Model.PricePerHour;
 
+        // Create invoice but don't update contract yet
         var newInvoice = await _invoiceService.CreateAdditionalInvoiceAsync(
             contractId, additionalCost, "Time extension charge");
 
-        contract.EndTime = (DateTime)request.NewEndTime;
-        contract.TotalCost += additionalCost;
-        _contractRepository.Update(contract);
+        // Store pending modification
+        var pendingChange = new PendingModificationDto
+        {
+            ContractId = contractId,
+            ChangeType = "TimeExtension",
+            NewEndTime = request.NewEndTime,
+            NewTotalCost = (decimal)(contract.TotalCost + additionalCost),
+            InvoiceId = newInvoice.InvoiceId
+        };
+        await _pendingChangeService.AddAsync(pendingChange);
 
         return new ModificationResultDto
         {
             Success = true,
-            Message = $"Time extended to {request.NewEndTime}. Additional payment required.",
+            Message = $"Additional payment required to extend time to {request.NewEndTime}",
             PriceDifference = additionalCost,
             NewInvoiceId = newInvoice.InvoiceId,
-            UpdatedContract = MapToContractDto(contract)
+            RequiresPayment = true,
+            UpdatedContract = MapToContractDto(contract) // Return current contract
         };
     }
 
@@ -135,6 +187,7 @@ public class ContractModificationService : IContractModificationService
         priceDifference = newTotal - originalInvoice.AmountDue;
 
         contract.VehicleId = newVehicle.VehicleId;
+        contract.TotalCost = newTotal;
         _contractRepository.Update(contract);
 
         return new ModificationResultDto
@@ -199,20 +252,67 @@ public class ContractModificationService : IContractModificationService
         if (contract == null)
             throw new Exception("Contract not found.");
 
-        var totalPaid = contract.TotalCost;
+        // Check if payment is still processing
+        var pendingInvoice = contract.Invoices?.FirstOrDefault(i =>
+            i.Status == InvoiceStatus.Pending);
+
+        if (pendingInvoice != null)
+        {
+            return new ModificationResultDto
+            {
+                Success = false,
+                Message = "Payment is still being processed. Please wait a moment and try again.",
+                UpdatedContract = MapToContractDto(contract)
+            };
+        }
+
+        // Check if contract has any paid invoices
+        var hasPaidInvoice = contract.Invoices?.Any(i =>
+            i.Status == InvoiceStatus.Paid && i.AmountPaid > 0) ?? false;
+
+        if (!hasPaidInvoice)
+        {
+            contract.Status = RentalStatus.Cancelled;
+            _contractRepository.Update(contract);
+            return new ModificationResultDto
+            {
+                Success = true,
+                Message = "Contract cancelled. No payment was made.",
+                PriceDifference = 0,
+                UpdatedContract = MapToContractDto(contract)
+            };
+        }
+
+        // Use contract total (includes all paid invoices)
+        var totalPaid = contract.TotalCost ?? 0;
         var daysUntilStart = (contract.StartTime - DateTime.UtcNow).TotalDays;
 
-        var refundAmount = (decimal)totalPaid;
+        // Apply consistent refund policy
+        decimal refundAmount = 0;
+        string policy;
 
-        if (daysUntilStart < 2)
-            refundAmount = (decimal)(totalPaid * 0.8m);
+        if (daysUntilStart >= 2)
+        {
+            refundAmount = totalPaid; // 100% refund
+            policy = "100% refund (more than 2 days before start)";
+        }
+        else if (daysUntilStart >= 0)
+        {
+            refundAmount = totalPaid * 0.8m; // 80% refund
+            policy = "80% refund (less than 2 days before start)";
+        }
+        else
+        {
+            refundAmount = 0; // No refund
+            policy = "No refund (after rental start time)";
+        }
 
         var refundRequest = new CreateRefundRequestDto
         {
             ContractId = contract.ContractId,
             Amount = refundAmount,
-            Reason = $"Contract cancellation",
-            Note = $"Cancelled {daysUntilStart:F0} days before start"
+            Reason = $"Contract cancellation - {policy}",
+            Note = $"Cancelled {daysUntilStart:F1} days before start. {policy}"
         };
 
         var refundResult = await _refundService.RequestRefundAsync(refundRequest);
@@ -238,8 +338,8 @@ public class ContractModificationService : IContractModificationService
         {
             Success = refundResult.Success,
             Message = refundResult.Success
-                ? $"Contract cancelled. {refundAmount:C} refund initiated."
-                : "Contract cancelled but refund request failed.",
+        ? $"Contract cancelled. {refundAmount:C} refund initiated."
+        : "Contract cancelled but refund request failed.",
             PriceDifference = -refundAmount,
             RefundId = refundResult.RefundId,
             UpdatedContract = MapToContractDto(contract)

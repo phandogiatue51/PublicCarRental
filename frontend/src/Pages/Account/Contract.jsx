@@ -245,15 +245,6 @@ function Contract() {
                     </button>
                   )}
                 </div>
-
-                {showCancelModal && (
-                  <RenterRefundModal
-                    contract={contract}
-                    onRefundSuccess={handleRefundSuccess}
-                    isOpen={showCancelModal}
-                    onClose={() => setShowCancelModal(false)}
-                  />
-                )}
               </div>
             ))}
           </div>
@@ -482,6 +473,15 @@ function Contract() {
         onClose={() => setShowRateModal(false)}
         onRatingSubmitted={handleRatingSubmitted}
       />
+      
+      {showCancelModal && selectedContractForCancel && (
+        <RenterRefundModal
+          contract={selectedContractForCancel}
+          onRefundSuccess={handleRefundSuccess}
+          isOpen={showCancelModal}
+          onClose={() => setShowCancelModal(false)}
+        />
+      )}
     </div>
   );
 }
