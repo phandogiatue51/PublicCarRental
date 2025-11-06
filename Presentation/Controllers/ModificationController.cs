@@ -55,12 +55,32 @@ namespace PublicCarRental.Presentation.Controllers
             if (contract == null)
                 return NotFound("Contract not found");
 
+            if (contract.Status != Infrastructure.Data.Models.RentalStatus.Confirmed) 
+            {
+                return BadRequest("Refund is only available for confirmed contracts");
+            }
+
             var totalPaid = contract.TotalCost;
             var daysUntilStart = (contract.StartTime - DateTime.UtcNow).TotalDays;
 
-            decimal refundAmount = (decimal)totalPaid;
-            if (daysUntilStart < 2)
+            decimal refundAmount = 0;
+            string policy;
+
+            if (daysUntilStart >= 2)
+            {
+                refundAmount = (decimal)totalPaid;
+                policy = "100% refund (more than 2 days before start)";
+            }
+            else if (daysUntilStart >= 0)
+            {
                 refundAmount = (decimal)(totalPaid * 0.8m);
+                policy = "80% refund (less than 2 days before start)";
+            }
+            else
+            {
+                refundAmount = 0; 
+                policy = "No refund (after rental start time)";
+            }
 
             return Ok(new
             {
@@ -68,17 +88,30 @@ namespace PublicCarRental.Presentation.Controllers
                 totalPaid,
                 refundAmount,
                 daysUntilStart = Math.Round(daysUntilStart, 1),
-                policy = daysUntilStart < 2
-                    ? "80% refund (less than 2 days before start)"
-                    : "100% refund (more than 2 days before start)"
+                policy,
+                canCancel = daysUntilStart >= 0 
             });
         }
 
         [HttpPost("cancel-contract")]
-        public async Task<IActionResult> CancelContract(int contractId, BankAccountInfo dto)
+        public async Task<IActionResult> CancelContract(int contractId, [FromBody] BankAccountInfo dto)
         {
             if (dto == null)
                 return BadRequest("Bank information is required for refund.");
+
+            var contract = _contractService.GetEntityById(contractId);
+            if (contract == null)
+                return NotFound("Contract not found");
+
+            if (contract.Status != Infrastructure.Data.Models.RentalStatus.Confirmed)
+            {
+                return BadRequest("Only confirmed contracts can be cancelled");
+            }
+
+            if (contract.StartTime <= DateTime.UtcNow)
+            {
+                return BadRequest("Cannot cancel contract after rental start time");
+            }
 
             var result = await _modificationService.HandleRenterCancellation(contractId, dto);
 

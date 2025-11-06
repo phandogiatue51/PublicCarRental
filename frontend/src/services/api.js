@@ -673,23 +673,29 @@ export const modificationAPI = {
     return data;
   },
 
-  cancelContract: async (contractId, requestData) => {
-    const data = await apiRequest(`/contracts/${contractId}/modifications/renter/cancel-contract`, {
-      method: 'DELETE',
-      body: JSON.stringify(requestData)
-    });
-    return data;
-  },
-
   getRefundPreview: async (contractId) => {
     try {
-      const data = await apiRequest(`/contracts/${contractId}/modifications/refund-review`);
+      const data = await apiRequest(`/contracts/${contractId}/modifications/refund-preview`);
       return data;
     } catch (error) {
       console.error('Error fetching refund preview:', error);
       throw error;
     }
+  },
+
+  cancelContract: async (contractId, bankInfo) => {
+    try {
+      const data = await apiRequest(`/contracts/${contractId}/modifications/cancel-contract`, {
+        method: 'POST',
+        body: JSON.stringify(bankInfo)
+      });
+      return data;
+    } catch (error) {
+      console.error('Error cancelling contract:', error);
+      throw error;
+    }
   }
+
 };
 
 export const ratingsAPI = {
@@ -782,23 +788,6 @@ export const adminDashboardAPI = {
   getStationsPerformance: () => apiRequest('/AdminDashboard/stations-performance'),
 };
 
-export const qrAPI = {
-  scanQRUpload: (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    return apiRequest('/QRScan/scan-upload', {
-      method: 'POST',
-      body: formData,
-    });
-  },
-
-  parseQRContent: (qrContent) => apiRequest('/QRScan/parse-content', {
-    method: 'POST',
-    body: JSON.stringify({ qrContent }),
-  }),
-};
-
 export const refundAPI = {
   requestRefund: (requestData) => apiRequest('/Refund/request', {
     method: 'POST',
@@ -810,19 +799,10 @@ export const refundAPI = {
     body: JSON.stringify({ bankInfo, fullRefund }),
   }),
 
-  staffRefund: (contractId, amount, reason, staffId, note, bankInfo, fullRefund = false) =>
-    apiRequest('/Refund/staff-refund', {
-      method: 'POST',
-      body: JSON.stringify({
-        contractId,
-        amount,
-        reason,
-        staffId,
-        note,
-        bankInfo,
-        fullRefund
-      }),
-    })
+  staffRefund: (data) => apiRequest('/Refund/staff-refund', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
 };
 
 export default apiRequest;

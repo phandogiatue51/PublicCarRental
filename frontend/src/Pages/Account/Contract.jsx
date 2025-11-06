@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import { contractAPI, renterAPI } from "../../services/api"; 
+import { contractAPI, renterAPI } from "../../services/api";
 import RateModal from "./RateModal";
 import "../../styles/Account/Contract.css";
+import RenterRefundModal from './RenterRefundModal';
 
 function Contract() {
   const renterId = localStorage.getItem("renterId");
-  
+
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -14,12 +15,23 @@ function Contract() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showRateModal, setShowRateModal] = useState(false);
   const [selectedContractForRating, setSelectedContractForRating] = useState(null);
-  
+  const [refreshing, setRefreshing] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedContractForCancel, setSelectedContractForCancel] = useState(null);
   const isAuthenticated = () => {
-    return !!localStorage.getItem("jwtToken"); 
+    return !!localStorage.getItem("jwtToken");
+  };
+  const handleRefundSuccess = async () => {
+    setRefreshing(true);
+    try {
+      await loadContracts();
+    } catch (error) {
+      console.error('Error refreshing contracts:', error);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [contractsPerPage] = useState(3);
 
@@ -38,13 +50,13 @@ function Contract() {
     } finally {
       setLoading(false);
     }
-  }, [renterId]); 
+  }, [renterId]);
 
   useEffect(() => {
     const controller = new AbortController();
     loadContracts();
     return () => controller.abort();
-  }, [loadContracts]); 
+  }, [loadContracts]);
 
   const handleRateExperience = (contract) => {
     setSelectedContractForRating(contract);
@@ -52,7 +64,6 @@ function Contract() {
   };
 
   const handleRatingSubmitted = () => {
-    // Refresh contracts to update isRated status
     loadContracts();
   };
 
@@ -106,30 +117,25 @@ function Contract() {
     setSelectedContract(null);
   };
 
-  // Pagination logic
   const indexOfLastContract = currentPage * contractsPerPage;
   const indexOfFirstContract = indexOfLastContract - contractsPerPage;
   const currentContracts = contracts.slice(indexOfFirstContract, indexOfLastContract);
   const totalPages = Math.ceil(contracts.length / contractsPerPage);
 
-  // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Go to previous page
   const goToPreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
     }
   };
 
-  // Go to next page
   const goToNextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
     }
   };
 
-  // Reset to first page when contracts change
   useEffect(() => {
     setCurrentPage(1);
   }, [contracts]);
@@ -189,7 +195,7 @@ function Contract() {
                   <h3>Contract #{contract.contractId}</h3>
                   {getStatusBadge(contract.status)}
                 </div>
-                
+
                 <div className="contract-details">
                   <div className="detail-row">
                     <span className="label">Vehicle:</span>
@@ -210,17 +216,28 @@ function Contract() {
                 </div>
 
                 <div className="contract-actions">
-                  <button 
+                  <button
                     className="view-details-btn"
                     onClick={() => handleViewDetails(contract.contractId)}
                     disabled={detailLoading}
                   >
                     {detailLoading ? 'Loading...' : 'View Details'}
                   </button>
-                  
-                  {/* Show Rate button only for completed contracts that haven't been rated */}
+
+                  {contract.status === 4 && (
+                    <button
+                      className="cancel-btn"
+                      onClick={() => {
+                        setSelectedContractForCancel(contract);
+                        setShowCancelModal(true);
+                      }}
+                    >
+                      CANCEL CONTRACT
+                    </button>
+                  )}
+
                   {contract.status === 2 && !contract.isRated && (
-                    <button 
+                    <button
                       className="rate-experience-btn"
                       onClick={() => handleRateExperience(contract)}
                     >
@@ -228,26 +245,34 @@ function Contract() {
                     </button>
                   )}
                 </div>
+
+                {showCancelModal && (
+                  <RenterRefundModal
+                    contract={contract}
+                    onRefundSuccess={handleRefundSuccess}
+                    isOpen={showCancelModal}
+                    onClose={() => setShowCancelModal(false)}
+                  />
+                )}
               </div>
             ))}
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="pagination-container">
               <div className="pagination-info">
                 Showing {indexOfFirstContract + 1} to {Math.min(indexOfLastContract, contracts.length)} of {contracts.length} contracts
               </div>
-              
+
               <div className="pagination">
-                <button 
+                <button
                   className="pagination-btn"
                   onClick={goToPreviousPage}
                   disabled={currentPage === 1}
                 >
                   Previous
                 </button>
-                
+
                 <div className="pagination-numbers">
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
                     <button
@@ -259,8 +284,8 @@ function Contract() {
                     </button>
                   ))}
                 </div>
-                
-                <button 
+
+                <button
                   className="pagination-btn"
                   onClick={goToNextPage}
                   disabled={currentPage === totalPages}
@@ -274,195 +299,189 @@ function Contract() {
       )}
 
       {showDetailModal && selectedContract && (
-      <div 
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '20px'
-        }}
-        onClick={closeDetailModal}
-      >
-        <div 
+        <div
           style={{
-            background: 'white',
-            borderRadius: '30px',
-            maxWidth: '700px',
-            width: '100%',
-            maxHeight: '80vh',
-            overflow: 'auto',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px'
           }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={closeDetailModal}
         >
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '20px',
-            borderBottom: '1px solid #e0e0e0',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '100px 100px 0 0'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <h3 style={{ margin: 0, color: '#333', fontSize: '1.5rem' }}>Contract Details #{selectedContract.contractId}</h3>
-              {getStatusBadge(selectedContract.status)}
-            </div>
-            <button 
-              onClick={closeDetailModal}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '24px',
-                cursor: 'pointer',
-                color: '#666',
-                padding: '5px',
-                borderRadius: '50%'
-              }}
-            >
-              ×
-            </button>
-          </div>
-          
-          <div style={{ padding: '25px' }}>
-            {/* Contract Information */}
-            <div style={{ marginBottom: '30px' }}>
-              <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Contract Information</h4>
-              <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Station:</strong> {selectedContract.stationName}</p>
-              <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Vehicle:</strong> {selectedContract.vehicleLicensePlate}</p>
-            </div>
-
-            {/* Rental Information */}
-            <div style={{ marginBottom: '30px' }}>
-              <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Rental Information</h4>
-              <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Start Time:</strong> {formatDate(selectedContract.startTime)}</p>
-              <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>End Time:</strong> {formatDate(selectedContract.endTime)}</p>
-            </div>
-
-            {/* Staff Information */}
-            <div style={{ marginBottom: '30px' }}>
-              <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Staff Information</h4>
-              <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Staff Name:</strong> {selectedContract.staffName || 'Not assigned'}</p>
-            </div>
-
-            {/* Invoices Section */}
-            {selectedContract.invoices && selectedContract.invoices.length > 0 && (
-              <div style={{ marginBottom: '30px' }}>
-                <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Invoices</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  {selectedContract.invoices.map((invoice) => (
-                    <div 
-                      key={invoice.invoiceId}
-                      style={{
-                        border: '1px solid #e0e0e0',
-                        borderRadius: '10px',
-                        padding: '15px',
-                        backgroundColor: '#f8f9fa'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                        <div>
-                          <strong style={{ fontSize: '1.1rem', color: '#333' }}>Invoice #{invoice.invoiceId}</strong>
-                          <div style={{ fontSize: '0.9rem', color: '#666', marginTop: '5px' }}>
-                            Order Code: {invoice.orderCode}
-                          </div>
-                        </div>
-                        <div style={{ 
-                          padding: '4px 8px', 
-                          borderRadius: '12px', 
-                          fontSize: '0.8rem',
-                          fontWeight: 'bold',
-                          backgroundColor: invoice.status === 1 ? '#d4edda' : '#fff3cd',
-                          color: invoice.status === 1 ? '#155724' : '#856404'
-                        }}>
-                          {invoice.status === 1 ? 'PAID' : 'PENDING'}
-                        </div>
-                      </div>
-                      
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ fontSize: '1rem', marginBottom: '5px' }}>
-                            <strong>Amount Paid:</strong> ₫{invoice.amountPaid?.toLocaleString() || '0'}
-                          </div>
-                          {invoice.note && (
-                            <div style={{ fontSize: '0.9rem', color: '#666', fontStyle: 'italic' }}>
-                              Note: {invoice.note}
-                            </div>
-                          )}
-                          <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '5px' }}>
-                            Paid: {formatDate(invoice.paidAt)}
-                          </div>
-                        </div>
-                    
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* No Invoices Message */}
-            {(!selectedContract.invoices || selectedContract.invoices.length === 0) && (
-              <div style={{ 
-                textAlign: 'center', 
-                padding: '20px', 
-                backgroundColor: '#f8f9fa', 
-                borderRadius: '10px',
-                color: '#666'
-              }}>
-                No invoices available for this contract
-              </div>
-            )}
-          </div>
-
-          <div style={{
-            padding: '25px',
-            borderTop: '1px solid #e0e0e0',
-            backgroundColor: '#f8f9fa',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            borderRadius: '0 0 100px 100px'
-          }}>
+          <div
+            style={{
+              background: 'white',
+              borderRadius: '30px',
+              maxWidth: '700px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div style={{
-              fontSize: '1.4rem',
-              fontWeight: 'bold',
-              color: '#28a745'
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '20px',
+              borderBottom: '1px solid #e0e0e0',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '100px 100px 0 0'
             }}>
-              Total Cost: ₫{selectedContract.totalCost?.toLocaleString() || '0'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <h3 style={{ margin: 0, color: '#333', fontSize: '1.5rem' }}>Contract Details #{selectedContract.contractId}</h3>
+                {getStatusBadge(selectedContract.status)}
+              </div>
+              <button
+                onClick={closeDetailModal}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  cursor: 'pointer',
+                  color: '#666',
+                  padding: '5px',
+                  borderRadius: '50%'
+                }}
+              >
+                ×
+              </button>
             </div>
-            <button 
-              onClick={closeDetailModal}
-              style={{
-                backgroundColor: '#6c757d',
-                color: 'white',
-                border: 'none',
-                padding: '10px 20px',
-                borderRadius: '5px',
-                cursor: 'pointer'
-              }}
-            >
-              Close
-            </button>
+
+            <div style={{ padding: '25px' }}>
+              <div style={{ marginBottom: '30px' }}>
+                <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Contract Information</h4>
+                <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Station:</strong> {selectedContract.stationName}</p>
+                <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Vehicle:</strong> {selectedContract.vehicleLicensePlate}</p>
+              </div>
+
+              <div style={{ marginBottom: '30px' }}>
+                <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Rental Information</h4>
+                <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Start Time:</strong> {formatDate(selectedContract.startTime)}</p>
+                <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>End Time:</strong> {formatDate(selectedContract.endTime)}</p>
+              </div>
+
+              <div style={{ marginBottom: '30px' }}>
+                <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Staff Information</h4>
+                <p style={{ marginBottom: '10px', fontSize: '1.1rem' }}><strong>Staff Name:</strong> {selectedContract.staffName || 'Not assigned'}</p>
+              </div>
+
+              {selectedContract.invoices && selectedContract.invoices.length > 0 && (
+                <div style={{ marginBottom: '30px' }}>
+                  <h4 style={{ color: '#333', marginBottom: '15px', fontSize: '1.3rem' }}>Invoices</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    {selectedContract.invoices.map((invoice) => (
+                      <div
+                        key={invoice.invoiceId}
+                        style={{
+                          border: '1px solid #e0e0e0',
+                          borderRadius: '10px',
+                          padding: '15px',
+                          backgroundColor: '#f8f9fa'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                          <div>
+                            <strong style={{ fontSize: '1.1rem', color: '#333' }}>Invoice #{invoice.invoiceId}</strong>
+                            <div style={{ fontSize: '0.9rem', color: '#666', marginTop: '5px' }}>
+                              Order Code: {invoice.orderCode}
+                            </div>
+                          </div>
+                          <div style={{
+                            padding: '4px 8px',
+                            borderRadius: '12px',
+                            fontSize: '0.8rem',
+                            fontWeight: 'bold',
+                            backgroundColor: invoice.status === 1 ? '#d4edda' : '#fff3cd',
+                            color: invoice.status === 1 ? '#155724' : '#856404'
+                          }}>
+                            {invoice.status === 1 ? 'PAID' : 'PENDING'}
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <div style={{ fontSize: '1rem', marginBottom: '5px' }}>
+                              <strong>Amount Paid:</strong> ₫{invoice.amountPaid?.toLocaleString() || '0'}
+                            </div>
+                            {invoice.note && (
+                              <div style={{ fontSize: '0.9rem', color: '#666', fontStyle: 'italic' }}>
+                                Note: {invoice.note}
+                              </div>
+                            )}
+                            <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '5px' }}>
+                              Paid: {formatDate(invoice.paidAt)}
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(!selectedContract.invoices || selectedContract.invoices.length === 0) && (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '20px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '10px',
+                  color: '#666'
+                }}>
+                  No invoices available for this contract
+                </div>
+              )}
+            </div>
+
+            <div style={{
+              padding: '25px',
+              borderTop: '1px solid #e0e0e0',
+              backgroundColor: '#f8f9fa',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderRadius: '0 0 100px 100px'
+            }}>
+              <div style={{
+                fontSize: '1.4rem',
+                fontWeight: 'bold',
+                color: '#28a745'
+              }}>
+                Total Cost: ₫{selectedContract.totalCost?.toLocaleString() || '0'}
+              </div>
+              <button
+                onClick={closeDetailModal}
+                style={{
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    )}  
-      {/* Rate Modal */}
+      )}
+
       <RateModal
         contract={selectedContractForRating}
         isOpen={showRateModal}
         onClose={() => setShowRateModal(false)}
         onRatingSubmitted={handleRatingSubmitted}
       />
-      
     </div>
   );
 }

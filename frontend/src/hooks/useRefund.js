@@ -8,7 +8,6 @@ export const useRefund = () => {
   const requestRefund = useCallback(async (requestData) => {
     setLoading(true);
     setError(null);
-    
     try {
       const result = await refundAPI.requestRefund(requestData);
       return result;
@@ -23,7 +22,6 @@ export const useRefund = () => {
   const processRefund = useCallback(async (refundId, bankInfo, fullRefund = false) => {
     setLoading(true);
     setError(null);
-    
     try {
       const result = await refundAPI.processRefund(refundId, bankInfo, fullRefund);
       return result;
@@ -35,18 +33,24 @@ export const useRefund = () => {
     }
   }, []);
 
-  const staffRefund = useCallback(async (contractId, amount, reason, staffId, note, bankInfo, fullRefund = false) => {
+  const staffRefund = useCallback(async (contractId, amount, reason, staffId, note, bankInfo, fullRefund) => {
     setLoading(true);
     setError(null);
-    
     try {
-      const result = await refundAPI.staffRefund(
-        contractId, amount, reason, staffId, note, bankInfo, fullRefund
-      );
-      return result;
+      const response = await refundAPI.staffRefund({
+        contractId,
+        amount,
+        reason,
+        staffId,
+        note,
+        bankInfo,
+        fullRefund
+      });
+      return response;
     } catch (err) {
-      setError(err.message);
-      return { success: false, message: err.message };
+      const errorMessage = err.response?.data?.message || err.message || 'Refund failed';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
@@ -55,7 +59,6 @@ export const useRefund = () => {
   const getRefundPreview = useCallback(async (contractId) => {
     setLoading(true);
     setError(null);
-    
     try {
       const result = await refundAPI.getRefundPreview(contractId);
       return result;

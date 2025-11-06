@@ -19,6 +19,7 @@ namespace PublicCarRental.Application.Service
         Task<decimal> CalculateMaxRefundAmountAsync(int invoiceId);
         Task<bool> HasInsufficientBalanceError(int refundId);
         Task<RefundResultDto> RetryFailedRefundAsync(int originalRefundId, BankAccountInfo bankInfo);
+        Task<RefundResultDto> StaffRefundAsync(StaffRefundRequest request);
     }
 
     public class RefundService : IRefundService
@@ -47,7 +48,7 @@ namespace PublicCarRental.Application.Service
                 if (contract == null)
                     return new RefundResultDto { Success = false, Message = "Contract not found" };
 
-                var originalInvoice = contract.Invoices.FirstOrDefault(i =>
+                var originalInvoice = contract.Invoices?.FirstOrDefault(i =>
                     i.Status == InvoiceStatus.Paid && i.AmountPaid > 0);
 
                 if (originalInvoice == null)
@@ -65,7 +66,10 @@ namespace PublicCarRental.Application.Service
                 };
 
                 _invoiceRepository.Create(refundInvoice);
+
                 var invoice = _invoiceRepository.GetById(refundInvoice.InvoiceId);
+                if (invoice == null)
+                    return new RefundResultDto { Success = false, Message = "Failed to create refund invoice" };
 
                 var refund = new Refund
                 {
@@ -75,7 +79,7 @@ namespace PublicCarRental.Application.Service
                     Status = RefundStatus.Approved,
                     StaffId = request.StaffId,
                     RequestedDate = DateTime.UtcNow,
-                    Note = request.Note
+                    Note = request.Note ?? string.Empty
                 };
 
                 _refundRepository.Create(refund);
@@ -97,6 +101,36 @@ namespace PublicCarRental.Application.Service
             }
         }
 
+        public async Task<RefundResultDto> StaffRefundAsync(StaffRefundRequest request)
+        {
+            try
+            {
+                var refundRequest = new CreateRefundRequestDto
+                {
+                    ContractId = request.ContractId,
+                    Amount = request.Amount,
+                    Reason = request.Reason,
+                    StaffId = request.StaffId,
+                    Note = request.Note
+                };
+
+                var refundResult = await RequestRefundAsync(refundRequest);
+
+                if (!refundResult.Success)
+                    return refundResult;
+
+                var processResult = await ProcessRefundAsync(refundResult.RefundId, request.BankInfo, request.FullRefund);
+
+                return processResult;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"❌ Failed to process staff refund for contract #{request.ContractId}");
+                return new RefundResultDto { Success = false, Message = ex.Message };
+            }
+        }
+
+
         public async Task<RefundResultDto> ProcessRefundAsync(int refundId, BankAccountInfo bankInfo, bool? fullRefund = null)
         {
             try
@@ -105,18 +139,23 @@ namespace PublicCarRental.Application.Service
                 if (refund == null)
                     return new RefundResultDto { Success = false, Message = "Refund not found" };
 
+                // FIXED: Better null handling for full refund logic
                 if (fullRefund == true)
                 {
                     var invoice = _invoiceRepository.GetById(refund.InvoiceId);
-                    var contract = _contractRepository.GetById((int)invoice.ContractId);
-
-                    // Calculate the full amount that was paid
-                    var totalPaid = contract.TotalCost;
-                    if (refund.Amount < totalPaid)
+                    if (invoice?.ContractId != null)
                     {
-                        refund.Amount = (decimal)totalPaid;
-                        refund.Note += " [STAFF OVERRIDE: 100% refund applied]";
-                        _refundRepository.Update(refund);
+                        var contract = _contractRepository.GetById((int)invoice.ContractId);
+                        if (contract != null)
+                        {
+                            var totalPaid = contract.TotalCost;
+                            if (refund.Amount < totalPaid)
+                            {
+                                refund.Amount = (decimal)totalPaid;
+                                refund.Note += " [STAFF OVERRIDE: 100% refund applied]";
+                                _refundRepository.Update(refund);
+                            }
+                        }
                     }
                 }
 
@@ -129,13 +168,19 @@ namespace PublicCarRental.Application.Service
                 {
                     refund.Status = RefundStatus.Completed;
                     refund.ProcessedDate = DateTime.UtcNow;
+                    refund.PayoutTransactionId = payoutResult.TransactionId;
                     _refundRepository.Update(refund);
 
                     var invoice = _invoiceRepository.GetById(refund.InvoiceId);
-                    invoice.RefundAmount = refund.Amount;
-                    invoice.RefundedAt = DateTime.UtcNow;
-                    invoice.Status = refund.Amount == invoice.AmountPaid ? InvoiceStatus.Refunded : InvoiceStatus.PartiallyRefunded;
-                    _invoiceRepository.Update(invoice);
+                    if (invoice != null)
+                    {
+                        invoice.RefundAmount = refund.Amount;
+                        invoice.RefundedAt = DateTime.UtcNow;
+                        invoice.Status = refund.Amount == Math.Abs(invoice.AmountPaid ?? 0)
+                            ? InvoiceStatus.Refunded
+                            : InvoiceStatus.PartiallyRefunded;
+                        _invoiceRepository.Update(invoice);
+                    }
 
                     _logger.LogInformation($"✅ Refund processed: #{refundId} via PayOS {payoutResult.TransactionId}");
 
@@ -255,7 +300,6 @@ namespace PublicCarRental.Application.Service
         public async Task<bool> CanRefundBeProcessedAsync(int invoiceId)
         {
             var invoice = _invoiceRepository.GetById(invoiceId);
-
             return invoice != null &&
                    invoice.Status == InvoiceStatus.Paid &&
                    invoice.AmountPaid > 0 &&

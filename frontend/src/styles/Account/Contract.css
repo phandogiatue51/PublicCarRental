@@ -55,8 +55,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Error State */
@@ -132,7 +137,8 @@
 /* Contracts List */
 .contracts-list {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* <- 2 columns */
+  grid-template-columns: repeat(2, 1fr);
+  /* <- 2 columns */
   gap: 20px;
   align-items: start;
 }
@@ -253,8 +259,8 @@
 
 .view-details-btn,
 .rate-experience-btn {
-  flex: 1; 
-  min-width: 120px; 
+  flex: 1;
+  min-width: 120px;
   text-align: center;
   border: none;
   padding: 10px 16px;
@@ -272,6 +278,26 @@
 
 .view-details-btn:hover {
   background-color: #0056b3;
+}
+
+.cancel-btn {
+  flex: 1;
+  min-width: 120px;
+  text-align: center;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 30px; 
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  
+  background-color: red;
+  color: white;
+}
+
+.cancel-btn:hover {
+  background-color: #cc0000; 
 }
 
 .pagination-container {
@@ -493,63 +519,63 @@
   .contract-content {
     padding: 15px;
   }
-  
+
   .contract-header h2 {
     font-size: 1.5rem;
   }
-  
+
   .contract-card {
     padding: 15px;
   }
-  
+
   .contract-header-card {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
   }
-  
+
   .detail-row {
     flex-direction: column;
     align-items: flex-start;
     gap: 5px;
   }
-  
+
   .detail-row .value {
     text-align: left;
   }
-  
+
   /* Modal responsive */
   .modal-overlay {
     padding: 10px;
   }
-  
+
   .modal-content {
     max-height: 95vh;
   }
-  
+
   .modal-header {
     padding: 15px 20px;
   }
-  
+
   .modal-body {
     padding: 20px;
   }
-  
+
   .modal-footer {
     padding: 15px 20px;
   }
-  
+
   .detail-grid {
     grid-template-columns: 1fr;
     gap: 10px;
   }
-  
+
   .detail-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 5px;
   }
-  
+
   .detail-item .value {
     text-align: left;
   }
@@ -558,23 +584,23 @@
   .pagination-container {
     margin-top: 20px;
   }
-  
+
   .pagination {
     flex-wrap: wrap;
     justify-content: center;
     gap: 5px;
   }
-  
+
   .pagination-numbers {
     flex-wrap: wrap;
     justify-content: center;
   }
-  
+
   .pagination-btn {
     padding: 6px 12px;
     font-size: 0.8rem;
   }
-  
+
   .pagination-number {
     padding: 6px 10px;
     font-size: 0.8rem;
@@ -598,6 +624,7 @@
 
 /* Mobile fallback to avoid overflow */
 @media (max-width: 768px) {
+
   .contract-content,
   .contract-content * {
     font-size: 1.05rem !important;
@@ -616,6 +643,7 @@
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(255, 215, 0, 0.4);
 }
+
 .rate-experience-btn:active {
   transform: translateY(0);
 }
