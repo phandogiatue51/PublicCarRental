@@ -78,14 +78,12 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
     const handleSubmit = async () => {
         if (!isFormValid() || !contract || !preview) return;
 
-        const staffId = localStorage.getItem('staffId') || 1;
         const fullRefund = refundAmount >= preview.totalPaid;
 
         const result = await staffRefund(
             contract.contractId,
             refundAmount,
             "Refund processed", 
-            staffId,
             fullRefund ? 'Staff override - 100% refund' : 'Standard refund',
             {
                 accountNumber: bankInfo.accountNumber.trim(),

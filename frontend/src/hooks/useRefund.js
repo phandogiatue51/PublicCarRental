@@ -33,7 +33,7 @@ export const useRefund = () => {
     }
   }, []);
 
-  const staffRefund = useCallback(async (contractId, amount, reason, staffId, note, bankInfo, fullRefund) => {
+  const staffRefund = useCallback(async (contractId, amount, reason, note, bankInfo, fullRefund) => {
     setLoading(true);
     setError(null);
     try {
@@ -41,7 +41,6 @@ export const useRefund = () => {
         contractId,
         amount,
         reason,
-        staffId,
         note,
         bankInfo,
         fullRefund

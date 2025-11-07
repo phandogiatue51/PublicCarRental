@@ -77,7 +77,6 @@ namespace PublicCarRental.Application.Service
                     Amount = request.Amount,
                     Reason = request.Reason,
                     Status = RefundStatus.Approved,
-                    StaffId = request.StaffId,
                     RequestedDate = DateTime.UtcNow,
                     Note = request.Note ?? string.Empty
                 };
@@ -110,7 +109,6 @@ namespace PublicCarRental.Application.Service
                     ContractId = request.ContractId,
                     Amount = request.Amount,
                     Reason = request.Reason,
-                    StaffId = request.StaffId,
                     Note = request.Note
                 };
 
@@ -269,7 +267,6 @@ namespace PublicCarRental.Application.Service
                 Amount = originalRefund.Amount,
                 Reason = $"[RETRY] {originalRefund.Reason}",
                 Status = RefundStatus.Approved,
-                StaffId = originalRefund.StaffId,
                 RequestedDate = DateTime.UtcNow,
                 Note = $"Retry attempt for failed refund #{originalRefund.RefundId}"
             };
@@ -325,7 +322,6 @@ namespace PublicCarRental.Application.Service
                 Status = refund.Status,
                 RequestedDate = refund.RequestedDate,
                 ProcessedDate = refund.ProcessedDate,
-                StaffId = refund.StaffId,
                 PayoutTransactionId = refund.PayoutTransactionId,
                 Note = refund.Note
             };

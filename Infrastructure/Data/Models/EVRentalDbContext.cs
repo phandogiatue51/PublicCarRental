@@ -215,11 +215,6 @@ namespace PublicCarRental.Infrastructure.Data.Models
             {
                 entity.HasKey(r => r.RefundId);
 
-                entity.HasOne(r => r.Staff)
-                      .WithMany()
-                      .HasForeignKey(r => r.StaffId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
                 entity.HasOne(r => r.Invoice)
                       .WithMany(i => i.Refunds) 
                       .HasForeignKey(r => r.InvoiceId)
@@ -243,7 +238,6 @@ namespace PublicCarRental.Infrastructure.Data.Models
                       .HasMaxLength(100);
 
                 entity.HasIndex(r => r.InvoiceId);
-                entity.HasIndex(r => r.StaffId);
                 entity.HasIndex(r => r.Status);
                 entity.HasIndex(r => r.RequestedDate);
             });
