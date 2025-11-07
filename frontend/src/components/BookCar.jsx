@@ -222,7 +222,7 @@ function BookCar() {
                 <i onClick={hideMessage} className="fa-solid fa-xmark"></i>
               </p>
 
-              <form className="box-form">
+              <form className="box-form" style={{ gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto auto auto" }}>
                   <div className="box-form__car-type">
                     <label>
                       <i className="fa-solid fa-car"></i> &nbsp;Pick Model <b>*</b>
@@ -240,7 +240,7 @@ function BookCar() {
                       <i className="fa-solid fa-location-dot"></i> &nbsp; Pick Station <b>*</b>
                     </label>
                     <select value={stationId} onChange={handleStation} disabled={!modelId}>
-                      <option value="">{modelId ? "Pick station" : "Pick trước"}</option>
+                      <option value="">{modelId ? "Pick station" : "Pick station"}</option>
                       {stations.map((s, idx) => (
                         <option key={idx} value={String(s.stationId)}>{s.name}</option>
                       ))}
