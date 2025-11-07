@@ -375,15 +375,7 @@ export const contractAPI = {
 
   downloadContractPdf: (contractId) => apiRequest(`/Contract/contracts/${contractId}/pdf`),
 
-  getRefundPreview: (contractId) => apiRequest(`/Contract/refund-preview?contractId=${contractId}`),
-
-  cancelContract: (contractId, bankAccountInfo) => apiRequest('/Contract/cancel-contract', {
-    method: 'POST',
-    body: JSON.stringify({
-      contractId,
-      ...bankAccountInfo
-    }),
-  }),
+  getRefundPreview: (contractId) => apiRequest(`/Contract/refund-preview?contractId=${contractId}`)
 };
 
 export const vehicleAPI = {
@@ -692,6 +684,16 @@ export const modificationAPI = {
       return data;
     } catch (error) {
       console.error('Error cancelling contract:', error);
+      throw error;
+    }
+  },
+
+   getContractStatus: async (contractId) => {
+    try {
+      const response = await fetch(`/${contractId}/status`);
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching contract status:', error);
       throw error;
     }
   }

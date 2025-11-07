@@ -97,32 +97,50 @@ namespace PublicCarRental.Presentation.Controllers
         public async Task<IActionResult> CancelContract(int contractId, [FromBody] BankAccountInfo dto)
         {
             if (dto == null)
-                return BadRequest("Bank information is required for refund.");
+                return BadRequest(new { success = false, message = "Bank information is required for refund." });
 
             var contract = _contractService.GetEntityById(contractId);
             if (contract == null)
-                return NotFound("Contract not found");
+                return NotFound(new { success = false, message = "Contract not found" });
 
             if (contract.Status != Infrastructure.Data.Models.RentalStatus.Confirmed)
             {
-                return BadRequest("Only confirmed contracts can be cancelled");
+                return BadRequest(new { success = false, message = "Only confirmed contracts can be cancelled" });
             }
 
             if (contract.StartTime <= DateTime.UtcNow)
             {
-                return BadRequest("Cannot cancel contract after rental start time");
+                return BadRequest(new { success = false, message = "Cannot cancel contract after rental start time" });
             }
 
             var result = await _modificationService.HandleRenterCancellation(contractId, dto);
 
-            if (!result.Success)
-                return BadRequest(result.Message);
+            return Ok(new
+            {
+                success = result.Success,
+                message = result.Message,
+                refundId = result.RefundId,
+                contractStatus = "Cancelled",
+                refundAmount = result.PriceDifference
+            });
+        }
+
+        [HttpGet("/status")]
+        public IActionResult GetContractStatus(int contractId)
+        {
+            var contract = _contractService.GetById(contractId);
+            if (contract == null)
+                return NotFound();
+
+            var refund = _refundService.GetRefundByContractId(contractId);
 
             return Ok(new
             {
-                message = result.Message,
-                refundId = result.RefundId,
-                contractStatus = "Cancelled"
+                contractId = contract.ContractId,
+                status = contract.Status.ToString(),
+                refundStatus = refund?.Status.ToString() ?? "None",
+                refundAmount = refund?.TotalCost ?? 0,
+                lastUpdated = DateTime.UtcNow
             });
         }
     }

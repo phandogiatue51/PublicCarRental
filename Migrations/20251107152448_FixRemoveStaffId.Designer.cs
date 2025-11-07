@@ -12,8 +12,8 @@ using PublicCarRental.Infrastructure.Data.Models;
 namespace PublicCarRental.Migrations
 {
     [DbContext(typeof(EVRentalDbContext))]
-    [Migration("20251107145250_DeleteStaffFromRefund")]
-    partial class DeleteStaffFromRefund
+    [Migration("20251107152448_FixRemoveStaffId")]
+    partial class FixRemoveStaffId
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

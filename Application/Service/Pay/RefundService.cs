@@ -20,6 +20,8 @@ namespace PublicCarRental.Application.Service
         Task<bool> HasInsufficientBalanceError(int refundId);
         Task<RefundResultDto> RetryFailedRefundAsync(int originalRefundId, BankAccountInfo bankInfo);
         Task<RefundResultDto> StaffRefundAsync(StaffRefundRequest request);
+        public RentalContract GetRefundByContractId(int contractId);
+
     }
 
     public class RefundService : IRefundService
@@ -309,6 +311,11 @@ namespace PublicCarRental.Application.Service
             if (invoice == null) return 0;
 
             return invoice.AmountPaid ?? 0;
+        }
+
+        public RentalContract GetRefundByContractId(int contractId)
+        {
+            return _contractRepository.GetById(contractId);
         }
 
         private RefundDto MapToDto(Refund refund)

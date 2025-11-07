@@ -10,6 +10,7 @@ export default function RenterRefundModal({ contract, onRefundSuccess, isOpen, o
     const [preview, setPreview] = useState(null);
     const [fetchingPreview, setFetchingPreview] = useState(false);
     const [cancelling, setCancelling] = useState(false);
+    const [statusMessage, setStatusMessage] = useState(''); 
 
     const [bankInfo, setBankInfo] = useState({
         accountNumber: '',
@@ -64,6 +65,8 @@ export default function RenterRefundModal({ contract, onRefundSuccess, isOpen, o
         if (!isFormValid() || !contract) return;
 
         setCancelling(true);
+        setStatusMessage('Initiating refund...');
+
         try {
             const result = await modificationAPI.cancelContract(contract.contractId, {
                 accountNumber: bankInfo.accountNumber.trim(),
@@ -72,17 +75,63 @@ export default function RenterRefundModal({ contract, onRefundSuccess, isOpen, o
                 branch: bankInfo.branch?.trim() || ''
             });
 
-            if (result.success) {
-                onRefundSuccess?.();
-                onClose();
+            const isSuccess = result.success ||
+                result.message?.includes('refund initiated') ||
+                result.contractStatus === 'Cancelled';
+
+            if (isSuccess) {
+                setStatusMessage('Refund initiated! Checking status...');
+
+                const pollSuccess = await pollContractStatus(contract.contractId);
+
+                if (pollSuccess) {
+                    setStatusMessage('✅ Refund processed successfully!');
+                    setTimeout(() => {
+                        onRefundSuccess?.();
+                        onClose();
+                    }, 5000);
+                } else {
+                    setStatusMessage('✅ Refund processed successfully!');
+                    setTimeout(() => {
+                        onRefundSuccess?.();
+                        onClose();
+                    }, 5000);
+                }
             } else {
                 throw new Error(result.message || 'Failed to cancel contract');
             }
         } catch (err) {
             console.error('Error cancelling contract:', err);
+            setStatusMessage(`❌ Error: ${err.message}`);
         } finally {
             setCancelling(false);
         }
+    };
+
+
+    const pollContractStatus = async (contractId, maxAttempts = 30) => {
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+                const updatedContract = await modificationAPI.getContractStatus(contractId);
+
+                if (updatedContract.status === 'Cancelled') {
+                    console.log('✅ Contract successfully cancelled');
+                    return true;
+                }
+
+                if (updatedContract.refundStatus === 'Completed') {
+                    console.log('✅ Refund completed');
+                    return true;
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            } catch (error) {
+                console.error('Error polling contract status:', error);
+            }
+        }
+
+        console.log('⚠️ Status polling timeout - contract may still be processing');
+        return false;
     };
 
     const formatCurrency = (amount) => {
@@ -183,6 +232,17 @@ export default function RenterRefundModal({ contract, onRefundSuccess, isOpen, o
                             </HStack>
                         </Alert>
                     </Box>
+                      {statusMessage && (
+                        <Alert 
+                            status={statusMessage.includes('❌') ? 'error' : 
+                                   statusMessage.includes('✅') ? 'success' : 'info'}
+                            borderRadius="md"
+                            mt={4}
+                        >
+                            <AlertIcon />
+                            <Text>{statusMessage}</Text>
+                        </Alert>
+                    )}
                 </ModalBody>
 
                 <ModalFooter>

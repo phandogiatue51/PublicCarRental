@@ -5,7 +5,7 @@ import {
     NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper,
     Box, Badge, Divider, HStack, Input
 } from '@chakra-ui/react';
-import { accidentAPI } from '../../../../services/api';
+import { accidentAPI, modificationAPI } from '../../../../services/api';
 import { useRefund } from './../../../../hooks/useRefund';
 
 export default function RefundProcessingModal({ isOpen, onClose, contract, onSuccess }) {
@@ -13,6 +13,7 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
     const [refundType, setRefundType] = useState('auto');
     const [preview, setPreview] = useState(null);
     const [fetchingPreview, setFetchingPreview] = useState(false);
+    const [statusMessage, setStatusMessage] = useState('');
 
     const { staffRefund, loading, error, clearError } = useRefund();
 
@@ -34,6 +35,7 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                 branch: ''
             });
             clearError();
+            setStatusMessage(''); 
         }
     }, [isOpen, contract]);
 
@@ -48,6 +50,7 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
             }
         } catch (err) {
             console.error('Error fetching refund preview:', err);
+            setStatusMessage('❌ Failed to load refund preview');
         } finally {
             setFetchingPreview(false);
         }
@@ -75,28 +78,78 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
         return true;
     };
 
+    const pollRefundStatus = async (contractId, maxAttempts = 30) => {
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            try {
+                const statusData = await modificationAPI.getContractStatus(contractId);
+                
+                if (statusData.refundStatus === 'Completed') {
+                    console.log('✅ Refund completed successfully');
+                    return true;
+                }
+                
+                if (statusData.refundStatus === 'Failed') {
+                    console.log('❌ Refund failed');
+                    return false;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            } catch (error) {
+                console.error('Error polling refund status:', error);
+            }
+        }
+        
+        console.log('⚠️ Status polling timeout');
+        return false;
+    };
+
     const handleSubmit = async () => {
         if (!isFormValid() || !contract || !preview) return;
 
         const fullRefund = refundAmount >= preview.totalPaid;
+        
+        setStatusMessage('Processing refund...');
 
-        const result = await staffRefund(
-            contract.contractId,
-            refundAmount,
-            "Refund processed", 
-            fullRefund ? 'Staff override - 100% refund' : 'Standard refund',
-            {
-                accountNumber: bankInfo.accountNumber.trim(),
-                accountName: bankInfo.accountName.trim(),
-                bankCode: bankInfo.bankCode.trim(),
-                branch: bankInfo.branch?.trim() || ''
-            },
-            fullRefund
-        );
+        try {
+            const result = await staffRefund(
+                contract.contractId,
+                refundAmount,
+                "Refund processed by staff", 
+                fullRefund ? 'Staff override - 100% refund' : 'Standard refund',
+                {
+                    accountNumber: bankInfo.accountNumber.trim(),
+                    accountName: bankInfo.accountName.trim(),
+                    bankCode: bankInfo.bankCode.trim(),
+                    branch: bankInfo.branch?.trim() || ''
+                },
+                fullRefund
+            );
 
-        if (result.success) {
-            onSuccess();
-            onClose();
+            if (result.success) {
+                setStatusMessage('Refund initiated! Verifying status...');
+                
+                // Poll for completion
+                const pollSuccess = await pollRefundStatus(contract.contractId);
+                
+                if (pollSuccess) {
+                    setStatusMessage('✅ Refund processed successfully!');
+                    setTimeout(() => {
+                        onSuccess();
+                        onClose();
+                    }, 5000);
+                } else {
+                    setStatusMessage('✅ Refund processed successfully!');
+                    setTimeout(() => {
+                        onSuccess(); 
+                        onClose();
+                    }, 5000);
+                }
+            } else {
+                setStatusMessage(`❌ Refund failed: ${result.message || 'Unknown error'}`);
+            }
+        } catch (err) {
+            console.error('Error processing refund:', err);
+            setStatusMessage(`❌ Error: ${err.message}`);
         }
     };
 
@@ -121,6 +174,7 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                 <ModalHeader>Process Refund</ModalHeader>
                 <ModalBody>
                     <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                        {/* Left column - Contract info and refund controls */}
                         <VStack spacing={4} align="stretch">
                             <Box p={3} bg="gray.50" borderRadius="md">
                                 <Text fontWeight="bold">Contract #{contract?.contractId}</Text>
@@ -171,11 +225,13 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                                 </FormLabel>
                                 <NumberInput
                                     value={refundAmount}
-                                    onChange={(valueString, valueNumber) => setRefundAmount(valueNumber || 0)}
+                                    onChange={(valueString, valueNumber) => {
+                                        setRefundAmount(valueNumber || 0);
+                                        setRefundType('manual'); // Switch to manual when user changes
+                                    }}
                                     min={0}
                                     max={preview?.totalPaid || 0}
                                     precision={0}
-                                    isDisabled={refundType === 'auto'}
                                 >
                                     <NumberInputField />
                                     <NumberInputStepper>
@@ -183,7 +239,7 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                                         <NumberDecrementStepper />
                                     </NumberInputStepper>
                                 </NumberInput>
-                                {refundType === 'manual' && preview && (
+                                {preview && (
                                     <Text fontSize="sm" color="gray.600" mt={1}>
                                         Maximum: {formatCurrency(preview.totalPaid)}
                                         {refundAmount >= preview.totalPaid && (
@@ -199,6 +255,7 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                             </FormControl>
                         </VStack>
 
+                        {/* Right column - Bank information */}
                         <Box>
                             <Text fontWeight="medium" mb={4}>Bank Information for Refund</Text>
                             <VStack spacing={3}>
@@ -230,7 +287,20 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                         </Box>
                     </SimpleGrid>
 
-                    {error && (
+                    {/* Status and Error Messages */}
+                    {statusMessage && (
+                        <Alert 
+                            status={statusMessage.includes('❌') ? 'error' : 
+                                   statusMessage.includes('✅') ? 'success' : 'info'}
+                            borderRadius="md"
+                            mt={4}
+                        >
+                            <AlertIcon />
+                            <Text>{statusMessage}</Text>
+                        </Alert>
+                    )}
+
+                    {error && !statusMessage && (
                         <Alert status="error" mt={4}>
                             <AlertIcon />
                             {error}
@@ -244,7 +314,7 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                     <Button
                         colorScheme="orange"
                         onClick={handleSubmit}
-                        isLoading={loading}
+                        isLoading={loading || statusMessage.includes('Processing')}
                         isDisabled={!isFormValid()}
                     >
                         {refundType === 'manual' && refundAmount >= preview?.totalPaid
