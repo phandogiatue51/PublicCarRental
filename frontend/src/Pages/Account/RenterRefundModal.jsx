@@ -89,13 +89,13 @@ export default function RenterRefundModal({ contract, onRefundSuccess, isOpen, o
                     setTimeout(() => {
                         onRefundSuccess?.();
                         onClose();
-                    }, 5000);
+                    }, 3000);
                 } else {
                     setStatusMessage('✅ Refund processed successfully!');
                     setTimeout(() => {
                         onRefundSuccess?.();
                         onClose();
-                    }, 5000);
+                    }, 3000);
                 }
             } else {
                 throw new Error(result.message || 'Failed to cancel contract');

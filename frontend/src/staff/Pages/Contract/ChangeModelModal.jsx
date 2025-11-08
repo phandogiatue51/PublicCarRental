@@ -29,8 +29,7 @@ import {
   Badge,
 } from '@chakra-ui/react';
 import { MdSearch } from 'react-icons/md';
-import { modelAPI, modificationAPI } from '../../../services/api';
-
+import { modelAPI, modificationAPI, paymentAPI } from '../../../services/api';
 const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
   const [models, setModels] = useState([]);
   const [selectedModelId, setSelectedModelId] = useState('');
@@ -53,7 +52,7 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
   // Filter models by search term
   const filteredModels = useMemo(() => {
     let result = models;
-    
+
     // Filter by search term
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
@@ -64,7 +63,7 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
         return name.includes(search) || brandName.includes(search) || id.includes(search);
       });
     }
-    
+
     return result;
   }, [models, searchTerm]);
 
@@ -73,7 +72,7 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
 
     try {
       setLoading(true);
-      
+
       // Get stationId from localStorage
       const stationId = localStorage.getItem('stationId');
       if (!stationId) {
@@ -145,15 +144,55 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
       const result = await modificationAPI.changeModel(contract.contractId, requestData);
 
       if (result.success) {
-        toast({
-          title: 'Success',
-          description: result.message || 'Model changed successfully',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-        onSuccess?.();
-        onClose();
+        // 🆕 ADD THIS PAYMENT HANDLING BLOCK
+        if (result.requiresPayment && result.newInvoiceId) {
+          toast({
+            title: 'Payment Required',
+            description: result.message || 'Please complete payment to change model',
+            status: 'info',
+            duration: 5000,
+            isClosable: true,
+          });
+
+          // Create payment for the additional invoice
+          try {
+            const paymentData = {
+              invoiceId: result.newInvoiceId,
+              renterId: contract.evRenterId || contract.renterId // Use appropriate renter ID
+            };
+
+            const paymentResponse = await paymentAPI.createPayment(paymentData);
+
+            if (paymentResponse && paymentResponse.checkoutUrl) {
+              // Open payment in new tab
+              window.open(paymentResponse.checkoutUrl, '_blank');
+
+              // 🆕 ADD THIS POLLING FUNCTION
+              startPaymentPolling(contract.contractId, result.newInvoiceId);
+            } else {
+              throw new Error('Payment creation failed');
+            }
+          } catch (paymentError) {
+            console.error('Payment creation error:', paymentError);
+            toast({
+              title: 'Payment Error',
+              description: 'Failed to create payment link',
+              status: 'error',
+              duration: 3000,
+              isClosable: true,
+            });
+          }
+        } else {
+          toast({
+            title: 'Success',
+            description: result.message || 'Model changed successfully',
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+          });
+          onSuccess?.();
+          onClose();
+        }
       } else {
         toast({
           title: 'Error',
@@ -175,6 +214,40 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const startPaymentPolling = async (contractId, invoiceId) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const status = await modificationAPI.getPendingStatus(contractId, invoiceId);
+
+        if (status.isCompleted) {
+          clearInterval(pollInterval);
+          toast({
+            title: 'Success!',
+            description: 'Model change completed successfully!',
+            status: 'success',
+            duration: 5000,
+            isClosable: true,
+          });
+          onSuccess?.();
+          onClose();
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    }, 3000);
+
+    setTimeout(() => {
+      clearInterval(pollInterval);
+      toast({
+        title: 'Timeout',
+        description: 'Payment verification timeout. Please refresh the page to check status.',
+        status: 'warning',
+        duration: 5000,
+        isClosable: true,
+      });
+    }, 10 * 60 * 1000);
   };
 
   return (
@@ -335,7 +408,7 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
           <Button variant="ghost" mr={3} onClick={onClose} isDisabled={submitting}>
             Cancel
           </Button>
-            <Button
+          <Button
             colorScheme="blue"
             onClick={handleSubmit}
             isLoading={submitting}

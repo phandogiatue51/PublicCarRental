@@ -71,21 +71,6 @@ function Invoice() {
     }
   };
 
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      0: { text: 'Pending', class: 'pending' },
-      1: { text: 'Paid', class: 'paid' },
-      2: { text: 'Overdue', class: 'overdue' },
-      3: { text: 'Cancelled', class: 'cancelled' }
-    };
-    const statusInfo = statusMap[status] || { text: 'Unknown', class: 'unknown' };
-    return (
-      <span className={`status-badge ${statusInfo.class}`}>
-        {statusInfo.text}
-      </span>
-    );
-  };
-
   const handleViewDetails = async (invoiceId) => {
     setDetailLoading(true);
     setError("");
@@ -140,7 +125,6 @@ function Invoice() {
     }
   };
 
-  // Reset to first page when invoices change
   useEffect(() => {
     setCurrentPage(1);
   }, [invoices]);
@@ -198,7 +182,6 @@ function Invoice() {
             <div key={invoice.invoiceId} className="invoice-card">
               <div className="invoice-header-card">
                 <h3>Invoice #{invoice.invoiceId}</h3>
-                {getStatusBadge(invoice.status)}
               </div>
               
               <div className="invoice-details">
@@ -320,7 +303,6 @@ function Invoice() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                 <h3 style={{ margin: 0, color: '#333', fontSize: '1.5rem' }}>Invoice Details #{selectedInvoice.invoiceId}</h3>
-                {getStatusBadge(selectedInvoice.status)}
               </div>
               <button 
                 onClick={closeDetailModal}

@@ -13,9 +13,6 @@ import {
   Spinner,
   Box,
   VStack,
-  Select,
-  FormControl,
-  FormLabel,
   useColorModeValue,
   Alert,
   AlertIcon,
@@ -107,7 +104,6 @@ const ChangeVehicleModal = ({ isOpen, onClose, contract, onSuccess }) => {
     }
   };
 
-  // Filter vehicles by search term
   const filteredVehicles = useMemo(() => {
     if (!searchTerm.trim()) return vehicles;
     const search = searchTerm.toLowerCase();

@@ -136,13 +136,13 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                     setTimeout(() => {
                         onSuccess();
                         onClose();
-                    }, 5000);
+                    }, 3000);
                 } else {
                     setStatusMessage('✅ Refund processed successfully!');
                     setTimeout(() => {
                         onSuccess(); 
                         onClose();
-                    }, 5000);
+                    }, 3000);
                 }
             } else {
                 setStatusMessage(`❌ Refund failed: ${result.message || 'Unknown error'}`);

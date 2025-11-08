@@ -5,6 +5,7 @@ using PublicCarRental.Application.DTOs.BadScenario;
 using PublicCarRental.Application.DTOs.Pay;
 using PublicCarRental.Application.Service;
 using PublicCarRental.Application.Service.Cont;
+using PublicCarRental.Infrastructure.Data.Models;
 
 namespace PublicCarRental.Presentation.Controllers
 {
@@ -15,13 +16,17 @@ namespace PublicCarRental.Presentation.Controllers
         private readonly IContractModificationService _modificationService;
         private readonly IContractService _contractService;
         private readonly IRefundService _refundService;
+        private readonly IPendingChangeService _pendingChangeService;
+        private readonly ILogger<ModificationController> _logger; 
 
         public ModificationController(IContractModificationService modificationService, IRefundService refundService,
-            IContractService contractService)
+            IContractService contractService, IPendingChangeService pendingChangeService, Logger<ModificationController> logger)
         {
             _modificationService = modificationService;
             _refundService = refundService;
             _contractService = contractService;
+            _pendingChangeService = pendingChangeService;
+            _logger = logger;
         }
 
         [HttpPost("renter/change-model")]
@@ -125,7 +130,7 @@ namespace PublicCarRental.Presentation.Controllers
             });
         }
 
-        [HttpGet("/status")]
+        [HttpGet("status")]
         public IActionResult GetContractStatus(int contractId)
         {
             var contract = _contractService.GetById(contractId);
@@ -142,6 +147,30 @@ namespace PublicCarRental.Presentation.Controllers
                 refundAmount = refund?.TotalCost ?? 0,
                 lastUpdated = DateTime.UtcNow
             });
+        }
+
+        [HttpGet("pending-status/{invoiceId}")]
+        public async Task<IActionResult> GetPendingStatus(int contractId, int invoiceId)
+        {
+            try
+            {
+                var pendingChange = await _pendingChangeService.GetByInvoiceIdAsync(invoiceId);
+                var contract = _contractService.GetById(contractId);
+
+                return Ok(new
+                {
+                    hasPendingChanges = pendingChange != null,
+                    isCompleted = pendingChange == null,
+                    contractStatus = contract?.Status.ToString(),
+                    currentVehicleId = contract?.VehicleId,
+                    lastUpdated = DateTime.UtcNow
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking pending status for invoice {InvoiceId}", invoiceId);
+                return StatusCode(500, new { error = "Failed to check modification status" });
+            }
         }
     }
 }

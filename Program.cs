@@ -177,8 +177,7 @@ builder.Services.AddScoped<IDistributedLockService, DistributedLockService>();
 builder.Services.AddScoped<IContractAccidentHandler, ContractAccidentHandler>();
 builder.Services.AddScoped<IPdfStorageService, PdfStorageService>();
 builder.Services.AddScoped<IPdfService, PdfService>();
-builder.Services.AddScoped<IPendingChangeService, PendingChangeService>();
-
+builder.Services.AddScoped<IPendingChangeService, RedisPendingChangeService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IReceiptGenerationProducerService, ReceiptGenerationProducerService>();
 builder.Services.AddScoped<IContractGenerationProducerService, ContractGenerationProducerService>();

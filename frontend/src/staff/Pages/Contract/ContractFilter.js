@@ -135,7 +135,7 @@ const ContractFilters = ({
   // Update selected renter/vehicle when filters change
   useEffect(() => {
     if (filters.renterId) {
-      const renter = filterOptions.renters.find(r => 
+      const renter = filterOptions.renters.find(r =>
         (r.renterId || r.id)?.toString() === filters.renterId.toString()
       );
       setSelectedRenter(renter || null);
@@ -146,7 +146,7 @@ const ContractFilters = ({
 
   useEffect(() => {
     if (filters.vehicleId) {
-      const vehicle = filterOptions.vehicles?.find(v => 
+      const vehicle = filterOptions.vehicles?.find(v =>
         (v.vehicleId || v.id)?.toString() === filters.vehicleId.toString()
       );
       setSelectedVehicle(vehicle || null);
@@ -183,7 +183,7 @@ const ContractFilters = ({
     <>
       <Flex gap={3} wrap="wrap" align="center">
         {/* Status Filter */}
-        <FormControl width="150px">
+        <FormControl flex={1}>
           <Select
             value={filters.status}
             onChange={(e) => onFilterChange('status', e.target.value)}
@@ -199,7 +199,7 @@ const ContractFilters = ({
         </FormControl>
 
         {/* Date Filters */}
-        <FormControl width="180px">
+        <FormControl flex={1}>
           <Input
             type="date"
             placeholder="Start Date"
@@ -221,12 +221,13 @@ const ContractFilters = ({
 
         {/* Renter Button */}
         <Button
+          flex={1}
           size="sm"
           border="1px solid"
           borderColor="gray.300"
           onClick={() => setIsRenterModalOpen(true)}
           variant={selectedRenter ? "solid" : "outline"}
-          colorScheme={selectedRenter ? "blue" : "gray"}
+          colorScheme={selectedRenter ? "yellow" : "yellow"}
         >
           {selectedRenter
             ? `Renter: ${selectedRenter.fullName || selectedRenter.name || selectedRenter.email} (${selectedRenter.renterId || selectedRenter.id})`
@@ -245,12 +246,13 @@ const ContractFilters = ({
 
         {/* Vehicle Button */}
         <Button
+          flex={1}
           size="sm"
           border="1px solid"
           borderColor="gray.300"
           onClick={() => setIsVehicleModalOpen(true)}
           variant={selectedVehicle ? "solid" : "outline"}
-          colorScheme={selectedVehicle ? "blue" : "gray"}
+          colorScheme={selectedVehicle ? "purple" : "purple"}
         >
           {selectedVehicle
             ? `Vehicle: ${selectedVehicle.licensePlate || selectedVehicle.vehicleLicensePlate} (${selectedVehicle.vehicleId || selectedVehicle.id})`
@@ -259,6 +261,7 @@ const ContractFilters = ({
         {selectedVehicle && (
           <Button
             size="sm"
+            border="1px solid"
             variant="ghost"
             onClick={handleClearVehicle}
             colorScheme="red"

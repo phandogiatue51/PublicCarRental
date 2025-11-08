@@ -705,12 +705,22 @@ export const modificationAPI = {
     }
   },
 
-   getContractStatus: async (contractId) => {
+  getContractStatus: async (contractId) => {
     try {
-      const response = await fetch(`/${contractId}/status`);
+      const response = await fetch(`/contracts/${contractId}/modifications/status`);
       return await response.json();
     } catch (error) {
       console.error('Error fetching contract status:', error);
+      throw error;
+    }
+  },
+  
+  getPendingStatus: async (contractId, invoiceId) => {
+    try {
+      const response = await fetch(`/contracts/${contractId}/modifications/pending-status/${invoiceId}`);
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching pending status:', error);
       throw error;
     }
   }

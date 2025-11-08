@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton, Grid, Image,
-  Button, 
+  Button,
   Flex,
   Text,
   useColorModeValue,
@@ -33,7 +33,8 @@ import { contractAPI, renterAPI, vehicleAPI } from "../../../services/api";
 import {
   MdRefresh,
   MdSchedule,
-  MdPhotoLibrary} from "react-icons/md";
+  MdPhotoLibrary
+} from "react-icons/md";
 
 import Card from "../../../admin/components/card/Card";
 import ContractDetailModal from "./ContractDetailModal";
@@ -200,7 +201,7 @@ const ContractList = () => {
   }, [fetchContracts]);
 
   const handleClearFilter = useCallback(() => {
-    setFilters({ status: "", renterId: "", vehicleId: "" , startDate: "", endDate: "" });
+    setFilters({ status: "", renterId: "", vehicleId: "", startDate: "", endDate: "" });
     setCurrentPage(1);
     fetchContracts();
   }, [fetchContracts]);
@@ -375,7 +376,21 @@ const ContractList = () => {
         <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
           VEHICLE
         </Text>
-      ),  
+      ),
+      cell: (info) => (
+        <Text color={textColor} fontSize="sm">
+          {info.getValue()}
+        </Text>
+      ),
+    }),
+
+    columnHelper.accessor('modelName', {
+      id: 'modelName',
+      header: () => (
+        <Text fontSize={{ sm: '10px', lg: '12px' }} color="gray.400">
+          MODEL
+        </Text>
+      ),
       cell: (info) => (
         <Text color={textColor} fontSize="sm">
           {info.getValue()}
@@ -508,6 +523,7 @@ const ContractList = () => {
               <>
                 <Tooltip label="Hand Over Vehicle">
                   <Button
+                    border="1px solid"
                     variant="ghost"
                     size="sm"
                     colorScheme="green"
@@ -530,7 +546,7 @@ const ContractList = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    colorScheme="teal"
+                    colorScheme="yellow"
                     onClick={() => handleChangeVehicle(contract)}
                   >
                     Change Vehicle
