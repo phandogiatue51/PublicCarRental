@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'https://localhost:7230/api'
+  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
 
 const apiRequest = async (endpoint, options = {}) => {
@@ -161,6 +161,23 @@ export const modelAPI = {
     } catch (error) {
       console.error('Error fetching available count:', error);
       return 0;
+    }
+  },
+
+  getAvailableCounts: async (stationId, startTime, endTime) => {
+    try {
+      const response = await apiRequest('/Model/get-available-counts', {
+        method: 'POST',
+        body: JSON.stringify({
+          stationId: stationId,
+          startTime: startTime,
+          endTime: endTime
+        })
+      });
+      return response || [];
+    } catch (error) {
+      console.error('Error fetching available counts:', error);
+      throw error;
     }
   }
 };

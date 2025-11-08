@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { modelAPI } from "../services/api";
 import CarAudi from "../images/cars-big/audia1.jpg";
 import CarGolf from "../images/cars-big/golf6.jpg";
 import CarToyota from "../images/cars-big/toyotacamry.jpg";
@@ -9,12 +10,13 @@ import CarPassat from "../images/cars-big/passatcc.jpg";
 function BookCar() {
   const [modal, setModal] = useState(false); //  class - active-modal
 
-  // booking car
-  const [carType, setCarType] = useState("");
-  const [pickUp, setPickUp] = useState("");
-  const [dropOff, setDropOff] = useState("");
-  const [pickTime, setPickTime] = useState("");
-  const [dropTime, setDropTime] = useState("");
+  // booking car (refactored to model + station + start/end)
+  const [modelId, setModelId] = useState("");
+  const [models, setModels] = useState([]);
+  const [stationId, setStationId] = useState("");
+  const [stations, setStations] = useState([]);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [carImg, setCarImg] = useState("");
 
   // modal infos
@@ -66,11 +68,10 @@ function BookCar() {
     e.stopPropagation();
     const errorMsg = document.querySelector(".error-message");
     if (
-      pickUp === "" ||
-      dropOff === "" ||
-      pickTime === "" ||
-      dropTime === "" ||
-      carType === ""
+      modelId === "" ||
+      stationId === "" ||
+      startDate === "" ||
+      endDate === ""
     ) {
       errorMsg.style.display = "flex";
     } else {
@@ -101,30 +102,25 @@ function BookCar() {
   };
 
   // taking value of booking inputs
-  const handleCar = (e) => {
+  const handleModel = (e) => {
     e.stopPropagation();
-    setCarType(e.target.value);
-    setCarImg(e.target.value);
+    const selected = e.target.value;
+    setModelId(selected);
   };
 
-  const handlePick = (e) => {
+  const handleStation = (e) => {
     e.stopPropagation();
-    setPickUp(e.target.value);
+    setStationId(e.target.value);
   };
 
-  const handleDrop = (e) => {
+  const handleStartDate = (e) => {
     e.stopPropagation();
-    setDropOff(e.target.value);
+    setStartDate(e.target.value);
   };
 
-  const handlePickTime = (e) => {
+  const handleEndDate = (e) => {
     e.stopPropagation();
-    setPickTime(e.target.value);
-  };
-
-  const handleDropTime = (e) => {
-    e.stopPropagation();
-    setDropTime(e.target.value);
+    setEndDate(e.target.value);
   };
 
   // based on value name show car img
@@ -158,6 +154,49 @@ function BookCar() {
     doneMsg.style.display = "none";
   };
 
+  // derive selected names for display
+  const selectedStation = stations.find(
+    (s) => String(s.stationId) === String(stationId)
+  );
+  const selectedStationName = selectedStation?.name || "";
+  const selectedModel = models.find(
+    (m) => String(m.modelId || m.id) === String(modelId)
+  );
+  const selectedModelName = selectedModel?.name || "";
+
+  // load models once
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const data = await modelAPI.getAll();
+        const list = Array.isArray(data?.result) ? data.result : (Array.isArray(data) ? data : []);
+        setModels(list);
+      } catch (err) {
+        console.error("Failed to load models", err);
+      }
+    };
+    fetchModels();
+  }, []);
+
+  // load stations when model changes
+  useEffect(() => {
+    const fetchStations = async () => {
+      if (!modelId) {
+        setStations([]);
+        setStationId("");
+        return;
+      }
+      try {
+        const list = await modelAPI.getStationFromModel(parseInt(modelId));
+        setStations(Array.isArray(list) ? list : []);
+      } catch (err) {
+        console.error("Failed to load stations for model", err);
+        setStations([]);
+      }
+    };
+    fetchStations();
+  }, [modelId]);
+
   return (
     <>
       <section id="booking-section" className="book-section">
@@ -183,84 +222,62 @@ function BookCar() {
                 <i onClick={hideMessage} className="fa-solid fa-xmark"></i>
               </p>
 
-              <form className="box-form">
-                <div className="box-form__car-type">
-                  <label>
-                    <i className="fa-solid fa-car"></i> &nbsp; Select Your Car
-                    Type <b>*</b>
-                  </label>
-                  <select value={carType} onChange={handleCar}>
-                    <option>Select your car type</option>
-                    <option value="Audi A1 S-Line">Audi A1 S-Line</option>
-                    <option value="VW Golf 6">VW Golf 6</option>
-                    <option value="Toyota Camry">Toyota Camry</option>
-                    <option value="BMW 320 ModernLine">
-                      BMW 320 ModernLine
-                    </option>
-                    <option value="Mercedes-Benz GLK">Mercedes-Benz GLK</option>
-                    <option value="VW Passat CC">VW Passat CC</option>
-                  </select>
-                </div>
+              <form className="box-form" style={{ gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto auto auto" }}>
+                  <div className="box-form__car-type">
+                    <label>
+                      <i className="fa-solid fa-car"></i> &nbsp;Pick Model <b>*</b>
+                    </label>
+                    <select value={modelId} onChange={handleModel}>
+                      <option value="">Pick model</option>
+                      {models.map((m, idx) => (
+                        <option key={idx} value={String(m.modelId || m.id)}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="box-form__car-type">
-                  <label>
-                    <i className="fa-solid fa-location-dot"></i> &nbsp; Pick-up{" "}
-                    <b>*</b>
-                  </label>
-                  <select value={pickUp} onChange={handlePick}>
-                    <option>Select pick up location</option>
-                    <option>Belgrade</option>
-                    <option>Novi Sad</option>
-                    <option>Nis</option>
-                    <option>Kragujevac</option>
-                    <option>Subotica</option>
-                  </select>
-                </div>
+                  <div className="box-form__car-type">
+                    <label>
+                      <i className="fa-solid fa-location-dot"></i> &nbsp; Pick Station <b>*</b>
+                    </label>
+                    <select value={stationId} onChange={handleStation} disabled={!modelId}>
+                      <option value="">{modelId ? "Pick station" : "Pick station"}</option>
+                      {stations.map((s, idx) => (
+                        <option key={idx} value={String(s.stationId)}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="box-form__car-type">
-                  <label>
-                    <i className="fa-solid fa-location-dot"></i> &nbsp; Drop-of{" "}
-                    <b>*</b>
-                  </label>
-                  <select value={dropOff} onChange={handleDrop}>
-                    <option>Select drop off location</option>
-                    <option>Novi Sad</option>
-                    <option>Belgrade</option>
-                    <option>Nis</option>
-                    <option>Kragujevac</option>
-                    <option>Subotica</option>
-                  </select>
-                </div>
+                  <div className="box-form__car-time">
+                    <label htmlFor="startDate">
+                      <i className="fa-regular fa-calendar-days "></i> &nbsp; Start date <b>*</b>
+                    </label>
+                    <input
+                      id="startDate"
+                      value={startDate}
+                      onChange={handleStartDate}
+                      type="datetime-local"
+                    ></input>
+                  </div>
 
-                <div className="box-form__car-time">
-                  <label htmlFor="picktime">
-                    <i className="fa-regular fa-calendar-days "></i> &nbsp;
-                    Pick-up <b>*</b>
-                  </label>
-                  <input
-                    id="picktime"
-                    value={pickTime}
-                    onChange={handlePickTime}
-                    type="date"
-                  ></input>
-                </div>
-
-                <div className="box-form__car-time">
-                  <label htmlFor="droptime">
-                    <i className="fa-regular fa-calendar-days "></i> &nbsp;
-                    Drop-of <b>*</b>
-                  </label>
-                  <input
-                    id="droptime"
-                    value={dropTime}
-                    onChange={handleDropTime}
-                    type="date"
-                  ></input>
-                </div>
-
-                <button onClick={openModal} type="submit">
-                  Search
-                </button>
+                  <div className="box-form__car-time">
+                    <label htmlFor="endDate">
+                      <i className="fa-regular fa-calendar-days "></i> &nbsp; End date <b>*</b>
+                    </label>
+                    <input
+                      id="endDate"
+                      value={endDate}
+                      onChange={handleEndDate}
+                      type="datetime-local"
+                      min={startDate || undefined}
+                    ></input>
+                  </div>
+                  <button
+                    onClick={openModal}
+                    type="submit"
+                    style={{ gridColumn: "1 / -1", justifySelf: "center", width: "320px", marginTop: "0.5rem" }}
+                  >
+                    Search
+                  </button>
               </form>
             </div>
           </div>
@@ -296,7 +313,7 @@ function BookCar() {
                 <div>
                   <h6>Pick-Up Date & Time</h6>
                   <p>
-                    {pickTime} /{" "}
+                    {startDate} /{" "}
                     <input type="time" className="input-time"></input>
                   </p>
                 </div>
@@ -309,7 +326,7 @@ function BookCar() {
                 <div>
                   <h6>Drop-Off Date & Time</h6>
                   <p>
-                    {dropTime} /{" "}
+                    {endDate} /{" "}
                     <input type="time" className="input-time"></input>
                   </p>
                 </div>
@@ -320,8 +337,8 @@ function BookCar() {
               <span>
                 <i className="fa-solid fa-calendar-days"></i>
                 <div>
-                  <h6>Pick-Up Location</h6>
-                  <p>{pickUp}</p>
+                  <h6>Pick-Up Station</h6>
+                  <p>{selectedStationName}</p>
                 </div>
               </span>
             </div>
@@ -330,15 +347,15 @@ function BookCar() {
               <span>
                 <i className="fa-solid fa-calendar-days"></i>
                 <div>
-                  <h6>Drop-Off Location</h6>
-                  <p>{dropOff}</p>
+                  <h6>Drop-Off Station</h6>
+                  <p>{selectedStationName}</p>
                 </div>
               </span>
             </div>
           </div>
           <div className="booking-modal__car-info__model">
             <h5>
-              <span>Car -</span> {carType}
+              <span>Car -</span> {selectedModelName}
             </h5>
             {imgUrl && <img src={imgUrl} alt="car_img" />}
           </div>

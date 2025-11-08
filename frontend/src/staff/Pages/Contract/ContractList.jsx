@@ -41,6 +41,8 @@ import ContractModal from "./ContractModal";
 import ContractFilters from "./ContractFilter";
 import Pagination from "./../../../components/Pagination";
 import ContractAccidentModal from './../AccidentReport/ContractAccidentModal';
+import ChangeModelModal from "./ChangeModelModal";
+import ChangeVehicleModal from "./ChangeVehicleModal";
 
 const columnHelper = createColumnHelper();
 
@@ -58,10 +60,23 @@ const ContractList = () => {
   const [selectedContractForAction, setSelectedContractForAction] = useState(null);
   const [modalAction, setModalAction] = useState(null);
   const [isAccidentModalOpen, setIsAccidentModalOpen] = useState(false);
+  const [isChangeModelModalOpen, setIsChangeModelModalOpen] = useState(false);
+  const [isChangeVehicleModalOpen, setIsChangeVehicleModalOpen] = useState(false);
+  const [selectedContractForChange, setSelectedContractForChange] = useState(null);
 
   const handleReportIssue = useCallback((contract) => {
     setSelectedContractForAction(contract);
     setIsAccidentModalOpen(true);
+  }, []);
+
+  const handleChangeModel = useCallback((contract) => {
+    setSelectedContractForChange(contract);
+    setIsChangeModelModalOpen(true);
+  }, []);
+
+  const handleChangeVehicle = useCallback((contract) => {
+    setSelectedContractForChange(contract);
+    setIsChangeVehicleModalOpen(true);
   }, []);
 
   const [filters, setFilters] = useState({
@@ -328,6 +343,16 @@ const ContractList = () => {
     setSelectedContractForAction(null);
   }, []);
 
+  const handleChangeModelModalClose = useCallback(() => {
+    setIsChangeModelModalOpen(false);
+    setSelectedContractForChange(null);
+  }, []);
+
+  const handleChangeVehicleModalClose = useCallback(() => {
+    setIsChangeVehicleModalOpen(false);
+    setSelectedContractForChange(null);
+  }, []);
+
   // Columns definition
   const columns = useMemo(() => [
     columnHelper.accessor("contractId", {
@@ -480,16 +505,38 @@ const ContractList = () => {
             </Tooltip>
 
             {canHandover && (
-              <Tooltip label="Hand Over Vehicle">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  colorScheme="green"
-                  onClick={() => handleHandover(contract)}
-                >
-                  Active
-                </Button>
-              </Tooltip>
+              <>
+                <Tooltip label="Hand Over Vehicle">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    colorScheme="green"
+                    onClick={() => handleHandover(contract)}
+                  >
+                    Active
+                  </Button>
+                </Tooltip>
+                <Tooltip label="Change Model">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    colorScheme="purple"
+                    onClick={() => handleChangeModel(contract)}
+                  >
+                    Change Model
+                  </Button>
+                </Tooltip>
+                <Tooltip label="Change Vehicle">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    colorScheme="teal"
+                    onClick={() => handleChangeVehicle(contract)}
+                  >
+                    Change Vehicle
+                  </Button>
+                </Tooltip>
+              </>
             )}
 
             {canReturn && (
@@ -526,7 +573,7 @@ const ContractList = () => {
         );
       },
     }),
-  ], [textColor, handleImageView, handleHandover, handleReturn, handleView, getStatusColor, getStatusText, formatDate]);
+  ], [textColor, handleImageView, handleHandover, handleReturn, handleView, getStatusColor, getStatusText, formatDate, handleChangeModel, handleChangeVehicle]);
 
   // Table setup
   const table = useReactTable({
@@ -599,7 +646,7 @@ const ContractList = () => {
         </Flex>
 
         {/* Filters */}
-        <Card>
+        <Card p={4}>
           <ContractFilters
             filters={filters}
             filterOptions={filterOptions}
@@ -608,6 +655,7 @@ const ContractList = () => {
             onClearFilter={handleClearFilter}
             isFilterActive={isFilterActive}
             loading={loading}
+            stationId={stationId}
           />
         </Card>
 
@@ -770,6 +818,22 @@ const ContractList = () => {
         onClose={handleActionModalClose}
         contract={selectedContractForAction}
         action={modalAction}
+        onSuccess={handleModalSuccess}
+      />
+
+      {/* Change Model Modal */}
+      <ChangeModelModal
+        isOpen={isChangeModelModalOpen}
+        onClose={handleChangeModelModalClose}
+        contract={selectedContractForChange}
+        onSuccess={handleModalSuccess}
+      />
+
+      {/* Change Vehicle Modal */}
+      <ChangeVehicleModal
+        isOpen={isChangeVehicleModalOpen}
+        onClose={handleChangeVehicleModalClose}
+        contract={selectedContractForChange}
         onSuccess={handleModalSuccess}
       />
     </Box>
