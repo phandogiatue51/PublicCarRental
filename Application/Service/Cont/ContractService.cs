@@ -205,10 +205,6 @@ namespace PublicCarRental.Application.Service.Cont
 
             contract.EndTime = DateTime.UtcNow;
             contract.Status = RentalStatus.Completed;
-
-            var duration = (contract.EndTime - contract.StartTime).TotalHours;
-            contract.TotalCost = (decimal)duration * vehicle.Model.PricePerHour;
-
             vehicle.Status = VehicleStatus.ToBeCheckup;
 
             if (dto.imageFile != null && dto.imageFile.Length > 0)

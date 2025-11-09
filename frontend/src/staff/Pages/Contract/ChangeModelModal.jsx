@@ -1,35 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
-  Button,
-  Text,
-  useToast,
-  Spinner,
-  Box,
-  VStack,
-  useColorModeValue,
-  Alert,
-  AlertIcon,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  InputGroup,
-  InputLeftElement,
-  Input,
-  Icon,
-  Badge,
+  Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton, Button, Text, useToast, Spinner, Box, VStack, useColorModeValue, Alert,
+  AlertIcon, Table, Thead, Tbody, Tr, Th, Td, InputGroup, InputLeftElement, Input, Icon
 } from '@chakra-ui/react';
 import { MdSearch } from 'react-icons/md';
-import { modelAPI, modificationAPI, paymentAPI } from '../../../services/api';
+import { modelAPI, modificationAPI, paymentAPI, vehicleAPI } from '../../../services/api';
 const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
   const [models, setModels] = useState([]);
   const [selectedModelId, setSelectedModelId] = useState('');
@@ -39,17 +14,35 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
   const toast = useToast();
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
+  const [currentModel, setCurrentModel] = useState(null);
 
   useEffect(() => {
     if (isOpen && contract) {
-      fetchModels();
-      setSelectedModelId('');
-      setSearchTerm('');
+      const fetchData = async () => {
+        await fetchModels();
+        await fetchCurrentModel();
+        setSelectedModelId('');
+        setSearchTerm('');
+      };
+
+      fetchData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, contract]);
 
-  // Filter models by search term
+  const fetchCurrentModel = async () => {
+    if (contract?.vehicleId) {
+      try {
+        const vehicle = await vehicleAPI.getById(contract.vehicleId);
+        if (vehicle?.modelId) {
+          const model = await modelAPI.getById(vehicle.modelId);
+          setCurrentModel(model);
+        }
+      } catch (error) {
+        console.error('Error fetching current model:', error);
+      }
+    }
+  };
+
   const filteredModels = useMemo(() => {
     let result = models;
 
@@ -144,7 +137,6 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
       const result = await modificationAPI.changeModel(contract.contractId, requestData);
 
       if (result.success) {
-        // 🆕 ADD THIS PAYMENT HANDLING BLOCK
         if (result.requiresPayment && result.newInvoiceId) {
           toast({
             title: 'Payment Required',
@@ -154,20 +146,16 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
             isClosable: true,
           });
 
-          // Create payment for the additional invoice
           try {
             const paymentData = {
               invoiceId: result.newInvoiceId,
-              renterId: contract.evRenterId || contract.renterId // Use appropriate renter ID
+              renterId: contract.evRenterId || contract.renterId
             };
 
             const paymentResponse = await paymentAPI.createPayment(paymentData);
 
             if (paymentResponse && paymentResponse.checkoutUrl) {
-              // Open payment in new tab
               window.open(paymentResponse.checkoutUrl, '_blank');
-
-              // 🆕 ADD THIS POLLING FUNCTION
               startPaymentPolling(contract.contractId, result.newInvoiceId);
             } else {
               throw new Error('Payment creation failed');
@@ -217,38 +205,50 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
   };
 
   const startPaymentPolling = async (contractId, invoiceId) => {
-    const pollInterval = setInterval(async () => {
-      try {
-        const status = await modificationAPI.getPendingStatus(contractId, invoiceId);
+  console.log('🔄 Starting payment polling for:', { contractId, invoiceId });
+  
+  const pollInterval = setInterval(async () => {
+    try {
+      console.log('📡 Checking payment status...');
+      const status = await modificationAPI.getPendingStatus(contractId, invoiceId);
+      console.log('📊 Payment status response:', status);
 
-        if (status.isCompleted) {
-          clearInterval(pollInterval);
-          toast({
-            title: 'Success!',
-            description: 'Model change completed successfully!',
-            status: 'success',
-            duration: 5000,
-            isClosable: true,
-          });
-          onSuccess?.();
-          onClose();
-        }
-      } catch (error) {
-        console.error('Polling error:', error);
+      if (status.isCompleted || !status.hasPendingChanges) {
+        console.log('✅ Payment completed, modification applied!');
+        clearInterval(pollInterval);
+        toast({
+          title: 'Success!',
+          description: 'Model change completed successfully!',
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+        onSuccess?.();
+        onClose();
+      } else {
+        console.log('⏳ Still waiting for payment processing...', {
+          hasPendingChanges: status.hasPendingChanges,
+          isCompleted: status.isCompleted,
+          contractStatus: status.contractStatus
+        });
       }
-    }, 3000);
+    } catch (error) {
+      console.error('❌ Polling error:', error);
+    }
+  }, 3000);
 
-    setTimeout(() => {
-      clearInterval(pollInterval);
-      toast({
-        title: 'Timeout',
-        description: 'Payment verification timeout. Please refresh the page to check status.',
-        status: 'warning',
-        duration: 5000,
-        isClosable: true,
-      });
-    }, 10 * 60 * 1000);
-  };
+  setTimeout(() => {
+    console.log('⏰ Polling timeout reached');
+    clearInterval(pollInterval);
+    toast({
+      title: 'Timeout',
+      description: 'Payment verification timeout. Please refresh the page to check status.',
+      status: 'warning',
+      duration: 5000,
+      isClosable: true,
+    });
+  }, 10 * 60 * 1000);
+};
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered scrollBehavior="inside">
@@ -256,11 +256,11 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
       <ModalContent maxH="85vh">
         <ModalHeader color={textColor}>Change Model</ModalHeader>
         <ModalCloseButton />
-        <ModalBody pb={6}>
+        <ModalBody pb={4}>
           {loading ? (
             <Box textAlign="center" py={8}>
               <Spinner size="lg" color="blue.500" />
-              <Text mt={4} color="gray.500">
+              <Text mt={2} color="gray.500">
                 Loading models...
               </Text>
             </Box>
@@ -301,7 +301,7 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
                   borderColor={borderColor}
                   borderRadius="md"
                   overflow="hidden"
-                  maxH="400px"
+                  maxH="250px"
                   overflowY="auto"
                 >
                   <Table variant="simple" size="sm">
@@ -317,7 +317,7 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
                           Brand
                         </Th>
                         <Th width="100px" fontSize="xs" fontWeight="700" color="gray.600" textAlign="center">
-                          Available
+                          Price
                         </Th>
                         <Th width="100px" fontSize="xs" fontWeight="700" color="gray.600" textAlign="center">
                           Select
@@ -359,16 +359,9 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
                               </Text>
                             </Td>
                             <Td textAlign="center">
-                              <Badge
-                                colorScheme={isAvailable ? 'green' : 'red'}
-                                variant="solid"
-                                fontSize="xs"
-                                px={2}
-                                py={1}
-                                borderRadius="md"
-                              >
-                                {availableCount} available
-                              </Badge>
+                              <Text color="gray.600" fontSize="sm">
+                                {model.pricePerHour || 'N/A'} ₫
+                              </Text>
                             </Td>
                             <Td textAlign="center">
                               <Button
@@ -393,14 +386,70 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
                   </Table>
                 </Box>
               )}
-
-              {!loading && filteredModels.length > 0 && (
-                <Text fontSize="xs" color="gray.500" textAlign="right">
-                  Showing {filteredModels.length} of {models.length} models
-                  {searchTerm && ` matching "${searchTerm}"`}
-                </Text>
-              )}
             </VStack>
+          )}
+
+          {selectedModelId && currentModel && (
+            <Box
+              p={4}
+              border="1px"
+              borderColor="gray.200"
+              borderRadius="md"
+              bg="blue.50"
+              mt={2}
+            >
+              <Text fontWeight="bold" fontSize="md">
+                Price Comparison
+              </Text>
+              <VStack spacing={1} align="stretch">
+                <Box display="flex" justifyContent="space-between">
+                  <Text fontSize="md">Current model:</Text>
+                  <Text fontSize="md" fontWeight="bold">
+                    {currentModel.pricePerHour?.toLocaleString()} ₫/hour
+                  </Text>
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Text fontSize="md">New model:</Text>
+                  <Text fontSize="md" fontWeight="bold" color="blue.600">
+                    {(models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour)?.toLocaleString()} ₫/hour
+                  </Text>
+                </Box>
+
+                <Box display="flex" justifyContent="space-between" borderTop="1px solid #e2e8f0" pt={1}>
+                  <Text fontSize="md" fontWeight="bold">
+                    Total for {contract?.endTime && contract?.startTime ?
+                      Math.ceil((new Date(contract.endTime) - new Date(contract.startTime)) / (1000 * 60 * 60))
+                      : 'N/A'} hours:
+                  </Text>
+                  <Text fontSize="md" fontWeight="bold" color="green.600">
+                    {((models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour || 0) *
+                      (contract?.endTime && contract?.startTime ?
+                        Math.ceil((new Date(contract.endTime) - new Date(contract.startTime)) / (1000 * 60 * 60))
+                        : 0))?.toLocaleString()} ₫
+                  </Text>
+                </Box>
+
+                {currentModel.pricePerHour < (models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour || 0) && (
+                  <Box display="flex" justifyContent="space-between" bg="orange.50" p={2} borderRadius="md" mt={1}>
+                    <Text fontSize="md" fontWeight="bold" color="orange.700">Amount to pay:</Text>
+                    <Text fontSize="md" fontWeight="bold" color="orange.700">
+                      {(((models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour || 0) - currentModel.pricePerHour) *
+                        (contract?.endTime && contract?.startTime ?
+                          Math.ceil((new Date(contract.endTime) - new Date(contract.startTime)) / (1000 * 60 * 60))
+                          : 0))?.toLocaleString()} ₫
+                    </Text>
+                  </Box>
+                )}
+
+                <Text fontSize="md" color="gray.600" mt={1}>
+                  {currentModel.pricePerHour < (models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour || 0)
+                    ? "An invoice will be created once the renter chooses this renter. Kindly ask them to finish paying."
+                    : currentModel.pricePerHour > (models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour || 0)
+                      ? "Renter will receive no refund for the ."
+                      : "No price change - model will be swapped immediately."}
+                </Text>
+              </VStack>
+            </Box>
           )}
         </ModalBody>
 
@@ -408,14 +457,15 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
           <Button variant="ghost" mr={3} onClick={onClose} isDisabled={submitting}>
             Cancel
           </Button>
+
           <Button
             colorScheme="blue"
             onClick={handleSubmit}
             isLoading={submitting}
-            loadingText="Changing..."
+            loadingText="Processing..."
             isDisabled={!selectedModelId || (models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.count || 0) === 0}
           >
-            Change Model
+            Confirm Change
           </Button>
         </ModalFooter>
       </ModalContent>

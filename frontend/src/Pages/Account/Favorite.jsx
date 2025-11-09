@@ -65,27 +65,23 @@ function Favorite() {
     setSelectedFavorite(null);
   };
 
-  const handleRemoveFavorite = async (favorite) => {
+const handleRemoveFavorite = async (favorite) => {
   try {
-    // Use favorite.modelId directly since it's now in the API response
     await renterAPI.removeFavorite(renterId, favorite.modelId);
     
-    setFavorites(favorites.filter(fav => fav.favoriteId !== favorite.favoriteId));
+    setFavorites(favorites.filter(fav => fav.modelId !== favorite.modelId));
   } catch (e) {
     setError(e.message || "Failed to remove favorite");
   }
 };
 
-  // Pagination logic
   const indexOfLastFavorite = currentPage * favoritesPerPage;
   const indexOfFirstFavorite = indexOfLastFavorite - favoritesPerPage;
   const currentFavorites = favorites.slice(indexOfFirstFavorite, indexOfLastFavorite);
   const totalPages = Math.ceil(favorites.length / favoritesPerPage);
 
-  // Change page
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Go to previous page
   const goToPreviousPage = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);

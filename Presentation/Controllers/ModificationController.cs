@@ -17,16 +17,14 @@ namespace PublicCarRental.Presentation.Controllers
         private readonly IContractService _contractService;
         private readonly IRefundService _refundService;
         private readonly IPendingChangeService _pendingChangeService;
-        private readonly ILogger<ModificationController> _logger; 
 
         public ModificationController(IContractModificationService modificationService, IRefundService refundService,
-            IContractService contractService, IPendingChangeService pendingChangeService, Logger<ModificationController> logger)
+            IContractService contractService, IPendingChangeService pendingChangeService)
         {
             _modificationService = modificationService;
             _refundService = refundService;
             _contractService = contractService;
             _pendingChangeService = pendingChangeService;
-            _logger = logger;
         }
 
         [HttpPost("renter/change-model")]
@@ -168,7 +166,6 @@ namespace PublicCarRental.Presentation.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking pending status for invoice {InvoiceId}", invoiceId);
                 return StatusCode(500, new { error = "Failed to check modification status" });
             }
         }

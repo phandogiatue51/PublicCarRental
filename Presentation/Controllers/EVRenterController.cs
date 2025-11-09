@@ -115,6 +115,13 @@ public class EVRenterController : ControllerBase
         return Ok("Model added to favorite successfully!");
     }
 
+    [HttpGet("{renterId}/favorites/{modelId}/check")]
+    public async Task<IActionResult> IsModelInFavoritesAsync(int renterId, int modelId)
+    {
+        var isFavorite = await _favoriteService.IsModelInFavoritesAsync(renterId, modelId);
+        return Ok(isFavorite);
+    }
+
     [HttpGet("{renterId}/contracts")]
     public IActionResult GetUserContracts(int renterId)
     {

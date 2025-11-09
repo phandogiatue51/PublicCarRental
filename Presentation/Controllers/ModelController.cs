@@ -109,7 +109,8 @@ namespace PublicCarRental.Presentation.Controllers
                         ModelId = model.ModelId,
                         ModelName = model.Name,
                         Brand = model.BrandName,
-                        Count = count
+                        Count = count,
+                        PricePerHour = model.PricePerHour
                     });
                 }
 
