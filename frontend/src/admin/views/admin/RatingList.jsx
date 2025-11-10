@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import {
   Box, Table, Thead, Tbody, Tr, Th, Td, Text, Badge, Button, HStack,
   Select, Spinner, Alert, AlertIcon, useDisclosure,
-  Icon, useColorModeValue, Flex, Tooltip
+  Icon, useColorModeValue, Flex, Tooltip, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalCloseButton
 } from '@chakra-ui/react';
 import { MdSearch, MdAssignment, MdRefresh, MdDelete } from 'react-icons/md';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable, getSortedRowModel } from '@tanstack/react-table';
@@ -27,6 +27,11 @@ export default function RatingList() {
   const columnHelper = createColumnHelper();
   const [models, setModels] = useState([]);
   const [renters, setRenters] = useState([]);
+  // Modal states
+  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
+  const [isRenterModalOpen, setIsRenterModalOpen] = useState(false);
+  const [selectedModelObj, setSelectedModelObj] = useState(null);
+  const [selectedRenterObj, setSelectedRenterObj] = useState(null);
   const fetchRatings = async (filterParams = {}) => {
     try {
       setLoading(true);
@@ -70,7 +75,9 @@ export default function RatingList() {
   };
 
   const handleClearFilters = async () => {
-    setFilters({ starRating: '', modelId: '', renterId: '' });
+    setFilters({ search: '', starRating: '', modelId: '', renterId: '' });
+    setSelectedModelObj(null);
+    setSelectedRenterObj(null);
     await fetchRatings();
   };
 
@@ -183,40 +190,50 @@ export default function RatingList() {
           <Select flex="1" placeholder="All ratings" value={filters.starRating} onChange={e => handleFilterChange('starRating', e.target.value)}>
             {[5, 4, 3, 2, 1].map(star => <option key={star} value={star}>⭐ {star}</option>)}
           </Select>
-          <Select
-            flex="1"
-            placeholder="All models"
-            value={filters.modelId}
-            onChange={e => handleFilterChange('modelId', e.target.value)}
-          >
-            {models.map(model => (
-              <option key={model.modelId} value={model.modelId}>
-                {model.name || `Model ${model.modelId}`}
-              </option>
-            ))}
-          </Select>
-
-          <Select
-            flex="1"
-            placeholder="All renters"
-            value={filters.renterId}
-            onChange={e => handleFilterChange('renterId', e.target.value)}
-          >
-            {renters.map(renter => (
-              <option key={renter.renterId} value={renter.renterId}>
-                {renter.fullName || `Renter ${renter.renterId}`}
-              </option>
-            ))}
-          </Select>
+          <Flex gap={2} align="center">
+            <Button 
+              size="sm"
+              border="1px solid"
+              onClick={async () => {
+                try {
+                  const res = await modelAPI.getAll();
+                  setModels(res || []);
+                  setIsModelModalOpen(true);
+                } catch (err) {
+                  console.error("Error fetching models:", err);
+                }
+              }}
+            >
+              {selectedModelObj ? `Model: ${selectedModelObj.name || selectedModelObj.modelName || `Model ${selectedModelObj.modelId || selectedModelObj.id}`}` : 'Select Model'}
+            </Button>
+          </Flex>
+          <Flex gap={2} align="center">
+            <Button 
+              size="sm"
+              border="1px solid"
+              onClick={async () => {
+                try {
+                  const res = await renterAPI.getAll();
+                  setRenters(res || []);
+                  setIsRenterModalOpen(true);
+                } catch (err) {
+                  console.error("Error fetching renters:", err);
+                }
+              }}
+            >
+              {selectedRenterObj ? `Renter: ${selectedRenterObj.fullName || selectedRenterObj.name || selectedRenterObj.email} (${selectedRenterObj.renterId || selectedRenterObj.id})` : 'Select Renter'}
+            </Button>
+          </Flex>
           <Button
             leftIcon={<Icon as={MdSearch} />}
             colorScheme="blue"
             onClick={applyFilters}
             isLoading={loading}
+            size="sm"
           >
             Search
           </Button>
-          <Button variant="outline" onClick={handleClearFilters}>
+          <Button variant="outline" onClick={handleClearFilters} size="sm">
             Clear
           </Button>
         </HStack>
@@ -260,6 +277,92 @@ export default function RatingList() {
       <Suspense fallback={<div>Loading...</div>}>
         <ContractDetailModal isOpen={isOpen} onClose={onClose} contract={selectedContract} />
       </Suspense>
+
+      {/* Model Select Modal */}
+      <Modal isOpen={isModelModalOpen} onClose={() => setIsModelModalOpen(false)} size="md" isCentered>
+        <ModalOverlay />
+        <ModalContent maxW="500px">
+          <ModalHeader pb={2} fontSize="lg">Select Model</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={4} px={4} maxH="400px" overflowY="auto">
+            <Table variant="simple" color="gray.500" size="sm">
+              <Thead>
+                <Tr>
+                  <Th px={2} py={2} fontSize="xs" fontWeight="bold">ID</Th>
+                  <Th px={2} py={2} fontSize="xs" fontWeight="bold">NAME</Th>
+                  <Th px={2} py={2}></Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {models
+                  ?.slice()
+                  ?.sort((a, b) => {
+                    const aId = Number(a?.modelId ?? a?.id ?? 0);
+                    const bId = Number(b?.modelId ?? b?.id ?? 0);
+                    return aId - bId;
+                  })
+                  .map((m) => (
+                    <Tr key={m.modelId || m.id}>
+                      <Td px={2} py={1.5} fontSize="sm">{m.modelId || m.id}</Td>
+                      <Td px={2} py={1.5} fontSize="sm">{m.name || m.modelName}</Td>
+                      <Td px={2} py={1.5} textAlign="right">
+                        <Button size="xs" colorScheme="blue" onClick={() => {
+                          const modelId = ((m.modelId || m.id) ?? "").toString();
+                          setFilters(prev => ({ ...prev, modelId }));
+                          setSelectedModelObj(m);
+                          setIsModelModalOpen(false);
+                        }}>Choose</Button>
+                      </Td>
+                    </Tr>
+                  ))}
+              </Tbody>
+            </Table>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Renter Select Modal */}
+      <Modal isOpen={isRenterModalOpen} onClose={() => setIsRenterModalOpen(false)} size="md" isCentered>
+        <ModalOverlay />
+        <ModalContent maxW="500px">
+          <ModalHeader pb={2} fontSize="lg">Select Renter</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={4} px={4} maxH="400px" overflowY="auto">
+            <Table variant="simple" color="gray.500" size="sm">
+              <Thead>
+                <Tr>
+                  <Th px={2} py={2} fontSize="xs" fontWeight="bold">ID</Th>
+                  <Th px={2} py={2} fontSize="xs" fontWeight="bold">NAME</Th>
+                  <Th px={2} py={2}></Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {renters
+                  ?.slice()
+                  ?.sort((a, b) => {
+                    const aId = Number(a?.renterId ?? a?.id ?? 0);
+                    const bId = Number(b?.renterId ?? b?.id ?? 0);
+                    return aId - bId;
+                  })
+                  .map((r) => (
+                    <Tr key={r.renterId || r.id}>
+                      <Td px={2} py={1.5} fontSize="sm">{r.renterId || r.id}</Td>
+                      <Td px={2} py={1.5} fontSize="sm">{r.fullName || r.name || r.email}</Td>
+                      <Td px={2} py={1.5} textAlign="right">
+                        <Button size="xs" colorScheme="blue" onClick={() => {
+                          const renterId = ((r.renterId || r.id) ?? "").toString();
+                          setFilters(prev => ({ ...prev, renterId }));
+                          setSelectedRenterObj(r);
+                          setIsRenterModalOpen(false);
+                        }}>Choose</Button>
+                      </Td>
+                    </Tr>
+                  ))}
+              </Tbody>
+            </Table>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
