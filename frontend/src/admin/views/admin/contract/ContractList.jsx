@@ -959,7 +959,14 @@ export default function ContractList() {
                 </Tr>
               </Thead>
               <Tbody>
-                {renters?.map((r) => (
+                {renters
+                  ?.slice()
+                  ?.sort((a, b) => {
+                    const aId = Number(a?.renterId ?? a?.id ?? 0);
+                    const bId = Number(b?.renterId ?? b?.id ?? 0);
+                    return aId - bId;
+                  })
+                  .map((r) => (
                   <Tr key={r.renterId || r.id}>
                     <Td>{r.renterId || r.id}</Td>
                     <Td>{r.fullName || r.name || r.email}</Td>
@@ -1053,6 +1060,12 @@ export default function ContractList() {
                     if (selectedBrandId && ((v.brandId || v.brand?.id)?.toString?.()) !== selectedBrandId) return false;
                     if (selectedModelId && ((v.modelId || v.model?.id)?.toString?.()) !== selectedModelId) return false;
                     return true;
+                  })
+                  .slice()
+                  .sort((a, b) => {
+                    const aId = Number(a?.vehicleId ?? a?.id ?? 0);
+                    const bId = Number(b?.vehicleId ?? b?.id ?? 0);
+                    return aId - bId;
                   })
                   .map((v) => (
                     <Tr key={v.vehicleId || v.id}>
