@@ -597,9 +597,9 @@ const RenterList = () => {
               </Select>
             </Box>
 
-            <Box>
+            <Box flex="1">
               <HStack spacing={2}>
-                <Button variant="outline" onClick={handleClear}>
+                <Button colorScheme="blue" onClick={handleClear} width="100%">
                   Clear
                 </Button>
               </HStack>

@@ -57,13 +57,14 @@ namespace PublicCarRental.Application.Service.Cont
                 ContractId = contract.ContractId,
                 InvoiceCount = contract.Invoices?.Count ?? 0,
                 EVRenterId = contract.EVRenterId,
-                EVRenterName = contract.EVRenter != null && contract.EVRenter.Account != null ? contract.EVRenter.Account.FullName : null,
+                EVRenterName = contract.EVRenter?.Account?.FullName,
                 StaffId = contract.StaffId,
-                StaffName = contract.Staff != null && contract.Staff.Account != null ? contract.Staff.Account.FullName : null,
+                StaffName = contract.Staff?.Account?.FullName,
                 VehicleId = contract.VehicleId ?? 0,
-                VehicleLicensePlate = contract.Vehicle != null ? contract.Vehicle.LicensePlate : null,
+                VehicleLicensePlate = contract.Vehicle?.LicensePlate,
+                ModelName = contract.Vehicle?.Model?.Name,
                 StationId = contract.StationId ?? 0,
-                StationName = contract.Station != null ? contract.Station.Name : null,
+                StationName = contract.Station?.Name,
                 StartTime = contract.StartTime,
                 EndTime = contract.EndTime,
                 TotalCost = contract.TotalCost,
@@ -204,10 +205,6 @@ namespace PublicCarRental.Application.Service.Cont
 
             contract.EndTime = DateTime.UtcNow;
             contract.Status = RentalStatus.Completed;
-
-            var duration = (contract.EndTime - contract.StartTime).TotalHours;
-            contract.TotalCost = (decimal)duration * vehicle.Model.PricePerHour;
-
             vehicle.Status = VehicleStatus.ToBeCheckup;
 
             if (dto.imageFile != null && dto.imageFile.Length > 0)
@@ -302,6 +299,7 @@ namespace PublicCarRental.Application.Service.Cont
                 StaffName = contract.Staff?.Account?.FullName,
                 VehicleId = contract.VehicleId ?? 0,
                 VehicleLicensePlate = contract.Vehicle?.LicensePlate,
+                ModelName = contract.Vehicle?.Model?.Name,
                 StationId = contract.StationId ?? 0,
                 StationName = contract.Station?.Name,
                 StartTime = contract.StartTime,
@@ -363,6 +361,7 @@ namespace PublicCarRental.Application.Service.Cont
                 StaffName = contract.Staff?.Account?.FullName,
                 VehicleId = contract.VehicleId ?? 0,
                 VehicleLicensePlate = contract.Vehicle?.LicensePlate,
+                ModelName = contract.Vehicle?.Model?.Name,
                 StationId = contract.StationId ?? 0,
                 StationName = contract.Station?.Name,
                 StartTime = contract.StartTime,
@@ -409,9 +408,10 @@ namespace PublicCarRental.Application.Service.Cont
                 StaffId = contract.StaffId,
                 StaffName = contract.Staff != null && contract.Staff.Account != null ? contract.Staff.Account.FullName : null,
                 VehicleId = contract.VehicleId ?? 0,
-                VehicleLicensePlate = contract.Vehicle != null ? contract.Vehicle.LicensePlate : null,
+                VehicleLicensePlate = contract.Vehicle?.LicensePlate,
+                ModelName = contract.Vehicle?.Model?.Name,
                 StationId = contract.StationId ?? 0,
-                StationName = contract.Station != null ? contract.Station.Name : null,
+                StationName = contract.Station?.Name,
                 StartTime = contract.StartTime,
                 EndTime = contract.EndTime,
                 TotalCost = contract.TotalCost,

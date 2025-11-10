@@ -29,7 +29,7 @@ namespace PublicCarRental.Application.Service.Inv
                     IssuedAt = i.IssuedAt,
                     AmountDue = i.AmountDue,
                     AmountPaid = i.AmountPaid,
-                    PaidAt = i.PaidAt,
+                    PaidAt = i.PaidAt ?? i.RefundedAt,
                     Status = i.Status,
                     OrderCode = i.OrderCode,
                     Note = i.Note
@@ -47,7 +47,7 @@ namespace PublicCarRental.Application.Service.Inv
                 IssuedAt = i.IssuedAt,
                 AmountDue = i.AmountDue,
                 AmountPaid = i.AmountPaid,
-                PaidAt = i.PaidAt,
+                PaidAt = i.PaidAt ?? i.RefundedAt,
                 Status = i.Status,
                 OrderCode = i.OrderCode,
                 Note = i.Note

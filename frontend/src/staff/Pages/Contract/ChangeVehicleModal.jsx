@@ -1,34 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
-  Button,
-  Text,
-  useToast,
-  Spinner,
-  Box,
-  VStack,
-  Select,
-  FormControl,
-  FormLabel,
-  useColorModeValue,
-  Alert,
-  AlertIcon,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  InputGroup,
-  InputLeftElement,
-  Input,
-  Icon,
+  Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton, Button, Text, useToast, Spinner, Box, VStack, useColorModeValue, Alert,
+  AlertIcon, Table, Thead, Tbody, Tr, Th, Td, InputGroup, InputLeftElement, Input, Icon
 } from '@chakra-ui/react';
 import { MdSearch } from 'react-icons/md';
 import { vehicleAPI, modificationAPI } from '../../../services/api';
@@ -49,7 +22,6 @@ const ChangeVehicleModal = ({ isOpen, onClose, contract, onSuccess }) => {
       setSelectedVehicleId('');
       setSearchTerm('');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, contract]);
 
   const fetchVehicles = async () => {
@@ -57,8 +29,7 @@ const ChangeVehicleModal = ({ isOpen, onClose, contract, onSuccess }) => {
 
     try {
       setLoading(true);
-      
-      // First, get the current vehicle details to get modelId
+
       let currentModelId = null;
       if (contract.vehicleId) {
         try {
@@ -81,23 +52,25 @@ const ChangeVehicleModal = ({ isOpen, onClose, contract, onSuccess }) => {
         return;
       }
 
-      // Fetch vehicles from the same model as the contract's current vehicle
-      const response = await vehicleAPI.filter({
-        stationId: contract.stationId,
-        modelId: currentModelId,
-      });
+      const availableVehicles = await vehicleAPI.getAvailableVehicles(
+        currentModelId,
+        contract.stationId,
+        contract.startTime,  
+        contract.endTime
+      );
 
-      // Filter out the current vehicle
-      const availableVehicles = (response || []).filter(
+      console.log('Available vehicles:', availableVehicles); 
+
+      const filteredVehicles = (availableVehicles || []).filter(
         (v) => (v.vehicleId || v.id) !== (contract.vehicleId || contract.vehicle?.vehicleId)
       );
 
-      setVehicles(availableVehicles);
+      setVehicles(filteredVehicles);
     } catch (error) {
-      console.error('Error fetching vehicles:', error);
+      console.error('Error fetching available vehicles:', error);
       toast({
         title: 'Error',
-        description: 'Failed to load vehicles',
+        description: 'Failed to load available vehicles',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -107,7 +80,6 @@ const ChangeVehicleModal = ({ isOpen, onClose, contract, onSuccess }) => {
     }
   };
 
-  // Filter vehicles by search term
   const filteredVehicles = useMemo(() => {
     if (!searchTerm.trim()) return vehicles;
     const search = searchTerm.toLowerCase();
@@ -234,9 +206,7 @@ const ChangeVehicleModal = ({ isOpen, onClose, contract, onSuccess }) => {
                         <Th fontSize="xs" fontWeight="700" color="gray.600">
                           License Plate
                         </Th>
-                        <Th fontSize="xs" fontWeight="700" color="gray.600">
-                          Status
-                        </Th>
+
                         <Th width="100px" fontSize="xs" fontWeight="700" color="gray.600" textAlign="center">
                           Select
                         </Th>
@@ -258,11 +228,6 @@ const ChangeVehicleModal = ({ isOpen, onClose, contract, onSuccess }) => {
                           <Td>
                             <Text color={textColor} fontSize="sm" fontWeight="500">
                               {vehicle.licensePlate || vehicle.vehicleLicensePlate}
-                            </Text>
-                          </Td>
-                          <Td>
-                            <Text color="gray.600" fontSize="sm">
-                              {vehicle.status === 0 ? 'Available' : vehicle.status === 1 ? 'Rented' : 'Maintenance'}
                             </Text>
                           </Td>
                           <Td textAlign="center">

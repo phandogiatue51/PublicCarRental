@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'
+  ? 'https://localhost:7230/api'
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
 
 const apiRequest = async (endpoint, options = {}) => {
@@ -284,6 +284,9 @@ export const renterAPI = {
     method: 'POST',
   }),
 
+  isModelFavorite: (renterId, modelId) =>
+    apiRequest(`/EVRenter/${renterId}/favorites/${modelId}/check`),
+
   removeFavorite: (renterId, modelId) => apiRequest(`/EVRenter/${renterId}/favorites/${modelId}`, {
     method: 'DELETE',
   }),
@@ -418,8 +421,9 @@ export const vehicleAPI = {
     const queryParams = new URLSearchParams();
     queryParams.append('modelId', modelId);
     queryParams.append('stationId', stationId);
-    queryParams.append('startTime', startTime);
-    queryParams.append('endTime', endTime);
+
+    queryParams.append('startTime', new Date(startTime).toISOString());
+    queryParams.append('endTime', new Date(endTime).toISOString());
 
     return apiRequest(`/Vehicle/available-vehicles?${queryParams.toString()}`);
   },
@@ -666,14 +670,6 @@ export const modificationAPI = {
     return data;
   },
 
-  extendTime: async (contractId, requestData) => {
-    const data = await apiRequest(`/contracts/${contractId}/modifications/renter/extend-time`, {
-      method: 'POST',
-      body: JSON.stringify(requestData)
-    });
-    return data;
-  },
-
   changeVehicle: async (contractId, requestData) => {
     const data = await apiRequest(`/contracts/${contractId}/modifications/renter/change-vehicle`, {
       method: 'POST',
@@ -705,16 +701,18 @@ export const modificationAPI = {
     }
   },
 
-   getContractStatus: async (contractId) => {
+  getContractStatus: async (contractId) => {
     try {
-      const response = await fetch(`/${contractId}/status`);
+      const response = await fetch(`/contracts/${contractId}/modifications/status`);
       return await response.json();
     } catch (error) {
       console.error('Error fetching contract status:', error);
       throw error;
     }
-  }
-
+  },
+  
+getPendingStatus: (contractId, invoiceId) => 
+  apiRequest(`/contracts/${contractId}/modifications/pending-status/${invoiceId}`),
 };
 
 export const ratingsAPI = {

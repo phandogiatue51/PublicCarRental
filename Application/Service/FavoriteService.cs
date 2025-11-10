@@ -91,6 +91,24 @@ namespace PublicCarRental.Application.Service
                 throw new ApplicationException("Error removing favorite", ex);
             }
         }
+
+        public async Task<bool> IsModelInFavoritesAsync(int renterId, int modelId)
+        {
+            try
+            {
+                var renter = await _eVRenterRepository.GetByIdAsync(renterId);
+                if (renter == null || renter.AccountId == 0)
+                    return false;
+                var accountId = renter.AccountId;
+
+                var favorite = _favoriteRepo.GetFavorite(accountId, modelId);
+                return favorite != null;
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("Error checking favorite status", ex);
+            }
+        }
     }
 
     public interface IFavoriteService
@@ -98,5 +116,6 @@ namespace PublicCarRental.Application.Service
         Task<List<ModelViewDto>> GetFavoriteAsync(int renterId);
         Task<bool> AddFavoritesAsync(int renterId, int modelId);
         Task<bool> RemoveFavoritesAsync(int renterId, int modelId);
+        Task<bool> IsModelInFavoritesAsync(int renterId, int modelId);
     }
 }

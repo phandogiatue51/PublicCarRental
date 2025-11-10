@@ -36,7 +36,6 @@ public class ContractModificationService : IContractModificationService
     {
         var contract = _contractRepository.GetById(contractId);
 
-        // Check original invoice is paid
         var originalInvoice = await _invoiceService.GetOriginalInvoiceAsync(contractId);
         if (originalInvoice?.Status != InvoiceStatus.Paid)
         {
@@ -54,29 +53,41 @@ public class ContractModificationService : IContractModificationService
         var priceDifference = newTotal - totalPaid;
         const decimal tolerance = 0.01m;
 
-        // Create additional invoice
-        var newInvoice = await _invoiceService.CreateAdditionalInvoiceAsync(
-            contractId, priceDifference, "Model upgrade charge");
+        Invoice newInvoice = null;
+        PendingModificationDto pendingChange = null;
 
-        // Store pending modification
-        var pendingChange = new PendingModificationDto
+        if (priceDifference > tolerance) 
         {
-            ContractId = contractId,
-            ChangeType = "ModelChange",
-            NewVehicleId = newVehicle.VehicleId,
-            NewTotalCost = newTotal,
-            InvoiceId = newInvoice.InvoiceId
-        };
-        await _pendingChangeService.AddAsync(pendingChange);
+            newInvoice = await _invoiceService.CreateAdditionalInvoiceAsync(
+                contractId, priceDifference, "Model upgrade charge");
+
+            pendingChange = new PendingModificationDto
+            {
+                ContractId = contractId,
+                ChangeType = "ModelChange",
+                NewVehicleId = newVehicle.VehicleId,
+                NewTotalCost = newTotal,
+                InvoiceId = newInvoice.InvoiceId
+            };
+            await _pendingChangeService.AddAsync(pendingChange);
+        }
+        else
+        {
+            contract.VehicleId = newVehicle.VehicleId;
+            contract.TotalCost = newTotal;
+            _contractRepository.Update(contract);
+        }
 
         return new ModificationResultDto
         {
             Success = true,
-            Message = "Additional payment required to complete model change",
+            Message = priceDifference > tolerance
+                ? "Additional payment required to complete model change"
+                : "Model changed successfully",
             PriceDifference = priceDifference,
-            NewInvoiceId = newInvoice.InvoiceId,
-            RequiresPayment = true,
-            UpdatedContract = MapToContractDto(contract) // Return current contract
+            NewInvoiceId = newInvoice?.InvoiceId, 
+            RequiresPayment = priceDifference > tolerance, 
+            UpdatedContract = MapToContractDto(contract)
         };
     }
 
@@ -163,23 +174,34 @@ public class ContractModificationService : IContractModificationService
             PriceDifference = additionalCost,
             NewInvoiceId = newInvoice.InvoiceId,
             RequiresPayment = true,
-            UpdatedContract = MapToContractDto(contract) // Return current contract
+            UpdatedContract = MapToContractDto(contract) 
         };
     }
 
     public async Task<ModificationResultDto> ChangeVehicleAsync(int contractId, RenterChangeRequest request)
     {
-        var contract = _contractRepository.GetById(contractId);
-        var originalInvoice = await _invoiceService.GetOriginalInvoiceAsync(contractId);
-
-        if (request.NewVehicleId.HasValue)
+        if (!request.NewVehicleId.HasValue)
         {
-            var newVehicle = _vehicleService.GetEntityById(request.NewVehicleId.Value);
-            return await ProcessVehicleChange(contract, newVehicle, originalInvoice, request.Reason);
+            return new ModificationResultDto { Success = false, Message = "No vehicle selected" };
         }
 
-        var replacement = await FindBestReplacementVehicle(contract);
-        return await ProcessVehicleChange(contract, replacement, originalInvoice, request.Reason);
+        var contract = _contractRepository.GetById(contractId);
+        var originalInvoice = await _invoiceService.GetOriginalInvoiceAsync(contractId);
+        var newVehicle = _vehicleService.GetEntityById(request.NewVehicleId.Value);
+
+        if (newVehicle == null)
+            return new ModificationResultDto { Success = false, Message = "Selected vehicle not found" };
+
+        if (newVehicle.StationId != contract.StationId)
+            return new ModificationResultDto { Success = false, Message = "Vehicle not at the same station" };
+
+        bool isAvailable = await _vehicleService.CheckVehicleAvailabilityAsync(
+            newVehicle.VehicleId, contract.StartTime, contract.EndTime);
+
+        if (!isAvailable)
+            return new ModificationResultDto { Success = false, Message = "Vehicle is not available for the selected period" };
+
+        return await ProcessVehicleChange(contract, newVehicle, originalInvoice, request.Reason);
     }
 
     private async Task<ModificationResultDto> ProcessVehicleChange(RentalContract contract, Vehicle newVehicle, Invoice originalInvoice, string reason)
@@ -200,31 +222,6 @@ public class ContractModificationService : IContractModificationService
             PriceDifference = priceDifference,
             UpdatedContract = MapToContractDto(contract)
         };
-    }
-
-    private async Task<Vehicle> FindBestReplacementVehicle(RentalContract contract)
-    {
-        var currentVehicle = _vehicleService.GetEntityById((int)contract.VehicleId);
-        if (currentVehicle == null)
-            throw new InvalidOperationException("Current vehicle not found");
-
-        var currentModelId = currentVehicle.ModelId;
-
-        var sameModelVehicle = await _vehicleService.GetFirstAvailableVehicleByModelAsync(
-            currentModelId, (int)contract.StationId, contract.StartTime, contract.EndTime);
-
-        if (sameModelVehicle != null) return sameModelVehicle;
-
-        var availableVehicles = await _vehicleService.GetVehiclesByFiltersAsync(
-            null, null, contract.StationId, null, null);
-
-        var availableVehicle = availableVehicles.FirstOrDefault();
-        if (availableVehicle != null)
-        {
-            return _vehicleService.GetEntityById(availableVehicle.VehicleId);
-        }
-
-        throw new InvalidOperationException("No suitable replacement vehicle found");
     }
 
     private decimal CalculateNewTotal(Vehicle vehicle, DateTime startTime, DateTime endTime)
@@ -255,7 +252,6 @@ public class ContractModificationService : IContractModificationService
         if (contract == null)
             throw new Exception("Contract not found.");
 
-        // Check if payment is still processing
         var pendingInvoice = contract.Invoices?.FirstOrDefault(i =>
             i.Status == InvoiceStatus.Pending);
 

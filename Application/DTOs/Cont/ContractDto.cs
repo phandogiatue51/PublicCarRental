@@ -15,6 +15,7 @@ namespace PublicCarRental.Application.DTOs.Cont
 
         public int VehicleId { get; set; }
         public string VehicleLicensePlate { get; set; }
+        public string? ModelName { get; set; }
 
         public int StationId { get; set; }
         public string StationName { get; set; } 
