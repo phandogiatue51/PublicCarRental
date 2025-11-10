@@ -87,9 +87,9 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpGet("search-by-param")]
-        public IActionResult SearchByParam([FromQuery] string? param, [FromQuery] int? stationId, [FromQuery] int? contractId)
+        public IActionResult SearchByParam([FromQuery] string? param, [FromQuery] int? stationId, [FromQuery] AccountStatus? status)
         {
-            var staffList = _staffService.FilterByParam(param, stationId, contractId);
+            var staffList = _staffService.FilterByParam(param, stationId, status);
             return Ok(staffList);
         }
     }

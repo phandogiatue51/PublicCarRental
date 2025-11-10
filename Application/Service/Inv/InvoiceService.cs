@@ -29,7 +29,7 @@ namespace PublicCarRental.Application.Service.Inv
                     IssuedAt = i.IssuedAt,
                     AmountDue = i.AmountDue,
                     AmountPaid = i.AmountPaid,
-                    PaidAt = i.PaidAt,
+                    PaidAt = i.PaidAt ?? i.RefundedAt,
                     Status = i.Status,
                     OrderCode = i.OrderCode,
                     Note = i.Note
@@ -47,7 +47,7 @@ namespace PublicCarRental.Application.Service.Inv
                 IssuedAt = i.IssuedAt,
                 AmountDue = i.AmountDue,
                 AmountPaid = i.AmountPaid,
-                PaidAt = i.PaidAt,
+                PaidAt = i.PaidAt ?? i.RefundedAt,
                 Status = i.Status,
                 OrderCode = i.OrderCode,
                 Note = i.Note
@@ -240,7 +240,7 @@ namespace PublicCarRental.Application.Service.Inv
         public async Task<decimal> GetTotalPaidAmountAsync(int contractId)
         {
             return (decimal)_repo.GetAll()
-                .Where(i => i.ContractId == contractId && i.Status == InvoiceStatus.Paid)
+                .Where(i => i.ContractId == contractId && i.Status == InvoiceStatus.Paid && !i.Note.Equals("Model upgrade charge"))
                 .Sum(i => i.AmountPaid);
         }
 

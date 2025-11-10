@@ -20,10 +20,8 @@ import {
   Badge,
   Select,
   HStack,
-  VStack,
   Input,
   useToast,
-  Tooltip,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -41,10 +39,7 @@ import {
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { invoiceAPI, stationAPI, contractAPI } from "../../../../services/api";
 import {
-  MdChevronLeft,
-  MdChevronRight,
   MdRefresh,
-  MdVisibility,
   MdAttachMoney,
   MdSchedule,
   MdFilterAlt,
@@ -182,6 +177,8 @@ export default function InvoiceList() {
         return "gray";
       case 3:
         return "red";
+      case 4:
+        return "purple";
       default:
         return "gray";
     }
@@ -226,7 +223,7 @@ export default function InvoiceList() {
       columnHelper.accessor("invoiceId", {
         header: () => (
           <Text color="gray.400" fontSize="12px">
-            ID
+            INVOICE ID
           </Text>
         ),
         cell: (info) => (
@@ -239,7 +236,7 @@ export default function InvoiceList() {
       columnHelper.accessor("contractId", {
         header: () => (
           <Text color="gray.400" fontSize="12px">
-            CONTRACT
+            CONTRACT ID
           </Text>
         ),
         cell: (info) => <Text color={textColor}>{info.getValue()}</Text>,
@@ -265,8 +262,8 @@ export default function InvoiceList() {
           </Flex>
         ),
       }),
-      columnHelper.accessor('paidAt', {
-        id: 'paidAt',
+      columnHelper.accessor('issuedAt', {
+        id: 'issuedAt',
         header: () => (
           <Text
             justifyContent="space-between"
@@ -274,16 +271,16 @@ export default function InvoiceList() {
             fontSize={{ sm: '10px', lg: '12px' }}
             color="gray.400"
           >
-            PAID DATE
+            ISSUED DATE
           </Text>
         ),
         cell: (info) => {
-          const paidAt = info.getValue();
+          const issuedAt = info.getValue();
           return (
             <Flex align="center" gap={2}>
               <Icon as={MdSchedule} color="gray.500" />
               <Text color={textColor} fontSize="sm">
-                {paidAt ? formatDate(paidAt) : 'Not Paid'}
+                {formatDate(issuedAt)}
               </Text>
             </Flex>
           );
@@ -377,17 +374,17 @@ export default function InvoiceList() {
       <Card mb={4} p={4}>
         <HStack spacing={4} align="center">
           <Flex gap={2} align="center">
-            <Button size="sm" 
-            border={"1px solid"}
-            onClick={async () => {
-              try {
-                const res = await contractAPI.getAll();
-                setContracts(res || []);
-                setIsContractModalOpen(true);
-              } catch (err) {
-                console.error("Error fetching contracts:", err);
-              }
-            }}>{selectedContractObj ? `Contract: ${selectedContractObj.contractId || selectedContractObj.id} (${selectedContractObj.vehicleLicensePlate || selectedContractObj.vehicle?.licensePlate || 'Vehicle'})` : 'Select Contract'}</Button>
+            <Button size="sm"
+              border={"1px solid"}
+              onClick={async () => {
+                try {
+                  const res = await contractAPI.getAll();
+                  setContracts(res || []);
+                  setIsContractModalOpen(true);
+                } catch (err) {
+                  console.error("Error fetching contracts:", err);
+                }
+              }}>{selectedContractObj ? `Contract: ${selectedContractObj.contractId || selectedContractObj.id} (${selectedContractObj.vehicleLicensePlate || selectedContractObj.vehicle?.licensePlate || 'Vehicle'})` : 'Select Contract'}</Button>
           </Flex>
           <Input
             placeholder="Order Code"

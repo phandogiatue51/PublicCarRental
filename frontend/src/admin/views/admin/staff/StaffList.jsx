@@ -1,48 +1,14 @@
 import {
-  Box, SimpleGrid,
-  Button,
-  Flex,
-  Icon,
-  Table,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  useColorModeValue,
-  Spinner,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
-  Select,
-  HStack,
-  Input,
-  useToast,
+  Box, SimpleGrid, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue, Spinner, Alert, AlertIcon,
+  AlertTitle, AlertDescription, Select, HStack, Input, useToast
 } from "@chakra-ui/react";
 import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
+  createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable
 } from "@tanstack/react-table";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { staffAPI, stationAPI, documentAPI } from "../../../../services/api";
 import {
-  MdEdit,
-  MdAdd,
-  MdPerson,
-  MdPhone,
-  MdLocationOn,
-  MdToggleOn,
-  MdToggleOff,
-  MdSearch,
-  MdFilterList,
-  MdClear,
-  MdDescription,
-  MdRefresh,
+  MdEdit, MdAdd, MdPerson, MdPhone, MdLocationOn, MdToggleOn, MdToggleOff, MdSearch, MdFilterList, MdClear, MdDescription, MdRefresh,
 } from "react-icons/md";
 import Card from "../../../components/card/Card";
 import StaffModal from "./StaffModal";
@@ -60,19 +26,16 @@ export default function StaffList() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [stations, setStations] = useState([]);
   const toast = useToast();
-
-  // Pagination state
+  const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
 
-  // Search and filter state
   const [searchParam, setSearchParam] = useState("");
   const [selectedStationId, setSelectedStationId] = useState("");
   const [contractStatusFilter, setContractStatusFilter] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
-  // Document states
   const [isViewStaffDocsModalOpen, setIsViewStaffDocsModalOpen] = useState(false);
   const [isAddStaffDocsModalOpen, setIsAddStaffDocsModalOpen] = useState(false);
   const [staffDocuments, setStaffDocuments] = useState([]);
@@ -82,7 +45,6 @@ export default function StaffList() {
   const borderColor = useColorModeValue("gray.200", "whiteAlpha.100");
   const brandColor = useColorModeValue("brand.500", "white");
 
-  // Fetch staff from API
   const fetchStaff = async () => {
     try {
       setLoading(true);
@@ -98,15 +60,19 @@ export default function StaffList() {
     }
   };
 
-  // Search staff by parameter (optional station filter)
   const searchStaff = async () => {
     try {
       setIsSearching(true);
       setError(null);
+
+      const statusValue = statusFilter === "" ? null : parseInt(statusFilter);
+
       const response = await staffAPI.searchByParam(
         searchParam,
-        selectedStationId || null
+        selectedStationId || null,
+        statusValue
       );
+
       setStaff(response || []);
       setTotalItems(response?.length || 0);
       setCurrentPage(1);
@@ -118,35 +84,13 @@ export default function StaffList() {
     }
   };
 
-  // Filter staff by contract status (optional station filter)
-  const filterByContractStatus = async () => {
-    try {
-      setIsSearching(true);
-      setError(null);
-      const response = await staffAPI.filterByContractStatus(
-        selectedStationId || null,
-        contractStatusFilter
-      );
-      setStaff(response || []);
-      setTotalItems(response?.length || 0);
-      setCurrentPage(1);
-    } catch (err) {
-      console.error("Error filtering staff:", err);
-      setError(err.message || "Failed to filter staff");
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Clear search and filters
   const clearFilters = () => {
     setSearchParam("");
-    setContractStatusFilter("");
+    setStatusFilter("");
     setSelectedStationId("");
     fetchStaff();
   };
 
-  // Fetch stations for dropdown
   const fetchStations = async () => {
     try {
       const response = await stationAPI.getAll();
@@ -161,7 +105,6 @@ export default function StaffList() {
     fetchStations();
   }, []);
 
-  // Pagination calculations
   const paginationData = useMemo(() => {
     const totalPages = Math.ceil(totalItems / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
@@ -422,9 +365,14 @@ export default function StaffList() {
         </HStack>
       </Flex>
 
-      {/* 🔍 Filter Section */}
       <Card mb={4} p={4}>
-        <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 6 }} spacing={4}>
+        <SimpleGrid columns={{ base: 1, sm: 2, md: 5 }} spacing={4}>
+          <Input
+            value={searchParam}
+            onChange={(e) => setSearchParam(e.target.value)}
+            placeholder="Name, email or phone..."
+            onKeyPress={(e) => e.key === "Enter" && searchStaff()}
+          />
           <Select
             value={selectedStationId}
             onChange={(e) => setSelectedStationId(e.target.value)}
@@ -437,23 +385,13 @@ export default function StaffList() {
             ))}
           </Select>
 
-          <Input
-            value={searchParam}
-            onChange={(e) => setSearchParam(e.target.value)}
-            placeholder="Name, email or phone..."
-            onKeyPress={(e) => e.key === "Enter" && searchStaff()}
-          />
-
           <Select
-            value={contractStatusFilter}
-            onChange={(e) => setContractStatusFilter(e.target.value)}
-            placeholder="All statuses"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            placeholder="All status"
           >
-            <option value="ToBeConfirmed">To Be Confirmed</option>
-            <option value="Confirmed">Confirmed</option>
-            <option value="Active">Active</option>
-            <option value="Completed">Completed</option>
-            <option value="Cancelled">Cancelled</option>
+            <option value="0">Active</option>
+            <option value="1">Inactive</option>
           </Select>
 
           <Button
@@ -466,15 +404,6 @@ export default function StaffList() {
           </Button>
 
           <Button
-            leftIcon={<Icon as={MdFilterList} />}
-            colorScheme="purple"
-            onClick={filterByContractStatus}
-            isLoading={isSearching}
-          >
-            Filter
-          </Button>
-
-          <Button
             variant="outline"
             leftIcon={<Icon as={MdClear} />}
             onClick={clearFilters}
@@ -484,8 +413,6 @@ export default function StaffList() {
         </SimpleGrid>
       </Card>
 
-
-      {/* 🧾 Table */}
       <Card>
         <Table variant="simple" color="gray.500" mb="24px" mt="12px">
           <Thead>

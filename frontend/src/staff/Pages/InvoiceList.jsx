@@ -144,6 +144,7 @@ export default function InvoiceList() {
       case 1: return 'green';
       case 2: return 'gray';
       case 3: return 'red';
+      case 4: return 'purple';
       default: return 'gray';
     }
   };
@@ -155,6 +156,7 @@ export default function InvoiceList() {
       case 1: return 'Paid';
       case 2: return 'Overdue';
       case 3: return 'Cancelled';
+      case 4: return 'Refunded'
       default: return 'Unknown';
     }
   };
@@ -246,7 +248,7 @@ export default function InvoiceList() {
           fontSize={{ sm: '10px', lg: '12px' }}
           color="gray.400"
         >
-          PAID DATE
+          ISSUED DATE
         </Text>
       ),
       cell: (info) => {
@@ -255,7 +257,7 @@ export default function InvoiceList() {
           <Flex align="center" gap={2}>
             <Icon as={MdSchedule} color="gray.500" />
             <Text color={textColor} fontSize="sm">
-              {paidAt ? formatDate(paidAt) : 'Not Paid'}
+              {formatDate(paidAt)}
             </Text>
           </Flex>
         );

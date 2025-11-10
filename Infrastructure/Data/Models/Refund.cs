@@ -30,9 +30,6 @@ namespace PublicCarRental.Infrastructure.Data.Models
         public DateTime RequestedDate { get; set; } = DateTime.UtcNow;
         public DateTime? ProcessedDate { get; set; }
 
-        public int StaffId { get; set; }
-        public Staff Staff { get; set; }
-
         public string? PayoutTransactionId { get; set; }
         public string? Note { get; set; }
     }

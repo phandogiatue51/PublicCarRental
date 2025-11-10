@@ -1,36 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
-  Button,
-  Text,
-  useToast,
-  Spinner,
-  Box,
-  VStack,
-  useColorModeValue,
-  Alert,
-  AlertIcon,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  InputGroup,
-  InputLeftElement,
-  Input,
-  Icon,
-  Badge,
+  Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter, ModalCloseButton, Button, Text, useToast, Spinner, Box, VStack, useColorModeValue, Alert,
+  AlertIcon, Table, Thead, Tbody, Tr, Th, Td, InputGroup, InputLeftElement, Input, Icon
 } from '@chakra-ui/react';
 import { MdSearch } from 'react-icons/md';
-import { modelAPI, modificationAPI } from '../../../services/api';
-
+import { modelAPI, modificationAPI, paymentAPI, vehicleAPI } from '../../../services/api';
 const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
   const [models, setModels] = useState([]);
   const [selectedModelId, setSelectedModelId] = useState('');
@@ -40,20 +14,38 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
   const toast = useToast();
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const borderColor = useColorModeValue('gray.200', 'whiteAlpha.100');
+  const [currentModel, setCurrentModel] = useState(null);
 
   useEffect(() => {
     if (isOpen && contract) {
-      fetchModels();
-      setSelectedModelId('');
-      setSearchTerm('');
+      const fetchData = async () => {
+        await fetchModels();
+        await fetchCurrentModel();
+        setSelectedModelId('');
+        setSearchTerm('');
+      };
+
+      fetchData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, contract]);
 
-  // Filter models by search term
+  const fetchCurrentModel = async () => {
+    if (contract?.vehicleId) {
+      try {
+        const vehicle = await vehicleAPI.getById(contract.vehicleId);
+        if (vehicle?.modelId) {
+          const model = await modelAPI.getById(vehicle.modelId);
+          setCurrentModel(model);
+        }
+      } catch (error) {
+        console.error('Error fetching current model:', error);
+      }
+    }
+  };
+
   const filteredModels = useMemo(() => {
     let result = models;
-    
+
     // Filter by search term
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
@@ -64,7 +56,7 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
         return name.includes(search) || brandName.includes(search) || id.includes(search);
       });
     }
-    
+
     return result;
   }, [models, searchTerm]);
 
@@ -73,7 +65,7 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
 
     try {
       setLoading(true);
-      
+
       // Get stationId from localStorage
       const stationId = localStorage.getItem('stationId');
       if (!stationId) {
@@ -102,7 +94,6 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
         return;
       }
 
-      // Fetch available counts
       const response = await modelAPI.getAvailableCounts(
         parseInt(stationId),
         startTime,
@@ -138,22 +129,105 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
 
     try {
       setSubmitting(true);
+
       const requestData = {
+        reason: "Model change requested by staff",
+        staffId: parseInt(localStorage.getItem('staffId')),
+        note: "Changing vehicle model",
+        changeType: 1,
         newModelId: parseInt(selectedModelId),
       };
 
       const result = await modificationAPI.changeModel(contract.contractId, requestData);
+      console.log('🔍 FULL API RESPONSE:', result);
+      console.log('🔍 Checking payment conditions:', {
+        success: result.success,
+        requiresPayment: result.requiresPayment,
+        newInvoiceId: result.newInvoiceId,
+        priceDifference: result.priceDifference,
+        message: result.message
+      });
+      console.log('🔍 Condition result.requiresPayment && result.newInvoiceId:',
+        result.requiresPayment && result.newInvoiceId
+      );
 
       if (result.success) {
-        toast({
-          title: 'Success',
-          description: result.message || 'Model changed successfully',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-        onSuccess?.();
-        onClose();
+        if (result.requiresPayment && result.newInvoiceId) {
+          try {
+            const paymentData = {
+              invoiceId: result.newInvoiceId,
+              renterId: contract.evRenterId || contract.renterId
+            };
+
+            console.log('📦 Payment data:', paymentData);
+
+            const paymentResponse = await paymentAPI.createPayment(paymentData);
+            console.log('💰 Payment response:', paymentResponse);
+
+            if (paymentResponse && paymentResponse.checkoutUrl) {
+              console.log('🔗 Checkout URL:', paymentResponse.checkoutUrl);
+
+              const paymentTab = window.open(
+                paymentResponse.checkoutUrl,
+                '_blank'
+              );
+
+              if (paymentTab) {
+                toast({
+                  title: 'Payment Opened',
+                  description: 'Payment page opened in new tab. Please complete the payment.',
+                  status: 'info',
+                  duration: 5000,
+                  isClosable: true,
+                });
+
+                startPaymentPolling(contract.contractId, result.newInvoiceId);
+              } else {
+                toast({
+                  title: 'Popup Blocked',
+                  description: (
+                    <Box>
+                      <Text>Please allow popups or click the link below:</Text>
+                      <Button
+                        size="sm"
+                        mt={2}
+                        onClick={() => window.open(paymentResponse.checkoutUrl, '_blank')}
+                        colorScheme="blue"
+                      >
+                        Open Payment Page
+                      </Button>
+                    </Box>
+                  ),
+                  status: 'warning',
+                  duration: 10000,
+                  isClosable: true,
+                });
+              }
+            } else {
+              console.error('❌ No checkout URL in response');
+              throw new Error('Payment creation failed - no checkout URL');
+            }
+          } catch (paymentError) {
+            console.error('💥 Payment creation error:', paymentError);
+            toast({
+              title: 'Payment Error',
+              description: paymentError.message || 'Failed to create payment link',
+              status: 'error',
+              duration: 5000,
+              isClosable: true,
+            });
+          }
+        } else {
+          toast({
+            title: 'Success',
+            description: result.message || 'Model changed successfully',
+            status: 'success',
+            duration: 3000,
+            isClosable: true,
+          });
+          onSuccess?.();
+          onClose();
+        }
       } else {
         toast({
           title: 'Error',
@@ -177,17 +251,65 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
     }
   };
 
+  const startPaymentPolling = async (contractId, invoiceId) => {
+    console.log('🔄 Starting payment polling for:', { contractId, invoiceId });
+
+    const pollInterval = setInterval(async () => {
+      try {
+        console.log('📡 Checking payment status...');
+        const status = await modificationAPI.getPendingStatus(contractId, invoiceId);
+        console.log('📊 Payment status response:', status);
+
+        if (status.isCompleted || !status.hasPendingChanges) {
+          console.log('✅ Payment completed, modification applied!');
+          clearInterval(pollInterval);
+
+          toast({
+            title: 'Success!',
+            description: 'Payment completed and model change applied successfully!',
+            status: 'success',
+            duration: 5000,
+            isClosable: true,
+          });
+
+          onSuccess?.();
+          onClose();
+        } else {
+          console.log('⏳ Still waiting for payment processing...', {
+            hasPendingChanges: status.hasPendingChanges,
+            isCompleted: status.isCompleted,
+            contractStatus: status.contractStatus
+          });
+        }
+      } catch (error) {
+        console.error('❌ Polling error:', error);
+      }
+    }, 3000);
+
+    setTimeout(() => {
+      console.log('⏰ Polling timeout reached');
+      clearInterval(pollInterval);
+      toast({
+        title: 'Payment Timeout',
+        description: 'Payment verification timeout. Please refresh the page to check status.',
+        status: 'warning',
+        duration: 5000,
+        isClosable: true,
+      });
+    }, 10 * 60 * 1000);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered scrollBehavior="inside">
       <ModalOverlay bg="blackAlpha.300" backdropFilter="blur(10px)" />
       <ModalContent maxH="85vh">
         <ModalHeader color={textColor}>Change Model</ModalHeader>
         <ModalCloseButton />
-        <ModalBody pb={6}>
+        <ModalBody pb={4}>
           {loading ? (
             <Box textAlign="center" py={8}>
               <Spinner size="lg" color="blue.500" />
-              <Text mt={4} color="gray.500">
+              <Text mt={2} color="gray.500">
                 Loading models...
               </Text>
             </Box>
@@ -228,7 +350,7 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
                   borderColor={borderColor}
                   borderRadius="md"
                   overflow="hidden"
-                  maxH="400px"
+                  maxH="250px"
                   overflowY="auto"
                 >
                   <Table variant="simple" size="sm">
@@ -244,7 +366,7 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
                           Brand
                         </Th>
                         <Th width="100px" fontSize="xs" fontWeight="700" color="gray.600" textAlign="center">
-                          Available
+                          Price
                         </Th>
                         <Th width="100px" fontSize="xs" fontWeight="700" color="gray.600" textAlign="center">
                           Select
@@ -286,16 +408,9 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
                               </Text>
                             </Td>
                             <Td textAlign="center">
-                              <Badge
-                                colorScheme={isAvailable ? 'green' : 'red'}
-                                variant="solid"
-                                fontSize="xs"
-                                px={2}
-                                py={1}
-                                borderRadius="md"
-                              >
-                                {availableCount} available
-                              </Badge>
+                              <Text color="gray.600" fontSize="sm">
+                                {model.pricePerHour || 'N/A'} ₫
+                              </Text>
                             </Td>
                             <Td textAlign="center">
                               <Button
@@ -320,14 +435,70 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
                   </Table>
                 </Box>
               )}
-
-              {!loading && filteredModels.length > 0 && (
-                <Text fontSize="xs" color="gray.500" textAlign="right">
-                  Showing {filteredModels.length} of {models.length} models
-                  {searchTerm && ` matching "${searchTerm}"`}
-                </Text>
-              )}
             </VStack>
+          )}
+
+          {selectedModelId && currentModel && (
+            <Box
+              p={4}
+              border="1px"
+              borderColor="gray.200"
+              borderRadius="md"
+              bg="blue.50"
+              mt={2}
+            >
+              <Text fontWeight="bold" fontSize="md">
+                Price Comparison
+              </Text>
+              <VStack spacing={1} align="stretch">
+                <Box display="flex" justifyContent="space-between">
+                  <Text fontSize="md">Current model:</Text>
+                  <Text fontSize="md" fontWeight="bold">
+                    {currentModel.pricePerHour?.toLocaleString()} ₫/hour
+                  </Text>
+                </Box>
+                <Box display="flex" justifyContent="space-between">
+                  <Text fontSize="md">New model:</Text>
+                  <Text fontSize="md" fontWeight="bold" color="blue.600">
+                    {(models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour)?.toLocaleString()} ₫/hour
+                  </Text>
+                </Box>
+
+                <Box display="flex" justifyContent="space-between" borderTop="1px solid #e2e8f0" pt={1}>
+                  <Text fontSize="md" fontWeight="bold">
+                    Total for {contract?.endTime && contract?.startTime ?
+                      Math.ceil((new Date(contract.endTime) - new Date(contract.startTime)) / (1000 * 60 * 60))
+                      : 'N/A'} hours:
+                  </Text>
+                  <Text fontSize="md" fontWeight="bold" color="green.600">
+                    {((models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour || 0) *
+                      (contract?.endTime && contract?.startTime ?
+                        Math.ceil((new Date(contract.endTime) - new Date(contract.startTime)) / (1000 * 60 * 60))
+                        : 0))?.toLocaleString()} ₫
+                  </Text>
+                </Box>
+
+                {currentModel.pricePerHour < (models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour || 0) && (
+                  <Box display="flex" justifyContent="space-between" bg="orange.50" p={2} borderRadius="md" mt={1}>
+                    <Text fontSize="md" fontWeight="bold" color="orange.700">Amount to pay:</Text>
+                    <Text fontSize="md" fontWeight="bold" color="orange.700">
+                      {(((models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour || 0) - currentModel.pricePerHour) *
+                        (contract?.endTime && contract?.startTime ?
+                          Math.ceil((new Date(contract.endTime) - new Date(contract.startTime)) / (1000 * 60 * 60))
+                          : 0))?.toLocaleString()} ₫
+                    </Text>
+                  </Box>
+                )}
+
+                <Text fontSize="md" color="gray.600" mt={1}>
+                  {currentModel.pricePerHour < (models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour || 0)
+                    ? "An invoice will be created once the renter chooses this renter. Kindly ask them to finish paying."
+                    : currentModel.pricePerHour > (models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour || 0)
+                      ? "Renter will receive no refund for the model downgrade"
+                      : "No price change - model will be swapped immediately."}
+                </Text>
+              </VStack>
+            </Box>
           )}
         </ModalBody>
 
@@ -335,14 +506,15 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
           <Button variant="ghost" mr={3} onClick={onClose} isDisabled={submitting}>
             Cancel
           </Button>
-            <Button
+
+          <Button
             colorScheme="blue"
             onClick={handleSubmit}
             isLoading={submitting}
-            loadingText="Changing..."
+            loadingText="Processing..."
             isDisabled={!selectedModelId || (models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.count || 0) === 0}
           >
-            Change Model
+            Confirm Change
           </Button>
         </ModalFooter>
       </ModalContent>

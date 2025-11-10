@@ -592,14 +592,13 @@ const RenterList = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="0">Active</option>
-                <option value="1">Inactive</option>
                 <option value="2">Suspended</option>
               </Select>
             </Box>
 
-            <Box>
+            <Box flex="1">
               <HStack spacing={2}>
-                <Button variant="outline" onClick={handleClear}>
+                <Button colorScheme="blue" onClick={handleClear} width="100%">
                   Clear
                 </Button>
               </HStack>

@@ -133,5 +133,20 @@ namespace PublicCarRental.Presentation.Controllers
             var hasRated = _ratingService.HasRenterRatedContract(contractId, renterId);
             return Ok(new { hasRated });
         }
+
+        [HttpGet("filter")]
+        public IActionResult GetFilteredRatings([FromQuery] int? modelId = null, [FromQuery] int? renterId = null, [FromQuery] RatingLabel? starRating = null)
+        {
+            try
+            {
+                var ratings = _ratingService.GetFilteredRatings(modelId, renterId, starRating);
+                return Ok(ratings);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error filtering ratings");
+                return StatusCode(500, "An error occurred while filtering ratings");
+            }
+        }
     }
 }

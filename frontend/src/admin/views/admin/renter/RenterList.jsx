@@ -1,58 +1,26 @@
 import {
-  Box, SimpleGrid,
-  Button,
-  Flex,
-  Icon,
-  Table,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  useColorModeValue,
-  Spinner,
-  Select,
-  HStack,
-  useToast,
-  Input,
+  Box, SimpleGrid,  Button,  Flex,  Icon,  Table,  Tbody,  Td,  Text,  Th,  Thead,  Tr,  useColorModeValue,  Spinner,  Select,  HStack,
+  useToast,  Input
 } from "@chakra-ui/react";
 import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
+  createColumnHelper,  flexRender,  getCoreRowModel,  getSortedRowModel,  useReactTable
 } from "@tanstack/react-table";
 import { useState, useEffect, useMemo } from "react";
 import { renterAPI } from "../../../../services/api";
 import {
-  MdChevronLeft,
-  MdChevronRight,
-  MdPerson,
-  MdEmail,
-  MdPhone,
-  MdDriveEta,
-  MdToggleOn,
-  MdToggleOff,
-  MdVisibility,
-  MdSearch,
-  MdClear,
+  MdChevronLeft,  MdChevronRight,  MdPerson,  MdEmail,  MdPhone,  MdDriveEta,  MdToggleOn,  MdToggleOff,  MdVisibility,  MdSearch,  MdClear,
 } from "react-icons/md";
 
-// Custom components
 import Card from "./../../../components/card/Card";
 import RenterDetailModal from "./RenterDetailModal";
 
 const columnHelper = createColumnHelper();
 
 export default function RenterList() {
-  // 🎨 Colors
   const textColor = useColorModeValue("secondaryGray.900", "white");
   const borderColor = useColorModeValue("gray.200", "whiteAlpha.100");
   const brandColor = useColorModeValue("brand.500", "white");
 
-  // 🔄 State
   const [renters, setRenters] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -63,7 +31,6 @@ export default function RenterList() {
   const [selectedRenter, setSelectedRenter] = useState(null);
   const toast = useToast();
 
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
@@ -88,38 +55,37 @@ export default function RenterList() {
     fetchRenters();
   }, []);
 
-  // 🔍 Filter function
-  const handleFilter = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+const handleFilter = async () => {
+  try {
+    setLoading(true);
+    setError(null);
 
-      let filteredData = [];
+    let filteredData = [];
 
-      if (param) {
-        filteredData = await renterAPI.filterByParam(param);
-      } else {
-        filteredData = await renterAPI.getAll();
-      }
-
-      if (statusFilter !== "all") {
-        filteredData = filteredData.filter(
-          (r) =>
-            (statusFilter === "active" && r.status === 0) ||
-            (statusFilter === "inactive" && r.status === 1)
-        );
-      }
-
-      setRenters(filteredData);
-      setTotalItems(filteredData.length);
-      setCurrentPage(1);
-    } catch (err) {
-      console.error("Error filtering renters:", err);
-      setError("Failed to filter renters");
-    } finally {
-      setLoading(false);
+    if (param) {
+      filteredData = await renterAPI.filterByParam(param);
+    } else {
+      filteredData = await renterAPI.getAll();
     }
-  };
+
+    if (statusFilter !== "all") {
+      filteredData = filteredData.filter(
+        (r) =>
+          (statusFilter === "active" && r.status === 0) ||
+          (statusFilter === "suspended" && r.status === 2) 
+      );
+    }
+
+    setRenters(filteredData);
+    setTotalItems(filteredData.length);
+    setCurrentPage(1);
+  } catch (err) {
+    console.error("Error filtering renters:", err);
+    setError("Failed to filter renters");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // 🧹 Clear filter
   const handleClear = async () => {
@@ -140,22 +106,18 @@ export default function RenterList() {
 
   const { totalPages, startIndex, endIndex, paginatedRenters } = paginationData;
 
-  const handlePageChange = (page) => setCurrentPage(page);
-  const goToFirstPage = () => setCurrentPage(1);
-  const goToLastPage = () => setCurrentPage(totalPages);
   const goToPreviousPage = () =>
     setCurrentPage((prev) => Math.max(prev - 1, 1));
   const goToNextPage = () =>
     setCurrentPage((prev) => Math.min(prev + 1, totalPages));
 
-  // ⚙️ Toggle Status
   const handleStatusToggle = async (renterId, currentStatus) => {
     try {
       await renterAPI.changeStatus(renterId);
       await fetchRenters();
       toast({
         title: "Success",
-        description: `Status changed to ${currentStatus === 0 ? "Inactive" : "Active"
+        description: `Status changed to ${currentStatus === 0 ? "Suspended" : "Active"
           }`,
         status: "success",
         duration: 2000,
@@ -222,7 +184,7 @@ export default function RenterList() {
                 <Icon as={isActive ? MdToggleOn : MdToggleOff} boxSize={7} />
               }
             >
-              {isActive ? "Active" : "Inactive"}
+              {isActive ? "Active" : "Suspended"}
             </Button>
           );
         },
@@ -279,7 +241,7 @@ export default function RenterList() {
           >
             <option value="all">All Status</option>
             <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value="suspended">Suspended</option>
           </Select>
           <HStack justify="flex-start">
             <Button

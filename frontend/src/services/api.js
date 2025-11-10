@@ -1,5 +1,5 @@
 const API_BASE_URL = process.env.NODE_ENV === 'development'
-  ? 'https://publiccarrental-production-b7c5.up.railway.app/api'
+  ? 'https://localhost:7230/api'
   : process.env.REACT_APP_API_URL || 'https://publiccarrental-production-b7c5.up.railway.app/api';
 
 const apiRequest = async (endpoint, options = {}) => {
@@ -209,11 +209,11 @@ export const staffAPI = {
     method: 'POST',
   }),
 
-  searchByParam: (param, stationId, contractId) => {
+  searchByParam: (param, stationId, status) => {
     const queryParams = new URLSearchParams();
     if (param) queryParams.append('param', param);
     if (stationId) queryParams.append('stationId', stationId);
-    if (contractId) queryParams.append('contractId', contractId);
+    if (status !== null && status !== undefined) queryParams.append('status', status);
     return apiRequest(`/Staff/search-by-param?${queryParams.toString()}`);
   },
 };
@@ -244,8 +244,6 @@ export const renterAPI = {
 
   getById: (id) => apiRequest(`/EVRenter/${id}`),
 
-  filterByParam: (param) => apiRequest(`/EVRenter/filter-by-param/${param}`),
-
   filter: (filters = {}) => {
     const queryParams = new URLSearchParams();
     if (filters.search) queryParams.append('param', filters.search);
@@ -253,6 +251,7 @@ export const renterAPI = {
     const queryString = queryParams.toString();
     return apiRequest(`/EVRenter/filter${queryString ? `?${queryString}` : ''}`);
   },
+
   updateRenter: (id, renterData) => apiRequest(`/EVRenter/update-renter/${id}`, {
     method: 'PUT',
     body: JSON.stringify(renterData),
@@ -283,6 +282,9 @@ export const renterAPI = {
   addFavorite: (renterId, modelId) => apiRequest(`/EVRenter/${renterId}/favorites/${modelId}`, {
     method: 'POST',
   }),
+
+  isModelFavorite: (renterId, modelId) =>
+    apiRequest(`/EVRenter/${renterId}/favorites/${modelId}/check`),
 
   removeFavorite: (renterId, modelId) => apiRequest(`/EVRenter/${renterId}/favorites/${modelId}`, {
     method: 'DELETE',
@@ -392,15 +394,7 @@ export const contractAPI = {
 
   downloadContractPdf: (contractId) => apiRequest(`/Contract/contracts/${contractId}/pdf`),
 
-  getRefundPreview: (contractId) => apiRequest(`/Contract/refund-preview?contractId=${contractId}`),
-
-  cancelContract: (contractId, bankAccountInfo) => apiRequest('/Contract/cancel-contract', {
-    method: 'POST',
-    body: JSON.stringify({
-      contractId,
-      ...bankAccountInfo
-    }),
-  }),
+  getRefundPreview: (contractId) => apiRequest(`/Contract/refund-preview?contractId=${contractId}`)
 };
 
 export const vehicleAPI = {
@@ -426,8 +420,9 @@ export const vehicleAPI = {
     const queryParams = new URLSearchParams();
     queryParams.append('modelId', modelId);
     queryParams.append('stationId', stationId);
-    queryParams.append('startTime', startTime);
-    queryParams.append('endTime', endTime);
+
+    queryParams.append('startTime', new Date(startTime).toISOString());
+    queryParams.append('endTime', new Date(endTime).toISOString());
 
     return apiRequest(`/Vehicle/available-vehicles?${queryParams.toString()}`);
   },
@@ -674,14 +669,6 @@ export const modificationAPI = {
     return data;
   },
 
-  extendTime: async (contractId, requestData) => {
-    const data = await apiRequest(`/contracts/${contractId}/modifications/renter/extend-time`, {
-      method: 'POST',
-      body: JSON.stringify(requestData)
-    });
-    return data;
-  },
-
   changeVehicle: async (contractId, requestData) => {
     const data = await apiRequest(`/contracts/${contractId}/modifications/renter/change-vehicle`, {
       method: 'POST',
@@ -690,23 +677,41 @@ export const modificationAPI = {
     return data;
   },
 
-  cancelContract: async (contractId, requestData) => {
-    const data = await apiRequest(`/contracts/${contractId}/modifications/renter/cancel-contract`, {
-      method: 'DELETE',
-      body: JSON.stringify(requestData)
-    });
-    return data;
-  },
-
   getRefundPreview: async (contractId) => {
     try {
-      const data = await apiRequest(`/contracts/${contractId}/modifications/refund-review`);
+      const data = await apiRequest(`/contracts/${contractId}/modifications/refund-preview`);
       return data;
     } catch (error) {
       console.error('Error fetching refund preview:', error);
       throw error;
     }
-  }
+  },
+
+  cancelContract: async (contractId, bankInfo) => {
+    try {
+      const data = await apiRequest(`/contracts/${contractId}/modifications/cancel-contract`, {
+        method: 'POST',
+        body: JSON.stringify(bankInfo)
+      });
+      return data;
+    } catch (error) {
+      console.error('Error cancelling contract:', error);
+      throw error;
+    }
+  },
+
+  getContractStatus: async (contractId) => {
+    try {
+      const response = await fetch(`/contracts/${contractId}/modifications/status`);
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching contract status:', error);
+      throw error;
+    }
+  },
+
+  getPendingStatus: (contractId, invoiceId) =>
+    apiRequest(`/contracts/${contractId}/modifications/pending-status/${invoiceId}`),
 };
 
 export const ratingsAPI = {
@@ -749,6 +754,16 @@ export const ratingsAPI = {
 
   hasRatedContract: (contractId, renterId) =>
     apiRequest(`/Ratings/contract/${contractId}/has-rated/${renterId}`),
+
+  filter: (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    if (filters.modelId) queryParams.append('modelId', filters.modelId);
+    if (filters.renterId) queryParams.append('renterId', filters.renterId);
+    if (filters.starRating) queryParams.append('starRating', filters.starRating);
+
+    const queryString = queryParams.toString();
+    return apiRequest(`/Ratings/filter${queryString ? `?${queryString}` : ''}`);
+  }
 };
 
 export const paymentAPI = {
@@ -799,23 +814,6 @@ export const adminDashboardAPI = {
   getStationsPerformance: () => apiRequest('/AdminDashboard/stations-performance'),
 };
 
-export const qrAPI = {
-  scanQRUpload: (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    return apiRequest('/QRScan/scan-upload', {
-      method: 'POST',
-      body: formData,
-    });
-  },
-
-  parseQRContent: (qrContent) => apiRequest('/QRScan/parse-content', {
-    method: 'POST',
-    body: JSON.stringify({ qrContent }),
-  }),
-};
-
 export const refundAPI = {
   requestRefund: (requestData) => apiRequest('/Refund/request', {
     method: 'POST',
@@ -827,19 +825,10 @@ export const refundAPI = {
     body: JSON.stringify({ bankInfo, fullRefund }),
   }),
 
-  staffRefund: (contractId, amount, reason, staffId, note, bankInfo, fullRefund = false) =>
-    apiRequest('/Refund/staff-refund', {
-      method: 'POST',
-      body: JSON.stringify({
-        contractId,
-        amount,
-        reason,
-        staffId,
-        note,
-        bankInfo,
-        fullRefund
-      }),
-    })
+  staffRefund: (data) => apiRequest('/Refund/staff-refund', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
 };
 
 export default apiRequest;

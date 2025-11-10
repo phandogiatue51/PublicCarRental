@@ -5,6 +5,7 @@ using PublicCarRental.Application.DTOs.BadScenario;
 using PublicCarRental.Application.DTOs.Pay;
 using PublicCarRental.Application.Service;
 using PublicCarRental.Application.Service.Cont;
+using PublicCarRental.Infrastructure.Data.Models;
 
 namespace PublicCarRental.Presentation.Controllers
 {
@@ -15,13 +16,15 @@ namespace PublicCarRental.Presentation.Controllers
         private readonly IContractModificationService _modificationService;
         private readonly IContractService _contractService;
         private readonly IRefundService _refundService;
+        private readonly IPendingChangeService _pendingChangeService;
 
         public ModificationController(IContractModificationService modificationService, IRefundService refundService,
-            IContractService contractService)
+            IContractService contractService, IPendingChangeService pendingChangeService)
         {
             _modificationService = modificationService;
             _refundService = refundService;
             _contractService = contractService;
+            _pendingChangeService = pendingChangeService;
         }
 
         [HttpPost("renter/change-model")]
@@ -55,12 +58,32 @@ namespace PublicCarRental.Presentation.Controllers
             if (contract == null)
                 return NotFound("Contract not found");
 
-            var totalPaid = contract.TotalCost;
+            if (contract.Status != Infrastructure.Data.Models.RentalStatus.Confirmed)
+            {
+                return BadRequest("Refund is only available for confirmed contracts");
+            }
+
+            var totalPaid = contract.TotalCost ?? 0;
             var daysUntilStart = (contract.StartTime - DateTime.UtcNow).TotalDays;
 
-            decimal refundAmount = (decimal)totalPaid;
-            if (daysUntilStart < 2)
-                refundAmount = (decimal)(totalPaid * 0.8m);
+            decimal refundAmount = 0;
+            string policy;
+
+            if (daysUntilStart >= 2)
+            {
+                refundAmount = totalPaid;
+                policy = "100% refund (more than 2 days before start)";
+            }
+            else if (daysUntilStart >= 0)
+            {
+                refundAmount = totalPaid * 0.8m;
+                policy = "80% refund (less than 2 days before start)";
+            }
+            else
+            {
+                refundAmount = 0;
+                policy = "No refund (after rental start time)";
+            }
 
             return Ok(new
             {
@@ -68,37 +91,83 @@ namespace PublicCarRental.Presentation.Controllers
                 totalPaid,
                 refundAmount,
                 daysUntilStart = Math.Round(daysUntilStart, 1),
-                policy = daysUntilStart < 2
-                    ? "80% refund (less than 2 days before start)"
-                    : "100% refund (more than 2 days before start)"
+                policy,
+                canCancel = daysUntilStart >= 0
             });
         }
 
         [HttpPost("cancel-contract")]
-        public async Task<IActionResult> CancelContract(int contractId, BankAccountInfo dto)
+        public async Task<IActionResult> CancelContract(int contractId, [FromBody] BankAccountInfo dto)
         {
             if (dto == null)
-                return BadRequest("Bank information is required for refund.");
+                return BadRequest(new { success = false, message = "Bank information is required for refund." });
+
+            var contract = _contractService.GetEntityById(contractId);
+            if (contract == null)
+                return NotFound(new { success = false, message = "Contract not found" });
+
+            if (contract.Status != Infrastructure.Data.Models.RentalStatus.Confirmed)
+            {
+                return BadRequest(new { success = false, message = "Only confirmed contracts can be cancelled" });
+            }
+
+            if (contract.StartTime <= DateTime.UtcNow)
+            {
+                return BadRequest(new { success = false, message = "Cannot cancel contract after rental start time" });
+            }
 
             var result = await _modificationService.HandleRenterCancellation(contractId, dto);
 
-            if (!result.Success)
-                return BadRequest(result.Message);
+            return Ok(new
+            {
+                success = result.Success,
+                message = result.Message,
+                refundId = result.RefundId,
+                contractStatus = "Cancelled",
+                refundAmount = result.PriceDifference
+            });
+        }
 
-            var refundProcess = await _refundService.ProcessRefundAsync((int)result.RefundId, dto);
+        [HttpGet("status")]
+        public IActionResult GetContractStatus(int contractId)
+        {
+            var contract = _contractService.GetById(contractId);
+            if (contract == null)
+                return NotFound();
 
-            if (!refundProcess.Success)
-                return StatusCode(500, new
-                {
-                    message = "Contract cancelled, but refund processing failed.",
-                    refund = refundProcess
-                });
+            var refund = _refundService.GetRefundByContractId(contractId);
 
             return Ok(new
             {
-                message = "Contract cancelled and refund processed successfully.",
-                refund = refundProcess
+                contractId = contract.ContractId,
+                status = contract.Status.ToString(),
+                refundStatus = refund?.Status.ToString() ?? "None",
+                refundAmount = refund?.TotalCost ?? 0,
+                lastUpdated = DateTime.UtcNow
             });
+        }
+
+        [HttpGet("pending-status/{invoiceId}")]
+        public async Task<IActionResult> GetPendingStatus(int contractId, int invoiceId)
+        {
+            try
+            {
+                var pendingChange = await _pendingChangeService.GetByInvoiceIdAsync(invoiceId);
+                var contract = _contractService.GetById(contractId);
+
+                return Ok(new
+                {
+                    hasPendingChanges = pendingChange != null,
+                    isCompleted = pendingChange == null,
+                    contractStatus = contract?.Status.ToString(),
+                    currentVehicleId = contract?.VehicleId,
+                    lastUpdated = DateTime.UtcNow
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = "Failed to check modification status" });
+            }
         }
     }
 }

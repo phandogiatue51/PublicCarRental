@@ -3,10 +3,10 @@ import { useParams } from "react-router-dom";
 import { Box, Button, VStack, Text, Alert, AlertIcon, useToast } from "@chakra-ui/react";
 import Footer from "../components/Footer";
 import MaybeYouWillLike from "../components/MaybeYouWillLike";
-import BookingForm from "../hooks/BookingForm"; 
+import BookingForm from "../hooks/BookingForm";
 import { modelAPI, renterAPI } from "../services/api";
 import '../styles/ModelDetail.css';
-import { useAuth } from "../hooks/useAuth"; 
+import { useAuth } from "../hooks/useAuth";
 import ModelRatings from "../components/ModelRatings"; // We'll create this
 
 function ModelDetail() {
@@ -18,9 +18,9 @@ function ModelDetail() {
     const [stationsLoading, setStationsLoading] = useState(false);
     const [isFavorite, setIsFavorite] = useState(false);
     const [favoriteLoading, setFavoriteLoading] = useState(false);
-    const { getCurrentUser } = useAuth(); 
+    const { getCurrentUser } = useAuth();
     const toast = useToast();
-    
+
     const userData = getCurrentUser();
     const evRenterId = userData?.renterId;
 
@@ -70,17 +70,16 @@ function ModelDetail() {
         fetchModelAndStations();
     }, [id]);
 
-    // Check if model is in favorites
     useEffect(() => {
         const checkIfFavorite = async () => {
             if (!evRenterId) return;
-            
+
             try {
-                const favorites = await renterAPI.getFavorites(evRenterId);
-                const isFav = Array.isArray(favorites) && favorites.some(fav => fav.modelId === id);
+                const isFav = await renterAPI.isModelFavorite(evRenterId, parseInt(id));
+                console.log('Is favorite result:', isFav);
                 setIsFavorite(isFav);
             } catch (err) {
-                console.error('Error checking favorites:', err);
+                console.error('Error checking favorite status:', err);
             }
         };
 
@@ -102,7 +101,6 @@ function ModelDetail() {
         setFavoriteLoading(true);
         try {
             if (isFavorite) {
-                // Remove from favorites
                 await renterAPI.removeFavorite(evRenterId, parseInt(id));
                 setIsFavorite(false);
                 toast({
@@ -160,7 +158,7 @@ function ModelDetail() {
                                     className="model-detail-image"
                                 />
                             </div>
-                             
+
                         </div>
 
                         {/* Right Column: Info and Stations */}
@@ -181,7 +179,7 @@ function ModelDetail() {
                                     <p>{model.description || "Experience the future of driving with our premium electric vehicle. Featuring cutting-edge technology, superior comfort, and eco-friendly performance."}</p>
                                 </div>
 
-                               
+
                             </div>
 
                             {/* Station List */}
@@ -237,22 +235,22 @@ function ModelDetail() {
                                 )}
                             </div>
                         </div>
-                        
+
                     </div>
                     <Box display="flex" justifyContent="center" mt={4}>
-                                    <Button
-                                        width="300px"
-                                        size="xl"
-                                        colorScheme={isFavorite ? "blue" : "red"}
-                                        onClick={handleFavoriteToggle}
-                                        isLoading={favoriteLoading}
-                                        fontSize="2rem"
-                                        py={5}
-                                        borderRadius="full"
-                                    >
-                                        {isFavorite ? "Remove from Favorites" : "Add to Favorites"}
-                                    </Button>
-                                </Box>
+                        <Button
+                            width="300px"
+                            size="xl"
+                            colorScheme={isFavorite ? "blue" : "red"}
+                            onClick={handleFavoriteToggle}
+                            isLoading={favoriteLoading}
+                            fontSize="2rem"
+                            py={5}
+                            borderRadius="full"
+                        >
+                            {isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+                        </Button>
+                    </Box>
                 </div>
 
                 {/* Booking Form */}
@@ -260,7 +258,7 @@ function ModelDetail() {
                     <BookingForm
                         modelName={model?.name}
                         modelId={id}
-                        evRenterId={evRenterId} 
+                        evRenterId={evRenterId}
                     />
                 </div>
 
@@ -271,9 +269,9 @@ function ModelDetail() {
 
                 {/* Maybe You Will Like Section */}
                 <div className="container">
-                    <MaybeYouWillLike 
-                        currentModelId={id} 
-                        currentBrandName={model?.brandName} 
+                    <MaybeYouWillLike
+                        currentModelId={id}
+                        currentBrandName={model?.brandName}
                     />
                 </div>
 

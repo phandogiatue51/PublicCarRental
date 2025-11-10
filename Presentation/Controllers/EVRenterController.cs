@@ -5,6 +5,7 @@ using PublicCarRental.Application.Service.Acc;
 using PublicCarRental.Application.Service.Cont;
 using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Ren;
+using PublicCarRental.Infrastructure.Data.Models;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -33,10 +34,10 @@ public class EVRenterController : ControllerBase
         return Ok(renters);
     }
 
-    [HttpGet("filter-by-param/{param}")]
-    public IActionResult FilterParam(string param)
+    [HttpGet("filter")]
+    public IActionResult FilterParam(string? param, AccountStatus? status)
     {
-        var renters = _eVRenterService.FilterByParam(param);
+        var renters = _eVRenterService.Filter(param, status);
         return Ok(renters);
     }
 
@@ -113,6 +114,13 @@ public class EVRenterController : ControllerBase
         var success = await _favoriteService.AddFavoritesAsync(renterId, modelId);
         if (!success) return BadRequest("Couldn't add favorite!");
         return Ok("Model added to favorite successfully!");
+    }
+
+    [HttpGet("{renterId}/favorites/{modelId}/check")]
+    public async Task<IActionResult> IsModelInFavoritesAsync(int renterId, int modelId)
+    {
+        var isFavorite = await _favoriteService.IsModelInFavoritesAsync(renterId, modelId);
+        return Ok(isFavorite);
     }
 
     [HttpGet("{renterId}/contracts")]

@@ -6,5 +6,6 @@
         public string ModelName { get; set; }
         public string Brand { get; set; }
         public int Count { get; set; }
+        public decimal PricePerHour { get; set; }
     }
 }

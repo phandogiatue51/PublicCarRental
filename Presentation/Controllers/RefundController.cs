@@ -31,23 +31,11 @@ public class RefundController : ControllerBase
     [HttpPost("staff-refund")]
     public async Task<ActionResult> StaffRefund([FromBody] StaffRefundRequest request)
     {
-        var refundRequest = new CreateRefundRequestDto
-        {
-            ContractId = request.ContractId,
-            Amount = request.Amount,
-            Reason = request.Reason,
-            StaffId = request.StaffId,
-            Note = request.Note
-        };
+        var result = await _refundService.StaffRefundAsync(request);
 
-        var refundResult = await _refundService.RequestRefundAsync(refundRequest);
+        if (!result.Success)
+            return BadRequest(result);
 
-        if (!refundResult.Success)
-            return BadRequest(refundResult);
-
-        var processResult = await _refundService.ProcessRefundAsync(
-            refundResult.RefundId, request.BankInfo, request.FullRefund);
-
-        return Ok(processResult);
+        return Ok(result);
     }
 }

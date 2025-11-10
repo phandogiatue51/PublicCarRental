@@ -74,7 +74,7 @@ namespace PublicCarRental.Presentation.Controllers
         }
 
         [HttpPost("check-availability")]
-        public async Task<IActionResult> CheckAvailabilityAsync([FromQuery] DateTime? startDate = null, 
+        public async Task<IActionResult> CheckAvailabilityAsync([FromQuery] DateTime? startDate = null,
             [FromQuery] DateTime? endDate = null,
             [FromQuery] int? stationId = null)
         {
@@ -82,6 +82,20 @@ namespace PublicCarRental.Presentation.Controllers
             endDate ??= DateTime.UtcNow.AddDays(1);
             var isAvailable = await _service.GetAvailableAsync(startDate, endDate, stationId);
             return Ok(isAvailable);
+        }
+
+        [HttpGet("available-vehicles")]
+        public async Task<IActionResult> GetAvailableVehicles([FromQuery] int? modelId, [FromQuery] int? stationId, [FromQuery] DateTime startTime, [FromQuery] DateTime endTime)
+        {
+            try
+            {
+                var vehicles = await _service.GetAvailableVehiclesByModelAsync((int)modelId, (int)stationId, startTime, endTime);
+                return Ok(vehicles);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

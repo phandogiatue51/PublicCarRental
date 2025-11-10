@@ -105,23 +105,7 @@ function Navbar() {
                                 Models
                             </Link>
                         </li>
-                        <li>
-                            <Link onClick={openNav} to="/testimonials">
-                                Testimonials
-                            </Link>
-                        </li>
-                        <li>
-                            <Link onClick={openNav} to="/team">
-                                Our Team
-                            </Link>
-                        </li>
-                        <li>
-                            <Link onClick={openNav} to="/contact">
-                                Contact
-                            </Link>
-                        </li>
                         
-                        {/* Mobile auth buttons */}
                         {isLoggedIn && (
                             <li>
                                 <div style={{ 
@@ -179,21 +163,6 @@ function Navbar() {
                         <li>
                             <Link className="models-link" to="/models">
                                 Our Models
-                            </Link>
-                        </li>
-                        <li>
-                            <Link className="testi-link" to="/testimonials">
-                                Testimonials
-                            </Link>
-                        </li>
-                        <li>
-                            <Link className="team-link" to="/team">
-                                Our Team
-                            </Link>
-                        </li>
-                        <li>
-                            <Link className="contact-link" to="/contact">
-                                Contact
                             </Link>
                         </li>
                     </ul>

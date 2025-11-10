@@ -63,7 +63,7 @@ export default function AccidentDetailsPage() {
 
     try {
       const showActionTypeField = Number(selectedStatus) === 2 && Number(accidentDetails.status) !== 2;
-      
+
       const finalActionTaken = showActionTypeField && actionType
         ? parseInt(actionType)
         : accidentDetails.actionTaken;
@@ -242,7 +242,7 @@ export default function AccidentDetailsPage() {
               </Button>
             )}
 
-            {!isAdmin && accidentDetails.status === 2 && (
+            {!isAdmin && accidentDetails.status > 2 && (
               <Button colorScheme="teal" onClick={() => setShowStaffResolution(true)}>
                 View Affected Contracts
               </Button>
@@ -250,13 +250,13 @@ export default function AccidentDetailsPage() {
           </Flex>
         </>
       )}
-      
+
       <VehicleReplacementPreview
         isOpen={showReplacementPreview}
         onClose={() => setShowReplacementPreview(false)}
         accidentId={accidentDetails?.accidentId}
         onExecuteReplacement={() => {
-          fetchAccidentDetails(); 
+          fetchAccidentDetails();
         }}
       />
 
@@ -266,7 +266,7 @@ export default function AccidentDetailsPage() {
         accidentId={accidentDetails?.accidentId}
         vehicleId={accidentDetails?.vehicleId}
         onSuccess={() => {
-          fetchAccidentDetails(); 
+          fetchAccidentDetails();
         }}
       />
     </Container>

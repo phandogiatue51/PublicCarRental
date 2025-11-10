@@ -41,31 +41,37 @@ namespace PublicCarRental.Application.Service.Ren
                 }).ToList();
         }
 
-        public IEnumerable<EVRenterDto> FilterByParam(string param)
+        public IEnumerable<EVRenterDto> Filter(string? param, AccountStatus? status)
         {
             if (string.IsNullOrWhiteSpace(param)) param = string.Empty;
             var p = param.Trim().ToLower();
 
-            return _renterRepo.GetAll()
+            var query = _renterRepo.GetAll()
                 .Where(r => r.Account != null &&
                             (
                                 (!string.IsNullOrEmpty(r.Account.FullName) && r.Account.FullName.ToLower().Contains(p)) ||
                                 (!string.IsNullOrEmpty(r.Account.Email) && r.Account.Email.ToLower().Contains(p)) ||
                                 (!string.IsNullOrEmpty(r.Account.PhoneNumber) && r.Account.PhoneNumber.ToLower().Contains(p)) ||
                                 (!string.IsNullOrEmpty(r.LicenseNumber) && r.LicenseNumber.ToLower().Contains(p))
-                            ))
-                .Select(r => new EVRenterDto
-                {
-                    RenterId = r.RenterId,
-                    AccountId = r.AccountId,
-                    FullName = r.Account.FullName,
-                    Email = r.Account.Email,
-                    PhoneNumber = r.Account.PhoneNumber,
-                    IdentityCardNumber = r.Account.IdentityCardNumber,
-                    LicenseNumber = r.LicenseNumber,
-                    IsEmailVerified = r.Account.IsEmailVerified,
-                    Status = r.Account.Status
-                }).ToList();
+                            ));
+
+            if (status.HasValue)
+            {
+                query = query.Where(r => r.Account.Status == status.Value);
+            }
+
+            return query.Select(r => new EVRenterDto
+            {
+                RenterId = r.RenterId,
+                AccountId = r.AccountId,
+                FullName = r.Account.FullName,
+                Email = r.Account.Email,
+                PhoneNumber = r.Account.PhoneNumber,
+                IdentityCardNumber = r.Account.IdentityCardNumber,
+                LicenseNumber = r.LicenseNumber,
+                IsEmailVerified = r.Account.IsEmailVerified,
+                Status = r.Account.Status
+            }).ToList();
         }
 
         public async Task<EVRenterDto?> GetByIdAsync(int id)
