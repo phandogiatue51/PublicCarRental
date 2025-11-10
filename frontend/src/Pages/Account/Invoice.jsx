@@ -1,10 +1,10 @@
-// Invoice.jsx
 import { useState, useEffect } from "react";
 import "../../styles/Account/Invoice.css";
+import { invoiceAPI, renterAPI } from "services/api";
 
 function Invoice() {
   const renterId = localStorage.getItem("renterId");
-  
+
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -12,11 +12,10 @@ function Invoice() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const isAuthenticated = () => {
-    return !!localStorage.getItem("jwtToken"); 
+    return !!localStorage.getItem("jwtToken");
   };
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [invoicesPerPage] = useState(3); // Show 3 invoices per page
+  const [invoicesPerPage] = useState(3);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -28,21 +27,7 @@ function Invoice() {
       setLoading(true);
       setError("");
       try {
-        // Fetch invoices for the specific renter
-        const response = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/EVRenter/${renterId}/invoices`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
-          },
-          signal: controller.signal
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        const data = await renterAPI.getInvoices(renterId);
         setInvoices(Array.isArray(data) ? data : []);
       } catch (e) {
         if (e.name !== "AbortError") {
@@ -90,19 +75,7 @@ function Invoice() {
     setDetailLoading(true);
     setError("");
     try {
-      const response = await fetch(`https://publiccarrental-production-b7c5.up.railway.app/api/Invoice/${invoiceId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('jwtToken')}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const invoiceDetail = await response.json();
+      const invoiceDetail = await invoiceAPI.getById(invoiceId);
       setSelectedInvoice(invoiceDetail);
       setShowDetailModal(true);
     } catch (e) {
@@ -117,7 +90,6 @@ function Invoice() {
     setSelectedInvoice(null);
   };
 
-  // Pagination logic
   const indexOfLastInvoice = currentPage * invoicesPerPage;
   const indexOfFirstInvoice = indexOfLastInvoice - invoicesPerPage;
   const currentInvoices = invoices.slice(indexOfFirstInvoice, indexOfLastInvoice);
@@ -187,55 +159,53 @@ function Invoice() {
           <div className="empty-icon">🧾</div>
           <h3>No Invoices Yet</h3>
           <p>Your invoices will appear here once you complete rental contracts.</p>
-          <button className="primary-btn">
-            View Contracts
-          </button>
+
         </div>
       ) : (
         <>
           <div className="invoices-list">
             {currentInvoices.map((invoice) => (
-            <div key={invoice.invoiceId} className="invoice-card">
-              <div className="invoice-header-card">
-                <h3>Invoice #{invoice.invoiceId}</h3>
-                {getStatusBadge(invoice.status)}
-              </div>
-              
-              <div className="invoice-details">
-                <div className="detail-row">
-                  <span className="label">Contract:</span>
-                  <span className="value">#{invoice.contractId}</span>
+              <div key={invoice.invoiceId} className="invoice-card">
+                <div className="invoice-header-card">
+                  <h3>Invoice #{invoice.invoiceId}</h3>
+                  {getStatusBadge(invoice.status)}
                 </div>
-                <div className="detail-row">
-                  <span className="label">Issue Date:</span>
-                  <span className="value">{formatDate(invoice.issuedAt)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Due Date:</span>
-                  <span className="value">{formatDate(invoice.paymentDeadline)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Amount Due:</span>
-                  <span className="value">₫{invoice.amountDue?.toLocaleString() || '0'}</span>
-                </div>
-              </div>
 
-              <div className="invoice-actions">
-                <button 
-                  className="view-details-btn"
-                  onClick={() => handleViewDetails(invoice.invoiceId)}
-                  disabled={detailLoading}
-                >
-                  {detailLoading ? 'Loading...' : 'View Details'}
-                </button>
-                {invoice.status === 0 && (
-                  <button className="download-invoice-btn">
-                    Download PDF
+                <div className="invoice-details">
+                  <div className="detail-row">
+                    <span className="label">Contract:</span>
+                    <span className="value">#{invoice.contractId}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="label">Issue Date:</span>
+                    <span className="value">{formatDate(invoice.issuedAt)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="label">Due Date:</span>
+                    <span className="value">{formatDate(invoice.paymentDeadline)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="label">Amount Due:</span>
+                    <span className="value">₫{invoice.amountDue?.toLocaleString() || '0'}</span>
+                  </div>
+                </div>
+
+                <div className="invoice-actions">
+                  <button
+                    className="view-details-btn"
+                    onClick={() => handleViewDetails(invoice.invoiceId)}
+                    disabled={detailLoading}
+                  >
+                    {detailLoading ? 'Loading...' : 'View Details'}
                   </button>
-                )}
+                  {invoice.status === 0 && (
+                    <button className="download-invoice-btn">
+                      Download PDF
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
           </div>
 
           {/* Pagination */}
@@ -244,16 +214,16 @@ function Invoice() {
               <div className="pagination-info">
                 Showing {indexOfFirstInvoice + 1} to {Math.min(indexOfLastInvoice, invoices.length)} of {invoices.length} invoices
               </div>
-              
+
               <div className="pagination">
-                <button 
+                <button
                   className="pagination-btn"
                   onClick={goToPreviousPage}
                   disabled={currentPage === 1}
                 >
                   Previous
                 </button>
-                
+
                 <div className="pagination-numbers">
                   {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
                     <button
@@ -265,8 +235,8 @@ function Invoice() {
                     </button>
                   ))}
                 </div>
-                
-                <button 
+
+                <button
                   className="pagination-btn"
                   onClick={goToNextPage}
                   disabled={currentPage === totalPages}
@@ -281,7 +251,7 @@ function Invoice() {
 
       {/* Invoice Detail Modal */}
       {showDetailModal && selectedInvoice && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             top: 0,
@@ -297,7 +267,7 @@ function Invoice() {
           }}
           onClick={closeDetailModal}
         >
-          <div 
+          <div
             style={{
               background: 'white',
               borderRadius: '30px',
@@ -322,7 +292,7 @@ function Invoice() {
                 <h3 style={{ margin: 0, color: '#333', fontSize: '1.5rem' }}>Invoice Details #{selectedInvoice.invoiceId}</h3>
                 {getStatusBadge(selectedInvoice.status)}
               </div>
-              <button 
+              <button
                 onClick={closeDetailModal}
                 style={{
                   background: 'none',
@@ -337,7 +307,7 @@ function Invoice() {
                 ×
               </button>
             </div>
-            
+
             <div style={{ padding: '25px' }}>
               <div>
                 <div style={{ marginBottom: '30px' }}>
@@ -377,7 +347,7 @@ function Invoice() {
               }}>
                 Amount Due: ₫{selectedInvoice.amountDue?.toLocaleString() || '0'} 🤑
               </div>
-              <button 
+              <button
                 onClick={closeDetailModal}
                 style={{
                   backgroundColor: '#6c757d',

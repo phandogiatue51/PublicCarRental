@@ -226,7 +226,7 @@ export default function InvoiceList() {
       columnHelper.accessor("invoiceId", {
         header: () => (
           <Text color="gray.400" fontSize="12px">
-            ID
+            INVOICE ID
           </Text>
         ),
         cell: (info) => (
@@ -239,7 +239,7 @@ export default function InvoiceList() {
       columnHelper.accessor("contractId", {
         header: () => (
           <Text color="gray.400" fontSize="12px">
-            CONTRACT
+            CONTRACT ID
           </Text>
         ),
         cell: (info) => <Text color={textColor}>{info.getValue()}</Text>,

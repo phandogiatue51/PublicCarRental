@@ -7,10 +7,12 @@ using PublicCarRental.Application.Service.Inv;
 using PublicCarRental.Application.Service.Veh;
 using PublicCarRental.Infrastructure.Data.Models;
 using PublicCarRental.Infrastructure.Data.Repository.Cont;
+using PublicCarRental.Infrastructure.Data.Repository.Inv;
 
 public class ContractModificationService : IContractModificationService
 {
     private readonly IContractRepository _contractRepository;
+    private readonly IInvoiceRepository _invoiceRepository;
     private readonly IVehicleService _vehicleService;
     private readonly IInvoiceService _invoiceService;
     private readonly IRefundService _refundService;
@@ -19,7 +21,7 @@ public class ContractModificationService : IContractModificationService
 
     public ContractModificationService(IContractRepository contractRepository, IVehicleService vehicleService,
         IInvoiceService invoiceService, IRefundService refundService, ILogger<ContractModificationService> logger,
-        IPendingChangeService pendingChangeService)
+        IPendingChangeService pendingChangeService, IInvoiceRepository invoiceRepository)
     {
         _contractRepository = contractRepository;
         _vehicleService = vehicleService;
@@ -27,6 +29,7 @@ public class ContractModificationService : IContractModificationService
         _refundService = refundService;
         _logger = logger;
         _pendingChangeService = pendingChangeService;
+        _invoiceRepository = invoiceRepository;
     }
 
     public async Task<ModificationResultDto> ChangeModelAsync(int contractId, RenterChangeRequest request)
@@ -266,14 +269,15 @@ public class ContractModificationService : IContractModificationService
             };
         }
 
-        // Check if contract has any paid invoices
         var hasPaidInvoice = contract.Invoices?.Any(i =>
             i.Status == InvoiceStatus.Paid && i.AmountPaid > 0) ?? false;
 
         if (!hasPaidInvoice)
         {
+ 
             contract.Status = RentalStatus.Cancelled;
             _contractRepository.Update(contract);
+
             return new ModificationResultDto
             {
                 Success = true,
@@ -283,11 +287,9 @@ public class ContractModificationService : IContractModificationService
             };
         }
 
-        // Use contract total (includes all paid invoices)
         var totalPaid = contract.TotalCost ?? 0;
         var daysUntilStart = (contract.StartTime - DateTime.UtcNow).TotalDays;
 
-        // Apply consistent refund policy
         decimal refundAmount = 0;
         string policy;
 
@@ -317,6 +319,31 @@ public class ContractModificationService : IContractModificationService
 
         var refundResult = await _refundService.RequestRefundAsync(refundRequest);
 
+        if (contract.Invoices != null)
+        {
+            foreach (var invoice in contract.Invoices)
+            {
+                if (invoice.Status == InvoiceStatus.Paid)
+                {
+                    if (refundResult.Success && refundAmount > 0)
+                    {
+                        invoice.Status = InvoiceStatus.Refunded;
+                    }
+                    else
+                    {
+                        invoice.Status = InvoiceStatus.Cancelled;
+                    }
+                }
+                else if (invoice.Status == InvoiceStatus.Pending)
+                {
+                    invoice.Status = InvoiceStatus.Cancelled;
+                }
+
+                invoice.RefundedAt = DateTime.UtcNow;
+                _invoiceRepository.Update(invoice);
+            }
+        }
+
         if (refundResult.Success && refundResult.RefundId != null)
         {
             var processResult = await _refundService.ProcessRefundAsync(refundResult.RefundId, bankInfo);
@@ -338,8 +365,8 @@ public class ContractModificationService : IContractModificationService
         {
             Success = refundResult.Success,
             Message = refundResult.Success
-        ? $"Contract cancelled. {refundAmount:C} refund initiated."
-        : "Contract cancelled but refund request failed.",
+                ? $"Contract cancelled. {refundAmount:C} refund initiated."
+                : "Contract cancelled but refund request failed.",
             PriceDifference = -refundAmount,
             RefundId = refundResult.RefundId,
             UpdatedContract = MapToContractDto(contract)
@@ -347,7 +374,7 @@ public class ContractModificationService : IContractModificationService
     }
 }
 
-public interface IContractModificationService
+    public interface IContractModificationService
 {
     Task<ModificationResultDto> ChangeModelAsync(int contractId, RenterChangeRequest request);
     Task<ModificationResultDto> ExtendTimeAsync(int contractId, RenterChangeRequest request);

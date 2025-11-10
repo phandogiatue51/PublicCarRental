@@ -182,9 +182,6 @@ function Contract() {
           <div className="empty-icon">📋</div>
           <h3>No Contracts Yet</h3>
           <p>You haven't made any rental contracts yet. Start exploring our vehicles to create your first contract!</p>
-          <button className="primary-btn">
-            Browse Vehicles
-          </button>
         </div>
       ) : (
         <>
@@ -192,7 +189,7 @@ function Contract() {
             {currentContracts.map((contract) => (
               <div key={contract.contractId} className="contract-card">
                 <div className="contract-header-card">
-                  <h3>Contract #{contract.contractId}</h3>
+                  Contract #{contract.contractId}
                   {getStatusBadge(contract.status)}
                 </div>
 
@@ -409,7 +406,7 @@ function Contract() {
                               </div>
                             )}
                             <div style={{ fontSize: '0.8rem', color: '#999', marginTop: '5px' }}>
-                              Paid: {formatDate(invoice.paidAt)}
+                              {invoice.paidAt ? 'Paid:' : 'Issued:'} {formatDate(invoice.paidAt || invoice.issuedAt)}
                             </div>
                           </div>
 
@@ -473,7 +470,7 @@ function Contract() {
         onClose={() => setShowRateModal(false)}
         onRatingSubmitted={handleRatingSubmitted}
       />
-      
+
       {showCancelModal && selectedContractForCancel && (
         <RenterRefundModal
           contract={selectedContractForCancel}
