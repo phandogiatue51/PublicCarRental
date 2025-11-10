@@ -1001,7 +1001,14 @@ export default function ContractList() {
                 </Tr>
               </Thead>
               <Tbody>
-                {staffList?.map((s) => (
+                {staffList
+                  ?.slice()
+                  ?.sort((a, b) => {
+                    const aId = Number(a?.staffId ?? a?.id ?? 0);
+                    const bId = Number(b?.staffId ?? b?.id ?? 0);
+                    return aId - bId;
+                  })
+                  .map((s) => (
                   <Tr key={s.staffId || s.id}>
                     <Td>{s.staffId || s.id}</Td>
                     <Td>{s.fullName || s.name || s.email}</Td>
