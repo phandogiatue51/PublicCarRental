@@ -209,11 +209,11 @@ export const staffAPI = {
     method: 'POST',
   }),
 
-  searchByParam: (param, stationId, contractId) => {
+  searchByParam: (param, stationId, status) => {
     const queryParams = new URLSearchParams();
     if (param) queryParams.append('param', param);
     if (stationId) queryParams.append('stationId', stationId);
-    if (contractId) queryParams.append('contractId', contractId);
+    if (status !== null && status !== undefined) queryParams.append('status', status);
     return apiRequest(`/Staff/search-by-param?${queryParams.toString()}`);
   },
 };
@@ -244,8 +244,6 @@ export const renterAPI = {
 
   getById: (id) => apiRequest(`/EVRenter/${id}`),
 
-  filterByParam: (param) => apiRequest(`/EVRenter/filter-by-param/${param}`),
-
   filter: (filters = {}) => {
     const queryParams = new URLSearchParams();
     if (filters.search) queryParams.append('param', filters.search);
@@ -253,6 +251,7 @@ export const renterAPI = {
     const queryString = queryParams.toString();
     return apiRequest(`/EVRenter/filter${queryString ? `?${queryString}` : ''}`);
   },
+
   updateRenter: (id, renterData) => apiRequest(`/EVRenter/update-renter/${id}`, {
     method: 'PUT',
     body: JSON.stringify(renterData),
@@ -710,9 +709,9 @@ export const modificationAPI = {
       throw error;
     }
   },
-  
-getPendingStatus: (contractId, invoiceId) => 
-  apiRequest(`/contracts/${contractId}/modifications/pending-status/${invoiceId}`),
+
+  getPendingStatus: (contractId, invoiceId) =>
+    apiRequest(`/contracts/${contractId}/modifications/pending-status/${invoiceId}`),
 };
 
 export const ratingsAPI = {
@@ -755,6 +754,16 @@ export const ratingsAPI = {
 
   hasRatedContract: (contractId, renterId) =>
     apiRequest(`/Ratings/contract/${contractId}/has-rated/${renterId}`),
+
+  filter: (filters = {}) => {
+    const queryParams = new URLSearchParams();
+    if (filters.modelId) queryParams.append('modelId', filters.modelId);
+    if (filters.renterId) queryParams.append('renterId', filters.renterId);
+    if (filters.starRating) queryParams.append('starRating', filters.starRating);
+
+    const queryString = queryParams.toString();
+    return apiRequest(`/Ratings/filter${queryString ? `?${queryString}` : ''}`);
+  }
 };
 
 export const paymentAPI = {

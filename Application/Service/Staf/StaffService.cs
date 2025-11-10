@@ -114,7 +114,7 @@ namespace PublicCarRental.Application.Service.Staf
             return true;
         }
 
-        public IEnumerable<StaffReadDto> FilterByParam(string? param, int? stationId, int? contractId)
+        public IEnumerable<StaffReadDto> FilterByParam(string? param, int? stationId, AccountStatus? status)
         {
             var query = _staffRepo.GetAll().Where(s => s.Account != null);
 
@@ -133,9 +133,9 @@ namespace PublicCarRental.Application.Service.Staf
                 );
             }
 
-            if (contractId.HasValue)
+            if (status.HasValue)
             {
-                query = query.Where(s => s.RentalContracts != null && s.RentalContracts.Any(rc => rc.ContractId == contractId.Value));
+                query = query.Where(r => r.Account.Status == status.Value);
             }
 
             return query.Select(s => new StaffReadDto

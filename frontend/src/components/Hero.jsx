@@ -45,16 +45,7 @@ function Hero() {
                 Rent the car of your dreams. Unbeatable prices, unlimited miles,
                 flexible pick-up options and much more.
               </p>
-              <div className="hero-content__text__btns">
-                <Link
-                  onClick={bookBtn}
-                  className="hero-content__text__btns__book-ride"
-                  to="/"
-                >
-                  Book Ride &nbsp; <i className="fa-solid fa-circle-check"></i>
-                </Link>
-              
-              </div>
+             
             </div>
 
             {/* img */}

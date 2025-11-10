@@ -4,20 +4,17 @@ using PublicCarRental.Infrastructure.Data.Repository.Cont;
 
 public interface IRatingService
 {
-    // Return DTOs instead of full entities
     List<RatingReadDto> GetAllRatings();
     RatingReadDto GetRatingById(int ratingId);
     (bool Success, string Message) CreateRating(CreateRatingDto createDto);
     (bool Success, string Message) UpdateRating(int ratingId, UpdateRatingDto updateDto);
     (bool Success, string Message) DeleteRating(int ratingId);
 
-    // Specific queries - return DTOs
     List<RatingReadDto> GetRatingsByContractId(int contractId);
     List<RatingReadDto> GetRatingsByRenterId(int renterId);
     List<RatingReadDto> GetRatingsByModelId(int modelId);
     List<RatingReadDto> GetRatingsByVehicleId(int vehicleId);
 
-    // Statistics - return DTOs
     RatingStatisticsDto GetRatingStatisticsByModelId(int modelId);
     RatingStatisticsDto GetRatingStatisticsByRenterId(int renterId);
     List<RatingReadDto> GetRecentRatings(int count = 10);
@@ -25,6 +22,8 @@ public interface IRatingService
 
     bool CanRenterRateContract(int contractId, int renterId);
     bool HasRenterRatedContract(int contractId, int renterId);
+    public List<RatingReadDto> GetFilteredRatings(int? modelId = null, int? renterId = null, RatingLabel? starRating = null);
+
 }
 
 public class RatingService : IRatingService
@@ -325,5 +324,38 @@ public class RatingService : IRatingService
         var rating = _ratingRepository.GetRatingsByContractId(contractId)
             .FirstOrDefault();
         return rating != null;
+    }
+
+    public List<RatingReadDto> GetFilteredRatings(int? modelId = null, int? renterId = null, RatingLabel? starRating = null)
+    {
+        var query = _ratingRepository.GetAll();
+
+        if (modelId.HasValue)
+        {
+            query = query.Where(r => r.Contract.Vehicle.ModelId == modelId.Value);
+        }
+
+        if (renterId.HasValue)
+        {
+            query = query.Where(r => r.Contract.EVRenterId == renterId.Value);
+        }
+
+        if (starRating.HasValue)
+        {
+            query = query.Where(r => r.Stars == starRating.Value);
+        }
+
+        return query.Select(r => new RatingReadDto
+        {
+            RatingId = r.RatingId,
+            ContractId = r.ContractId,
+            Stars = r.Stars,
+            Comment = r.Comment,
+            CreatedAt = r.CreatedAt,
+            RenterId = r.Contract.EVRenterId,
+            RenterName = r.Contract.EVRenter.Account.FullName,
+            StartDate = r.Contract.StartTime,
+            EndDate = r.Contract.EndTime,
+        }).ToList();
     }
 }

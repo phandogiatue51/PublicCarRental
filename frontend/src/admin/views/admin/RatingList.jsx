@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import {
-  Box, Table, Thead, Tbody, Tr, Th, Td, Text, Badge, Button, HStack, VStack,
-  Input, Select, Spinner, Alert, AlertIcon, useDisclosure,
-  Icon, useColorModeValue, Flex, Tooltip, InputGroup, InputLeftElement
+  Box, Table, Thead, Tbody, Tr, Th, Td, Text, Badge, Button, HStack,
+  Select, Spinner, Alert, AlertIcon, useDisclosure,
+  Icon, useColorModeValue, Flex, Tooltip
 } from '@chakra-ui/react';
-import { MdSearch, MdFilterList, MdAssignment, MdRefresh, MdDelete } from 'react-icons/md';
+import { MdSearch, MdAssignment, MdRefresh, MdDelete } from 'react-icons/md';
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable, getSortedRowModel } from '@tanstack/react-table';
-import { ratingsAPI, contractAPI } from '../../../services/api';
+import { ratingsAPI, modelAPI, renterAPI, contractAPI } from '../../../services/api';
 import Card from '../../components/card/Card';
 
 const ContractDetailModal = lazy(() => import('./contract/ContractDetailModal'));
@@ -25,12 +25,14 @@ export default function RatingList() {
   const brandColor = useColorModeValue("brand.500", "white");
 
   const columnHelper = createColumnHelper();
-
-  const fetchRatings = async () => {
+  const [models, setModels] = useState([]);
+  const [renters, setRenters] = useState([]);
+  const fetchRatings = async (filterParams = {}) => {
     try {
       setLoading(true);
       setError(null);
-      const data = await ratingsAPI.getAll();
+
+      const data = await ratingsAPI.filter(filterParams);
       setRatings(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error('Error fetching ratings:', err);
@@ -40,25 +42,46 @@ export default function RatingList() {
     }
   };
 
-  useEffect(() => { fetchRatings(); }, []);
+  const fetchModels = async () => {
+    try {
+      const modelsData = await modelAPI.getAll();
+      setModels(Array.isArray(modelsData) ? modelsData : []);
+    } catch (err) {
+      console.error('Error fetching models:', err);
+    }
+  };
 
-  const filteredRatings = useMemo(() => {
-    return ratings.filter(r => {
-      const matchesSearch =
-        !filters.search ||
-        r.renterName?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        r.comment?.toLowerCase().includes(filters.search.toLowerCase());
+  const fetchRenters = async () => {
+    try {
+      const rentersData = await renterAPI.getAll();
+      setRenters(Array.isArray(rentersData) ? rentersData : []);
+    } catch (err) {
+      console.error('Error fetching renters:', err);
+    }
+  };
 
-      const matchesStar = !filters.starRating || r.stars === Number(filters.starRating);
-      const matchesModel = !filters.modelId || r.modelId === Number(filters.modelId);
-      const matchesRenter = !filters.renterId || r.renterId === Number(filters.renterId);
+  const applyFilters = async () => {
+    const filterParams = {};
+    if (filters.starRating) filterParams.starRating = filters.starRating;
+    if (filters.modelId) filterParams.modelId = filters.modelId;
+    if (filters.renterId) filterParams.renterId = filters.renterId;
 
-      return matchesSearch && matchesStar && matchesModel && matchesRenter;
-    });
-  }, [ratings, filters]);
+    await fetchRatings(filterParams);
+  };
+
+  const handleClearFilters = async () => {
+    setFilters({ starRating: '', modelId: '', renterId: '' });
+    await fetchRatings();
+  };
+
+  useEffect(() => {
+    const fetchAllData = async () => {
+      await Promise.all([fetchRatings(), fetchModels(), fetchRenters()]);
+    };
+    fetchAllData();
+  }, []);
 
   const handleFilterChange = (key, value) => setFilters(prev => ({ ...prev, [key]: value }));
-  const handleClearFilters = () => setFilters({ search: '', starRating: '', modelId: '', renterId: '' });
 
   const handleViewContract = async (contractId) => {
     try {
@@ -73,12 +96,17 @@ export default function RatingList() {
 
   const handleDeleteRating = async (ratingId) => {
     if (!window.confirm('Are you sure you want to delete this rating?')) return;
-    try { await ratingsAPI.delete(ratingId); await fetchRatings(); }
-    catch (err) { console.error(err); setError('Failed to delete rating'); }
+    try {
+      await ratingsAPI.delete(ratingId);
+      await fetchRatings(); // Refresh the list
+    } catch (err) {
+      console.error(err);
+      setError('Failed to delete rating');
+    }
   };
 
   const renderStars = (stars) => '⭐'.repeat(stars) + '☆'.repeat(5 - stars);
-  const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('en-US', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : 'N/A';
+  const formatDate = (dateString) => dateString ? new Date(dateString).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'N/A';
 
   const columns = useMemo(() => [
     columnHelper.accessor('ratingId', {
@@ -91,7 +119,25 @@ export default function RatingList() {
     }),
     columnHelper.accessor('stars', {
       header: () => <Text color="gray.400" fontSize="12px">STARS</Text>,
-      cell: info => <Badge colorScheme="yellow">{info.getValue()}</Badge>
+      cell: info => {
+        const stars = info.getValue();
+        const getColorScheme = (stars) => {
+          switch (stars) {
+            case 5: return 'green';
+            case 4: return 'blue';
+            case 3: return 'yellow';
+            case 2: return 'orange';
+            case 1: return 'red';
+            default: return 'gray';
+          }
+        };
+
+        return (
+          <Badge colorScheme={getColorScheme(stars)} fontSize="md" px={3} py={1}>
+            {stars} ⭐
+          </Badge>
+        );
+      }
     }),
     columnHelper.accessor('comment', {
       header: () => <Text color="gray.400" fontSize="12px">COMMENT</Text>,
@@ -113,7 +159,7 @@ export default function RatingList() {
   ], [textColor]);
 
   const table = useReactTable({
-    data: filteredRatings,
+    data: ratings,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -133,27 +179,50 @@ export default function RatingList() {
 
       {/* Filters */}
       <Card mb={6} p={4}>
-        <Flex align="center" mb={4}>
-          <Icon as={MdFilterList} mr={2} color={brandColor} />
-          <Text fontSize="xl" fontWeight="bold">Filter Ratings</Text>
-        </Flex>
         <HStack spacing={4} align="flex-end" wrap="wrap">
-          <Box flex="1">
-            <InputGroup>
-              <InputLeftElement pointerEvents="none"><Icon as={MdSearch} color="gray.400" /></InputLeftElement>
-              <Input placeholder="Search..." value={filters.search} onChange={e => handleFilterChange('search', e.target.value)} />
-            </InputGroup>
-          </Box>
           <Select flex="1" placeholder="All ratings" value={filters.starRating} onChange={e => handleFilterChange('starRating', e.target.value)}>
-            {[5,4,3,2,1].map(star => <option key={star} value={star}>⭐ {star}</option>)}
+            {[5, 4, 3, 2, 1].map(star => <option key={star} value={star}>⭐ {star}</option>)}
           </Select>
-          <Input flex="1" type="number" placeholder="Model ID" value={filters.modelId} onChange={e => handleFilterChange('modelId', e.target.value)} />
-          <Input flex="1" type="number" placeholder="Renter ID" value={filters.renterId} onChange={e => handleFilterChange('renterId', e.target.value)} />
-          <Button variant="outline" onClick={handleClearFilters}>Clear</Button>
+          <Select
+            flex="1"
+            placeholder="All models"
+            value={filters.modelId}
+            onChange={e => handleFilterChange('modelId', e.target.value)}
+          >
+            {models.map(model => (
+              <option key={model.modelId} value={model.modelId}>
+                {model.name || `Model ${model.modelId}`}
+              </option>
+            ))}
+          </Select>
+
+          <Select
+            flex="1"
+            placeholder="All renters"
+            value={filters.renterId}
+            onChange={e => handleFilterChange('renterId', e.target.value)}
+          >
+            {renters.map(renter => (
+              <option key={renter.renterId} value={renter.renterId}>
+                {renter.fullName || `Renter ${renter.renterId}`}
+              </option>
+            ))}
+          </Select>
+          <Button
+            leftIcon={<Icon as={MdSearch} />}
+            colorScheme="blue"
+            onClick={applyFilters}
+            isLoading={loading}
+          >
+            Search
+          </Button>
+          <Button variant="outline" onClick={handleClearFilters}>
+            Clear
+          </Button>
         </HStack>
       </Card>
 
-      <Text fontSize="sm" color="gray.600" mb={4}>Showing {filteredRatings.length} of {ratings.length} ratings</Text>
+      <Text fontSize="sm" color="gray.600" mb={4}>Showing {ratings.length} ratings</Text>
 
       <Card>
         <Table variant="simple" color="gray.500" mb="24px" mt="12px">

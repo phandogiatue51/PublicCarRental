@@ -843,10 +843,6 @@ body {
   line-height: 1.43;
 }
 
-.pick-section {
-  padding: 10rem 0;
-}
-
 .pick-container {
   display: flex;
   flex-direction: column;
@@ -1299,8 +1295,6 @@ body {
 }
 
 .faq-section {
-  background-image: url("/src/images/faq/car.png");
-  padding: 10rem 0;
   background-size: auto;
   background-repeat: no-repeat;
   background-position: 0 70%;
