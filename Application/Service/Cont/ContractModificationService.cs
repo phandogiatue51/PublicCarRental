@@ -52,7 +52,7 @@ public class ContractModificationService : IContractModificationService
         var totalPaid = await _invoiceService.GetTotalPaidAmountAsync(contractId);
         var priceDifference = newTotal - totalPaid;
         const decimal tolerance = 0.01m;
-
+        Console.WriteLine($"💰 Price Debug: NewTotal={newTotal}, TotalPaid={totalPaid}, Difference={priceDifference}, Tolerance={tolerance}");
         Invoice newInvoice = null;
         PendingModificationDto pendingChange = null;
 

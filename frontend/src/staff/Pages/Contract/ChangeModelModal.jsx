@@ -94,7 +94,6 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
         return;
       }
 
-      // Fetch available counts
       const response = await modelAPI.getAvailableCounts(
         parseInt(stationId),
         startTime,
@@ -130,43 +129,91 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
 
     try {
       setSubmitting(true);
+
       const requestData = {
+        reason: "Model change requested by staff",
+        staffId: parseInt(localStorage.getItem('staffId')),
+        note: "Changing vehicle model",
+        changeType: 1,
         newModelId: parseInt(selectedModelId),
       };
 
       const result = await modificationAPI.changeModel(contract.contractId, requestData);
+      console.log('🔍 FULL API RESPONSE:', result);
+      console.log('🔍 Checking payment conditions:', {
+        success: result.success,
+        requiresPayment: result.requiresPayment,
+        newInvoiceId: result.newInvoiceId,
+        priceDifference: result.priceDifference,
+        message: result.message
+      });
+      console.log('🔍 Condition result.requiresPayment && result.newInvoiceId:',
+        result.requiresPayment && result.newInvoiceId
+      );
 
       if (result.success) {
         if (result.requiresPayment && result.newInvoiceId) {
-          toast({
-            title: 'Payment Required',
-            description: result.message || 'Please complete payment to change model',
-            status: 'info',
-            duration: 5000,
-            isClosable: true,
-          });
-
           try {
             const paymentData = {
               invoiceId: result.newInvoiceId,
               renterId: contract.evRenterId || contract.renterId
             };
 
+            console.log('📦 Payment data:', paymentData);
+
             const paymentResponse = await paymentAPI.createPayment(paymentData);
+            console.log('💰 Payment response:', paymentResponse);
 
             if (paymentResponse && paymentResponse.checkoutUrl) {
-              window.open(paymentResponse.checkoutUrl, '_blank');
-              startPaymentPolling(contract.contractId, result.newInvoiceId);
+              console.log('🔗 Checkout URL:', paymentResponse.checkoutUrl);
+
+              const paymentTab = window.open(
+                paymentResponse.checkoutUrl,
+                '_blank'
+              );
+
+              if (paymentTab) {
+                toast({
+                  title: 'Payment Opened',
+                  description: 'Payment page opened in new tab. Please complete the payment.',
+                  status: 'info',
+                  duration: 5000,
+                  isClosable: true,
+                });
+
+                startPaymentPolling(contract.contractId, result.newInvoiceId);
+              } else {
+                toast({
+                  title: 'Popup Blocked',
+                  description: (
+                    <Box>
+                      <Text>Please allow popups or click the link below:</Text>
+                      <Button
+                        size="sm"
+                        mt={2}
+                        onClick={() => window.open(paymentResponse.checkoutUrl, '_blank')}
+                        colorScheme="blue"
+                      >
+                        Open Payment Page
+                      </Button>
+                    </Box>
+                  ),
+                  status: 'warning',
+                  duration: 10000,
+                  isClosable: true,
+                });
+              }
             } else {
-              throw new Error('Payment creation failed');
+              console.error('❌ No checkout URL in response');
+              throw new Error('Payment creation failed - no checkout URL');
             }
           } catch (paymentError) {
-            console.error('Payment creation error:', paymentError);
+            console.error('💥 Payment creation error:', paymentError);
             toast({
               title: 'Payment Error',
-              description: 'Failed to create payment link',
+              description: paymentError.message || 'Failed to create payment link',
               status: 'error',
-              duration: 3000,
+              duration: 5000,
               isClosable: true,
             });
           }
@@ -205,50 +252,52 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
   };
 
   const startPaymentPolling = async (contractId, invoiceId) => {
-  console.log('🔄 Starting payment polling for:', { contractId, invoiceId });
-  
-  const pollInterval = setInterval(async () => {
-    try {
-      console.log('📡 Checking payment status...');
-      const status = await modificationAPI.getPendingStatus(contractId, invoiceId);
-      console.log('📊 Payment status response:', status);
+    console.log('🔄 Starting payment polling for:', { contractId, invoiceId });
 
-      if (status.isCompleted || !status.hasPendingChanges) {
-        console.log('✅ Payment completed, modification applied!');
-        clearInterval(pollInterval);
-        toast({
-          title: 'Success!',
-          description: 'Model change completed successfully!',
-          status: 'success',
-          duration: 5000,
-          isClosable: true,
-        });
-        onSuccess?.();
-        onClose();
-      } else {
-        console.log('⏳ Still waiting for payment processing...', {
-          hasPendingChanges: status.hasPendingChanges,
-          isCompleted: status.isCompleted,
-          contractStatus: status.contractStatus
-        });
+    const pollInterval = setInterval(async () => {
+      try {
+        console.log('📡 Checking payment status...');
+        const status = await modificationAPI.getPendingStatus(contractId, invoiceId);
+        console.log('📊 Payment status response:', status);
+
+        if (status.isCompleted || !status.hasPendingChanges) {
+          console.log('✅ Payment completed, modification applied!');
+          clearInterval(pollInterval);
+
+          toast({
+            title: 'Success!',
+            description: 'Payment completed and model change applied successfully!',
+            status: 'success',
+            duration: 5000,
+            isClosable: true,
+          });
+
+          onSuccess?.();
+          onClose();
+        } else {
+          console.log('⏳ Still waiting for payment processing...', {
+            hasPendingChanges: status.hasPendingChanges,
+            isCompleted: status.isCompleted,
+            contractStatus: status.contractStatus
+          });
+        }
+      } catch (error) {
+        console.error('❌ Polling error:', error);
       }
-    } catch (error) {
-      console.error('❌ Polling error:', error);
-    }
-  }, 3000);
+    }, 3000);
 
-  setTimeout(() => {
-    console.log('⏰ Polling timeout reached');
-    clearInterval(pollInterval);
-    toast({
-      title: 'Timeout',
-      description: 'Payment verification timeout. Please refresh the page to check status.',
-      status: 'warning',
-      duration: 5000,
-      isClosable: true,
-    });
-  }, 10 * 60 * 1000);
-};
+    setTimeout(() => {
+      console.log('⏰ Polling timeout reached');
+      clearInterval(pollInterval);
+      toast({
+        title: 'Payment Timeout',
+        description: 'Payment verification timeout. Please refresh the page to check status.',
+        status: 'warning',
+        duration: 5000,
+        isClosable: true,
+      });
+    }, 10 * 60 * 1000);
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered scrollBehavior="inside">
@@ -445,7 +494,7 @@ const ChangeModelModal = ({ isOpen, onClose, contract, onSuccess }) => {
                   {currentModel.pricePerHour < (models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour || 0)
                     ? "An invoice will be created once the renter chooses this renter. Kindly ask them to finish paying."
                     : currentModel.pricePerHour > (models.find(m => (m.modelId || m.id)?.toString() === selectedModelId)?.pricePerHour || 0)
-                      ? "Renter will receive no refund for the ."
+                      ? "Renter will receive no refund for the model downgrade"
                       : "No price change - model will be swapped immediately."}
                 </Text>
               </VStack>

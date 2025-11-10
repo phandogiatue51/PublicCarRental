@@ -592,7 +592,6 @@ const RenterList = () => {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="0">Active</option>
-                <option value="1">Inactive</option>
                 <option value="2">Suspended</option>
               </Select>
             </Box>

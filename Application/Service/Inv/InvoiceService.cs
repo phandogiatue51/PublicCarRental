@@ -240,7 +240,7 @@ namespace PublicCarRental.Application.Service.Inv
         public async Task<decimal> GetTotalPaidAmountAsync(int contractId)
         {
             return (decimal)_repo.GetAll()
-                .Where(i => i.ContractId == contractId && i.Status == InvoiceStatus.Paid)
+                .Where(i => i.ContractId == contractId && i.Status == InvoiceStatus.Paid && !i.Note.Equals("Model upgrade charge"))
                 .Sum(i => i.AmountPaid);
         }
 

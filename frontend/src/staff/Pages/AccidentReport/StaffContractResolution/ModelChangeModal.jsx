@@ -104,11 +104,14 @@ export default function ModelChangeModal({ isOpen, onClose, contract, onSuccess 
                                     value={selectedModel}
                                     onChange={(e) => setSelectedModel(e.target.value)}
                                 >
-                                    {availableModels.map((model) => (
-                                        <option key={model.modelId} value={model.modelId}>
-                                            {model.modelName} ({model.brand}) - Available: {model.count}
-                                        </option>
-                                    ))}
+                                    {availableModels
+                                        .filter(model => model.count > 0) 
+                                        .map((model) => (
+                                            <option key={model.modelId} value={model.modelId}>
+                                                {model.modelName} ({model.brand}) - Available: {model.count}
+                                            </option>
+                                        ))
+                                    }
                                 </Select>
                             )}
                         </FormControl>

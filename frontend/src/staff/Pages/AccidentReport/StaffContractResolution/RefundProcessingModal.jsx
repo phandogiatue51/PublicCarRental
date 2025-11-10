@@ -35,7 +35,7 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                 branch: ''
             });
             clearError();
-            setStatusMessage(''); 
+            setStatusMessage('');
         }
     }, [isOpen, contract]);
 
@@ -82,23 +82,23 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
             try {
                 const statusData = await modificationAPI.getContractStatus(contractId);
-                
+
                 if (statusData.refundStatus === 'Completed') {
                     console.log('✅ Refund completed successfully');
                     return true;
                 }
-                
+
                 if (statusData.refundStatus === 'Failed') {
                     console.log('❌ Refund failed');
                     return false;
                 }
-                
+
                 await new Promise(resolve => setTimeout(resolve, 2000));
             } catch (error) {
                 console.error('Error polling refund status:', error);
             }
         }
-        
+
         console.log('⚠️ Status polling timeout');
         return false;
     };
@@ -107,14 +107,14 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
         if (!isFormValid() || !contract || !preview) return;
 
         const fullRefund = refundAmount >= preview.totalPaid;
-        
+
         setStatusMessage('Processing refund...');
 
         try {
             const result = await staffRefund(
                 contract.contractId,
                 refundAmount,
-                "Refund processed by staff", 
+                "Refund processed by staff",
                 fullRefund ? 'Staff override - 100% refund' : 'Standard refund',
                 {
                     accountNumber: bankInfo.accountNumber.trim(),
@@ -127,10 +127,10 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
 
             if (result.success) {
                 setStatusMessage('Refund initiated! Verifying status...');
-                
+
                 // Poll for completion
                 const pollSuccess = await pollRefundStatus(contract.contractId);
-                
+
                 if (pollSuccess) {
                     setStatusMessage('✅ Refund processed successfully!');
                     setTimeout(() => {
@@ -140,7 +140,7 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                 } else {
                     setStatusMessage('✅ Refund processed successfully!');
                     setTimeout(() => {
-                        onSuccess(); 
+                        onSuccess();
                         onClose();
                     }, 3000);
                 }
@@ -174,14 +174,13 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                 <ModalHeader>Process Refund</ModalHeader>
                 <ModalBody>
                     <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                        {/* Left column - Contract info and refund controls */}
-                        <VStack spacing={4} align="stretch">
+                        <VStack spacing={4} align="stretch" justify="center">
                             <Box p={3} bg="gray.50" borderRadius="md">
                                 <Text fontWeight="bold">Contract #{contract?.contractId}</Text>
-                                <Text fontSize="sm" color="gray.600">
+                                <Text fontSize="md" color="gray.600">
                                     Renter: {contract?.evRenterName}
                                 </Text>
-                                <Text fontSize="sm" color="gray.600">
+                                <Text fontSize="md" color="gray.600">
                                     Total Paid: {preview ? formatCurrency(preview.totalPaid) : '0 ₫'}
                                 </Text>
                             </Box>
@@ -192,75 +191,26 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                                 <Box p={3} border="1px" borderColor="gray.200" borderRadius="md">
                                     <Text fontWeight="medium">Refund Policy</Text>
                                     <HStack justify="space-between">
-                                        <Text fontSize="sm">Policy:</Text>
-                                        <Text fontSize="sm" fontWeight="medium">
-                                            {preview.policy}
-                                        </Text>
+                                        <Text fontSize="md">Policy:</Text>
+                                        <Badge ml={2} colorScheme="green" fontSize="md" px={4} py={2}>
+                                            100% Refund
+                                        </Badge>
                                     </HStack>
                                     <HStack justify="space-between">
-                                        <Text fontSize="sm">Refund Amount:</Text>
-                                        <Text fontSize="sm" fontWeight="bold" color="green.600">
+                                        <Text fontSize="md">Refund Amount:</Text>
+                                        <Text fontSize="md" fontWeight="bold" color="green.600">
                                             {formatCurrency(preview.refundAmount)}
                                         </Text>
                                     </HStack>
-                                    {preview.daysUntilStart < 2 && (
-                                        <Button
-                                            size="sm"
-                                            colorScheme="green"
-                                            mt={2}
-                                            onClick={handleFullRefund}
-                                            width="100%"
-                                        >
-                                            Apply 100% Refund Override
-                                        </Button>
-                                    )}
                                 </Box>
                             )}
-
-                            <Divider />
-
-                            <FormControl isRequired>
-                                <FormLabel>
-                                    Refund Amount {refundType === 'auto' && '(Policy-based)'}
-                                </FormLabel>
-                                <NumberInput
-                                    value={refundAmount}
-                                    onChange={(valueString, valueNumber) => {
-                                        setRefundAmount(valueNumber || 0);
-                                        setRefundType('manual'); // Switch to manual when user changes
-                                    }}
-                                    min={0}
-                                    max={preview?.totalPaid || 0}
-                                    precision={0}
-                                >
-                                    <NumberInputField />
-                                    <NumberInputStepper>
-                                        <NumberIncrementStepper />
-                                        <NumberDecrementStepper />
-                                    </NumberInputStepper>
-                                </NumberInput>
-                                {preview && (
-                                    <Text fontSize="sm" color="gray.600" mt={1}>
-                                        Maximum: {formatCurrency(preview.totalPaid)}
-                                        {refundAmount >= preview.totalPaid && (
-                                            <Badge ml={2} colorScheme="green">100% Refund</Badge>
-                                        )}
-                                    </Text>
-                                )}
-                                {refundAmount > (preview?.totalPaid || 0) && (
-                                    <Text fontSize="sm" color="red.500" mt={1}>
-                                        Refund amount cannot exceed total paid
-                                    </Text>
-                                )}
-                            </FormControl>
                         </VStack>
 
-                        {/* Right column - Bank information */}
                         <Box>
                             <Text fontWeight="medium" mb={4}>Bank Information for Refund</Text>
                             <VStack spacing={3}>
                                 <FormControl isRequired>
-                                    <FormLabel fontSize="sm">Account Number</FormLabel>
+                                    <FormLabel fontSize="md">Account Number</FormLabel>
                                     <Input
                                         value={bankInfo.accountNumber}
                                         onChange={(e) => handleBankInfoChange('accountNumber', e.target.value)}
@@ -268,7 +218,7 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                                     />
                                 </FormControl>
                                 <FormControl isRequired>
-                                    <FormLabel fontSize="sm">Account Name</FormLabel>
+                                    <FormLabel fontSize="md">Account Name</FormLabel>
                                     <Input
                                         value={bankInfo.accountName}
                                         onChange={(e) => handleBankInfoChange('accountName', e.target.value)}
@@ -276,7 +226,7 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                                     />
                                 </FormControl>
                                 <FormControl isRequired>
-                                    <FormLabel fontSize="sm">Bank Code</FormLabel>
+                                    <FormLabel fontSize="md">Bank Code</FormLabel>
                                     <Input
                                         value={bankInfo.bankCode}
                                         onChange={(e) => handleBankInfoChange('bankCode', e.target.value)}
@@ -287,11 +237,10 @@ export default function RefundProcessingModal({ isOpen, onClose, contract, onSuc
                         </Box>
                     </SimpleGrid>
 
-                    {/* Status and Error Messages */}
                     {statusMessage && (
-                        <Alert 
-                            status={statusMessage.includes('❌') ? 'error' : 
-                                   statusMessage.includes('✅') ? 'success' : 'info'}
+                        <Alert
+                            status={statusMessage.includes('❌') ? 'error' :
+                                statusMessage.includes('✅') ? 'success' : 'info'}
                             borderRadius="md"
                             mt={4}
                         >
