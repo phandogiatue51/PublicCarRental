@@ -108,114 +108,109 @@ const BookingForm = ({ modelName, modelId, evRenterId }) => {
             console.log('Available station IDs:', allStations.map(s => ({ stationId: s.stationId, name: s.name })));
             
             const stationName = selectedStation ? selectedStation.name : `Station ID: ${stationId}`;
-            const confirmMessage = `Are you sure you want to book ${modelName}?\n\nStation: ${stationName}\nStart Date: ${formData.startDate}\nEnd Date: ${formData.endDate}`;
             
-            if (window.confirm(confirmMessage)) {
-                setLoading(true);
-                try {
-                    // Convert datetime-local strings to ISO (Date will treat them as local time)
-                    const startTime = new Date(formData.startDate).toISOString();
-                    const endTime = new Date(formData.endDate).toISOString();
+            setLoading(true);
+            try {
+                // Convert datetime-local strings to ISO (Date will treat them as local time)
+                const startTime = new Date(formData.startDate).toISOString();
+                const endTime = new Date(formData.endDate).toISOString();
+                
+                // Prepare booking data
+                const bookingData = {
+                    evRenterId: parseInt(evRenterId) || 1, // Default to 1 if not provided
+                    modelId: parseInt(modelId),
+                    stationId: stationId, // Use the already parsed stationId
+                    startTime: startTime,
+                    endTime: endTime
+                };
+                
+                console.log('Sending booking request:', bookingData);
+                console.log('Data types:', {
+                    evRenterId: typeof bookingData.evRenterId,
+                    modelId: typeof bookingData.modelId,
+                    stationId: typeof bookingData.stationId,
+                    startTime: typeof bookingData.startTime,
+                    endTime: typeof bookingData.endTime
+                });
+                
+                // Call API
+                const response = await bookingAPI.createBooking(bookingData);
+                
+                console.log('Booking response:', response);
+                
+                // Check if response is successful (200)
+                if (response && response.invoiceId && response.bookingToken) {
+                    // Save response data
+                    localStorage.setItem('lastBookingResponse', JSON.stringify(response));
                     
-                    // Prepare booking data
-                    const bookingData = {
-                        evRenterId: parseInt(evRenterId) || 1, // Default to 1 if not provided
-                        modelId: parseInt(modelId),
-                        stationId: stationId, // Use the already parsed stationId
-                        startTime: startTime,
-                        endTime: endTime
-                    };
-                    
-                    console.log('Sending booking request:', bookingData);
-                    console.log('Data types:', {
-                        evRenterId: typeof bookingData.evRenterId,
-                        modelId: typeof bookingData.modelId,
-                        stationId: typeof bookingData.stationId,
-                        startTime: typeof bookingData.startTime,
-                        endTime: typeof bookingData.endTime
-                    });
-                    
-                    // Call API
-                    const response = await bookingAPI.createBooking(bookingData);
-                    
-                    console.log('Booking response:', response);
-                    
-                    // Check if response is successful (200)
-                    if (response && response.invoiceId && response.bookingToken) {
-                        // Save response data
-                        localStorage.setItem('lastBookingResponse', JSON.stringify(response));
+                    try {
+                        // Get booking summary from Summary API
+                        const summary = await bookingAPI.getBookingSummary(response.bookingToken);
+                        console.log('Booking summary:', summary);
                         
-                        try {
-                            // Get booking summary from Summary API
-                            const summary = await bookingAPI.getBookingSummary(response.bookingToken);
-                            console.log('Booking summary:', summary);
-                            
-                            // Show summary modal with data from Summary API
-                            setBookingSummary({
-                                bookingToken: summary.bookingToken,
-                                invoiceId: response.invoiceId,
-                                renterId: parseInt(evRenterId) || 1, // Include renterId for payment
-                                message: response.message,
-                                stationId: summary.stationId,
-                                period: summary.period,
-                                totalCost: summary.totalCost,
-                                terms: summary.terms,
-                                fullResponse: response,
-                                // Add additional data for display
-                                vehicle: {
-                                    modelName: modelName || 'Selected Vehicle'
-                                },
-                                station: {
-                                    name: selectedStation ? selectedStation.name : 'Selected Station'
-                                },
-                                startTime: startTime,
-                                endTime: endTime
-                            });
-                            setShowSummaryModal(true);
-                            
-                        } catch (error) {
-                            console.error('Error fetching booking summary:', error);
-                            // Fallback: show modal with basic booking response data
-                            setBookingSummary({
-                                bookingToken: response.bookingToken,
-                                invoiceId: response.invoiceId,
-                                renterId: parseInt(evRenterId) || 1, // Include renterId for payment
-                                message: response.message,
-                                fullResponse: response,
-                                vehicle: {
-                                    modelName: modelName || 'Selected Vehicle'
-                                },
-                                station: {
-                                    name: selectedStation ? selectedStation.name : 'Selected Station'
-                                },
-                                startTime: startTime,
-                                endTime: endTime,
-                                totalCost: 0
-                            });
-                            setShowSummaryModal(true);
-                        }
+                        // Show summary modal with data from Summary API
+                        setBookingSummary({
+                            bookingToken: summary.bookingToken,
+                            invoiceId: response.invoiceId,
+                            renterId: parseInt(evRenterId) || 1, // Include renterId for payment
+                            message: response.message,
+                            stationId: summary.stationId,
+                            period: summary.period,
+                            totalCost: summary.totalCost,
+                            terms: summary.terms,
+                            fullResponse: response,
+                            // Add additional data for display
+                            vehicle: {
+                                modelName: modelName || 'Selected Vehicle'
+                            },
+                            station: {
+                                name: selectedStation ? selectedStation.name : 'Selected Station'
+                            },
+                            startTime: startTime,
+                            endTime: endTime
+                        });
+                        setShowSummaryModal(true);
                         
-                    } else {
-                        // Handle error response (400)
-                        const errorMessage = response?.message || 'Booking failed. Please try again.';
-                        alert(`Error: ${errorMessage}`);
+                    } catch (error) {
+                        console.error('Error fetching booking summary:', error);
+                        // Fallback: show modal with basic booking response data
+                        setBookingSummary({
+                            bookingToken: response.bookingToken,
+                            invoiceId: response.invoiceId,
+                            renterId: parseInt(evRenterId) || 1, // Include renterId for payment
+                            message: response.message,
+                            fullResponse: response,
+                            vehicle: {
+                                modelName: modelName || 'Selected Vehicle'
+                            },
+                            station: {
+                                name: selectedStation ? selectedStation.name : 'Selected Station'
+                            },
+                            startTime: startTime,
+                            endTime: endTime,
+                            totalCost: 0
+                        });
+                        setShowSummaryModal(true);
                     }
                     
-                    // Reset form
-                    setFormData({
-                        station: '',
-                        startDate: '',
-                        endDate: ''
-                    });
-                    
-                } catch (error) {
-                    console.error('Booking error:', error);
-                    alert('Failed to submit booking request. Please try again.');
-                } finally {
-                    setLoading(false);
+                } else {
+                    // Handle error response (400)
+                    const errorMessage = response?.message || 'Booking failed. Please try again.';
+                    alert(`Error: ${errorMessage}`);
                 }
-            } else {
-                console.log('Booking cancelled by user');
+                
+                // Reset form
+                setFormData({
+                    station: '',
+                    startDate: '',
+                    endDate: ''
+                });
+                
+            } catch (error) {
+                console.error('Booking error:', error);
+                alert('Failed to submit booking request. Please try again.');
+            } finally {
+                setLoading(false);
             }
         };
 
