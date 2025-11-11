@@ -8,7 +8,7 @@ import {
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { staffAPI, stationAPI, documentAPI } from "../../../../services/api";
 import {
-  MdEdit, MdAdd, MdPerson, MdPhone, MdLocationOn, MdToggleOn, MdToggleOff, MdSearch, MdFilterList, MdClear, MdDescription, MdRefresh,
+  MdEdit, MdAdd, MdPerson, MdPhone, MdLocationOn, MdToggleOn, MdToggleOff, MdSearch, MdClear, MdDescription, MdRefresh,
 } from "react-icons/md";
 import Card from "../../../components/card/Card";
 import StaffModal from "./StaffModal";
@@ -33,7 +33,6 @@ export default function StaffList() {
 
   const [searchParam, setSearchParam] = useState("");
   const [selectedStationId, setSelectedStationId] = useState("");
-  const [contractStatusFilter, setContractStatusFilter] = useState("");
   const [isSearching, setIsSearching] = useState(false);
 
   const [isViewStaffDocsModalOpen, setIsViewStaffDocsModalOpen] = useState(false);
@@ -76,7 +75,7 @@ export default function StaffList() {
       setStaff(response || []);
       setTotalItems(response?.length || 0);
       setCurrentPage(1);
-    } catch (err) {
+    } catch (err) { 
       console.error("Error searching staff:", err);
       setError(err.message || "Failed to search staff");
     } finally {
@@ -206,12 +205,6 @@ export default function StaffList() {
     }
   };
 
-  const getStationName = (stationId) => {
-    if (!stationId) return "No Station";
-    const station = stations.find((s) => s.stationId === stationId);
-    return station ? station.name : `Station ${stationId}`;
-  };
-
   // Columns definition
   const columns = useMemo(() => [
     columnHelper.accessor("staffId", {
@@ -237,12 +230,14 @@ export default function StaffList() {
         </Flex>
       ),
     }),
-    columnHelper.accessor("stationId", {
+    columnHelper.accessor("stationName", {
       header: () => <Text color="gray.400" fontSize="12px">STATION</Text>,
       cell: (info) => (
         <Flex align="center" gap={2}>
           <Icon as={MdLocationOn} color="gray.500" />
-          <Text color={textColor} fontSize="sm">{getStationName(info.getValue())}</Text>
+          <Text color={textColor} fontSize="sm">
+            {info.getValue() || "No Station"}
+          </Text>
         </Flex>
       ),
     }),

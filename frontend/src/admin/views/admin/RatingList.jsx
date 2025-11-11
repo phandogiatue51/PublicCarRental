@@ -184,14 +184,14 @@ export default function RatingList() {
         <Button leftIcon={<Icon as={MdRefresh} />} onClick={fetchRatings}>Refresh</Button>
       </Flex>
 
-      {/* Filters */}
       <Card mb={6} p={4}>
         <HStack spacing={4} align="flex-end" wrap="wrap">
           <Select flex="1" placeholder="All ratings" value={filters.starRating} onChange={e => handleFilterChange('starRating', e.target.value)}>
             {[5, 4, 3, 2, 1].map(star => <option key={star} value={star}>⭐ {star}</option>)}
           </Select>
           <Flex gap={2} align="center">
-            <Button 
+            <Button
+              flex={1}
               size="sm"
               border="1px solid"
               onClick={async () => {
@@ -208,7 +208,8 @@ export default function RatingList() {
             </Button>
           </Flex>
           <Flex gap={2} align="center">
-            <Button 
+            <Button
+              flex={1}
               size="sm"
               border="1px solid"
               onClick={async () => {
@@ -225,6 +226,7 @@ export default function RatingList() {
             </Button>
           </Flex>
           <Button
+            flex={1}
             leftIcon={<Icon as={MdSearch} />}
             colorScheme="blue"
             onClick={applyFilters}
@@ -233,7 +235,11 @@ export default function RatingList() {
           >
             Search
           </Button>
-          <Button variant="outline" onClick={handleClearFilters} size="sm">
+          <Button
+            flex={1}
+            variant="outline"
+            onClick={handleClearFilters}
+            size="sm">
             Clear
           </Button>
         </HStack>

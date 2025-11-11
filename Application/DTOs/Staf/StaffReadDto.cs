@@ -11,6 +11,7 @@ namespace PublicCarRental.Application.DTOs.Staf
         public string PhoneNumber { get; set; }
         public string IdentityCardNumber { get; set; }
         public int? StationId { get; set; }
+        public string? StationName { get; set; }
         public AccountStatus Status { get; set; }
     }
 }
