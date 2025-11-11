@@ -5,6 +5,19 @@
   margin: 0 auto;
 }
 
+.invoices-list.two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+  .invoices-list.two-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 .invoice-header {
   margin-bottom: 30px;
   text-align: center;

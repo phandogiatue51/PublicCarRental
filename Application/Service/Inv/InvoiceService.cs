@@ -65,7 +65,7 @@ namespace PublicCarRental.Application.Service.Inv
                 IssuedAt = i.IssuedAt,
                 AmountDue = i.AmountDue,
                 AmountPaid = i.AmountPaid,
-                PaidAt = i.PaidAt,
+                PaidAt = i.PaidAt ?? i.RefundedAt,
                 OrderCode = i.OrderCode,
                 Status = i.Status,
                 Note = i.Note
@@ -83,7 +83,7 @@ namespace PublicCarRental.Application.Service.Inv
                 IssuedAt = i.IssuedAt,
                 AmountDue = i.AmountDue,
                 AmountPaid = i.AmountPaid,
-                PaidAt = i.PaidAt,
+                PaidAt = i.PaidAt ?? i.RefundedAt,
                 Status = i.Status,
                 OrderCode = i.OrderCode,
                 Note = i.Note
@@ -113,7 +113,7 @@ namespace PublicCarRental.Application.Service.Inv
                 IssuedAt = i.IssuedAt,
                 AmountDue = i.AmountDue,
                 AmountPaid = i.AmountPaid,
-                PaidAt = i.PaidAt,
+                PaidAt = i.PaidAt ?? i.RefundedAt,
                 Status = i.Status,
                 OrderCode = i.OrderCode,
                 Note = i.Note
@@ -189,7 +189,7 @@ namespace PublicCarRental.Application.Service.Inv
                 IssuedAt = i.IssuedAt,
                 AmountDue = i.AmountDue,
                 AmountPaid = i.AmountPaid,
-                PaidAt = i.PaidAt,
+                PaidAt = i.PaidAt ?? i.RefundedAt,
                 Status = i.Status,
                 OrderCode = i.OrderCode,
                 Note = i.Note
@@ -213,7 +213,7 @@ namespace PublicCarRental.Application.Service.Inv
                     IssuedAt = DateTime.UtcNow,
                     Status = InvoiceStatus.Pending,
                     Note = note,
-                    OrderCode = GenerateOrderCode() // You might need a different order code generation
+                    OrderCode = GenerateOrderCode() 
                 };
 
                 _repo.Create(invoice);
@@ -271,7 +271,7 @@ namespace PublicCarRental.Application.Service.Inv
                 IssuedAt = i.IssuedAt,
                 AmountDue = i.AmountDue,
                 AmountPaid = i.AmountPaid,
-                PaidAt = i.PaidAt,
+                PaidAt = i.PaidAt ?? i.RefundedAt,
                 Status = i.Status,
                 OrderCode = i.OrderCode,
                 Note = i.Note

@@ -33,7 +33,7 @@ function Contract() {
   };
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [contractsPerPage] = useState(3);
+  const [contractsPerPage] = useState(6); // Changed from 3 to 6
 
   const loadContracts = useCallback(async () => {
     if (!renterId) {
@@ -185,11 +185,11 @@ function Contract() {
         </div>
       ) : (
         <>
-          <div className="contracts-list">
+          <div className="contracts-list two-columns"> {/* Added two-columns class */}
             {currentContracts.map((contract) => (
               <div key={contract.contractId} className="contract-card">
                 <div className="contract-header-card">
-                  Contract #{contract.contractId}
+                  <strong>Contract #{contract.contractId}</strong>
                   {getStatusBadge(contract.status)}
                 </div>
 
@@ -388,10 +388,27 @@ function Contract() {
                             borderRadius: '12px',
                             fontSize: '0.8rem',
                             fontWeight: 'bold',
-                            backgroundColor: invoice.status === 1 ? '#d4edda' : '#fff3cd',
-                            color: invoice.status === 1 ? '#155724' : '#856404'
+                            backgroundColor:
+                              invoice.status === 1 ? '#d4edda' : // Paid - green
+                                invoice.status === 2 ? '#f8d7da' : // Overdue - red
+                                  invoice.status === 3 ? '#6c757d' : // Cancelled - gray
+                                    invoice.status === 4 ? '#f8d7da' : // Refunded - light gray
+                                      invoice.status === 5 ? '#fff3cd' : // Partially Refunded - yellow
+                                        '#fff3cd', // Pending - yellow (default)
+                            color:
+                              invoice.status === 1 ? '#155724' : // Paid
+                                invoice.status === 2 ? '#721c24' : // Overdue
+                                  invoice.status === 3 ? '#ffffff' : // Cancelled
+                                    invoice.status === 4 ? '#721c24' : // Refunded
+                                      invoice.status === 5 ? '#856404' : // Partially Refunded
+                                        '#856404' // Pending
                           }}>
-                            {invoice.status === 1 ? 'PAID' : 'PENDING'}
+                            {invoice.status === 0 ? 'PENDING' :
+                              invoice.status === 1 ? 'PAID' :
+                                invoice.status === 2 ? 'OVERDUE' :
+                                  invoice.status === 3 ? 'CANCELLED' :
+                                    invoice.status === 4 ? 'REFUNDED' :
+                                      invoice.status === 5 ? 'PARTIALLY REFUNDED' : 'UNKNOWN'}
                           </div>
                         </div>
 

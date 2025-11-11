@@ -1,6 +1,7 @@
 import {
   Box, Button, Flex, Icon, Table, Tbody, Td, Text, Th, Thead, Tr, useColorModeValue, Spinner, Alert, AlertIcon,
-  AlertTitle, AlertDescription, Badge, Select, HStack, useToast} from '@chakra-ui/react';
+  AlertTitle, AlertDescription, Badge, Select, HStack, useToast
+} from '@chakra-ui/react';
 import {
   createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, useReactTable
 } from '@tanstack/react-table';
@@ -8,7 +9,8 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { invoiceAPI } from '../../services/api';
 import {
   MdChevronLeft, MdChevronRight, MdRefresh,
-  MdAttachMoney, MdSchedule} from 'react-icons/md';
+  MdAttachMoney, MdSchedule
+} from 'react-icons/md';
 
 // Custom components
 import Card from '../../admin/components/card/Card';
@@ -105,39 +107,48 @@ export default function InvoiceList() {
         setLoading(false);
         return;
       }
-      // Filter behavior based on available APIs:
-      // 1) If staff station known, filter list by station and then client-side contractId
-      const stationId = (typeof window !== 'undefined') ? (localStorage.getItem('staffStationId') || sessionStorage.getItem('staffStationId')) : '';
+
+      const stationId = localStorage.getItem('stationId');
+
       let list = [];
       if (stationId) {
-        list = await invoiceAPI.getByStation(Number(stationId));
-        list = Array.isArray(list) ? list.filter(i => i.contractId === idNum) : [];
+        try {
+          list = await invoiceAPI.getByStation(Number(stationId));
+          list = Array.isArray(list) ? list.filter(i => i.contractId === idNum) : [];
+        } catch (err) {
+          console.log('Station-based search failed, falling back to all invoices');
+          list = await invoiceAPI.getAll();
+          list = Array.isArray(list) ? list.filter(i => i.contractId === idNum) : [];
+        }
       } else {
-        // 2) Otherwise, build from all invoices and filter client-side
         list = await invoiceAPI.getAll();
         list = Array.isArray(list) ? list.filter(i => i.contractId === idNum) : [];
       }
-      // 3) If still empty, try to create invoice for the contract and append
+
       if (list.length === 0) {
-        try {
-          await invoiceAPI.createByContractId(idNum);
-          const created = await invoiceAPI.getAll();
-          const matched = Array.isArray(created) ? created.filter(i => i.contractId === idNum) : [];
-          list = matched;
-        } catch (_) { /* ignore */ }
+        toast({
+          status: 'info',
+          title: 'No invoice found',
+          description: `No invoice found for Contract ID: ${idNum} in your station.`
+        });
       }
+
       setInvoices(list);
       setTotalItems(list.length);
     } catch (err) {
+      console.error('Search error:', err);
       setInvoices([]);
       setTotalItems(0);
-      toast({ status: 'info', title: 'No invoice found', description: 'Check the Contract ID and try again.' });
+      toast({
+        status: 'error',
+        title: 'Search failed',
+        description: err.message || 'Failed to search invoices'
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Get status badge color
   const getStatusColor = (status) => {
     switch (status) {
       case 0: return 'orange';
@@ -149,7 +160,6 @@ export default function InvoiceList() {
     }
   };
 
-  // Get status text
   const getStatusText = (status) => {
     switch (status) {
       case 0: return 'Pending';
@@ -161,14 +171,12 @@ export default function InvoiceList() {
     }
   };
 
-  // Format date
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Format currency
   const formatCurrency = (amount) => {
     if (amount === null || amount === undefined) return 'N/A';
     return new Intl.NumberFormat('vi-VN', {
@@ -187,7 +195,26 @@ export default function InvoiceList() {
           fontSize={{ sm: '10px', lg: '12px' }}
           color="gray.400"
         >
-          ID
+          INVOICE ID
+        </Text>
+      ),
+      cell: (info) => (
+        <Text color={textColor} fontSize="sm" fontWeight="700">
+          {info.getValue()}
+        </Text>
+      ),
+    }),
+
+    columnHelper.accessor('contractId', {
+      id: 'contractId',
+      header: () => (
+        <Text 
+          justifyContent="space-between"
+          align="center"
+          fontSize={{ sm: '10px', lg: '12px' }}
+          color="gray.400"
+        >
+          CONTRACT ID
         </Text>
       ),
       cell: (info) => (
@@ -239,30 +266,7 @@ export default function InvoiceList() {
         </Flex>
       ),
     }),
-    columnHelper.accessor('paidAt', {
-      id: 'paidAt',
-      header: () => (
-        <Text
-          justifyContent="space-between"
-          align="center"
-          fontSize={{ sm: '10px', lg: '12px' }}
-          color="gray.400"
-        >
-          ISSUED DATE
-        </Text>
-      ),
-      cell: (info) => {
-        const paidAt = info.getValue();
-        return (
-          <Flex align="center" gap={2}>
-            <Icon as={MdSchedule} color="gray.500" />
-            <Text color={textColor} fontSize="sm">
-              {formatDate(paidAt)}
-            </Text>
-          </Flex>
-        );
-      },
-    }),
+        
     columnHelper.accessor('status', {
       id: 'status',
       header: () => (

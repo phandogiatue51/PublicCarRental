@@ -15,8 +15,7 @@ function Invoice() {
     return !!localStorage.getItem("jwtToken");
   };
   const [currentPage, setCurrentPage] = useState(1);
-  const [invoicesPerPage] = useState(3);
-
+  const [invoicesPerPage] = useState(6);
   useEffect(() => {
     const controller = new AbortController();
     async function loadInvoices() {
@@ -147,31 +146,31 @@ function Invoice() {
         </div>
       ) : (
         <>
-          <div className="invoices-list">
+          <div className="invoices-list two-columns">
             {currentInvoices.map((invoice) => (
-            <div key={invoice.invoiceId} className="invoice-card">
-              <div className="invoice-header-card">
-                <h3>Invoice #{invoice.invoiceId}</h3>
-              </div>
-              
-              <div className="invoice-details">
-                <div className="detail-row">
-                  <span className="label">Contract:</span>
-                  <span className="value">#{invoice.contractId}</span>
+              <div key={invoice.invoiceId} className="invoice-card">
+                <div className="invoice-header-card">
+                  <h3><strong>Invoice #{invoice.invoiceId}</strong></h3>
                 </div>
-                <div className="detail-row">
-                  <span className="label">Issue Date:</span>
-                  <span className="value">{formatDate(invoice.issuedAt)}</span>
+
+                <div className="invoice-details">
+                  <div className="detail-row">
+                    <span className="label">Contract:</span>
+                    <span className="value">#{invoice.contractId}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="label">Issue Date:</span>
+                    <span className="value">{formatDate(invoice.issuedAt)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="label">Due Date:</span>
+                    <span className="value">{formatDate(invoice.paymentDeadline)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="label">Amount Due:</span>
+                    <span className="value">₫{invoice.amountDue?.toLocaleString() || '0'}</span>
+                  </div>
                 </div>
-                <div className="detail-row">
-                  <span className="label">Due Date:</span>
-                  <span className="value">{formatDate(invoice.paymentDeadline)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="label">Amount Due:</span>
-                  <span className="value">₫{invoice.amountDue?.toLocaleString() || '0'}</span>
-                </div>
-              </div>
 
                 <div className="invoice-actions">
                   <button

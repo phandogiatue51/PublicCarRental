@@ -5,6 +5,19 @@
   margin: 0 auto;
 }
 
+.contracts-list.two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+@media (max-width: 768px) {
+  .contracts-list.two-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 .contract-header {
   margin-bottom: 30px;
   text-align: center;
@@ -264,7 +277,7 @@
   text-align: center;
   border: none;
   padding: 10px 16px;
-  border-radius: 5px;
+  border-radius: 30px;
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
