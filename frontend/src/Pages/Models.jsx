@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@chakra-ui/react";
+import { motion } from "framer-motion";
 import HeroPages from "../components/HeroPages";
 import Footer from "../components/Footer";
 import { brandAPI, typeAPI, modelAPI } from "../services/api";
@@ -78,20 +79,32 @@ function Models() {
         <HeroPages name="Vehicle Models" />
         <div className="container">
           {/* Filters Section with CSS classes */}
-          <div className="filters-section">
+          <motion.div 
+            className="filters-section"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          >
             <div className="filters-header">
               <h2 className="filters-title">Find Your Perfect Vehicle</h2>
               <p className="filters-subtitle">Filter by brand and type to find your ideal ride</p>
             </div>
 
-            <div className="filters-container">
+            <motion.div 
+              className="filters-container"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+            >
               <div className="filter-group">
                 <div className="filter-input-wrapper">
                   <i className="fa-solid fa-car filter-icon"></i>
-                  <select
+                  <motion.select
                     className="filter-select"
                     onChange={(e) => setSelectedBrand(e.target.value || null)}
                     value={selectedBrand || ''}
+                    whileFocus={{ scale: 1.01 }}
+                    transition={{ duration: 0.2 }}
                   >
                     <option value="">All Brands</option>
                     {brands.map((b) => (
@@ -99,7 +112,7 @@ function Models() {
                         {b.name}
                       </option>
                     ))}
-                  </select>
+                  </motion.select>
                   <i className="fa-solid fa-chevron-down dropdown-arrow"></i>
                 </div>
               </div>
@@ -107,10 +120,12 @@ function Models() {
               <div className="filter-group">
                 <div className="filter-input-wrapper">
                   <i className="fa-solid fa-tag filter-icon"></i>
-                  <select
+                  <motion.select
                     className="filter-select"
                     onChange={(e) => setSelectedType(e.target.value || null)}
                     value={selectedType || ''}
+                    whileFocus={{ scale: 1.01 }}
+                    transition={{ duration: 0.2 }}
                   >
                     <option value="">All Types</option>
                     {types.map((t) => (
@@ -118,49 +133,77 @@ function Models() {
                         {t.name}
                       </option>
                     ))}
-                  </select>
+                  </motion.select>
                   <i className="fa-solid fa-chevron-down dropdown-arrow"></i>
                 </div>
               </div>
 
-              <button
+              <motion.button
                 className="clear-filters-btn"
                 onClick={clearFilters}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <i className="fa-solid fa-rotate-left"></i>
                 Clear Filters
-              </button>
-            </div>
-          </div>
+              </motion.button>
+            </motion.div>
+          </motion.div>
 
           <div className="models-div">
             {loading ? (
-              <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: '200px',
-                fontSize: '18px',
-                color: '#666'
-              }}>
+              <motion.div 
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  minHeight: '200px',
+                  fontSize: '18px',
+                  color: '#666'
+                }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+              >
                 Loading vehicle models...
-              </div>
+              </motion.div>
             ) : models.length === 0 ? (
-              <div style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: '200px',
-                fontSize: '18px',
-                color: '#666'
-              }}>
+              <motion.div 
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  minHeight: '200px',
+                  fontSize: '18px',
+                  color: '#666'
+                }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
                 No vehicle models found. Try adjusting your filters.
-              </div>
+              </motion.div>
             ) : (
-              models.map((model) => (
-                <div className="models-div__box" key={model.modelId}>
+              models.map((model, index) => (
+                <motion.div 
+                  className="models-div__box" 
+                  key={model.modelId}
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: index * 0.1,
+                    ease: [0.22, 1, 0.36, 1]
+                  }}
+                  whileHover={{ y: -8 }}
+                >
                   <div className="models-div__box__img">
-                    <img src={model.imageUrl} alt={model.name} />
+                    <motion.img 
+                      src={model.imageUrl} 
+                      alt={model.name}
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ duration: 0.3 }}
+                    />
                     <div className="models-div__box__descr">
                       <div className="models-div__box__descr__name-price">
                         <div className="models-div__box__descr__name-price__name">
@@ -176,16 +219,18 @@ function Models() {
                           <p>per hour</p>
                         </div>
                       </div>
-                      <div
+                      <motion.div
                         className="models-div__box__descr__name-price__btn"
                         onClick={() => navigate(`/models/${model.modelId}`)}
                         style={{ cursor: "pointer", fontWeight: "bold", color: "white" }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                       >
                         Book Ride
-                      </div>
+                      </motion.div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))
             )}
           </div>
