@@ -16,7 +16,7 @@ export default function RenterDetailModal({ isOpen, onClose, renter = null }) {
     switch (status) {
       case 0: return 'green'; // Active
       case 1: return 'red';   // Inactive
-      case 2: return 'orange'; // Suspended
+      case 2: return 'red'; // Suspended
       default: return 'gray';
     }
   };
@@ -26,6 +26,7 @@ export default function RenterDetailModal({ isOpen, onClose, renter = null }) {
     switch (status) {
       case 0: return 'Active';
       case 1: return 'Inactive';
+      case 2: return 'Suspended';
       default: return 'Unknown';
     }
   };

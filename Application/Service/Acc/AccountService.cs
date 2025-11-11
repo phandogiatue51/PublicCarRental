@@ -111,6 +111,12 @@ namespace PublicCarRental.Application.Service.Acc
             if (user == null)
                 return (false, "Account does not exist!", null, default);
 
+            if (user.Status == AccountStatus.Inactive)
+                return (false, "Account is inactive. Please contact support.", null, default);
+
+            if (user.Status == AccountStatus.Suspended)
+                return (false, "Account is suspended. Please contact support.", null, default);
+
             if (!_passwordHelper.VerifyPassword(password, user.PasswordHash))
                 return (false, "Wrong email/phone or password", null, default);
 
