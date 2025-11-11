@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { accountAPI } from "../services/api";
 import signUpImg from "../images/login/sign-up.jpg";
 import "../styles/SignUp.css"; 
@@ -60,7 +61,7 @@ function SignUp() {
             
             toast({
                 title: "Registration Failed ⚠️",
-                description: errorMessage, // Displays the specific server validation error (e.g., "Email is already registered.")
+                description: errorMessage,
                 status: "error",
                 duration: 5000,
                 isClosable: true,
@@ -80,65 +81,149 @@ function SignUp() {
             </div>
 
             {/* Left Column (Image) */}
-            <div 
+            <motion.div 
                 className="signup-image"
                 style={{ backgroundImage: `url(${signUpImg})` }}
+                initial={{ opacity: 0, scale: 1.1 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
             />
 
             {/* Right Column (Form) */}
-            <div className="signup-form">
-                <div className="form-header">
+            <motion.div 
+                className="signup-form"
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            >
+                <motion.div 
+                    className="form-header"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.6 }}
+                >
                     <h1>Create account</h1>
                     <p>Join and start renting EVs</p>
-                </div>
+                </motion.div>
 
-                <form onSubmit={handleSubmit} className="signup-form-grid">
+                <motion.form 
+                    onSubmit={handleSubmit} 
+                    className="signup-form-grid"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3, duration: 0.6 }}
+                >
                     
                     {/* Input Fields */}
                     <div className="form-field">
                         <label htmlFor="fullName" className="form-label">Full name</label>
-                        <input id="fullName" type="text" value={form.fullName} onChange={(e) => updateForm("fullName", e.target.value)} placeholder="Alex Doe" required className="form-input" />
+                        <motion.input 
+                            id="fullName" 
+                            type="text" 
+                            value={form.fullName} 
+                            onChange={(e) => updateForm("fullName", e.target.value)} 
+                            placeholder="Alex Doe" 
+                            required 
+                            className="form-input"
+                            whileFocus={{ scale: 1.01 }}
+                            transition={{ duration: 0.2 }}
+                        />
                     </div>
                     <div className="form-field">
                         <label htmlFor="phone" className="form-label">Phone number</label>
-                        <input id="phone" type="tel" value={form.phoneNumber} onChange={(e) => updateForm("phoneNumber", e.target.value)} placeholder="0123456789" required className="form-input" />
+                        <motion.input 
+                            id="phone" 
+                            type="tel" 
+                            value={form.phoneNumber} 
+                            onChange={(e) => updateForm("phoneNumber", e.target.value)} 
+                            placeholder="0123456789" 
+                            required 
+                            className="form-input"
+                            whileFocus={{ scale: 1.01 }}
+                            transition={{ duration: 0.2 }}
+                        />
                     </div>
                     <div className="form-field">
                         <label htmlFor="email" className="form-label">Email</label>
-                        <input id="email" type="email" value={form.email} onChange={(e) => updateForm("email", e.target.value)} placeholder="you@example.com" required className="form-input" />
+                        <motion.input 
+                            id="email" 
+                            type="email" 
+                            value={form.email} 
+                            onChange={(e) => updateForm("email", e.target.value)} 
+                            placeholder="you@example.com" 
+                            required 
+                            className="form-input"
+                            whileFocus={{ scale: 1.01 }}
+                            transition={{ duration: 0.2 }}
+                        />
                     </div>
                     <div className="form-field">
                         <label htmlFor="identity" className="form-label">Identity card number</label>
-                        <input id="identity" type="text" value={form.identityCardNumber} onChange={(e) => updateForm("identityCardNumber", e.target.value)} placeholder="ID number" required className="form-input" />
+                        <motion.input 
+                            id="identity" 
+                            type="text" 
+                            value={form.identityCardNumber} 
+                            onChange={(e) => updateForm("identityCardNumber", e.target.value)} 
+                            placeholder="ID number" 
+                            required 
+                            className="form-input"
+                            whileFocus={{ scale: 1.01 }}
+                            transition={{ duration: 0.2 }}
+                        />
                     </div>
                     <div className="form-field">
                         <label htmlFor="password" className="form-label">Password</label>
-                        <input id="password" type="password" value={form.password} onChange={(e) => updateForm("password", e.target.value)} placeholder="••••••••" required className="form-input" />
+                        <motion.input 
+                            id="password" 
+                            type="password" 
+                            value={form.password} 
+                            onChange={(e) => updateForm("password", e.target.value)} 
+                            placeholder="••••••••" 
+                            required 
+                            className="form-input"
+                            whileFocus={{ scale: 1.01 }}
+                            transition={{ duration: 0.2 }}
+                        />
                     </div>
                     <div className="form-field">
                         <label htmlFor="license" className="form-label">License number</label>
-                        <input id="license" type="text" value={form.licenseNumber} onChange={(e) => updateForm("licenseNumber", e.target.value)} placeholder="e.g. A123456" className="form-input" />
+                        <motion.input 
+                            id="license" 
+                            type="text" 
+                            value={form.licenseNumber} 
+                            onChange={(e) => updateForm("licenseNumber", e.target.value)} 
+                            placeholder="e.g. A123456" 
+                            className="form-input"
+                            whileFocus={{ scale: 1.01 }}
+                            transition={{ duration: 0.2 }}
+                        />
                     </div>
 
 
                     <div className="submit-container">
-                        <button
+                        <motion.button
                             type="submit"
                             disabled={loading}
                             className="submit-button"
+                            whileHover={{ scale: loading ? 1 : 1.02 }}
+                            whileTap={{ scale: loading ? 1 : 0.98 }}
                         >
                             {loading ? "Creating..." : "Create Account"}
-                        </button>
+                        </motion.button>
                     </div>
-                </form>
+                </motion.form>
 
                 <div className="login-redirect">
                     Already have an account?{" "}
-                    <a href="/login" className="login-link">
+                    <motion.a 
+                        href="/login" 
+                        className="login-link"
+                        whileHover={{ scale: 1.05 }}
+                    >
                         Sign in
-                    </a>
+                    </motion.a>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 }

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "../hooks/useAuth";
 import loginImg from "../images/login/login.jpg";
 import "../styles/Login.css";
@@ -51,25 +52,44 @@ function Login() {
             </div>
 
             {/* Left Column (Image) */}
-            <div
+            <motion.div
                 className="login-image"
                 style={{ backgroundImage: `url(${loginImg})` }}
+                initial={{ opacity: 0, scale: 1.1 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
             />
 
             {/* Right Column (Form) */}
-            <div className="login-form">
-                <div className="form-header">
+            <motion.div 
+                className="login-form"
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            >
+                <motion.div 
+                    className="form-header"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.6 }}
+                >
                     <h1>Welcome back</h1>
                     <p>Log in to continue to your account</p>
-                </div>
+                </motion.div>
 
-                <form onSubmit={handleSubmit} className="login-form-content">
+                <motion.form 
+                    onSubmit={handleSubmit} 
+                    className="login-form-content"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3, duration: 0.6 }}
+                >
                     {/* Email or Phone */}
                     <div className="form-field">
                         <label htmlFor="identifier" className="form-label">
                             Email or Phone
                         </label>
-                        <input
+                        <motion.input
                             id="identifier"
                             type="text"
                             value={identifier}
@@ -77,6 +97,8 @@ function Login() {
                             placeholder="you@example.com or 0123456789"
                             required
                             className="form-input"
+                            whileFocus={{ scale: 1.01 }}
+                            transition={{ duration: 0.2 }}
                         />
                     </div>
 
@@ -85,7 +107,7 @@ function Login() {
                         <label htmlFor="password" className="form-label">
                             Password
                         </label>
-                        <input
+                        <motion.input
                             id="password"
                             type="password"
                             value={password}
@@ -93,26 +115,38 @@ function Login() {
                             placeholder="••••••••"
                             required
                             className="form-input"
+                            whileFocus={{ scale: 1.01 }}
+                            transition={{ duration: 0.2 }}
                         />
                     </div>
 
                     <div className="forgot-password-link">
-                        <a href="/forgot-password" className="forgot-link">
+                        <motion.a 
+                            href="/forgot-password" 
+                            className="forgot-link"
+                            whileHover={{ x: 3 }}
+                        >
                             Forgot your password?
-                        </a>
+                        </motion.a>
                     </div>
 
                     {error && (
-                        <div className="error-message">
+                        <motion.div
+                            className="error-message"
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                        >
                             {error}
-                        </div>
+                        </motion.div>
                     )}
 
                     <div className="submit-container">
-                        <button
+                        <motion.button
                             type="submit"
                             disabled={loading}
                             className="submit-button"
+                            whileHover={{ scale: loading ? 1 : 1.02 }}
+                            whileTap={{ scale: loading ? 1 : 0.98 }}
                         >
                             {loading ? (
                                 <>
@@ -121,17 +155,21 @@ function Login() {
                             ) : (
                                 "Log In"
                             )}
-                        </button>
+                        </motion.button>
                     </div>
-                </form>
+                </motion.form>
 
                 <div className="signup-redirect">
                     Don't have an account?{" "}
-                    <a href="/sign-up" className="signup-link">
+                    <motion.a 
+                        href="/sign-up" 
+                        className="signup-link"
+                        whileHover={{ scale: 1.05 }}
+                    >
                         Sign up
-                    </a>
+                    </motion.a>
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 }
